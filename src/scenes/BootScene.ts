@@ -1,0 +1,100 @@
+// ロード、セーブ読み込み → 拠点
+import Phaser from 'phaser';
+import { UNIT_SPRITES, animKey, type UnitAnimName } from '../data/sprites';
+import { loadSave } from '../platform/storage';
+import { setSave } from '../platform/store';
+import { GLYPHS } from '../ui/kit/glyphs.generated';
+import { generateUiIcons } from '../ui/kit/icons';
+import { generateSkin } from '../ui/kit/skin';
+import { generateAllTextures } from '../ui/textures';
+import { FONT } from '../ui/theme';
+import { COLORS, H, W, textStyle } from '../ui/theme';
+
+const FONT_TIMEOUT_MS = 2500;
+
+// assets/sprites 以下の PNG はビルドに同梱し、その URL をここで引く（置いてあるものだけ読み込む）
+const SPRITE_URLS = import.meta.glob('../../assets/sprites/**/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
+export function spriteUrl(file: string): string | undefined {
+  return SPRITE_URLS[`../../assets/sprites/${file}`];
+}
+
+export class BootScene extends Phaser.Scene {
+  constructor() {
+    super('Boot');
+  }
+
+  preload(): void {
+    this.add.text(W / 2, H / 2, 'Chainpack Rush', textStyle(52, COLORS.accentText)).setOrigin(0.5);
+    // 本素材（assets/sprites）が登録されていれば読み込む。なければ仮素材で動く
+    for (const def of Object.values(UNIT_SPRITES)) {
+      for (const [name, anim] of Object.entries(def.anims ?? {})) {
+        const url = anim ? spriteUrl(anim.file) : undefined;
+        if (!anim || !url) {
+          if (anim) console.warn(`sprite not found: assets/sprites/${anim.file}（仮素材で続行）`);
+          continue;
+        }
+        this.load.spritesheet(animKey(def.key, name as UnitAnimName), url, {
+          frameWidth: def.frameWidth,
+          frameHeight: def.frameHeight,
+        });
+      }
+    }
+  }
+
+  create(): void {
+    // 本素材の静止画（待機の1コマ目）を、拠点・地域選択・顔アイコンなどで使う基本テクスチャにする
+    for (const def of Object.values(UNIT_SPRITES)) {
+      const still = (['idle', 'move', 'run'] as const)
+        .map((n) => animKey(def.key, n))
+        .find((k) => this.textures.exists(k));
+      if (!still || this.textures.exists(def.key)) continue;
+      const frame = this.textures.getFrame(still, 0);
+      const tex = this.textures.createCanvas(def.key, def.frameWidth, def.frameHeight);
+      if (!frame || !tex) continue;
+      tex
+        .getContext()
+        .drawImage(
+          frame.source.image as CanvasImageSource,
+          frame.cutX,
+          frame.cutY,
+          def.frameWidth,
+          def.frameHeight,
+          0,
+          0,
+          def.frameWidth,
+          def.frameHeight,
+        );
+      tex.refresh();
+    }
+    // 本素材がないものは仮素材を描く
+    generateAllTextures(this);
+    for (const def of Object.values(UNIT_SPRITES)) {
+      for (const [name, anim] of Object.entries(def.anims ?? {})) {
+        const key = animKey(def.key, name as UnitAnimName);
+        if (!anim || !this.textures.exists(key)) continue;
+        this.anims.create({
+          key,
+          frames: this.anims.generateFrameNumbers(key, { start: 0, end: anim.frames - 1 }),
+          frameRate: anim.fps,
+          repeat: anim.loop ? -1 : 0,
+        });
+      }
+    }
+    generateSkin(this);
+    generateUiIcons(this);
+    // フォントはサブセット分割なので、画面で使う文字の分だけ先に読み込む（失敗しても代替フォントで続行）
+    const fonts = Promise.all(
+      ['800', '500'].map((w) => document.fonts.load(`${w} 32px ${FONT}`, GLYPHS)),
+    ).catch(() => undefined);
+    const timeout = new Promise((r) => setTimeout(r, FONT_TIMEOUT_MS));
+    void Promise.all([loadSave(), Promise.race([fonts, timeout])]).then(([save]) => {
+      setSave(save);
+      this.scene.start('Base');
+    });
+  }
+}
