@@ -10,6 +10,7 @@ export default tseslint.config(
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
+      'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },

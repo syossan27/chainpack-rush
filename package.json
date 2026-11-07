@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "sim": "tsx tools/sim.ts",
     "cap:sync": "npm run build && cap sync",
-    "assets": "capacitor-assets generate"
+    "assets": "capacitor-assets generate --ios --android --iconBackgroundColor '#14121c' --iconBackgroundColorDark '#14121c' --splashBackgroundColor '#14121c' --splashBackgroundColorDark '#14121c'",
+    "store-assets": "tsx tools/genStoreAssets.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",

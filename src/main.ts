@@ -1,24 +1,34 @@
 import Phaser from 'phaser';
+import { setAudioSuspended, unlockAudio } from './audio/sfx';
+import { initLifecycle, onAppStateChange } from './platform/lifecycle';
+import { BaseScene } from './scenes/BaseScene';
+import { BootScene } from './scenes/BootScene';
+import { DummyScene } from './scenes/DummyScene';
+import { LoadoutScene } from './scenes/LoadoutScene';
+import { ResultScene } from './scenes/ResultScene';
+import { RunScene } from './scenes/RunScene';
+import { StageSelectScene } from './scenes/StageSelectScene';
+import { COLORS, H, W } from './ui/theme';
 
-class EmptyScene extends Phaser.Scene {
-  constructor() {
-    super('Empty');
-  }
-  create(): void {
-    this.add
-      .text(360, 640, 'Chainpack Rush', { fontSize: '48px', color: '#ffffff' })
-      .setOrigin(0.5);
-  }
-}
+initLifecycle();
+// バックグラウンドでは音を止める（ランは RunScene 側で自動ポーズ）
+onAppStateChange((active) => setAudioSuspended(!active));
+window.addEventListener('pointerdown', unlockAudio, { passive: true });
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  width: 720,
-  height: 1280,
-  backgroundColor: '#14121c',
-  pixelArt: true,
+  width: W,
+  height: H,
+  backgroundColor: COLORS.bg,
+  pixelArt: true, // 最近傍補間
+  roundPixels: true,
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   physics: { default: 'arcade' },
-  scene: [EmptyScene],
+  fps: { target: 60 },
+  input: { activePointers: 2 },
+  scene: [BootScene, BaseScene, StageSelectScene, LoadoutScene, DummyScene, RunScene, ResultScene],
 });
+
+// デバッグ用（ブラウザのコンソールから参照できるように）
+(window as unknown as { __game?: Phaser.Game }).__game = game;
