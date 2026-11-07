@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Chainpack Rush</string>
+    <string name="title_activity_main">Chainpack Rush</string>
+    <string name="package_name">com.chainpack.rush</string>
+    <string name="custom_url_scheme">com.chainpack.rush</string>
+</resources>
