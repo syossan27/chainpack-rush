@@ -198,7 +198,9 @@ describe('combat', () => {
 
   it('ゴブリン王は取り巻きを4体保つ', () => {
     // 攻撃しない配置（起点のみ）で観察する
-    const { loadout, items } = build(1, 1, [{ uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: [] }]);
+    const { loadout, items } = build(1, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: [] },
+    ]);
     const c = new Combat({
       seed: 1,
       regionId: 'cave',

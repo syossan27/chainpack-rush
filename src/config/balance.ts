@@ -11,23 +11,26 @@ export const HERO = {
   maxHp: 100,
   atbTime: 1.5,
   minAtbTime: 1.0, // ATB短縮の下限
-  speed: 120, // px/秒
-  engageRange: 160, // 勇者の前方
+  speed: 160, // px/秒（改訂版の初期値、要確認）
+  engageRange: 216, // 勇者の前方（改訂版の初期値、要確認）
   unguardedTakenMult: 1.5, // 無防備中の被ダメージ倍率
 } as const;
 
+// 距離・速度はすべて 720×1280 の論理px。判定は足元基準点（キャラクターの足元の x）で行う。
 export const FIELD = {
-  aggroRange: 230, // 敵が勇者へ寄ってくる距離（いま戦っている群れだけが寄ってくる）
-  viewRange: 560, // 画面内（全体攻撃・油の大樽などの対象）
-  enemySpeed: 220, // 敵の接近速度 px/秒
-  spawnSpacing: 8, // 群れの中の初期間隔
-  frontStand: 44, // 前列の立ち位置（勇者からの距離）
-  frontSpacing: 20,
-  backStand: 130, // 後列（呪術師）
-  backSpacing: 10,
-  bossStand: 120,
-  loopGap: 120,
-  attackPhaseJitter: 0.5, // 雑魚の最初の攻撃までの時間を最大でこの割合だけ早める // ボス撃破地点から次の区間の起点までの距離
+  aggroRange: 300, // 群れの先頭がこの距離に入ると、群れごと勇者へ寄ってくる
+  viewRange: 560, // 画面内（勇者の前方。全体攻撃・油の大樽などの対象）
+  viewBehind: 160, // 勇者より後ろに見える幅（勇者の画面内位置）
+  enemySpeed: 240, // 敵の接近速度 px/秒
+  columnSpacing: 80, // 群れ内の横間隔（足元基準点）
+  rowsPerColumn: 2, // 群れは前後2列。見た目の縦ずらしだけで core の距離は同じ
+  frontStand: 56, // 1列目の立ち位置（勇者からの距離）。56 + 80×2 = 216 で3列まで交戦範囲に入る
+  meleeReach: 96, // 近接の雑魚が攻撃できる距離（最前列だけが届く）
+  bossStand: 216, // ボスの立ち位置（取り巻き2列の後ろ）
+  minGroupGap: 240, // 前の群れの最後尾から次の群れの先頭までの最小距離
+  loopGap: 240, // ボス撃破地点から次の区間の起点までの距離
+  maxOnScreen: 8, // 同時表示の設計目標（固定配置で守る。間引かない）
+  attackPhaseJitter: 0.5, // 雑魚の最初の攻撃までの時間を最大でこの割合だけ早める
 } as const;
 
 export const CHAIN = {
@@ -38,7 +41,7 @@ export const CHAIN = {
 } as const;
 
 export const AREA = {
-  splashRadius: 60,
+  splashRadius: 80, // 群れ内の横間隔と対応させる
   allMult: 0.4,
 } as const;
 

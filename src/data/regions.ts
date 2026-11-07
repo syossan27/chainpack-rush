@@ -17,16 +17,18 @@ export interface RegionDef {
   groundColor: number;
 }
 
+// 群れは4〜6体。前後2列×横80pxで並ぶ（4体=2列、5〜6体=3列）。
+// 前の群れの最後尾から次の群れの先頭まで 240px 以上空ける（tests/regions.test.ts で検証）。
 export const REGIONS: readonly RegionDef[] = [
   {
     id: 'grassland',
     name: '草原',
     mobTrend: 'スライム、ゴブリン（チュートリアル）',
     groups: [
-      { x: 200, enemies: ['slime', 'slime', 'slime', 'slime', 'slime'] },
-      { x: 380, enemies: ['goblin', 'goblin', 'slime', 'slime'] },
+      { x: 320, enemies: ['slime', 'slime', 'slime', 'slime', 'slime'] },
+      { x: 720, enemies: ['goblin', 'goblin', 'slime', 'slime'] },
     ],
-    bossX: 560,
+    bossX: 1040,
     bosses: ['big_slime', 'goblin_king', 'iron_knight'],
     bgColors: [0x7ec8f0, 0x6ab070, 0x4a9050],
     groundColor: 0x6b4a2a,
@@ -36,15 +38,12 @@ export const REGIONS: readonly RegionDef[] = [
     name: '洞窟',
     mobTrend: 'コウモリ、呪術師（群れが多い）',
     groups: [
-      { x: 200, enemies: ['bat', 'bat', 'bat', 'bat'] },
-      { x: 330, enemies: ['bat', 'bat', 'sorcerer'] },
-      { x: 460, enemies: ['bat', 'bat', 'bat', 'bat'] },
-      { x: 590, enemies: ['bat', 'bat', 'sorcerer'] },
-      { x: 720, enemies: ['bat', 'bat', 'bat', 'bat'] },
-      { x: 850, enemies: ['bat', 'bat', 'sorcerer'] },
-      { x: 980, enemies: ['bat', 'bat', 'bat', 'bat'] },
+      { x: 320, enemies: ['bat', 'bat', 'bat', 'bat'] },
+      { x: 640, enemies: ['bat', 'bat', 'bat', 'sorcerer'] },
+      { x: 960, enemies: ['bat', 'bat', 'bat', 'bat'] },
+      { x: 1280, enemies: ['bat', 'bat', 'bat', 'sorcerer'] },
     ],
-    bossX: 1150,
+    bossX: 1600,
     bosses: ['goblin_king', 'big_slime', 'goblin_king'],
     bgColors: [0x1c1828, 0x2c2638, 0x3c3448],
     groundColor: 0x3a3040,
@@ -54,15 +53,20 @@ export const REGIONS: readonly RegionDef[] = [
     name: '城壁',
     mobTrend: '甲冑兵、ゴブリン（硬い）',
     groups: [
-      { x: 200, enemies: ['goblin', 'goblin'] },
-      { x: 380, enemies: ['armor', 'goblin', 'goblin'] },
+      { x: 320, enemies: ['goblin', 'goblin', 'goblin', 'goblin'] },
+      { x: 640, enemies: ['armor', 'goblin', 'goblin', 'goblin'] },
     ],
-    bossX: 560,
+    bossX: 960,
     bosses: ['iron_knight', 'goblin_king', 'iron_knight'],
     bgColors: [0x9ab0c8, 0x7a8090, 0x5a6070],
     groundColor: 0x6a6a70,
   },
 ];
+
+/** 群れの横幅（先頭から最後尾まで） */
+export function groupSpan(group: EnemyGroup, rows: number, spacing: number): number {
+  return (Math.ceil(group.enemies.length / rows) - 1) * spacing;
+}
 
 export function getRegion(id: string): RegionDef {
   const r = REGIONS.find((x) => x.id === id);

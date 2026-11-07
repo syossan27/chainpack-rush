@@ -48,6 +48,7 @@ export interface EnemyState {
   escort: boolean;
   loop: number;
   group: number; // 同じ群れは一緒に寄ってくる
+  row: number; // 見た目の前後列（描画のみ。core の距離・標的順には使わない）
 }
 
 export type EndReason = 'timeout' | 'dead';
@@ -200,8 +201,8 @@ export class Combat {
       this.consumables = [];
       this.spawnEnemy(
         SCARECROW_ID,
-        FIELD.frontStand + FIELD.frontSpacing * 2,
-        FIELD.frontStand + FIELD.frontSpacing * 2,
+        FIELD.frontStand + FIELD.columnSpacing,
+        FIELD.frontStand + FIELD.columnSpacing,
         false,
         0,
       );
@@ -351,6 +352,7 @@ export class Combat {
     // 4. 敵の行動
     if (this.mode === 'run') {
       const stopped = this.timeStopped;
+      this.repack();
       for (const e of this.enemies) {
         if (!e.alive) continue;
         const dist = e.x - this.heroX;
@@ -360,7 +362,7 @@ export class Combat {
         if (stopped || !e.aggro) continue;
         const stand = this.heroX + e.standOffset;
         if (e.x > stand) e.x = Math.max(stand, e.x - FIELD.enemySpeed * dt);
-        if (e.x - this.heroX <= HERO.engageRange) {
+        if (this.canAttack(e)) {
           e.attackTimer += dt;
           if (e.attackTimer >= e.def.interval) {
             e.attackTimer -= e.def.interval;
@@ -398,14 +400,22 @@ export class Combat {
     this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId });
     for (const g of this.region.groups) {
       const group = this.nextGroup++;
-      let front = 0;
-      let back = 0;
-      g.enemies.forEach((id, i) => {
-        const def = getEnemyDef(id);
-        const stand = def.backRow
-          ? FIELD.backStand + FIELD.backSpacing * back++
-          : FIELD.frontStand + FIELD.frontSpacing * front++;
-        this.spawnEnemy(id, this.loopStartX + g.x + FIELD.spawnSpacing * i, stand, false, group);
+      // 前後2列×列。後列（呪術師）は最後の列に回す
+      const ordered = [...g.enemies].sort(
+        (x, y) => Number(getEnemyDef(x).backRow) - Number(getEnemyDef(y).backRow),
+      );
+      ordered.forEach((id, i) => {
+        const col = Math.floor(i / FIELD.rowsPerColumn);
+        const row = i % FIELD.rowsPerColumn;
+        const offset = FIELD.columnSpacing * col;
+        this.spawnEnemy(
+          id,
+          this.loopStartX + g.x + offset,
+          FIELD.frontStand + offset,
+          false,
+          group,
+          row,
+        );
       });
     }
     this.bossGroup = this.nextGroup++;
@@ -425,6 +435,7 @@ export class Combat {
     standOffset: number,
     escort: boolean,
     group: number,
+    row = 0,
   ): EnemyState {
     const def = getEnemyDef(defId);
     const scaleLoop = this.loop - 1;
@@ -446,6 +457,7 @@ export class Combat {
       escort,
       loop: this.loop,
       group,
+      row,
     };
     this.enemies.push(e);
     this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort });
@@ -464,23 +476,16 @@ export class Combat {
       this.summonTimer = 0;
       return;
     }
-    const used = new Set(escorts.map((e) => e.standOffset));
     const firstWave = this.enemies.every((e) => !e.escort);
+    // 立ち位置は repack() が2列×前後2段に詰める
     const summon = (): void => {
-      for (let slot = 0; slot < BOSS.goblinKingEscorts; slot++) {
-        const stand = FIELD.frontStand + FIELD.frontSpacing * slot;
-        if (!used.has(stand)) {
-          used.add(stand);
-          this.spawnEnemy(
-            ESCORT_ID,
-            boss.x - (FIELD.bossStand - stand),
-            stand,
-            true,
-            this.bossGroup,
-          );
-          return;
-        }
-      }
+      this.spawnEnemy(
+        ESCORT_ID,
+        boss.x - FIELD.columnSpacing,
+        FIELD.frontStand,
+        true,
+        this.bossGroup,
+      );
     };
     if (firstWave) {
       for (let i = 0; i < BOSS.goblinKingEscorts; i++) summon();
@@ -491,6 +496,36 @@ export class Combat {
       this.summonTimer -= BOSS.goblinKingSummonInterval;
       summon();
     }
+  }
+
+  /**
+   * 群れの立ち位置を詰め直す: 生きている順に前後2列×横80px。
+   * 前の列が倒れると後ろが前へ出る。後列（呪術師）は最後の列。ボス本人は bossStand のまま。
+   */
+  private repack(): void {
+    const groups = new Map<number, EnemyState[]>();
+    for (const e of this.enemies) {
+      if (!e.alive || e.def.boss) continue;
+      let g = groups.get(e.group);
+      if (!g) groups.set(e.group, (g = []));
+      g.push(e);
+    }
+    for (const members of groups.values()) {
+      members.sort((a, b) => Number(a.def.backRow) - Number(b.def.backRow) || a.id - b.id);
+      members.forEach((e, i) => {
+        e.standOffset =
+          FIELD.frontStand + FIELD.columnSpacing * Math.floor(i / FIELD.rowsPerColumn);
+        e.row = i % FIELD.rowsPerColumn;
+      });
+    }
+  }
+
+  /** 近接の雑魚は最前列からだけ攻撃する。後列（呪術師）とボスは交戦範囲のどこからでも */
+  private canAttack(e: EnemyState): boolean {
+    const dist = e.x - this.heroX;
+    if (dist > HERO.engageRange) return false;
+    if (e.def.boss || e.def.backRow) return true;
+    return dist <= FIELD.meleeReach;
   }
 
   private onScreen(): EnemyState[] {

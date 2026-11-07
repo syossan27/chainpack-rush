@@ -31,10 +31,13 @@ export const REFERENCE_UPGRADES = {
 
 type Cell = readonly [number, number];
 
-/** 連鎖の通り道: 各マスの出口を次のマスへ向ける */
+/**
+ * 連鎖の通り道。各マスの出口を次のマスへ向ける。
+ * from を指定すると、すでに置いたマスから枝分かれする（そのマスに出口を1つ足す）。
+ */
 interface PathSpec {
-  cells: readonly Cell[];
-  defIds: readonly string[]; // 先頭は起点
+  from?: Cell;
+  steps: readonly (readonly [number, number, string])[]; // [x, y, defId]。from がなければ先頭は起点
 }
 
 export interface ReferenceLoadout {
@@ -45,124 +48,43 @@ export interface ReferenceLoadout {
   paths: readonly PathSpec[];
 }
 
+// prettier-ignore
 export const REFERENCE_LOADOUTS: readonly ReferenceLoadout[] = [
   {
+    // 一本型: 起点1個。攻撃装備をすべて一本につなぎ、コンボは高い段数で決める。防具は脇の枝に置く
     id: 'single',
     name: '一本型',
     width: 5,
     height: 4,
     paths: [
-      {
-        cells: [
-          [0, 0],
-          [1, 0],
-          [2, 0],
-          [3, 0],
-          [4, 0],
-          [4, 1],
-          [3, 1],
-          [2, 1],
-          [1, 1],
-          [0, 1],
-          [0, 2],
-          [1, 2],
-        ],
-        defIds: [
-          'origin_stone',
-          'axe',
-          'sword',
-          'spear',
-          'axe',
-          'ice_sword',
-          'canteen',
-          'greatsword',
-          'hammer',
-          'thunder_staff',
-          'chainmail',
-          'wood_shield',
-        ],
-      },
+      { steps: [[0, 0, 'origin_stone'], [1, 0, 'axe'], [2, 0, 'sword'], [3, 0, 'spear'], [4, 0, 'axe'],
+        [4, 1, 'ice_sword'], [3, 1, 'canteen'], [2, 1, 'greatsword'], [1, 1, 'hammer'], [0, 1, 'thunder_staff']] },
+      { from: [4, 1], steps: [[4, 2, 'chainmail']] },
+      { from: [3, 1], steps: [[3, 2, 'wood_shield']] },
     ],
   },
   {
+    // 複数型: 起点3個。それぞれ短い連鎖
     id: 'multi',
     name: '複数型',
     width: 5,
     height: 4,
     paths: [
-      {
-        cells: [
-          [0, 0],
-          [1, 0],
-          [2, 0],
-          [3, 0],
-          [4, 0],
-        ],
-        defIds: ['origin_stone', 'axe', 'canteen', 'thunder_staff', 'chainmail'],
-      },
-      {
-        cells: [
-          [0, 1],
-          [1, 1],
-          [2, 1],
-          [3, 1],
-        ],
-        defIds: ['origin_stone', 'spear', 'ice_sword', 'hammer'],
-      },
-      {
-        cells: [
-          [0, 2],
-          [1, 2],
-          [2, 2],
-          [3, 2],
-          [4, 2],
-        ],
-        defIds: ['origin_stone', 'axe', 'sword', 'greatsword', 'wood_shield'],
-      },
+      { steps: [[0, 0, 'origin_stone'], [1, 0, 'axe'], [2, 0, 'canteen'], [3, 0, 'thunder_staff'], [4, 0, 'chainmail']] },
+      { steps: [[0, 1, 'origin_stone'], [1, 1, 'spear'], [2, 1, 'ice_sword'], [3, 1, 'hammer']] },
+      { steps: [[0, 2, 'origin_stone'], [1, 2, 'axe'], [2, 2, 'sword'], [3, 2, 'greatsword'], [4, 2, 'wood_shield']] },
     ],
   },
   {
+    // 混合型: 短い連鎖で群れを払いつつ濡らし、長い連鎖の雷で感電させる（連鎖をまたいだコンボ）
     id: 'mixed',
     name: '混合型',
     width: 5,
     height: 4,
     paths: [
-      // 短: 薙ぎ払いで群れを処理しつつ狙いを濡らす（次の長い連鎖の雷で感電させる仕込み）
-      {
-        cells: [
-          [0, 0],
-          [1, 0],
-          [2, 0],
-        ],
-        defIds: ['origin_stone', 'axe', 'canteen'],
-      },
-      // 長: 凍結→粉砕、濡れ→感電を高い段数で決める
-      {
-        cells: [
-          [0, 1],
-          [1, 1],
-          [2, 1],
-          [3, 1],
-          [4, 1],
-          [4, 2],
-          [3, 2],
-          [2, 2],
-          [1, 2],
-          [0, 2],
-        ],
-        defIds: [
-          'origin_stone',
-          'axe',
-          'spear',
-          'sword',
-          'ice_sword',
-          'greatsword',
-          'hammer',
-          'thunder_staff',
-          'chainmail',
-          'wood_shield',
-        ],
-      },
+      { steps: [[0, 0, 'origin_stone'], [1, 0, 'axe'], [2, 0, 'canteen']] },
+      { steps: [[0, 1, 'origin_stone'], [1, 1, 'axe'], [2, 1, 'spear'], [3, 1, 'sword'], [4, 1, 'ice_sword'],
+        [4, 2, 'greatsword'], [3, 2, 'hammer'], [2, 2, 'thunder_staff'], [1, 2, 'chainmail'], [0, 2, 'wood_shield']] },
     ],
   },
 ];
@@ -183,20 +105,36 @@ export function buildReference(ref: ReferenceLoadout): {
   const items = new Map<string, ItemInstance>();
   const cells = new Array<string | null>(ref.width * ref.height).fill(null);
   const originOrder: string[] = [];
+  const at = (c: Cell): ItemInstance => {
+    const uid = cells[c[1] * ref.width + c[0]];
+    const it = uid ? items.get(uid) : undefined;
+    if (!it) throw new Error(`reference ${ref.id}: no item at ${c.join(',')}`);
+    return it;
+  };
   for (const path of ref.paths) {
-    path.cells.forEach((cell, i) => {
-      const defId = path.defIds[i]!;
+    let prev: Cell | null = path.from ?? null;
+    path.steps.forEach(([x, y, defId], i) => {
+      const cell: Cell = [x, y];
       const slot = pool.find((p) => !p.used && p.defId === defId);
       if (!slot) throw new Error(`reference ${ref.id}: ${defId} is not in the reference set`);
       slot.used = true;
-      const next = path.cells[i + 1];
-      const exits: Dir[] = next ? [dirTo(cell, next)] : [];
-      items.set(slot.uid, { uid: slot.uid, defId, rarity: slot.rarity, exits, rerollCount: 0 });
-      cells[cell[1] * ref.width + cell[0]] = slot.uid;
-      if (i === 0) originOrder.push(slot.uid);
+      if (cells[y * ref.width + x])
+        throw new Error(`reference ${ref.id}: cell ${x},${y} is used twice`);
+      const inst: ItemInstance = {
+        uid: slot.uid,
+        defId,
+        rarity: slot.rarity,
+        exits: [],
+        rerollCount: 0,
+      };
+      items.set(slot.uid, inst);
+      cells[y * ref.width + x] = slot.uid;
+      if (prev) at(prev).exits.push(dirTo(prev, cell));
+      else if (i === 0) originOrder.push(slot.uid);
+      prev = cell;
     });
   }
-  // 置かなかった装備も数を合わせるために持つが、配置はしない
+  // 置かなかった装備も一式の数を合わせるために持つ（配置はしない）
   for (const p of pool) {
     if (!p.used)
       items.set(p.uid, { uid: p.uid, defId: p.defId, rarity: p.rarity, exits: [], rerollCount: 0 });
