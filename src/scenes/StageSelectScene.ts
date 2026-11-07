@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { sortieBlock } from '../core/economy';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
 import { REGIONS, type RegionDef } from '../data/regions';
+import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
 import { getSave } from '../platform/store';
@@ -179,10 +180,11 @@ export class StageSelectScene extends Phaser.Scene {
         .setScale(0.75)
         .setFlipX(true),
     );
+    const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
     this.root.add(
       this.add
         .image(cx - 60, top + h - 12, 'hero')
-        .setOrigin(0.5, 1)
+        .setOrigin(heroOrigin.originX, heroOrigin.originY)
         .setScale(0.9),
     );
   }

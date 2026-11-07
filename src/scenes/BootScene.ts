@@ -1,6 +1,6 @@
 // ロード、セーブ読み込み → 拠点
 import Phaser from 'phaser';
-import { UNIT_SPRITES, animKey, type UnitAnimName } from '../data/sprites';
+import { UNIT_SPRITES, animFrameSize, animKey, type UnitAnimName } from '../data/sprites';
 import { loadSave } from '../platform/storage';
 import { setSave } from '../platform/store';
 import { GLYPHS } from '../ui/kit/glyphs.generated';
@@ -38,9 +38,10 @@ export class BootScene extends Phaser.Scene {
           if (anim) console.warn(`sprite not found: assets/sprites/${anim.file}（仮素材で続行）`);
           continue;
         }
+        const { frameWidth, frameHeight } = animFrameSize(def, anim);
         this.load.spritesheet(animKey(def.key, name as UnitAnimName), url, {
-          frameWidth: def.frameWidth,
-          frameHeight: def.frameHeight,
+          frameWidth,
+          frameHeight,
         });
       }
     }
@@ -49,25 +50,27 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     // 本素材の静止画（待機の1コマ目）を、拠点・地域選択・顔アイコンなどで使う基本テクスチャにする
     for (const def of Object.values(UNIT_SPRITES)) {
-      const still = (['idle', 'move', 'run'] as const)
-        .map((n) => animKey(def.key, n))
-        .find((k) => this.textures.exists(k));
-      if (!still || this.textures.exists(def.key)) continue;
-      const frame = this.textures.getFrame(still, 0);
-      const tex = this.textures.createCanvas(def.key, def.frameWidth, def.frameHeight);
-      if (!frame || !tex) continue;
+      const stillName = (['idle', 'move', 'run'] as const).find(
+        (n) => def.anims?.[n] && this.textures.exists(animKey(def.key, n)),
+      );
+      if (!stillName || this.textures.exists(def.key)) continue;
+      const frame = this.textures.getFrame(animKey(def.key, stillName), 0);
+      if (!frame) continue;
+      // 静止画は待機コマの実寸のまま。キャラ共通寸法へ縮小しない
+      const tex = this.textures.createCanvas(def.key, frame.width, frame.height);
+      if (!tex) continue;
       tex
         .getContext()
         .drawImage(
           frame.source.image as CanvasImageSource,
           frame.cutX,
           frame.cutY,
-          def.frameWidth,
-          def.frameHeight,
+          frame.width,
+          frame.height,
           0,
           0,
-          def.frameWidth,
-          def.frameHeight,
+          frame.width,
+          frame.height,
         );
       tex.refresh();
     }

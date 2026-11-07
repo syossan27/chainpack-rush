@@ -22,8 +22,8 @@ export function avatar(
   const c = scene.add.container(x, y);
   c.add(scene.add.image(0, 0, SKIN.round).setDisplaySize(size, size));
   const face = scene.add.image(0, 0, 'hero').setOrigin(0, 0);
-  // 64×64 の仮素材から顔のあたり（x 12〜44, y 0〜32）を切り出し、丸枠の内側に収める
-  const crop = UNIT_SPRITES.hero!.avatarCrop ?? { x: 12, y: 0, size: 32 };
+  // 顔の範囲は avatarCrop（v4 の兜）。丸枠の内側に収める
+  const crop = UNIT_SPRITES.hero!.avatarCrop ?? { x: 16, y: 4, size: 32 };
   const k = (size * 0.72) / crop.size;
   face.setCrop(crop.x, crop.y, crop.size, crop.size).setScale(k);
   face.setPosition(-(crop.x + crop.size / 2) * k, -(crop.y + crop.size / 2) * k + size * 0.06);

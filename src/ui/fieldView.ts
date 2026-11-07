@@ -5,7 +5,7 @@ import { FIELD, HERO, UI } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
-import { UNIT_SPRITES, animKey } from '../data/sprites';
+import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
@@ -59,16 +59,17 @@ export class FieldView {
     });
 
     const heroDef = UNIT_SPRITES.hero!;
+    const origin = stillOrigin(heroDef);
     this.heroGlow = scene.add
       .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
-      .setOrigin(heroDef.originX, heroDef.originY)
+      .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale * 1.08)
       .setTintFill(COLORS.unguarded)
       .setAlpha(0)
       .setDepth(19);
     this.hero = scene.add
       .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
-      .setOrigin(heroDef.originX, heroDef.originY)
+      .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale)
       .setDepth(20);
     // 勇者の足元の ATB メーター
@@ -214,9 +215,22 @@ export class FieldView {
   }
 
   private playHeroAnim(name: 'idle' | 'run' | 'attack' | 'hit'): void {
-    const key = animKey('hero', name);
-    if (this.scene.anims.exists(key)) {
-      if (this.hero.anims.currentAnim?.key !== key) this.hero.play(key);
+    const def = UNIT_SPRITES.hero!;
+    // 未登録の動作（走り・被弾）は待機で代用する。攻撃は1回再生で、状態が変わるまでやり直さない
+    const chosen: UnitAnimName | null =
+      def.anims?.[name] && this.scene.anims.exists(animKey('hero', name))
+        ? name
+        : def.anims?.idle && this.scene.anims.exists(animKey('hero', 'idle'))
+          ? 'idle'
+          : null;
+    if (!chosen) return;
+    const anim = def.anims![chosen]!;
+    const key = animKey('hero', chosen);
+    const { originX, originY } = animOrigin(def, anim);
+    // 原点だけ切り替え、displayScale（×2・最近傍）はそのまま。140px の攻撃コマを 64px に縮めない
+    for (const sprite of [this.hero, this.heroGlow]) {
+      sprite.setOrigin(originX, originY);
+      if (sprite.anims.currentAnim?.key !== key) sprite.play(key);
     }
   }
 

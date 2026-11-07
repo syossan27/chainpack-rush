@@ -1,0 +1,22 @@
+{
+  "character_id": "3856518c-6f4d-4ff7-95bb-1212c1e38e3a",
+  "animation_name": "Final v4 knight sideways rising lunge",
+  "mode": "pixminimax",
+  "directions": [
+    "east"
+  ],
+  "custom_start_frame": {
+    "type": "base64",
+    "base64": "[omitted; hero_attack_v4_lunge_start.png]"
+  },
+  "frame_count": 8,
+  "keep_first_frame": true,
+  "subject_description": "a cute chibi silver and gold armored knight with TWO golden helmet horns, RED plume, gold brow gem, solid BLACK empty face opening, burgundy cape and steel greatsword",
+  "initial_pose": "Standing facing RIGHT in upright guard, left of center, feet on fixed floor baseline, closed horned helmet with permanently black featureless face opening.",
+  "action_description": "One complete SIDEWAYS RISING sword slash to the RIGHT with a forward lunge, then return to EXACT starting guard and position. Preserve cute CHIBI proportions and helmet design throughout: TWO upward curved GOLD HORNS, RED plume crest, GOLD brow gem, entirely solid BLACK empty face opening. NO face, eyes, skin or mouth ever. Preserve silver/gold armor and burgundy cape. WINDUP: deeply bend BOTH knees, sink hips into a clear LOW CROUCH, pull sword LOW behind the rear hip at the SIDE, NOT overhead. RELEASE: explosively push off rear foot, BIG forward step right, front knee deeply bent, back leg stretched, hips and head travel right, torso leans forward. Rotate hips and sweep blade from LOW REAR SIDE horizontally ACROSS BODY then RISING DIAGONALLY UP toward front right. Side upswing, low-to-high rising slash, NEVER overhead downward chop. Cape and plume stream backward. RECOVER: step backward to original location and restore EXACT initial upright sword guard, helmet and feet position. Entire horns, plume, sword and slash effects visible with margins in every frame. Wide LOCKED camera, same pixel scale, fixed floor baseline, NO zoom, tracking, recentering or cropping.",
+  "seed": 13699,
+  "end_frame": {
+    "type": "base64",
+    "base64": "[omitted; hero_attack_v4_lunge_start.png]"
+  }
+}

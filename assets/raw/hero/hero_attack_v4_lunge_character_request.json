@@ -1,0 +1,22 @@
+{
+  "description": "Cute chibi armored knight with a silver full helmet, TWO upward curved GOLD HORNS, RED plume crest, gold brow gem, entirely BLACK empty face opening, ornate silver gold armor, burgundy cape, long greatsword. Preserve exact east sprite.",
+  "name": "Chainpack final v4 horned knight",
+  "reference_image": {
+    "type": "base64",
+    "base64": "[omitted; hero_idle_v4_helm.png]"
+  },
+  "direction_images": {
+    "east": {
+      "type": "base64",
+      "base64": "[omitted; hero_idle_v4_helm.png]"
+    }
+  },
+  "n_directions": 4,
+  "image_size": {
+    "width": 64,
+    "height": 64
+  },
+  "view": "side",
+  "template_id": "mannequin",
+  "seed": 13641
+}
