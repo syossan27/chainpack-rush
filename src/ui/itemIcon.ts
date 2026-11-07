@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
-import { rarityColor } from './theme';
+import { SKIN, SLICE, tileKey } from './kit/skin';
 
 const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
   up: { dx: 0, dy: -1, rot: -Math.PI / 2 },
@@ -14,7 +14,7 @@ const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
 
 export class ItemIcon extends Phaser.GameObjects.Container {
   readonly item: ItemInstance;
-  private readonly frame: Phaser.GameObjects.Rectangle;
+  private readonly frame: Phaser.GameObjects.NineSlice;
   private readonly img: Phaser.GameObjects.Image;
   private readonly arrows: Phaser.GameObjects.Graphics;
   readonly size: number;
@@ -24,9 +24,19 @@ export class ItemIcon extends Phaser.GameObjects.Container {
     this.item = item;
     this.size = size;
     const def = getItemDef(item.defId);
-    this.frame = scene.add
-      .rectangle(0, 0, size - 6, size - 6, 0x1c1828)
-      .setStrokeStyle(4, rarityColor(item.rarity));
+    const m = SLICE.tile;
+    this.frame = scene.add.nineslice(
+      0,
+      0,
+      tileKey(item.rarity),
+      undefined,
+      size - 4,
+      size - 4,
+      m,
+      m,
+      m,
+      m,
+    );
     // 原画16×16を整数倍（基本×4 = 64px）で表示。小さい枠では×3/×2に落とす
     const scale = Math.max(2, Math.min(ICON_SCALE, Math.floor((size - 20) / ICON_SIZE)));
     this.img = scene.add.image(0, 0, iconKey(def.id)).setScale(scale);
@@ -67,8 +77,8 @@ export class ItemIcon extends Phaser.GameObjects.Container {
 
   setDimmed(d: boolean): this {
     this.img.setTint(d ? 0x555566 : 0xffffff);
-    this.frame.setFillStyle(d ? 0x14121c : 0x1c1828);
-    this.setAlpha(d ? 0.6 : 1);
+    this.frame.setTexture(d ? SKIN.cellEmpty : tileKey(this.item.rarity));
+    this.setAlpha(d ? 0.7 : 1);
     return this;
   }
 }

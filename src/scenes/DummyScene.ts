@@ -11,7 +11,7 @@ import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { getSave } from '../platform/store';
 import { BackpackView, originLabel } from '../ui/backpackView';
-import { Button } from '../ui/button';
+import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
@@ -47,32 +47,36 @@ export class DummyScene extends Phaser.Scene {
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
     this.add
-      .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, COLORS.panel)
+      .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
       .setDepth(40);
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, save.loadout, this.items).setDepth(
       41,
     );
-    this.add
-      .text(W / 2, 20, 'カカシで試し撃ち', textStyle(36))
-      .setOrigin(0.5, 0)
-      .setDepth(70);
+    panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
+    this.add.existing(ribbon(this, W / 2, 50, 'カカシで試し撃ち', 360).setDepth(70));
+    panel(this, 230, RUN_LAYOUT.middleTop + 86, 420, 140, 'inset').setDepth(70);
     this.stats = this.add
-      .text(24, RUN_LAYOUT.middleTop + 14, 'ボタンで次の起点を発火', textStyle(24))
-      .setDepth(70);
+      .text(40, RUN_LAYOUT.middleTop + 26, '「発火」で次の起点を撃つ', {
+        ...textStyle(22),
+        lineSpacing: 2,
+      })
+      .setDepth(71);
     new Button(
       this,
-      W - 130,
-      RUN_LAYOUT.middleTop + 130,
+      W - 150,
+      RUN_LAYOUT.middleTop + 86,
       '発火',
       () => {
         if (!this.combat.fireNext()) sfx('error');
       },
-      { width: 200, height: 84, fontSize: 34, color: COLORS.ok, silent: true },
+      { width: 240, height: 110, fontSize: 40, skin: 'gold', icon: 'swords', silent: true },
     ).setDepth(70);
-    new Button(this, 90, 110, '← 配置', () => this.scene.start('Loadout'), {
+    new Button(this, 90, 130, '配置', () => this.scene.start('Loadout'), {
       width: 150,
-      height: 60,
+      height: 64,
+      skin: 'gray',
+      icon: 'back',
     }).setDepth(70);
   }
 

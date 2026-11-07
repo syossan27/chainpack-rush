@@ -5,6 +5,8 @@ import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ItemIcon } from './itemIcon';
+import { SKIN } from './kit/skin';
+import { panel } from './kit/widgets';
 import { CELL_SIZE, COLORS, W, textStyle } from './theme';
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
@@ -17,7 +19,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
   readonly cell = CELL_SIZE;
   private loadout: Loadout;
   private items: ReadonlyMap<string, ItemInstance>;
-  private readonly cellsG: Phaser.GameObjects.Graphics;
+  private readonly cellLayer: Phaser.GameObjects.Container;
+  private cellImgs: Phaser.GameObjects.Image[] = [];
   private readonly iconLayer: Phaser.GameObjects.Container;
   private readonly lineG: Phaser.GameObjects.Graphics;
   private readonly glowG: Phaser.GameObjects.Graphics;
@@ -36,12 +39,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
     super(scene, 0, top);
     this.loadout = loadout;
     this.items = items;
-    this.cellsG = scene.add.graphics();
+    this.cellLayer = scene.add.container(0, 0);
     this.iconLayer = scene.add.container(0, 0);
     this.lineG = scene.add.graphics();
     this.glowG = scene.add.graphics();
     this.labelLayer = scene.add.container(0, 0);
-    this.add([this.cellsG, this.iconLayer, this.lineG, this.glowG, this.labelLayer]);
+    this.add([this.cellLayer, this.iconLayer, this.lineG, this.glowG, this.labelLayer]);
     scene.add.existing(this);
     this.rebuild();
   }
@@ -82,16 +85,25 @@ export class BackpackView extends Phaser.GameObjects.Container {
     return this.icons.get(cell);
   }
 
+  /** 額縁の外寸（グリッド＋余白） */
+  static readonly FRAME_PAD = 22;
+
   private rebuild(): void {
-    const g = this.cellsG;
-    g.clear();
+    this.cellLayer.removeAll(true);
+    const pad = BackpackView.FRAME_PAD;
+    const gw = this.loadout.width * this.cell;
+    const gh = this.loadout.height * this.cell;
+    this.cellLayer.add(panel(this.scene, W / 2, gh / 2, gw + pad * 2, gh + pad * 2, 'panel'));
+    this.cellImgs = [];
     for (let i = 0; i < this.loadout.cells.length; i++) {
       const c = this.cellCenter(i);
-      g.fillStyle(i === this.highlightCell ? COLORS.panelLight : COLORS.cell, 1);
-      g.fillRect(c.x - this.cell / 2 + 2, c.y - this.cell / 2 + 2, this.cell - 4, this.cell - 4);
-      g.lineStyle(2, COLORS.cellEdge, 1);
-      g.strokeRect(c.x - this.cell / 2 + 2, c.y - this.cell / 2 + 2, this.cell - 4, this.cell - 4);
+      const img = this.scene.add
+        .image(c.x, c.y, SKIN.cellEmpty)
+        .setDisplaySize(this.cell - 2, this.cell - 2);
+      this.cellImgs.push(img);
+      this.cellLayer.add(img);
     }
+    this.highlightCell = -1;
     this.iconLayer.removeAll(true);
     this.icons.clear();
     this.loadout.cells.forEach((uid, i) => {
@@ -110,16 +122,9 @@ export class BackpackView extends Phaser.GameObjects.Container {
 
   setHighlightCell(i: number): void {
     if (i === this.highlightCell) return;
+    this.cellImgs[this.highlightCell]?.clearTint();
     this.highlightCell = i;
-    const g = this.cellsG;
-    g.clear();
-    for (let k = 0; k < this.loadout.cells.length; k++) {
-      const c = this.cellCenter(k);
-      g.fillStyle(k === this.highlightCell ? COLORS.panelLight : COLORS.cell, 1);
-      g.fillRect(c.x - this.cell / 2 + 2, c.y - this.cell / 2 + 2, this.cell - 4, this.cell - 4);
-      g.lineStyle(2, k === this.highlightCell ? COLORS.accent : COLORS.cellEdge, 1);
-      g.strokeRect(c.x - this.cell / 2 + 2, c.y - this.cell / 2 + 2, this.cell - 4, this.cell - 4);
-    }
+    this.cellImgs[i]?.setTint(0x80ffff);
   }
 
   private drawOriginBadges(): void {
@@ -127,15 +132,17 @@ export class BackpackView extends Phaser.GameObjects.Container {
       const cell = this.loadout.cells.indexOf(uid);
       if (cell < 0) return;
       const c = this.cellCenter(cell);
-      const t = this.scene.add
-        .text(
-          c.x - this.cell / 2 + 6,
-          c.y - this.cell / 2 + 2,
-          originLabel(idx),
-          textStyle(24, COLORS.accentText),
-        )
-        .setName('badge');
-      this.labelLayer.add(t);
+      // 起点の発火順: 金の丸バッジ
+      const bx = c.x - this.cell / 2 + 16;
+      const by = c.y - this.cell / 2 + 16;
+      this.labelLayer.add(this.scene.add.circle(bx, by, 15, 0xffd25a).setStrokeStyle(3, 0x5c3608));
+      this.labelLayer.add(
+        this.scene.add
+          .text(bx, by, `${idx + 1}`, textStyle(20, '#3a2410', true))
+          .setOrigin(0.5)
+          .setStroke('#fff6d0', 3)
+          .setShadow(0, 0, '#000', 0),
+      );
     });
   }
 

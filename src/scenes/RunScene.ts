@@ -15,9 +15,11 @@ import { onAppStateChange } from '../platform/lifecycle';
 import { session } from '../platform/session';
 import { getSave } from '../platform/store';
 import { BackpackView, originLabel } from '../ui/backpackView';
-import { Button } from '../ui/button';
 import { FieldView } from '../ui/fieldView';
-import { ItemIcon } from '../ui/itemIcon';
+import { avatar } from '../ui/kit/chrome';
+import { Bar, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
+import { iconKey } from '../data/sprites';
+import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects } from '../ui/pools';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -45,16 +47,20 @@ export class RunScene extends Phaser.Scene {
   private hud!: {
     timer: Phaser.GameObjects.Text;
     loop: Phaser.GameObjects.Text;
-    hpBar: Phaser.GameObjects.Rectangle;
-    defBar: Phaser.GameObjects.Rectangle;
+    hp: Bar;
+    def: Bar;
     hpText: Phaser.GameObjects.Text;
+    defText: Phaser.GameObjects.Text;
     next: Phaser.GameObjects.Text;
-    loot: Phaser.GameObjects.Text;
+    nextBadge: Phaser.GameObjects.Text;
+    loot: Pill;
+    track: Phaser.GameObjects.Graphics;
     banner: Phaser.GameObjects.Text;
     fps: Phaser.GameObjects.Text | null;
     pause: Phaser.GameObjects.Container;
   };
-  private consumableButtons: { icon: ItemIcon | null; bg: Phaser.GameObjects.Rectangle }[] = [];
+  private trackKey = '';
+  private consumableButtons: { icon: Phaser.GameObjects.Image | null; btn: RoundButton }[] = [];
   private unsubscribe: (() => void) | null = null;
 
   constructor() {
@@ -84,11 +90,14 @@ export class RunScene extends Phaser.Scene {
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
 
-    // 中段・下部の背景
+    // 中段・下部の背景（石の額縁）
     this.add
-      .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, COLORS.panel)
+      .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
       .setDepth(40);
+    panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
+    this.consumableButtons = [];
+    this.trackKey = '';
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, save.loadout, this.items).setDepth(
       41,
     );
@@ -107,85 +116,148 @@ export class RunScene extends Phaser.Scene {
 
   private buildHud(): void {
     const d = 70;
-    const timer = this.add
-      .text(W / 2, 14, "30'00", textStyle(56))
-      .setOrigin(0.5, 0)
-      .setDepth(d);
-    const loop = this.add
-      .text(W / 2, 80, '1周目', textStyle(26, COLORS.gold))
-      .setOrigin(0.5, 0)
-      .setDepth(d);
-    this.add
-      .rectangle(20, 30, 220, 26, COLORS.hpBack)
+    // 左上: 顔と HP（その上に防御値のゲージを重ねる）
+    panel(this, 168, 58, 316, 96, 'plate').setDepth(d);
+    avatar(this, 52, 58, 76).setDepth(d + 1);
+    const hp = new Bar(this, 98, 46, 220, 30, 'red').setDepth(d + 1);
+    const def = new Bar(this, 98, 34, 220, 14, 'blue').setDepth(d + 2);
+    def.setRatio(0);
+    const hpText = this.add
+      .text(108, 46, '', textStyle(18))
       .setOrigin(0, 0.5)
-      .setStrokeStyle(3, 0x0c0a12)
-      .setDepth(d);
-    const hpBar = this.add.rectangle(20, 30, 220, 22, COLORS.hp).setOrigin(0, 0.5).setDepth(d);
-    // 防御値バーは HP バーの上に重ねる
-    const defBar = this.add
-      .rectangle(20, 30, 0, 10, COLORS.defense)
+      .setDepth(d + 3);
+    icon(this, 112, 84, 'shield', 1.5).setDepth(d + 1);
+    const defText = this.add
+      .text(126, 84, '', textStyle(16, '#8ad0ff'))
       .setOrigin(0, 0.5)
       .setDepth(d + 1);
-    const hpText = this.add.text(24, 48, '', textStyle(20)).setDepth(d);
-    const next = this.add
-      .text(W - 20, RUN_LAYOUT.middleTop + 24, '', textStyle(24))
-      .setOrigin(1, 0)
-      .setDepth(d);
-    const loot = this.add
-      .text(W - 20, 20, '', textStyle(24, COLORS.gold))
-      .setOrigin(1, 0)
-      .setDepth(d);
+    // 中央上: 残り時間と周回の進み具合
+    panel(this, W / 2 + 74, 44, 190, 70, 'plate').setDepth(d);
+    const timer = this.add
+      .text(W / 2 + 74, 42, "30'00", textStyle(44))
+      .setOrigin(0.5)
+      .setDepth(d + 1);
+    const loop = this.add
+      .text(W / 2 + 74, 86, '1周目', textStyle(20, COLORS.gold))
+      .setOrigin(0.5, 0)
+      .setDepth(d + 1);
+    const track = this.add.graphics().setDepth(d + 1);
+    // 右上: 戦利品
+    const loot = new Pill(this, W - 76, 44, 124, 'chest', '0', COLORS.gold).setDepth(d);
     const banner = this.add
-      .text(W / 2, 220, '', textStyle(54, '#ffffff'))
+      .text(W / 2, 250, '', textStyle(64, '#ffffff'))
       .setOrigin(0.5)
       .setDepth(d + 5)
       .setAlpha(0);
     const fps = debugFps()
-      ? this.add.text(10, 90, '', textStyle(18, COLORS.accentText, false)).setDepth(d + 10)
+      ? this.add.text(10, 150, '', textStyle(16, COLORS.accentText, false)).setDepth(d + 10)
       : null;
+    // 中段右: 次に発火する起点
+    panel(this, W - 210, RUN_LAYOUT.middleTop + 86, 240, 116, 'inset').setDepth(d);
+    this.add
+      .text(W - 316, RUN_LAYOUT.middleTop + 44, '次の連鎖', textStyle(18, COLORS.textDim))
+      .setDepth(d + 1);
+    const nextBadge = this.add
+      .text(W - 300, RUN_LAYOUT.middleTop + 100, '', textStyle(40, '#ffe27a'))
+      .setOrigin(0.5)
+      .setDepth(d + 1);
+    const next = this.add
+      .text(W - 262, RUN_LAYOUT.middleTop + 100, '', textStyle(24))
+      .setOrigin(0, 0.5)
+      .setDepth(d + 1);
+    new RoundButton(this, W - 50, RUN_LAYOUT.middleTop + 86, 72, 'pause', null, () =>
+      this.setPaused(true),
+    ).setDepth(d);
+    // 一時停止
     const pause = this.add.container(0, 0).setDepth(3000).setVisible(false);
-    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.65).setOrigin(0, 0).setInteractive();
+    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.7).setOrigin(0, 0).setInteractive();
     shade.on('pointerup', () => this.setPaused(false));
     pause.add([
       shade,
-      this.add
-        .text(W / 2, H / 2, '一時停止中\nタップで再開', { ...textStyle(48), align: 'center' })
-        .setOrigin(0.5),
+      panel(this, W / 2, H / 2, 460, 260, 'panel'),
+      this.add.text(W / 2, H / 2 - 40, '一時停止中', textStyle(48, '#ffe27a')).setOrigin(0.5),
+      this.add.text(W / 2, H / 2 + 50, 'タップで再開', textStyle(28)).setOrigin(0.5),
     ]);
-    new Button(this, W - 60, RUN_LAYOUT.middleTop + 150, 'Ⅱ', () => this.setPaused(true), {
-      width: 76,
-      height: 60,
-    }).setDepth(d);
-    this.hud = { timer, loop, hpBar, defBar, hpText, next, loot, banner, fps, pause };
+    this.hud = {
+      timer,
+      loop,
+      hp,
+      def,
+      hpText,
+      defText,
+      next,
+      nextBadge,
+      loot,
+      track,
+      banner,
+      fps,
+      pause,
+    };
   }
 
   private buildConsumables(): void {
     const slots = this.combat.consumables;
     this.add
-      .text(20, RUN_LAYOUT.middleTop + 16, '消耗品', textStyle(20, COLORS.textDim))
+      .text(30, RUN_LAYOUT.middleTop + 18, '消耗品', textStyle(18, COLORS.textDim))
       .setDepth(70);
     slots.forEach((uid, i) => {
-      const x = 70 + i * 100;
-      const y = RUN_LAYOUT.middleTop + 100;
-      const bg = this.add
-        .rectangle(x, y, 88, 88, COLORS.cell)
-        .setStrokeStyle(3, COLORS.cellEdge)
-        .setDepth(70)
-        .setInteractive();
+      const x = 74 + i * 96;
+      const y = RUN_LAYOUT.middleTop + 96;
       const it = uid ? this.items.get(uid) : undefined;
-      const icon = it ? new ItemIcon(this, x, y, it, 88).setDepth(71) : null;
-      bg.on('pointerup', () => {
+      const img = it ? this.add.image(0, 0, iconKey(it.defId)).setScale(4) : null;
+      const btn = new RoundButton(this, x, y, 88, img, null, () => {
         if (this.paused || this.ending) return;
         if (this.combat.useConsumable(i)) {
-          icon?.destroy();
+          this.consumableButtons[i]!.icon?.destroy();
           this.consumableButtons[i]!.icon = null;
           this.handleEvents(this.combat.drainEvents());
         } else if (this.combat.consumables[i]) {
           sfx('error');
         }
-      });
-      this.consumableButtons.push({ icon, bg });
+      }).setDepth(70);
+      this.consumableButtons.push({ icon: img, btn });
     });
+  }
+
+  /** 周回の進み具合: 群れの点 → ボスのドクロ */
+  private drawTrack(): void {
+    const c = this.combat;
+    const groupIds = new Set<number>();
+    const alive = new Set<number>();
+    for (const e of c.enemies) {
+      if (e.loop !== c.loop || e.escort || e.def.boss) continue;
+      groupIds.add(e.group);
+      if (e.alive) alive.add(e.group);
+    }
+    const n = getRegion(this.regionId).groups.length;
+    const cleared = groupIds.size - alive.size;
+    const key = `${c.loop}:${cleared}`;
+    if (key === this.trackKey) return;
+    this.trackKey = key;
+    const g = this.hud.track;
+    g.clear();
+    const x0 = 360;
+    const x1 = 560;
+    const y = 140;
+    g.fillStyle(0x0c0a12, 0.8);
+    g.fillRoundedRect(x0 - 14, y - 12, x1 - x0 + 28, 24, 12);
+    const step = (x1 - x0) / n;
+    g.fillStyle(0xffd25a, 1);
+    g.fillRoundedRect(x0 - 8, y - 5, Math.min(x1 - x0 + 16, cleared * step + 16), 10, 5);
+    for (let i = 0; i < n; i++) {
+      const done = i < cleared;
+      g.fillStyle(done ? 0xffd25a : 0x4a4460, 1);
+      g.fillCircle(x0 + i * step, y, 7);
+      g.lineStyle(2, 0x0c0a12, 1);
+      g.strokeCircle(x0 + i * step, y, 7);
+    }
+    g.fillStyle(cleared >= n ? 0xe83c3c : 0x6a2030, 1);
+    g.fillCircle(x1 + 6, y, 13);
+    g.lineStyle(3, 0x0c0a12, 1);
+    g.strokeCircle(x1 + 6, y, 13);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(x1 + 2, y - 2, 3);
+    g.fillCircle(x1 + 10, y - 2, 3);
   }
 
   private setPaused(p: boolean): void {
@@ -227,22 +299,23 @@ export class RunScene extends Phaser.Scene {
     const cs = Math.floor((r - sec) * 100);
     this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
     this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
-    this.hud.loop.setText(`${c.loop}周目`);
-    this.hud.hpBar.width = 220 * (c.hp / c.maxHp);
-    this.hud.defBar.width = 220 * Math.min(1, c.defense / c.maxHp);
-    this.hud.hpText.setText(
-      `HP ${Math.ceil(c.hp)}/${c.maxHp}${c.defense > 0 ? `  防御 ${Math.round(c.defense)}` : ''}`,
-    );
+    this.hud.loop.setText(`${getRegion(this.regionId).name}　${c.loop}周目`);
+    this.hud.hp.setRatio(c.hp / c.maxHp);
+    this.hud.def.setRatio(Math.min(1, c.defense / c.maxHp));
+    this.hud.hpText.setText(`${Math.ceil(c.hp)}/${c.maxHp}`);
+    this.hud.defText.setText(`防御 ${Math.round(c.defense)}`);
     const nextUid = c.nextOriginUid;
     if (nextUid) {
       const plan = planChain(getSave().loadout, this.items, nextUid);
       const idx = c.originOrder.indexOf(nextUid);
+      this.hud.nextBadge.setText(originLabel(idx));
       this.hud.next.setText(
-        `次: 起点${originLabel(idx)}　${plan.maxStep}段・${plan.duration.toFixed(1)}秒`,
+        c.chain ? '連鎖中！' : `${plan.maxStep}段・${plan.duration.toFixed(1)}秒`,
       );
     }
     this.view.setBlinkOrigin(c.chain ? null : nextUid);
-    this.hud.loot.setText(c.drops.length > 0 ? `戦利品 ${c.drops.length}` : '');
+    this.hud.loot.setValue(`${c.drops.length}`);
+    this.drawTrack();
     if (this.hud.fps) {
       this.hud.fps.setText(
         `FPS ${this.game.loop.actualFps.toFixed(0)}  敵 ${this.field.visibleEnemies}  粒 ${this.effects.activeCount()}  数字 ${this.numbers.activeCount()}  seed ${this.seed}`,
@@ -253,9 +326,9 @@ export class RunScene extends Phaser.Scene {
   private showBanner(text: string, color = '#ffffff'): void {
     const b = this.hud.banner;
     this.tweens.killTweensOf(b);
-    b.setText(text).setColor(color).setAlpha(1).setScale(0.6);
-    this.tweens.add({ targets: b, scale: 1, duration: 180, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: b, alpha: 0, delay: 700, duration: 300 });
+    b.setText(text).setColor(color).setAlpha(1).setScale(0.3).setAngle(-6);
+    this.tweens.add({ targets: b, scale: 1, angle: 0, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: b, alpha: 0, y: { from: 250, to: 220 }, delay: 700, duration: 320 });
   }
 
   private enemyPos(id: number): { x: number; y: number } | null {

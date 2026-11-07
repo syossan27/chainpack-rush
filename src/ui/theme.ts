@@ -7,7 +7,7 @@ export const W = 720;
 export const H = 1280;
 
 export const COLORS = {
-  bg: 0x14121c,
+  bg: 0x1a1428,
   panel: 0x221e30,
   panelLight: 0x2e2840,
   panelEdge: 0x4a4266,
@@ -32,9 +32,9 @@ export const COLORS = {
   ok: 0x2c6c34,
 } as const;
 
-export const FONT =
-  '"Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif';
+export const FONT = '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif';
 
+/** 太い丸ゴシック＋濃い縁取り＋落ち影（ゲームらしい見出し文字） */
 export function textStyle(
   size: number,
   color: string = COLORS.text,
@@ -44,9 +44,35 @@ export function textStyle(
     fontFamily: FONT,
     fontSize: `${size}px`,
     color,
-    fontStyle: bold ? 'bold' : 'normal',
+    fontStyle: bold ? '800' : '500',
     stroke: '#0c0a12',
-    strokeThickness: Math.max(2, Math.round(size / 8)),
+    strokeThickness: bold ? Math.max(3, Math.round(size / 6)) : Math.max(2, Math.round(size / 10)),
+    shadow: bold
+      ? {
+          offsetX: 0,
+          offsetY: Math.max(2, Math.round(size / 14)),
+          color: '#0c0a12',
+          blur: 0,
+          fill: true,
+          stroke: true,
+        }
+      : undefined,
+    padding: { x: 2, y: 2 },
+  };
+}
+
+/** 羊皮紙などの明るい面の上に置く文字（縁取りなし） */
+export function inkStyle(
+  size: number,
+  color = '#3a2410',
+  bold = true,
+): Phaser.Types.GameObjects.Text.TextStyle {
+  return {
+    fontFamily: FONT,
+    fontSize: `${size}px`,
+    color,
+    fontStyle: bold ? '800' : '500',
+    padding: { x: 2, y: 2 },
   };
 }
 
@@ -75,8 +101,8 @@ export const RUN_LAYOUT = {
 
 /** 配置画面のレイアウト */
 export const LOADOUT_LAYOUT = {
-  backpackTop: 110,
-  slotsTop: 588,
-  listTop: 700,
-  listBottom: 1160,
+  backpackTop: 172, // 5行で 172 + 440 = 612
+  slotsTop: 690,
+  listTop: 806,
+  listBottom: 1140,
 } as const;

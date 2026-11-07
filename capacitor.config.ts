@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'com.chainpack.rush',
   appName: 'Chainpack Rush',
   webDir: 'dist',
-  backgroundColor: '#14121c',
+  backgroundColor: '#120e1a',
   plugins: {
     StatusBar: { overlaysWebView: true },
   },

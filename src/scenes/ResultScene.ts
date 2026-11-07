@@ -8,7 +8,7 @@ import { sfx } from '../audio/sfx';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
-import { Button } from '../ui/button';
+import { Button, ink, panel, ribbon } from '../ui/kit/widgets';
 import { ItemIcon } from '../ui/itemIcon';
 import { COLORS, H, W, rarityColor, rarityCss, textStyle } from '../ui/theme';
 
@@ -44,40 +44,43 @@ export class ResultScene extends Phaser.Scene {
     persist();
     session.lastResult = null;
 
+    const dead = result.reason === 'dead';
+    // 見出し（傾いて出てくるリボン）
+    const title = ribbon(this, W / 2, 110, dead ? '力尽きた…' : '撤退！', 420);
+    title.setScale(0.3).setAngle(-8);
+    this.tweens.add({ targets: title, scale: 1, angle: 0, duration: 380, ease: 'Back.easeOut' });
     this.add
-      .text(
-        W / 2,
-        70,
-        result.reason === 'dead' ? '力尽きた…' : '時間切れ・撤退',
-        textStyle(48, result.reason === 'dead' ? COLORS.textWarn : COLORS.text),
-      )
+      .text(W / 2, 190, `${getRegion(regionId).name}`, textStyle(28, COLORS.textDim))
       .setOrigin(0.5);
     this.add
-      .text(
-        W / 2,
-        140,
-        `${getRegion(regionId).name}　到達 ${result.reachedLoop}周目`,
-        textStyle(40, COLORS.gold),
-      )
+      .text(W / 2, 246, `到達 ${result.reachedLoop}周目`, textStyle(56, '#ffe27a'))
       .setOrigin(0.5);
-    this.add
-      .text(
-        W / 2,
-        200,
-        `ボス撃破 ${result.stats.bossesDefeated}　発火 ${result.stats.fires}回　最大連鎖 ${result.stats.maxStep}段　最大ダメージ ${Math.round(result.stats.maxDamage)}`,
-        textStyle(22, COLORS.textDim),
-      )
-      .setOrigin(0.5);
-    if (unlocked)
+    // 記録（羊皮紙）
+    panel(this, W / 2, 380, W - 60, 150, 'paper');
+    const stats: [string, string][] = [
+      ['ボス撃破', `${result.stats.bossesDefeated}`],
+      ['発火', `${result.stats.fires}回`],
+      ['最大連鎖', `${result.stats.maxStep}段`],
+      ['最大ダメージ', `${Math.round(result.stats.maxDamage)}`],
+    ];
+    stats.forEach(([k, v], i) => {
+      const x = i % 2 === 0 ? 70 : W / 2 + 20;
+      const y = 330 + Math.floor(i / 2) * 52;
+      ink(this, x, y, k, 22, '#7a5a30');
+      ink(this, x + 270, y - 2, v, 28).setOrigin(1, 0);
+    });
+    if (unlocked) {
       this.add
         .text(
           W / 2,
-          250,
+          486,
           `新しい地域「${getRegion(unlocked).name}」が開放された！`,
           textStyle(28, COLORS.accentText),
         )
         .setOrigin(0.5);
-    this.add.text(W / 2, 310, `戦利品 ${added.length}個`, textStyle(30)).setOrigin(0.5);
+    }
+    ribbon(this, W / 2, 548, `戦利品 ${added.length}`, 300).setScale(0.8);
+    panel(this, W / 2, 820, W - 30, 470, 'inset');
 
     this.grid = this.add.container(0, 0);
     this.queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
@@ -96,9 +99,11 @@ export class ResultScene extends Phaser.Scene {
       this.add.text(W / 2, 500, '戦利品なし', textStyle(28, COLORS.textDim)).setOrigin(0.5);
     }
     new Button(this, W / 2, H - 110, '拠点へ', () => this.scene.start('Base'), {
-      width: 320,
-      height: 84,
-      fontSize: 34,
+      width: 380,
+      height: 100,
+      fontSize: 38,
+      skin: 'gold',
+      icon: 'home',
     });
   }
 
@@ -110,8 +115,25 @@ export class ResultScene extends Phaser.Scene {
     }
     const i = this.opened++;
     const x = (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2;
-    const y = 400 + Math.floor(i / COLS) * (ICON + 34);
+    const y = 660 + Math.floor(i / COLS) * (ICON + 34);
     const epic = ORDER[it.rarity] >= ORDER.epic;
+    if (epic) {
+      // 後光（残る）
+      const halo = this.add
+        .image(x, y, 'sk_glow')
+        .setScale(3)
+        .setTint(rarityColor(it.rarity))
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.grid.add(halo);
+      this.tweens.add({
+        targets: halo,
+        angle: 360,
+        scale: 3.4,
+        yoyo: true,
+        repeat: -1,
+        duration: 1400,
+      });
+    }
     if (epic && !fast) {
       // 光の柱
       const pillar = this.add

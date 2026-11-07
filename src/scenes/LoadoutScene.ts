@@ -8,15 +8,19 @@ import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
 import { BackpackView } from '../ui/backpackView';
-import { Button } from '../ui/button';
+import { originLabel } from '../ui/backpackView';
+import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
+import { SKIN } from '../ui/kit/skin';
+import { Pill, RoundButton, ribbon } from '../ui/kit/widgets';
+import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { showItemDetail } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
-import { COLORS, H, LOADOUT_LAYOUT, W, textStyle } from '../ui/theme';
+import { COLORS, LOADOUT_LAYOUT, W, textStyle } from '../ui/theme';
 
 const LONG_PRESS_MS = 450;
 const DRAG_THRESHOLD = 12;
-const SLOT_SIZE = 96;
+const SLOT_SIZE = 84;
 
 interface DragState {
   item: ItemInstance;
@@ -30,6 +34,7 @@ export class LoadoutScene extends Phaser.Scene {
   private list!: ItemList;
   private slots!: Phaser.GameObjects.Container;
   private info!: Phaser.GameObjects.Text;
+  private infoPill!: Pill;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
@@ -41,31 +46,41 @@ export class LoadoutScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor(COLORS.bg);
     const save = getSave();
-    this.add.text(W / 2, 40, '配置', textStyle(40)).setOrigin(0.5);
-    this.info = this.add.text(W / 2, 84, '', textStyle(20, COLORS.textDim)).setOrigin(0.5);
+    this.drag = null;
+    this.selected = null;
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
+    this.add.existing(ribbon(this, W / 2, LOADOUT_LAYOUT.backpackTop - 34, 'バックパック', 320));
+    this.infoPill = new Pill(
+      this,
+      W / 2,
+      this.view.y + this.view.gridHeight + 26,
+      W - 120,
+      null,
+      '',
+    );
+    this.info = this.add
+      .text(W / 2, this.infoPill.y + 40, '', textStyle(18, COLORS.textDim))
+      .setOrigin(0.5, 0);
     this.slots = this.add.container(0, LOADOUT_LAYOUT.slotsTop);
     this.warn = this.add
-      .text(W / 2, LOADOUT_LAYOUT.slotsTop - 16, '', textStyle(22, COLORS.textWarn))
+      .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
       .setOrigin(0.5);
     this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
       onTap: (it) => this.onListTap(it),
       onLongPress: (it) => showItemDetail(this, it),
       onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
     });
-
-    new Button(this, 110, H - 60, '← 戻る', () => this.scene.start('Base'), {
-      width: 180,
-      height: 76,
-    });
-    new Button(this, W / 2, H - 60, 'カカシで試す', () => this.scene.start('Dummy'), {
-      width: 240,
-      height: 76,
-    });
-    new Button(this, W - 110, H - 60, '出撃', () => this.scene.start('StageSelect'), {
-      width: 180,
-      height: 76,
-      color: COLORS.ok,
+    const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
+    new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, 'カカシ', () =>
+      this.scene.start('Dummy'),
+    );
+    new RoundButton(this, W - 76, LOADOUT_LAYOUT.slotsTop + 44, 88, 'swords', '出撃', () =>
+      this.scene.start('StageSelect'),
+    ).setLit(true);
+    new TopBar(this, save);
+    new TabBar(this, 'loadout', (id) => {
+      sfx('click');
+      goTab(this, id);
     });
 
     this.setupGridInput();
@@ -81,9 +96,13 @@ export class LoadoutScene extends Phaser.Scene {
     this.view.showPreview(preview);
     const ms = performance.now() - t0;
     const durs = preview.plans
-      .map((p, i) => `${i + 1}: ${p.maxStep}段 ${p.duration.toFixed(1)}秒`)
+      .map((p, i) => `${originLabel(i)} ${p.maxStep}段・${p.duration.toFixed(1)}秒`)
       .join('　');
-    this.info.setText(`${durs || '起点を置いてください'}　（計算 ${ms.toFixed(1)}ms）`);
+    this.infoPill.setValue(durs || '起点を置いてください', durs ? COLORS.text : COLORS.textWarn);
+    this.info.setText(`長押しで詳細・起点タップで発火順（計算 ${ms.toFixed(1)}ms）`);
+    this.info.setVisible(save.loadout.height < 5);
+    this.info.setY(this.infoPill.y + 34);
+    this.infoPill.setY(this.view.y + this.view.gridHeight + 26);
     const block = sortieBlock(save);
     this.warn.setText(
       block === 'noOrigin'
@@ -103,21 +122,19 @@ export class LoadoutScene extends Phaser.Scene {
     this.slots.removeAll(true);
     const n = consumableSlots(save);
     const items = itemMap(save);
-    this.slots.add(this.add.text(24, 30, '消耗品', textStyle(24)).setOrigin(0, 0.5));
+    this.slots.add(
+      this.add.text(30, -18, '消耗品', textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
+    );
     for (let i = 0; i < n; i++) {
       const x = this.slotX(i);
-      const r = this.add
-        .rectangle(x, 44, SLOT_SIZE - 6, SLOT_SIZE - 6, COLORS.cell)
-        .setStrokeStyle(2, COLORS.cellEdge);
-      this.slots.add(r);
+      const frame = this.add.image(x, 44, SKIN.round).setDisplaySize(SLOT_SIZE, SLOT_SIZE);
+      this.slots.add(frame);
       const uid = save.loadout.consumables[i];
       const it = uid ? items.get(uid) : undefined;
-      if (it) {
-        const icon = new ItemIcon(this, x, 44, it, SLOT_SIZE - 6);
-        this.slots.add(icon);
-      }
-      r.setInteractive();
-      r.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (it) this.slots.add(this.add.image(x, 44, iconKey(it.defId)).setScale(4));
+      else this.slots.add(this.add.text(x, 44, '+', textStyle(30, COLORS.textDim)).setOrigin(0.5));
+      frame.setInteractive();
+      frame.on('pointerdown', (p: Phaser.Input.Pointer) => {
         if (it) this.pressGrid(it, -2, i, p);
         else if (this.selected && getItemDef(this.selected.defId).kind === 'consumable') {
           save.loadout = setConsumable(save.loadout, i, this.selected.uid, n);
@@ -129,7 +146,7 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   private slotX(i: number): number {
-    return 170 + i * (SLOT_SIZE + 8) + SLOT_SIZE / 2;
+    return 70 + i * (SLOT_SIZE + 6);
   }
 
   private slotAt(x: number, y: number): number {
@@ -151,10 +168,9 @@ export class LoadoutScene extends Phaser.Scene {
     this.list.setSelected(this.selected?.uid ?? null);
     if (this.selected) {
       const kind = getItemDef(it.defId).kind;
-      this.info.setText(
-        kind === 'consumable'
-          ? '空いている消耗品枠をタップ'
-          : '置きたいマスをタップ（ドラッグでも置けます）',
+      this.infoPill.setValue(
+        kind === 'consumable' ? '空いている消耗品枠をタップ' : '置きたいマスをタップ',
+        COLORS.gold,
       );
     }
   }

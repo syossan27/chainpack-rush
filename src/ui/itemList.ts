@@ -4,6 +4,9 @@ import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { ItemIcon } from './itemIcon';
+import { SKIN, SLICE } from './kit/skin';
+import { panel } from './kit/widgets';
+import { sfx } from '../audio/sfx';
 import { COLORS, W, textStyle } from './theme';
 
 export interface ItemListHandlers {
@@ -25,6 +28,7 @@ const KIND_LABEL: Record<KindFilter, string> = {
 };
 
 const LONG_PRESS_MS = 450;
+const FILTER_H = 58;
 const DRAG_THRESHOLD = 14;
 const RARITY_ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -38,7 +42,7 @@ export class ItemList extends Phaser.GameObjects.Container {
   private contentHeight = 0;
   private readonly viewTop: number;
   private readonly viewHeight: number;
-  private readonly cellSize = 96;
+  private readonly cellSize = 100;
   private readonly cols: number;
   private selectedUid: string | null = null;
   private readonly handlers: ItemListHandlers;
@@ -56,12 +60,17 @@ export class ItemList extends Phaser.GameObjects.Container {
     this.handlers = handlers;
     this.marks = marks;
     this.filterBar = scene.add.container(0, top);
-    this.viewTop = top + 100;
+    this.viewTop = top + FILTER_H;
     this.viewHeight = bottom - this.viewTop;
     this.cols = Math.floor((W - 24) / this.cellSize);
-    const bg = scene.add
-      .rectangle(W / 2, this.viewTop + this.viewHeight / 2, W - 12, this.viewHeight, COLORS.panel)
-      .setStrokeStyle(2, COLORS.panelEdge);
+    const bg = panel(
+      scene,
+      W / 2,
+      this.viewTop + this.viewHeight / 2,
+      W - 16,
+      this.viewHeight + 8,
+      'inset',
+    );
     this.content = scene.add.container(0, this.viewTop);
     const maskShape = scene.make.graphics({}, false);
     maskShape.fillRect(0, this.viewTop, W, this.viewHeight);
@@ -92,39 +101,38 @@ export class ItemList extends Phaser.GameObjects.Container {
 
   private buildFilters(): void {
     this.filterBar.removeAll(true);
-    const kinds: KindFilter[] = ['all', 'origin', 'attack', 'defense', 'consumable'];
-    kinds.forEach((k, i) => {
-      const on = this.kind === k;
-      const b = this.scene.add
-        .text(
-          20 + i * 136,
-          8,
-          KIND_LABEL[k],
-          textStyle(24, on ? COLORS.accentText : COLORS.textDim),
-        )
+    const chip = (x: number, w: number, label: string, on: boolean, onTap: () => void) => {
+      const m = SLICE.tab;
+      const bg = this.scene.add
+        .nineslice(x + w / 2, 24, on ? SKIN.tabOn : SKIN.tab, undefined, w, 46, m, m, 14, 14)
         .setInteractive({ useHandCursor: true });
-      b.on('pointerup', () => {
+      const t = this.scene.add
+        .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
+        .setOrigin(0.5);
+      bg.on('pointerup', () => {
+        sfx('click');
+        onTap();
+      });
+      this.filterBar.add([bg, t]);
+    };
+    const kinds: KindFilter[] = ['all', 'origin', 'attack', 'defense', 'consumable'];
+    const cw = 100;
+    kinds.forEach((k, i) =>
+      chip(12 + i * (cw + 4), cw, KIND_LABEL[k], this.kind === k, () => {
         this.kind = k;
         this.scrollY = 0;
         this.buildFilters();
         this.render();
-      });
-      this.filterBar.add(b);
-    });
+      }),
+    );
+    // レアリティはタップで順に切り替え
     const rs: RarityFilter[] = ['all', ...RARITIES];
-    rs.forEach((r, i) => {
-      const on = this.rarity === r;
-      const label = r === 'all' ? '全部' : RARITY_NAMES[r]!;
-      const b = this.scene.add
-        .text(20 + i * 136, 52, label, textStyle(22, on ? COLORS.accentText : COLORS.textDim))
-        .setInteractive({ useHandCursor: true });
-      b.on('pointerup', () => {
-        this.rarity = r;
-        this.scrollY = 0;
-        this.buildFilters();
-        this.render();
-      });
-      this.filterBar.add(b);
+    const label = this.rarity === 'all' ? '★全部' : `★${RARITY_NAMES[this.rarity]!}`;
+    chip(12 + 5 * (cw + 4), W - 24 - 5 * (cw + 4), label, this.rarity !== 'all', () => {
+      this.rarity = rs[(rs.indexOf(this.rarity) + 1) % rs.length]!;
+      this.scrollY = 0;
+      this.buildFilters();
+      this.render();
     });
   }
 
@@ -161,10 +169,15 @@ export class ItemList extends Phaser.GameObjects.Container {
         );
       }
       const mark = this.marks(it);
-      if (mark)
-        this.content.add(
-          this.scene.add.text(cx + 40, cy + 40, mark, textStyle(16, COLORS.gold)).setOrigin(1, 1),
-        );
+      if (mark) {
+        const b = this.scene.add
+          .rectangle(cx - 22, cy - 34, 48, 22, 0x0c0a12, 0.85)
+          .setStrokeStyle(2, 0xffd25a);
+        const t = this.scene.add
+          .text(cx - 22, cy - 34, mark, textStyle(13, COLORS.gold))
+          .setOrigin(0.5);
+        this.content.add([b, t]);
+      }
     });
     this.contentHeight = Math.ceil(list.length / this.cols) * this.cellSize + 12;
     this.emptyText.setVisible(list.length === 0);
@@ -189,7 +202,7 @@ export class ItemList extends Phaser.GameObjects.Container {
     return list[idx] ?? null;
   }
 
-  private setupScroll(bg: Phaser.GameObjects.Rectangle): void {
+  private setupScroll(bg: Phaser.GameObjects.NineSlice): void {
     bg.setInteractive();
     let start: { x: number; y: number; scroll: number; time: number } | null = null;
     let mode: 'pending' | 'scroll' | 'drag' | 'done' = 'done';

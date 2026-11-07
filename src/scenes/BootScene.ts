@@ -3,8 +3,14 @@ import Phaser from 'phaser';
 import { UNIT_SPRITES, animKey, type UnitAnimName } from '../data/sprites';
 import { loadSave } from '../platform/storage';
 import { setSave } from '../platform/store';
+import { GLYPHS } from '../ui/kit/glyphs.generated';
+import { generateUiIcons } from '../ui/kit/icons';
+import { generateSkin } from '../ui/kit/skin';
 import { generateAllTextures } from '../ui/textures';
+import { FONT } from '../ui/theme';
 import { COLORS, H, W, textStyle } from '../ui/theme';
+
+const FONT_TIMEOUT_MS = 2500;
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -43,7 +49,14 @@ export class BootScene extends Phaser.Scene {
         });
       }
     }
-    void loadSave().then((save) => {
+    generateSkin(this);
+    generateUiIcons(this);
+    // フォントはサブセット分割なので、画面で使う文字の分だけ先に読み込む（失敗しても代替フォントで続行）
+    const fonts = Promise.all(
+      ['800', '500'].map((w) => document.fonts.load(`${w} 32px ${FONT}`, GLYPHS)),
+    ).catch(() => undefined);
+    const timeout = new Promise((r) => setTimeout(r, FONT_TIMEOUT_MS));
+    void Promise.all([loadSave(), Promise.race([fonts, timeout])]).then(([save]) => {
       setSave(save);
       this.scene.start('Base');
     });
