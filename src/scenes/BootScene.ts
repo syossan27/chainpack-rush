@@ -12,6 +12,17 @@ import { COLORS, H, W, textStyle } from '../ui/theme';
 
 const FONT_TIMEOUT_MS = 2500;
 
+// assets/sprites 以下の PNG はビルドに同梱し、その URL をここで引く（置いてあるものだけ読み込む）
+const SPRITE_URLS = import.meta.glob('../../assets/sprites/**/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+}) as Record<string, string>;
+
+export function spriteUrl(file: string): string | undefined {
+  return SPRITE_URLS[`../../assets/sprites/${file}`];
+}
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
@@ -22,20 +33,45 @@ export class BootScene extends Phaser.Scene {
     // 本素材（assets/sprites）が登録されていれば読み込む。なければ仮素材で動く
     for (const def of Object.values(UNIT_SPRITES)) {
       for (const [name, anim] of Object.entries(def.anims ?? {})) {
-        if (!anim) continue;
-        this.load.spritesheet(
-          animKey(def.key, name as UnitAnimName),
-          `assets/sprites/${anim.file}`,
-          {
-            frameWidth: def.frameWidth,
-            frameHeight: def.frameHeight,
-          },
-        );
+        const url = anim ? spriteUrl(anim.file) : undefined;
+        if (!anim || !url) {
+          if (anim) console.warn(`sprite not found: assets/sprites/${anim.file}（仮素材で続行）`);
+          continue;
+        }
+        this.load.spritesheet(animKey(def.key, name as UnitAnimName), url, {
+          frameWidth: def.frameWidth,
+          frameHeight: def.frameHeight,
+        });
       }
     }
   }
 
   create(): void {
+    // 本素材の静止画（待機の1コマ目）を、拠点・地域選択・顔アイコンなどで使う基本テクスチャにする
+    for (const def of Object.values(UNIT_SPRITES)) {
+      const still = (['idle', 'move', 'run'] as const)
+        .map((n) => animKey(def.key, n))
+        .find((k) => this.textures.exists(k));
+      if (!still || this.textures.exists(def.key)) continue;
+      const frame = this.textures.getFrame(still, 0);
+      const tex = this.textures.createCanvas(def.key, def.frameWidth, def.frameHeight);
+      if (!frame || !tex) continue;
+      tex
+        .getContext()
+        .drawImage(
+          frame.source.image as CanvasImageSource,
+          frame.cutX,
+          frame.cutY,
+          def.frameWidth,
+          def.frameHeight,
+          0,
+          0,
+          def.frameWidth,
+          def.frameHeight,
+        );
+      tex.refresh();
+    }
+    // 本素材がないものは仮素材を描く
     generateAllTextures(this);
     for (const def of Object.values(UNIT_SPRITES)) {
       for (const [name, anim] of Object.entries(def.anims ?? {})) {

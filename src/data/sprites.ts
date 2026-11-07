@@ -63,6 +63,8 @@ export interface SpriteDef {
   pixelSize: number;
   /** 仮素材の上に重ねる絵（ボスの冠など） */
   overlay?: { pixels: readonly string[]; x: number; y: number };
+  /** 顔アイコンに使う範囲（コマ内の px。正方形） */
+  avatarCrop?: { x: number; y: number; size: number };
 }
 
 /** キャラクターの表示倍率（勇者128×128、雑魚96×96、ボス192×192） */
@@ -232,7 +234,14 @@ const unit = (
 });
 
 export const UNIT_SPRITES: Record<string, SpriteDef> = {
-  hero: unit('hero', HERO, 64),
+  // 本素材を足すときは anims に書く（ファイルは assets/sprites/ からの相対パス）。例:
+  //   anims: {
+  //     idle:   { file: 'hero/hero_idle.png',   frames: 4, fps: 6,  loop: true },
+  //     run:    { file: 'hero/hero_run.png',    frames: 6, fps: 12, loop: true },
+  //     attack: { file: 'hero/hero_attack.png', frames: 4, fps: 12, loop: true },
+  //     hit:    { file: 'hero/hero_hit.png',    frames: 2, fps: 10, loop: false },
+  //   },
+  hero: { ...unit('hero', HERO, 64), avatarCrop: { x: 12, y: 0, size: 32 } },
   slime: unit('slime', SLIME, 48),
   bat: unit('bat', BAT, 48),
   goblin: unit('goblin', GOBLIN, 48),

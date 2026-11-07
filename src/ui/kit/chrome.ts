@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { storageCapacity, storageCount } from '../../core/economy';
 import type { SaveData } from '../../core/save';
+import { UNIT_SPRITES } from '../../data/sprites';
 import { COLORS, H, W, textStyle } from '../theme';
 import type { IconName } from './icons';
 import { iconTex } from './icons';
@@ -22,9 +23,10 @@ export function avatar(
   c.add(scene.add.image(0, 0, SKIN.round).setDisplaySize(size, size));
   const face = scene.add.image(0, 0, 'hero').setOrigin(0, 0);
   // 64×64 の仮素材から顔のあたり（x 12〜44, y 0〜32）を切り出し、丸枠の内側に収める
-  const s = (size * 0.72) / 32;
-  face.setCrop(12, 0, 32, 32).setScale(s);
-  face.setPosition(-(12 + 16) * s, -(0 + 16) * s + size * 0.06);
+  const crop = UNIT_SPRITES.hero!.avatarCrop ?? { x: 12, y: 0, size: 32 };
+  const k = (size * 0.72) / crop.size;
+  face.setCrop(crop.x, crop.y, crop.size, crop.size).setScale(k);
+  face.setPosition(-(crop.x + crop.size / 2) * k, -(crop.y + crop.size / 2) * k + size * 0.06);
   c.add(face);
   return c;
 }

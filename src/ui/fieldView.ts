@@ -9,6 +9,9 @@ import { UNIT_SPRITES, animKey } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
+/** 被弾モーションを見せる長さ（ms） */
+const HERO_HIT_MS = 250;
+
 const STATUS_COLOR: Record<Status, number> = { wet: 0x5aa0e8, oil: 0x6a5030, frozen: 0xc8f0ff };
 
 interface EnemySlot {
@@ -116,7 +119,7 @@ export class FieldView {
   }
 
   heroHurt(now: number): void {
-    this.heroHurtUntil = now + 150;
+    this.heroHurtUntil = now + HERO_HIT_MS;
   }
 
   private release(s: EnemySlot): void {
@@ -142,7 +145,9 @@ export class FieldView {
     this.heroGlow.y = this.hero.y + 4;
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
-    this.playHeroAnim(c.unguarded ? 'attack' : c.running ? 'run' : 'idle');
+    this.playHeroAnim(
+      now < this.heroHurtUntil ? 'hit' : c.unguarded ? 'attack' : c.running ? 'run' : 'idle',
+    );
     this.atbBar.width = 110 * c.atbRatio;
     this.atbBar.setFillStyle(c.atbRatio >= 1 ? 0xfff8b0 : COLORS.atb);
 
@@ -208,7 +213,7 @@ export class FieldView {
     this.visibleEnemies = visible;
   }
 
-  private playHeroAnim(name: 'idle' | 'run' | 'attack'): void {
+  private playHeroAnim(name: 'idle' | 'run' | 'attack' | 'hit'): void {
     const key = animKey('hero', name);
     if (this.scene.anims.exists(key)) {
       if (this.hero.anims.currentAnim?.key !== key) this.hero.play(key);
