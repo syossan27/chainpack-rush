@@ -152,6 +152,8 @@ export interface RunStats {
 
 export interface RunResult {
   reason: EndReason;
+  /** ラン中に使った消耗品の uid（撤退の確定時に倉庫から取り除く） */
+  usedConsumables: string[];
   progress: number;
   reachedLoop: number;
   drops: ItemInstance[];
@@ -202,6 +204,7 @@ export class Combat {
   ended: EndReason | null = null;
   enemies: EnemyState[] = [];
   drops: ItemInstance[] = [];
+  usedConsumables: string[] = [];
   consumables: (string | null)[];
   stats: RunStats = {
     fires: 0,
@@ -322,6 +325,7 @@ export class Combat {
 
   result(): RunResult {
     return {
+      usedConsumables: this.usedConsumables.slice(),
       progress: this.progress,
       reason: this.ended ?? 'timeout',
       reachedLoop: this.reachedLoop,
@@ -355,6 +359,7 @@ export class Combat {
     if (!effect) return false;
     if (effect === 'rally' && (this.chain || this.origins.length === 0)) return false;
     this.consumables[slot] = null;
+    this.usedConsumables.push(uid);
     this.emit({ type: 'consumable', tick: this.tick, uid, defId: def.id, effect });
     switch (effect) {
       case 'rally':

@@ -141,6 +141,13 @@ export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[])
   return true;
 }
 
+/** ラン中に使った消耗品を倉庫と消耗品枠から取り除く */
+export function consumeItems(save: SaveData, uids: readonly string[]): void {
+  const set = new Set(uids);
+  save.inventory = save.inventory.filter((it) => !set.has(it.uid));
+  save.loadout.consumables = save.loadout.consumables.filter((u) => !set.has(u));
+}
+
 /** 戦利品を倉庫へ（容量を超えても全部受け取る）。正式な uid を振り直す */
 export function acceptLoot(save: SaveData, drops: readonly ItemInstance[]): ItemInstance[] {
   const added = drops.map((d) => ({ ...d, exits: d.exits.slice(), uid: `i${save.nextUid++}` }));

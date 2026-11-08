@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import { BOSS, CONSUMABLE, FIELD, HERO, SIM, TIME_BONUS } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
-import { buyUpgrade, heroStats, itemMap, upgradeCost } from '../src/core/economy';
+import { buyUpgrade, consumeItems, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
 
 function runAll(seed: number) {
@@ -265,6 +265,24 @@ describe('時間の延長', () => {
     });
     while (!c.ended && c.bossesDefeated < 1) c.step();
     expect(c.maxTicks).toBe(TIME_BONUS.maxRunTime * SIM.ticksPerSecond);
+  });
+
+  it('使った消耗品はラン結果に残り、確定時に倉庫と枠から消える', () => {
+    const save = createInitialSave();
+    const potion = save.loadout.consumables[0]!;
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout: save.loadout,
+      items: itemMap(save),
+      hero: BASE_HERO_STATS,
+    });
+    expect(c.useConsumable(0)).toBe(true);
+    const r = c.runToEnd();
+    expect(r.usedConsumables).toEqual([potion]);
+    consumeItems(save, r.usedConsumables);
+    expect(save.inventory.some((i) => i.uid === potion)).toBe(false);
+    expect(save.loadout.consumables).not.toContain(potion);
   });
 
   it('時の砂で +5秒', () => {

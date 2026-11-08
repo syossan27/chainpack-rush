@@ -1,6 +1,6 @@
 // リザルト: 終了理由、到達周回、戦利品の開封演出（レアリティの低い順、エピック以上は光の柱）、最大連鎖段数、最大ダメージ
 import Phaser from 'phaser';
-import { acceptLoot, recordRun } from '../core/economy';
+import { acceptLoot, consumeItems, recordRun } from '../core/economy';
 import type { ItemInstance, Rarity } from '../core/types';
 import { getItemDef } from '../data/items';
 import { getRegion } from '../data/regions';
@@ -40,6 +40,7 @@ export class ResultScene extends Phaser.Scene {
     }
     const { result, regionId } = last;
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存
+    consumeItems(save, result.usedConsumables);
     const added = acceptLoot(save, result.drops);
     const { unlocked } = recordRun(save, regionId, result);
     persist();

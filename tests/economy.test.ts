@@ -153,6 +153,7 @@ describe('economy', () => {
     const s = createInitialSave();
     const r: RunResult = {
       reason: 'timeout',
+      usedConsumables: [],
       progress: 4,
       reachedLoop: 4,
       drops: [],
