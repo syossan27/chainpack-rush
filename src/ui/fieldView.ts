@@ -1,7 +1,7 @@
 // フィールドの描画（ラン・カカシで共用）。core の状態を写すだけで、core には何も書き戻さない。
 // 画面外の敵は描画だけをカリングする（core では保持し、イベント列は変わらない）。
 import Phaser from 'phaser';
-import { FIELD, HERO, UI } from '../config/balance';
+import { ELITES, FIELD, HERO, UI, type EliteId } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
@@ -21,11 +21,20 @@ interface EnemySlot {
   hp: Phaser.GameObjects.Rectangle;
   status: Phaser.GameObjects.Graphics;
   shadow: Phaser.GameObjects.Ellipse;
+  tag: Phaser.GameObjects.Text; // 精鋭の名札
   aim: Phaser.GameObjects.Text;
   flashUntil: number;
   knock: number; // のけぞりの量（px、時間で戻る）
   knockAt: number;
 }
+
+/** 精鋭の色（体の色味と名札） */
+const ELITE_TINT: Record<EliteId, number> = { tough: 0xa8b8ff, swift: 0xffa0a0, golden: 0xffe070 };
+const ELITE_TEXT: Record<EliteId, string> = {
+  tough: '#a8c0ff',
+  swift: '#ff9a9a',
+  golden: '#ffe27a',
+};
 
 export class FieldView {
   readonly scene: Phaser.Scene;
@@ -105,6 +114,10 @@ export class FieldView {
       const hp = scene.add.rectangle(0, 0, 60, 6, COLORS.hp).setOrigin(0, 0.5).setVisible(false);
       const status = scene.add.graphics().setVisible(false);
       const shadow = scene.add.ellipse(0, 0, 60, 14, 0x000000, 0.25).setVisible(false);
+      const tag = scene.add
+        .text(0, 0, '', textStyle(16, '#ffe27a'))
+        .setOrigin(0.5, 1)
+        .setVisible(false);
       const aim = scene.add
         .text(0, 0, '▼', textStyle(26, '#ffef60'))
         .setOrigin(0.5, 1)
@@ -116,6 +129,7 @@ export class FieldView {
         hp,
         status,
         shadow,
+        tag,
         aim,
         flashUntil: 0,
         knock: 0,
@@ -159,6 +173,7 @@ export class FieldView {
     s.hp.setVisible(false);
     s.status.setVisible(false);
     s.shadow.setVisible(false);
+    s.tag.setVisible(false);
     s.aim.setVisible(false);
   }
 
@@ -231,7 +246,16 @@ export class FieldView {
         .setSize(def.frameWidth * def.displayScale * 0.5, e.def.boss ? 20 : 14)
         .setDepth(depth - 0.5);
       if (now < s.flashUntil) s.sprite.setTintFill(0xffffff);
-      else s.sprite.setTint(c.timeStopped ? 0x8090ff : 0xffffff);
+      else
+        s.sprite.setTint(
+          c.timeStopped
+            ? 0x8090ff
+            : e.enraged
+              ? 0xff8070
+              : e.elite
+                ? ELITE_TINT[e.elite]
+                : 0xffffff,
+        );
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
       const topY = footY - hgt * 0.85;
       s.hpBack
@@ -252,6 +276,12 @@ export class FieldView {
         s.status.strokeCircle(sx - barW / 2 + 8 + k * 18, topY - 14, 7);
         k++;
       }
+      s.tag
+        .setVisible(!!e.elite)
+        .setText(e.elite ? ELITES[e.elite].name : '')
+        .setColor(e.elite ? ELITE_TEXT[e.elite] : '#ffffff')
+        .setPosition(sx + barW / 2 - 4, topY - 6)
+        .setDepth(32);
       s.aim
         .setVisible(this.aimId === e.id)
         .setPosition(sx, topY - 18)

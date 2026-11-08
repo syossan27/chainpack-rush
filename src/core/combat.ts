@@ -4,6 +4,10 @@ import {
   AREA,
   BOSS,
   CHAIN_RULES,
+  ELITES,
+  LUCK,
+  type EliteId,
+  type LuckRules,
   CONSUMABLE,
   FIELD,
   HERO,
@@ -15,9 +19,10 @@ import {
   TIME_BONUS,
   type ChainRules,
 } from '../config/balance';
-import { ESCORT_ID, SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
+import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
-import { bossForLoop, getRegion, type RegionDef } from '../data/regions';
+import { getRegion, type RegionDef } from '../data/regions';
+import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, planChain } from './chain';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
@@ -48,6 +53,8 @@ export interface RunConfig {
   consumableSlots?: number;
   /** 連鎖の性格づけ（省略時は CHAIN_RULES） */
   rules?: Partial<ChainRules>;
+  /** 会心・ダメージの揺れ・精鋭（省略時は LUCK） */
+  luck?: Partial<LuckRules>;
 }
 
 export interface EnemyState {
@@ -58,6 +65,7 @@ export interface EnemyState {
   hp: number;
   maxHp: number;
   atk: number;
+  interval: number; // 攻撃間隔（秒）。精鋭・激昂で変わる
   attackTimer: number;
   alive: boolean;
   statuses: Map<Status, number>; // 状態 → 失効する tick
@@ -68,6 +76,8 @@ export interface EnemyState {
   group: number; // 同じ群れは一緒に寄ってくる
   row: number; // 見た目の前後列（描画のみ。core の距離・標的順には使わない）
   killedBy: number; // 倒した連鎖の番号（-1 は生存中・連鎖以外）
+  elite: EliteId | null;
+  enraged: boolean;
 }
 
 /** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
@@ -75,7 +85,16 @@ export type EndReason = 'timeout' | 'dead' | 'retreat';
 
 export type CombatEvent =
   | { type: 'loopStart'; tick: number; loop: number; bossId: string }
-  | { type: 'spawn'; tick: number; enemyId: number; defId: string; x: number; escort: boolean }
+  | {
+      type: 'spawn';
+      tick: number;
+      enemyId: number;
+      defId: string;
+      x: number;
+      escort: boolean;
+      elite: EliteId | null;
+    }
+  | { type: 'enrage'; tick: number; enemyId: number }
   | {
       type: 'chainStart';
       tick: number;
@@ -103,6 +122,7 @@ export type CombatEvent =
       damage: number;
       combo: string | null;
       nullified: boolean;
+      crit: boolean;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
@@ -205,6 +225,10 @@ export class Combat {
   defense = 0;
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
+  readonly luck: LuckRules;
+  private readonly layoutRng: Rng;
+  /** 今の周回の並び（地域選択・進み具合の表示用） */
+  layout: LoopLayout | null = null;
   running = false; // 勇者が走っているか
   loop = 1;
   bossesDefeated = 0;
@@ -240,6 +264,9 @@ export class Combat {
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
+    this.luck = { ...LUCK, ...cfg.luck };
+    // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
+    this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
     this.rng = new Rng(cfg.seed);
     this.region = getRegion(cfg.regionId);
@@ -431,14 +458,15 @@ export class Combat {
         if (e.x > stand) e.x = Math.max(stand, e.x - FIELD.enemySpeed * dt);
         if (this.canAttack(e)) {
           e.attackTimer += dt;
-          if (e.attackTimer >= e.def.interval) {
-            e.attackTimer -= e.def.interval;
+          if (e.attackTimer >= e.interval) {
+            e.attackTimer -= e.interval;
             this.damageHero(e);
             if (this.ended) return;
           }
         }
       }
       this.updateSummons(dt, stopped);
+      this.updateBossAbilities(dt, stopped);
     }
 
     // 5. 勇者の移動（連鎖中は立ち止まって攻撃する）
@@ -471,15 +499,31 @@ export class Combat {
   }
 
   private startLoop(): void {
-    const bossId = bossForLoop(this.region, this.loop);
+    const layout = rollLoop(this.region, this.loop, this.layoutRng, this.layout?.bossId);
+    this.layout = layout;
+    const bossId = layout.bossId;
     this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId });
-    for (const g of this.region.groups) {
+    const eliteChance = Math.min(
+      this.luck.eliteChanceMax,
+      this.luck.eliteChance + this.luck.eliteChancePerLoop * (this.loop - 1),
+    );
+    for (const g of layout.groups) {
       const group = this.nextGroup++;
-      // 前後2列×列。後列（呪術師）は最後の列に回す
-      const ordered = [...g.enemies].sort(
-        (x, y) => Number(getEnemyDef(x).backRow) - Number(getEnemyDef(y).backRow),
-      );
-      ordered.forEach((id, i) => {
+      // 群れに1体まで精鋭が混ざる（後列の呪術師も対象）
+      const eliteAt =
+        this.mode === 'run' && this.layoutRng.next() < eliteChance
+          ? this.layoutRng.int(g.enemies.length)
+          : -1;
+      const elite =
+        eliteAt >= 0
+          ? this.layoutRng.weighted(
+              (Object.keys(ELITES) as EliteId[]).map(
+                (k) => [k, ELITES[k].weight] as [EliteId, number],
+              ),
+            )
+          : null;
+      // 前後2列×列。後列（呪術師）は最後の列（rollLoop で並べ済み）
+      g.enemies.forEach((id, i) => {
         const col = Math.floor(i / FIELD.rowsPerColumn);
         const row = i % FIELD.rowsPerColumn;
         const offset = FIELD.columnSpacing * col;
@@ -490,17 +534,12 @@ export class Combat {
           false,
           group,
           row,
+          i === eliteAt ? elite : null,
         );
       });
     }
     this.bossGroup = this.nextGroup++;
-    this.spawnEnemy(
-      bossId,
-      this.loopStartX + this.region.bossX,
-      FIELD.bossStand,
-      false,
-      this.bossGroup,
-    );
+    this.spawnEnemy(bossId, this.loopStartX + layout.bossX, FIELD.bossStand, false, this.bossGroup);
     this.summonTimer = 0;
   }
 
@@ -511,10 +550,12 @@ export class Combat {
     escort: boolean,
     group: number,
     row = 0,
+    elite: EliteId | null = null,
   ): EnemyState {
     const def = getEnemyDef(defId);
     const scaleLoop = this.loop - 1;
-    const maxHp = def.hp * Math.pow(LOOP_SCALING.hp, scaleLoop);
+    const el = elite ? ELITES[elite] : null;
+    const maxHp = def.hp * Math.pow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
     const e: EnemyState = {
       id: this.nextEnemyId++,
       defId,
@@ -522,7 +563,8 @@ export class Combat {
       x,
       hp: maxHp,
       maxHp,
-      atk: def.atk * Math.pow(LOOP_SCALING.atk, scaleLoop),
+      atk: def.atk * Math.pow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
+      interval: def.interval * (el?.interval ?? 1),
       // 攻撃のタイミングはシードで少しずらす（同じシードなら同じ結果）
       attackTimer: def.boss ? 0 : this.rng.next() * def.interval * FIELD.attackPhaseJitter,
       alive: true,
@@ -534,9 +576,11 @@ export class Combat {
       group,
       row,
       killedBy: -1,
+      elite,
+      enraged: false,
     };
     this.enemies.push(e);
-    this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort });
+    this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort, elite });
     return e;
   }
 
@@ -547,8 +591,11 @@ export class Combat {
   private updateSummons(dt: number, stopped: boolean): void {
     const boss = this.currentBoss();
     if (!boss || boss.def.ability !== 'summonEscorts' || !boss.aggro || stopped) return;
+    const escortId = boss.def.escortId ?? 'goblin';
+    const count = boss.def.escortCount ?? 4;
+    const interval = boss.def.summonInterval ?? 4;
     const escorts = this.enemies.filter((e) => e.alive && e.escort);
-    if (escorts.length >= BOSS.goblinKingEscorts) {
+    if (escorts.length >= count) {
       this.summonTimer = 0;
       return;
     }
@@ -556,7 +603,7 @@ export class Combat {
     // 立ち位置は repack() が2列×前後2段に詰める
     const summon = (): void => {
       this.spawnEnemy(
-        ESCORT_ID,
+        escortId,
         boss.x - FIELD.columnSpacing,
         FIELD.frontStand,
         true,
@@ -564,13 +611,28 @@ export class Combat {
       );
     };
     if (firstWave) {
-      for (let i = 0; i < BOSS.goblinKingEscorts; i++) summon();
+      for (let i = 0; i < count; i++) summon();
       return;
     }
     this.summonTimer += dt;
-    if (this.summonTimer >= BOSS.goblinKingSummonInterval) {
-      this.summonTimer -= BOSS.goblinKingSummonInterval;
+    if (this.summonTimer >= interval) {
+      this.summonTimer -= interval;
       summon();
+    }
+  }
+
+  /** 呪術王の回復、ゴーレムの激昂 */
+  private updateBossAbilities(dt: number, stopped: boolean): void {
+    const boss = this.currentBoss();
+    if (!boss || !boss.aggro || stopped) return;
+    if (boss.def.ability === 'regen' && boss.hp < boss.maxHp) {
+      boss.hp = Math.min(boss.maxHp, boss.hp + boss.maxHp * BOSS.regenPerSec * dt);
+    }
+    if (boss.def.ability === 'enrage' && !boss.enraged && boss.hp < boss.maxHp * BOSS.enrageAt) {
+      boss.enraged = true;
+      boss.interval *= BOSS.enrageInterval;
+      boss.atk *= BOSS.enrageAtk;
+      this.emit({ type: 'enrage', tick: this.tick, enemyId: boss.id });
     }
   }
 
@@ -758,6 +820,8 @@ export class Combat {
       whiff: false,
     });
 
+    // 会心は段ごとに1回抽選（範囲攻撃なら当たった全員が会心）
+    const crit = (def.atk ?? 0) > 0 && this.rng.next() < this.luck.critChance;
     const aimCombo = findCombo(def.element, aim.statuses);
     const area = effectiveArea(def.area ?? 'single', aimCombo);
     const targets = this.resolveTargets(aim, area, def.pierce ?? 0);
@@ -773,7 +837,7 @@ export class Combat {
           label: combo.label,
         });
       }
-      const raw = computeDamage({
+      const base = computeDamage({
         atk: def.atk ?? 0,
         rarity: inst.rarity,
         step: eff,
@@ -781,6 +845,9 @@ export class Combat {
         upgradeMult: this.cfg.hero.attackMult,
         area: def.area === 'all' ? 'all' : undefined,
       });
+      const v = this.luck.damageVariance;
+      const roll = v > 0 ? 1 + (this.rng.next() * 2 - 1) * v : 1;
+      const raw = Math.round(base * roll * (crit ? this.luck.critMult : 1) * 100) / 100;
       if (raw > 0) {
         const nullified = t.def.ability === 'damageThreshold' && raw < BOSS.ironKnightThreshold;
         const dmg = nullified ? 0 : raw;
@@ -792,6 +859,7 @@ export class Combat {
           damage: dmg,
           combo: combo?.name ?? null,
           nullified,
+          crit,
         });
         if (dmg > 0) {
           t.hp -= dmg;
@@ -845,10 +913,11 @@ export class Combat {
     });
     if (!e.escort && this.mode === 'run') {
       const roll = this.rng.next();
-      if (roll < e.def.dropRate) {
-        const count = e.def.boss ? LOOT.bossDrops : 1;
+      if (roll < e.def.dropRate || e.elite === 'golden') {
+        const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
+        const rareOrBetter = e.def.boss || e.elite === 'golden';
         for (let k = 0; k < count; k++) {
-          const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, e.def.boss);
+          const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, rareOrBetter);
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
         }

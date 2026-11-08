@@ -35,15 +35,17 @@ export class DamageNumbers {
   }
 
   /** ダメージが大きいほど文字を大きく、色も白→金→朱へ。出た瞬間にポンと跳ねる */
-  show(x: number, y: number, value: number, color?: string): void {
+  show(x: number, y: number, value: number, color?: string, crit = false): void {
     const s = this.slots[this.next]!;
     this.next = (this.next + 1) % this.slots.length;
-    const size = Math.round(Math.min(76, 22 + Math.log10(Math.max(1, value)) * 15));
-    const big = value >= JUICE.bigHit;
+    const size = Math.round(
+      Math.min(84, (22 + Math.log10(Math.max(1, value)) * 15) * (crit ? 1.25 : 1)),
+    );
+    const big = crit || value >= JUICE.bigHit;
     s.text
-      .setText(`${Math.round(value)}`)
+      .setText(crit ? `会心 ${Math.round(value)}` : `${Math.round(value)}`)
       .setFontSize(size)
-      .setColor(color ?? damageColor(value))
+      .setColor(color ?? (crit ? '#ff7ad0' : damageColor(value)))
       .setPosition(x + (Math.random() - 0.5) * 36, y - (big ? 20 : 0))
       .setAngle(big ? (Math.random() - 0.5) * 16 : 0)
       .setAlpha(1)
@@ -51,7 +53,7 @@ export class DamageNumbers {
     s.life = big ? 1.0 : 0.8;
     s.age = 0;
     s.vy = big ? -50 : -80;
-    s.punch = value >= JUICE.hugeHit ? 1.0 : big ? 0.7 : 0.35;
+    s.punch = crit || value >= JUICE.hugeHit ? 1.0 : big ? 0.7 : 0.35;
   }
 
   showText(x: number, y: number, label: string, size: number, color: string): void {

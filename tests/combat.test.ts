@@ -1,18 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import {
-  BOSS,
   CHAIN_RULES,
   CHAIN_RULES_OFF,
+  BOSS,
   CONSUMABLE,
+  ELITES,
   FIELD,
   HERO,
   LOOT,
+  LUCK,
+  NO_LUCK,
   SIM,
   STATUS,
   TIME_BONUS,
 } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
+import { getEnemyDef } from '../src/data/enemies';
 import { buyUpgrade, consumeItems, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
 import type { Dir } from '../src/core/types';
@@ -105,6 +109,7 @@ describe('combat', () => {
       items,
       hero: BASE_HERO_STATS,
       mode: 'dummy',
+      luck: NO_LUCK,
     });
     c.fireNext();
     for (let i = 0; i < 60; i++) c.step();
@@ -232,7 +237,10 @@ describe('combat', () => {
       hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
     });
     for (const e of c.enemies) if (!e.def.boss) e.alive = false;
+    // ボスは抽選なので、ゴブリン王に差し替えて観察する
     const king = c.enemies.find((e) => e.def.boss)!;
+    king.def = getEnemyDef('goblin_king');
+    king.defId = 'goblin_king';
     king.x = c.heroX + 200;
     for (let i = 0; i < 10; i++) c.step();
     const escorts = () => c.enemies.filter((e) => e.alive && e.escort);
@@ -242,7 +250,8 @@ describe('combat', () => {
     // 倒されても一定間隔で補充される
     escorts()[0]!.alive = false;
     expect(escorts()).toHaveLength(3);
-    for (let i = 0; i < Math.round(BOSS.goblinKingSummonInterval * 60) + 2; i++) c.step();
+    for (let i = 0; i < Math.round(getEnemyDef('goblin_king').summonInterval! * 60) + 2; i++)
+      c.step();
     expect(escorts()).toHaveLength(4);
   });
 });
@@ -291,6 +300,7 @@ describe('時間の延長', () => {
       items,
       hero: BASE_HERO_STATS,
       mode: 'dummy',
+      luck: NO_LUCK,
     });
     c.fireNext();
     for (let i = 0; i < 60; i++) c.step();
@@ -580,5 +590,127 @@ describe('撤退', () => {
     });
     d.retreat();
     expect(d.ended).toBeNull();
+  });
+});
+
+describe('乱数（会心・揺れ・精鋭）と新しいボス', () => {
+  const swords = () =>
+    build(3, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 's', defId: 'sword', x: 1, y: 0, exits: [] },
+    ]);
+  const hits = (luck: Partial<typeof LUCK>) => {
+    const { loadout, items } = swords();
+    const c = new Combat({
+      seed: 9,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+      luck,
+    });
+    const out: CombatEvent[] = [];
+    for (let k = 0; k < 200; k++) {
+      c.fireNext();
+      while (c.chain) c.step();
+      out.push(...c.drainEvents().filter((e) => e.type === 'hit'));
+    }
+    return out.filter((e): e is Extract<CombatEvent, { type: 'hit' }> => e.type === 'hit');
+  };
+
+  it('会心は ×critMult、揺れは ±damageVariance の範囲', () => {
+    const always = hits({ ...NO_LUCK, critChance: 1 });
+    expect(always.every((h) => h.crit && h.damage === 10 * LUCK.critMult)).toBe(true);
+    const varied = hits({ ...NO_LUCK, damageVariance: 0.1 });
+    expect(varied.every((h) => h.damage >= 9 - 1e-9 && h.damage <= 11 + 1e-9)).toBe(true);
+    expect(new Set(varied.map((h) => h.damage)).size).toBeGreaterThan(5);
+    const normal = hits({});
+    const rate = normal.filter((h) => h.crit).length / normal.length;
+    expect(rate).toBeGreaterThan(0.02);
+    expect(rate).toBeLessThan(0.2);
+  });
+
+  it('精鋭: 群れに1体まで。硬いはHP×3、金ぴかは必ずレア以上を落とす', () => {
+    let seen = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const save = createInitialSave();
+      const c = new Combat({
+        seed,
+        regionId: 'grassland',
+        loadout: save.loadout,
+        items: itemMap(save),
+        hero: BASE_HERO_STATS,
+        luck: { eliteChance: 1, eliteChanceMax: 1 },
+      });
+      const byGroup = new Map<number, number>();
+      for (const e of c.enemies) {
+        if (!e.elite) continue;
+        seen++;
+        expect(e.def.boss).toBe(false);
+        byGroup.set(e.group, (byGroup.get(e.group) ?? 0) + 1);
+        if (e.elite === 'tough') expect(e.maxHp).toBeCloseTo(e.def.hp * ELITES.tough.hp);
+        if (e.elite === 'swift')
+          expect(e.interval).toBeCloseTo(e.def.interval * ELITES.swift.interval);
+      }
+      expect([...byGroup.values()].every((n) => n === 1)).toBe(true);
+      const golden = c.enemies.find((e) => e.elite === 'golden');
+      if (golden) {
+        (c as unknown as { killEnemy(e: unknown): void }).killEnemy(golden);
+        const drops = c.drainEvents().filter((e) => e.type === 'drop');
+        expect(drops).toHaveLength(ELITES.golden.drops);
+        for (const d of drops) if (d.type === 'drop') expect(d.item.rarity).not.toBe('common');
+      }
+    }
+    expect(seen).toBeGreaterThan(40);
+  });
+
+  const bossFight = (bossId: string) => {
+    const { loadout, items } = build(1, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: [] },
+    ]);
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
+    });
+    for (const e of c.enemies) if (!e.def.boss) e.alive = false;
+    const boss = c.enemies.find((e) => e.def.boss)!;
+    boss.def = getEnemyDef(bossId);
+    boss.defId = bossId;
+    boss.interval = boss.def.interval;
+    boss.x = c.heroX + 150;
+    boss.aggro = true;
+    return { c, boss };
+  };
+
+  it('呪術王は毎秒HPが回復する', () => {
+    const { c, boss } = bossFight('lich');
+    boss.hp = boss.maxHp * 0.5;
+    for (let i = 0; i < 60; i++) c.step();
+    expect(boss.hp).toBeCloseTo(boss.maxHp * (0.5 + BOSS.regenPerSec), 1);
+  });
+
+  it('ゴーレムはHPが半分を切ると激昂し、攻撃が速く強くなる', () => {
+    const { c, boss } = bossFight('golem');
+    const atk = boss.atk;
+    boss.hp = boss.maxHp * 0.49;
+    c.step();
+    expect(boss.enraged).toBe(true);
+    expect(boss.interval).toBeCloseTo(boss.def.interval * BOSS.enrageInterval);
+    expect(boss.atk).toBeCloseTo(atk * BOSS.enrageAtk);
+    expect(c.drainEvents().some((e) => e.type === 'enrage')).toBe(true);
+  });
+
+  it('スライムの母・吸血女王は自分の取り巻きを呼ぶ', () => {
+    for (const id of ['slime_mother', 'bat_queen']) {
+      const { c } = bossFight(id);
+      for (let i = 0; i < 10; i++) c.step();
+      const esc = c.enemies.filter((e) => e.alive && e.escort);
+      expect(esc).toHaveLength(getEnemyDef(id).escortCount!);
+      expect(esc.every((e) => e.defId === getEnemyDef(id).escortId)).toBe(true);
+    }
   });
 });

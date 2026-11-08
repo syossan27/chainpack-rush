@@ -132,10 +132,57 @@ export const LOOP_SCALING = {
   atk: 1.3,
 } as const;
 
+/**
+ * 乱数の振れ幅（会心・ダメージの揺れ・精鋭）。RunConfig.luck で上書きできる（テストでは NO_LUCK）
+ */
+export interface LuckRules {
+  /** 各段で会心になる確率 */
+  critChance: number;
+  critMult: number;
+  /** ダメージの揺れ（±割合） */
+  damageVariance: number;
+  /** 雑魚が精鋭になる確率（1周目）。周回ごとに perLoop 足し、max で止める */
+  eliteChance: number;
+  eliteChancePerLoop: number;
+  eliteChanceMax: number;
+}
+
+export const LUCK: LuckRules = {
+  critChance: 0.08,
+  critMult: 2,
+  damageVariance: 0.1,
+  eliteChance: 0.06,
+  eliteChancePerLoop: 0.02,
+  eliteChanceMax: 0.2,
+};
+
+export const NO_LUCK: LuckRules = {
+  ...LUCK,
+  critChance: 0,
+  damageVariance: 0,
+  eliteChance: 0,
+  eliteChancePerLoop: 0,
+};
+
+export type EliteId = 'tough' | 'swift' | 'golden';
+
+/** 精鋭の性質（1つの群れに1体まで。ボス・取り巻きはならない） */
+export const ELITES: Record<
+  EliteId,
+  { name: string; weight: number; hp: number; interval: number; atk: number; drops: number }
+> = {
+  tough: { name: '硬い', weight: 4, hp: 3, interval: 1, atk: 1, drops: 1 },
+  swift: { name: '速い', weight: 4, hp: 1.5, interval: 0.5, atk: 1, drops: 1 },
+  golden: { name: '金ぴか', weight: 2, hp: 2, interval: 1, atk: 1, drops: 2 }, // 必ず落とし、レア以上
+};
+
 export const BOSS = {
   ironKnightThreshold: 120, // 一撃120未満のダメージを無効（200だと特定の組み方しか通らなかった）
-  goblinKingEscorts: 4,
-  goblinKingSummonInterval: 4.0, // 秒。取り巻きが4体未満なら1体ずつ呼ぶ（初回は4体まとめて）
+  // 取り巻きの数と呼ぶ間隔は敵の定義（escortCount / summonInterval）。初回はまとめて呼ぶ
+  regenPerSec: 0.02, // 呪術王: 毎秒、最大HPの2%を回復
+  enrageAt: 0.5, // ゴーレム: HPがこの割合を切ると
+  enrageInterval: 0.5, // 攻撃間隔×0.5
+  enrageAtk: 1.3, // 攻撃力×1.3
 } as const;
 
 /** ラン中の時間延長（基本の出撃時間は SIM.runDuration） */

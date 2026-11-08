@@ -220,6 +220,68 @@ const SCARECROW = [
   '....KKKKKKKK....',
 ];
 
+const WOLF = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '..KK............',
+  '.KGGK.......KK..',
+  '.KGGGK.....KGGK.',
+  'KGWGGGKKKKKGGGK.',
+  'KGGGGGGGGGGGGK..',
+  '.KKGGGGGGGGGGK..',
+  '..KGGgGGGGGGGGK.',
+  '...KGGGGGGGGGGK.',
+  '...KGGKKKKKGGK..',
+  '...KGK.....KGK..',
+  '...KDK.....KDK..',
+  '...KKK.....KKK..',
+];
+
+const SKELETON = [
+  '................',
+  '.....KKKKK......',
+  '....KWWWWWK.....',
+  '...KWWWWWWWK....',
+  '...KWkWWWkWK....',
+  '...KWWWWWWWK....',
+  '....KWKWKWK.....',
+  '.....KKKKK......',
+  '...KKWKWKWKK....',
+  '..KW.KWWWK.WK...',
+  '..KW.KWKWK.WK...',
+  '.....KWWWK......',
+  '.....KWKWK......',
+  '.....KW.WK......',
+  '....KWK.KWK.....',
+  '....KKK.KKK.....',
+];
+
+const GOLEM = [
+  '.....KKKKKK.....',
+  '....KnnnnnnK....',
+  '...KnbnnnnbnK...',
+  '...KnnyKKynnK...',
+  '...KnnnnnnnnK...',
+  '.KKKbnnnnnnbKKK.',
+  'KnnnKnnbbnnKnnnK',
+  'KnbnKnnnnnnKnbnK',
+  'KnnnKnbnnbnKnnnK',
+  '.KKKKnnnnnnKKKK.',
+  '....KnnbbnnK....',
+  '...KnnnKKnnnK...',
+  '...KnnK..KnnK...',
+  '..KbnnK..KnnbK..',
+  '..KnnnK..KnnnK..',
+  '..KKKKK..KKKKK..',
+];
+
+/** 仮素材の色を置き換える（1文字=1ドットの色キーを差し替える） */
+function recolor(pixels: readonly string[], map: Record<string, string>): string[] {
+  return pixels.map((row) => row.replace(/./g, (ch) => map[ch] ?? ch));
+}
+
 const CROWN = ['K.KK.KK.K', 'KyKyyKyyK', 'KyyyyyyyK', 'KKKKKKKKK'];
 const HELM_PLUME = ['..KKK..', '.KrrrK.', 'KrrrrrK', '.KrrK..'];
 
@@ -290,6 +352,20 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
   big_slime: unit('big_slime', SLIME, 96),
   goblin_king: unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 }),
   iron_knight: unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 }),
+  wolf: unit('wolf', WOLF, 48),
+  skeleton: unit('skeleton', SKELETON, 48),
+  slime_mother: unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 2,
+  }),
+  bat_queen: unit('bat_queen', recolor(BAT, { V: 'R', r: 'y' }), 96, { pixels: CROWN, x: 4, y: 1 }),
+  lich: unit('lich', recolor(SORCERER, { V: 'U', m: 'c', s: 'g' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 0,
+  }),
+  golem: unit('golem', GOLEM, 96),
 };
 
 /** 本素材のアニメーションキー（Phaser の anims に登録する名前） */

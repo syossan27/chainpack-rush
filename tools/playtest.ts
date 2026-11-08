@@ -15,7 +15,7 @@ import {
 import { Rng } from '../src/core/rng';
 import { createInitialSave, serializeSave } from '../src/core/save';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
-import { REGIONS, getRegion, bossForLoop } from '../src/data/regions';
+import { REGIONS, getRegion, bossPoolForLoop } from '../src/data/regions';
 import { getEnemyDef } from '../src/data/enemies';
 import { buyUpgrades, chainSummary, optimizeLoadout, sellJunk, useConsumables } from './bot';
 
@@ -261,7 +261,14 @@ for (const d of ITEM_DEFS.filter((x) => x.kind === 'consumable')) {
 }
 out();
 const bossRows = REGIONS.map(
-  (r) => `${r.name}: ${[1, 2, 3].map((k) => getEnemyDef(bossForLoop(r, k)).name).join(' → ')}`,
+  (r) =>
+    `${r.name}: ${[1, 2, 3]
+      .map((k) =>
+        bossPoolForLoop(r, k)
+          .map((b) => getEnemyDef(b).name)
+          .join('/'),
+      )
+      .join(' → ')}`,
 );
 out(`（参考）ボスの出現順 ${bossRows.join(' ／ ')}`);
 

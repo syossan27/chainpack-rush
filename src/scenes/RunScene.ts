@@ -276,7 +276,7 @@ export class RunScene extends Phaser.Scene {
       groupIds.add(e.group);
       if (e.alive) alive.add(e.group);
     }
-    const n = getRegion(this.regionId).groups.length;
+    const n = getRegion(this.regionId).groupCount;
     const cleared = groupIds.size - alive.size;
     const key = `${c.loop}:${cleared}`;
     if (key === this.trackKey) return;
@@ -541,7 +541,14 @@ export class RunScene extends Phaser.Scene {
             sfx('hit');
             break;
           }
-          this.numbers.show(p.x, p.y, ev.damage, ev.combo ? COMBO_COLOR[ev.combo] : undefined);
+          this.numbers.show(
+            p.x,
+            p.y,
+            ev.damage,
+            ev.combo ? COMBO_COLOR[ev.combo] : undefined,
+            ev.crit,
+          );
+          if (ev.crit) this.effects.flash(p.x, p.y, 0xff7ad0, 2.2);
           const tint = ev.combo
             ? (COMBO_TINT[ev.combo] ?? 0xffffff)
             : ev.damage >= JUICE.bigHit
@@ -557,6 +564,11 @@ export class RunScene extends Phaser.Scene {
           sfx('hit');
           break;
         }
+        case 'enrage':
+          this.showBanner('激昂！', COLORS.textWarn);
+          if (this.shake) this.cameras.main.shake(260, 0.01);
+          sfx('bossDown');
+          break;
         case 'combo': {
           const p = this.enemyPos(ev.enemyId);
           this.showBanner(ev.label, COMBO_COLOR[ev.name] ?? '#ffffff');
