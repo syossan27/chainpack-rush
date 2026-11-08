@@ -34,7 +34,11 @@ describe('combat', () => {
     const { c, events } = runAll(1);
     const end = events.find((e) => e.type === 'runEnd');
     expect(end).toBeDefined();
-    expect(c.tick).toBeLessThanOrEqual(SIM.runDuration * SIM.ticksPerSecond);
+    const limit = c.maxTicks;
+    if (c.ended === 'timeout') expect(c.clock).toBe(limit);
+    else expect(c.clock).toBeLessThan(limit);
+    // 走っていた時間のぶん、ゲーム内の経過は出撃時間の時計より長い
+    expect(c.tick).toBeGreaterThan(c.clock);
   });
 
   it('連鎖中は ATB が止まり、無防備になる。終了時に防御値が加算される', () => {
@@ -358,5 +362,24 @@ describe('接敵と連鎖の打ち切り', () => {
     const knight = c.enemies.find((e) => e.def.boss)!;
     expect(knight.standOffset).toBe(FIELD.bossSoloStand);
     expect(knight.x - c.heroX).toBeCloseTo(FIELD.bossSoloStand, 0);
+  });
+});
+
+describe('出撃時間の時計', () => {
+  it('走っているあいだは止まり、交戦中・連鎖中だけ進む', () => {
+    const { loadout, items } = specExample();
+    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });
+    let runningTicks = 0;
+    let clockWhileRunning = 0;
+    for (let i = 0; i < 60 * 10 && !c.ended; i++) {
+      const before = c.clock;
+      c.step();
+      if (c.running) {
+        runningTicks++;
+        clockWhileRunning += c.clock - before;
+      }
+    }
+    expect(runningTicks).toBeGreaterThan(0);
+    expect(clockWhileRunning).toBe(0);
   });
 });

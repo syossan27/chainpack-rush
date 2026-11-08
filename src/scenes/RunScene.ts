@@ -364,6 +364,8 @@ export class RunScene extends Phaser.Scene {
     const cs = Math.floor((r - sec) * 100);
     this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
     this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
+    // 走っているあいだは出撃時間が止まっている: タイマーを薄く
+    this.hud.timer.setAlpha(c.running ? 0.45 : 1);
     this.hud.loop.setText(
       `${getRegion(this.regionId).name}　${c.loop}周目${this.speed !== 1 ? `　×${this.speed}` : ''}`,
     );

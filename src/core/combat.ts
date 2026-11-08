@@ -185,6 +185,8 @@ export class Combat {
   readonly mode: 'run' | 'dummy';
   /** 終了する tick。時間延長で増える（上限 TIME_BONUS.maxRunTime） */
   maxTicks: number;
+  /** 出撃時間の時計（交戦中・連鎖中だけ進む。走っているあいだは止まる） */
+  clock = 0;
   private chainSerial = 0;
   tick = 0;
   heroX = 0;
@@ -258,7 +260,7 @@ export class Combat {
   }
 
   get remaining(): number {
-    return Math.max(0, (this.maxTicks - this.tick) / SIM.ticksPerSecond);
+    return Math.max(0, (this.maxTicks - this.clock) / SIM.ticksPerSecond);
   }
 
   get unguarded(): boolean {
@@ -427,7 +429,9 @@ export class Combat {
     if (this.running) this.heroX += HERO.speed * dt;
 
     this.tick++;
-    if (this.tick >= this.maxTicks) this.end('timeout');
+    // 走っているあいだ（会敵するまで）は出撃時間を減らさない
+    if (!this.running) this.clock++;
+    if (this.clock >= this.maxTicks) this.end('timeout');
   }
 
   // ---- 内部 ----
