@@ -32,7 +32,14 @@ function power(it: ItemInstance): number {
   const def = getItemDef(it.defId);
   const r = RARITY[it.rarity].mult;
   if (def.kind === 'attack')
-    return (def.atk ?? 0) * r * AREA_WEIGHT[def.area ?? 'single'] + (def.applies ? 8 : 0);
+    return (
+      (def.atk ?? 0) *
+        r *
+        AREA_WEIGHT[def.area ?? 'single'] *
+        (def.hits ?? 1) *
+        (1 + (def.critBonus ?? 0)) +
+      (def.applies ? 8 : 0)
+    );
   if (def.kind === 'defense') return (def.defense ?? 0) * r * DEFENSE_WEIGHT;
   return 0;
 }
@@ -68,7 +75,8 @@ export function scoreLoadout(
         upgradeMult: attackMult,
         area: def.area === 'all' ? 'all' : undefined,
       });
-      damage += d * AREA_WEIGHT[def.area ?? 'single'];
+      damage +=
+        d * AREA_WEIGHT[def.area ?? 'single'] * (def.hits ?? 1) * (1 + (def.critBonus ?? 0));
       if (def.applies) statuses.add(def.applies);
     }
     time += atbTime + plan.duration;
@@ -162,6 +170,8 @@ const CONSUMABLE_PRIORITY = [
   'rain_charm',
   'oil_barrel',
   'time_stop',
+  'bomb',
+  'lucky_coin',
 ];
 
 /** ラン中の消耗品の使い方（簡単なルール）。使ったら defId を返す */
@@ -176,7 +186,9 @@ export function useConsumables(c: Combat, items: ReadonlyMap<string, ItemInstanc
       (def.effect === 'addTime' && c.remaining < 3 && c.engaged) ||
       (def.effect === 'rally' && !c.chain && engaged > 0 && c.atbRatio < 0.5) ||
       (def.effect === 'timeStop' && engaged > 0 && c.hp < c.maxHp * 0.5) ||
-      ((def.effect === 'wetAll' || def.effect === 'oilAll') && engaged >= 3);
+      ((def.effect === 'wetAll' || def.effect === 'oilAll' || def.effect === 'bombAll') &&
+        engaged >= 3) ||
+      (def.effect === 'critUp' && !c.chain && engaged > 0 && c.atbRatio > 0.8);
     if (want && c.useConsumable(i)) return def.id;
   }
   return null;

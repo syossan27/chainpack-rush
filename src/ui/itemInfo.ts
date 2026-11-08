@@ -32,6 +32,8 @@ export function describeItem(it: ItemInstance): string[] {
     );
     if (def.relayDelay && def.relayDelay !== CHAIN.relayDelay)
       lines.push(`次への伝達 ${def.relayDelay}秒`);
+    if (def.hits && def.hits > 1) lines.push(`1段で${def.hits}回攻撃`);
+    if (def.critBonus) lines.push(`会心率 +${Math.round(def.critBonus * 100)}%`);
     if (def.applies) {
       const partner = COMBOS.find((c) => c.status === def.applies);
       lines.push(
@@ -170,11 +172,13 @@ export function showItemDetail(
     rows.push(['攻撃力', `${fmt(atk)}`, u !== 1 ? `強化込み ${fmt(atk * u)}` : undefined]);
     if (def.area === 'all') rows.push(['全体攻撃', `威力 ×${AREA.allMult}`]);
     if (def.pierce) rows.push(['貫通', `狙いの後ろ ${def.pierce}体にも同じダメージ`]);
+    if (def.hits && def.hits > 1) rows.push(['連撃', `1段で${def.hits}回攻撃`]);
+    if (def.critBonus) rows.push(['会心率', `+${Math.round(def.critBonus * 100)}%`]);
     rows.push(['次への伝達', `${def.relayDelay ?? CHAIN.relayDelay}秒`]);
   } else if (def.kind === 'defense') {
     rows.push(['防御値', `+${fmt((def.defense ?? 0) * r)}`, '連鎖終了時に加算']);
   } else if (def.kind === 'origin') {
-    rows.push(['出口', `${it.exits.length}方向`, 'レアほど最初から分岐できる']);
+    rows.push(['出口', `${it.exits.length}方向`, 'レアリティで出口の数が決まる']);
   }
   if (opts.context !== undefined && def.kind !== 'consumable') {
     const ctx = opts.context;

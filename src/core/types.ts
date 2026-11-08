@@ -6,7 +6,8 @@ export type ItemKind = 'origin' | 'attack' | 'defense' | 'consumable';
 export type Element = 'physical' | 'blunt' | 'fire' | 'thunder' | 'ice' | 'water' | 'oil';
 export type Area = 'single' | 'sweep' | 'splash' | 'all';
 export type Status = 'wet' | 'oil' | 'frozen';
-export type ConsumableEffect = 'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal' | 'addTime';
+export type ConsumableEffect =
+  'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal' | 'addTime' | 'bombAll' | 'critUp';
 
 export const DIRS: readonly Dir[] = ['up', 'right', 'down', 'left'];
 export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
@@ -22,6 +23,8 @@ export interface ItemDef {
   applies?: Status;
   relayDelay?: number; // 既定 0.2 秒、大剣は 0.4 秒
   pierce?: number; // 狙いの後ろにも同ダメージを与える体数（槍）
+  hits?: number; // 1段で何回当てるか（双剣は2）
+  critBonus?: number; // この装備の会心率に足す（聖剣）
   effect?: ConsumableEffect;
   description: string;
 }

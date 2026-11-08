@@ -196,6 +196,9 @@ export const CONSUMABLE = {
   timeStopDuration: 3,
   healAmount: 40,
   timeSandSeconds: 5, // 時の砂
+  bombDamage: 60, // 爆弾（攻撃倍率の強化が乗る）
+  critUpChance: 0.3, // 幸運の硬貨
+  critUpDuration: 8,
   baseSlots: 3,
 } as const;
 

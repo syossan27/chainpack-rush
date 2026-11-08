@@ -27,7 +27,15 @@ import { chainMultiplier, planChain } from './chain';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { Rng } from './rng';
-import type { Area, ChainPlan, ConsumableEffect, ItemInstance, Loadout, Status } from './types';
+import type {
+  Area,
+  ChainPlan,
+  ConsumableEffect,
+  ItemDef,
+  ItemInstance,
+  Loadout,
+  Status,
+} from './types';
 
 export interface HeroStats {
   maxHp: number;
@@ -209,6 +217,9 @@ interface ActiveChain {
 const byFront = (a: EnemyState, b: EnemyState): number =>
   a.x - b.x || Number(a.def.boss) - Number(b.def.boss) || a.id - b.id;
 
+/** 爆弾のダメージ表示用（装備の uid ではない） */
+export const BOMB_UID = '__bomb__';
+
 const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 
 export class Combat {
@@ -223,6 +234,8 @@ export class Combat {
   heroX = 0;
   hp: number;
   defense = 0;
+  /** 幸運の硬貨の効き目が切れる tick */
+  private critUpUntil = -1;
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
   readonly luck: LuckRules;
@@ -419,6 +432,30 @@ export class Combat {
         break;
       case 'heal':
         this.hp = Math.min(this.maxHp, this.hp + CONSUMABLE.healAmount);
+        break;
+      case 'bombAll': {
+        const dmg = CONSUMABLE.bombDamage * this.cfg.hero.attackMult;
+        for (const e of this.onScreen()) {
+          const nullified = e.def.ability === 'damageThreshold' && dmg < BOSS.ironKnightThreshold;
+          this.emit({
+            type: 'hit',
+            tick: this.tick,
+            enemyId: e.id,
+            itemUid: BOMB_UID,
+            damage: nullified ? 0 : dmg,
+            combo: null,
+            nullified,
+            crit: false,
+          });
+          if (nullified) continue;
+          e.hp -= dmg;
+          this.stats.totalDamage += dmg;
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+        break;
+      }
+      case 'critUp':
+        this.critUpUntil = this.tick + secToTicks(CONSUMABLE.critUpDuration);
         break;
     }
     return true;
@@ -820,8 +857,31 @@ export class Combat {
       whiff: false,
     });
 
-    // 会心は段ごとに1回抽選（範囲攻撃なら当たった全員が会心）
-    const crit = (def.atk ?? 0) > 0 && this.rng.next() < this.luck.critChance;
+    // 会心は1回の攻撃ごとに抽選（範囲攻撃なら当たった全員が会心）。双剣は2回それぞれ抽選
+    const critChance =
+      this.luck.critChance +
+      (def.critBonus ?? 0) +
+      (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
+    for (let h = 0; h < (def.hits ?? 1); h++)
+      this.strike(c, s.uid, inst, def, eff, aim, critChance);
+  }
+
+  /** 1回の攻撃（双剣は1段で2回呼ぶ）。1回目で狙いが倒れたら手前の敵へ */
+  private strike(
+    c: ActiveChain,
+    uid: string,
+    inst: ItemInstance,
+    def: ItemDef,
+    eff: number,
+    aim: EnemyState,
+    critChance: number,
+  ): void {
+    if (!aim.alive) {
+      const next = this.targetOrder()[0];
+      if (!next) return;
+      aim = next;
+    }
+    const crit = (def.atk ?? 0) > 0 && this.rng.next() < critChance;
     const aimCombo = findCombo(def.element, aim.statuses);
     const area = effectiveArea(def.area ?? 'single', aimCombo);
     const targets = this.resolveTargets(aim, area, def.pierce ?? 0);
@@ -855,7 +915,7 @@ export class Combat {
           type: 'hit',
           tick: this.tick,
           enemyId: t.id,
-          itemUid: s.uid,
+          itemUid: uid,
           damage: dmg,
           combo: combo?.name ?? null,
           nullified,

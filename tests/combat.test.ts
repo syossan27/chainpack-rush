@@ -714,3 +714,87 @@ describe('乱数（会心・揺れ・精鋭）と新しいボス', () => {
     }
   });
 });
+
+describe('新しい装備と消耗品', () => {
+  const one = (defId: string, luck: Partial<typeof LUCK> = NO_LUCK) => {
+    const { loadout, items } = build(2, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'w', defId, x: 1, y: 0, exits: [] },
+    ]);
+    const c = new Combat({
+      seed: 3,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+      luck,
+    });
+    c.fireNext();
+    while (c.chain) c.step();
+    return c.drainEvents().filter((e) => e.type === 'hit');
+  };
+
+  it('双剣は1段で2回当たる', () => {
+    expect(one('twin_blades')).toHaveLength(2);
+  });
+
+  it('聖剣は会心率が上がる', () => {
+    let crits = 0;
+    let total = 0;
+    for (let k = 0; k < 300; k++) {
+      const { loadout, items } = build(2, 1, [
+        { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+        { uid: 'w', defId: 'holy_sword', x: 1, y: 0, exits: [] },
+      ]);
+      const c = new Combat({
+        seed: k,
+        regionId: 'grassland',
+        loadout,
+        items,
+        hero: BASE_HERO_STATS,
+        mode: 'dummy',
+        luck: { ...NO_LUCK, critChance: 0 },
+      });
+      c.fireNext();
+      while (c.chain) c.step();
+      for (const e of c.drainEvents())
+        if (e.type === 'hit') {
+          total++;
+          if (e.crit) crits++;
+        }
+    }
+    expect(crits / total).toBeGreaterThan(0.12);
+    expect(crits / total).toBeLessThan(0.3);
+  });
+
+  it('爆弾は画面内の全敵にダメージ、幸運の硬貨は会心率を上げる', () => {
+    const save = createInitialSave();
+    const bomb = { uid: 'b', defId: 'bomb', rarity: 'common' as const, exits: [], rerollCount: 0 };
+    const coin = {
+      uid: 'c',
+      defId: 'lucky_coin',
+      rarity: 'common' as const,
+      exits: [],
+      rerollCount: 0,
+    };
+    save.inventory.push(bomb, coin);
+    save.loadout.consumables = ['b', 'c'];
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout: save.loadout,
+      items: itemMap(save),
+      hero: BASE_HERO_STATS,
+      luck: NO_LUCK,
+    });
+    while (c.engagedEnemies().length === 0) c.step();
+    c.drainEvents();
+    const before = c.engagedEnemies().map((e) => e.hp);
+    expect(c.useConsumable(0)).toBe(true);
+    const hits = c.drainEvents().filter((e) => e.type === 'hit');
+    expect(hits.length).toBeGreaterThanOrEqual(before.length);
+    expect(hits.every((h) => h.type === 'hit' && h.damage === CONSUMABLE.bombDamage)).toBe(true);
+    expect(c.useConsumable(1)).toBe(true);
+  });
+});
