@@ -9,7 +9,7 @@ import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
 import { getSave } from '../platform/store';
 import { TopBar } from '../ui/kit/chrome';
-import { Button, Pill, icon, panel, ribbon } from '../ui/kit/widgets';
+import { Button, Pill, icon, panel, ribbon, bindTap } from '../ui/kit/widgets';
 import { SKIN } from '../ui/kit/skin';
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, textStyle } from '../ui/theme';
@@ -88,7 +88,7 @@ export class StageSelectScene extends Phaser.Scene {
       const card = panel(this, W / 2, y, W - 30, CARD_H, 'panel').setInteractive({
         useHandCursor: true,
       });
-      card.on('pointerup', () => {
+      bindTap(card, () => {
         if (!unlocked) {
           sfx('error');
           return;
@@ -144,7 +144,8 @@ export class StageSelectScene extends Phaser.Scene {
         pool.forEach((b, m) => {
           const bx = cx + (m - (pool.length - 1) / 2) * (size + 4);
           const frame = this.add.image(bx, by, SKIN.round).setDisplaySize(size, size);
-          frame.setInteractive({ useHandCursor: true }).on('pointerup', () => {
+          frame.setInteractive({ useHandCursor: true });
+          bindTap(frame, () => {
             if (!unlocked) return;
             sfx('click');
             this.traitOf.set(r.id, b);

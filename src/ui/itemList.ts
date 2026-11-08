@@ -1,4 +1,5 @@
 // 倉庫の一覧（スクロール、種類・レアリティで絞り込み、タップ・長押し・ドラッグ）
+import { bindTap } from './kit/widgets';
 import Phaser from 'phaser';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
@@ -110,7 +111,7 @@ export class ItemList extends Phaser.GameObjects.Container {
       const t = this.scene.add
         .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
         .setOrigin(0.5);
-      bg.on('pointerup', () => {
+      bindTap(bg, () => {
         sfx('click');
         onTap();
       });

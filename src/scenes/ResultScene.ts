@@ -8,7 +8,7 @@ import { sfx } from '../audio/sfx';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
-import { Button, ink, panel, ribbon } from '../ui/kit/widgets';
+import { Button, ink, panel, ribbon, bindTap } from '../ui/kit/widgets';
 import { ItemIcon } from '../ui/itemIcon';
 import { showItemDetail } from '../ui/itemInfo';
 import { COLORS, H, W, rarityColor, rarityCss, textStyle } from '../ui/theme';
@@ -160,7 +160,7 @@ export class ResultScene extends Phaser.Scene {
     this.grid.add(icon);
     // 開封がすべて終わったら、タップで能力の詳細
     icon.setInteractive({ useHandCursor: true });
-    icon.on('pointerup', () => {
+    bindTap(icon, () => {
       if (this.opened >= this.queue.length) showItemDetail(this, it);
     });
     this.grid.add(

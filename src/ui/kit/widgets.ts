@@ -51,6 +51,28 @@ export interface ButtonOptions {
   textColor?: string;
 }
 
+/**
+ * タップ: そのオブジェクトの上で押して、上で離したときだけ反応する。
+ * 別の場所から指を滑らせてきて離した（ドラッグの終わりなど）ときは反応しない。
+ */
+export function bindTap(
+  obj: Phaser.GameObjects.GameObject,
+  fn: (p: Phaser.Input.Pointer) => void,
+): void {
+  let pressed = false;
+  obj.on('pointerdown', () => {
+    pressed = true;
+  });
+  obj.on('pointerout', () => {
+    pressed = false;
+  });
+  obj.on('pointerup', (p: Phaser.Input.Pointer) => {
+    if (!pressed) return;
+    pressed = false;
+    fn(p);
+  });
+}
+
 export class Button extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.NineSlice;
   readonly label: Phaser.GameObjects.Text;
@@ -92,7 +114,7 @@ export class Button extends Phaser.GameObjects.Container {
       if (!this.disabledState) this.setScale(0.95);
     });
     this.bg.on('pointerout', () => this.setScale(1));
-    this.bg.on('pointerup', () => {
+    bindTap(this.bg, () => {
       unlockAudio();
       this.setScale(1);
       if (this.disabledState) {
@@ -155,7 +177,7 @@ export class RoundButton extends Phaser.GameObjects.Container {
     this.frame.setInteractive({ useHandCursor: true });
     this.frame.on('pointerdown', () => this.setScale(0.93));
     this.frame.on('pointerout', () => this.setScale(1));
-    this.frame.on('pointerup', () => {
+    bindTap(this.frame, () => {
       unlockAudio();
       this.setScale(1);
       onTap();

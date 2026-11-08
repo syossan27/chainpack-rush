@@ -24,7 +24,7 @@ import { BackpackView } from '../ui/backpackView';
 import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
 import { SKIN, SLICE } from '../ui/kit/skin';
-import { Button, RoundButton, confirmDialog, panel, ribbon } from '../ui/kit/widgets';
+import { Button, RoundButton, confirmDialog, panel, ribbon, bindTap } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
@@ -88,10 +88,10 @@ export class LoadoutScene extends Phaser.Scene {
     this.warn = this.add
       .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
       .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerup', () => {
-        if (sortieBlock(getSave()) === 'storageFull') sellOverflow(this);
-      });
+      .setInteractive({ useHandCursor: true });
+    bindTap(this.warn, () => {
+      if (sortieBlock(getSave()) === 'storageFull') sellOverflow(this);
+    });
     this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
       onTap: (it) => this.onListTap(it),
       onLongPress: (it) => this.openDetail(it, 'list'),
@@ -169,7 +169,7 @@ export class LoadoutScene extends Phaser.Scene {
           14,
         )
         .setInteractive({ useHandCursor: true });
-      bg.on('pointerup', () => {
+      bindTap(bg, () => {
         sfx('click');
         onTap();
       });

@@ -7,7 +7,7 @@ import { COLORS, H, W, textStyle } from '../theme';
 import type { IconName } from './icons';
 import { iconTex } from './icons';
 import { SKIN, SLICE } from './skin';
-import { Pill, RoundButton } from './widgets';
+import { Pill, RoundButton, bindTap } from './widgets';
 
 export const TOP_BAR_H = 96;
 export const TAB_BAR_H = 128;
@@ -131,7 +131,7 @@ export class TabBar extends Phaser.GameObjects.Container {
       tile.setInteractive({ useHandCursor: true });
       tile.on('pointerdown', () => tile.setScale(0.94));
       tile.on('pointerout', () => tile.setScale(1));
-      tile.on('pointerup', () => {
+      bindTap(tile, () => {
         tile.setScale(1);
         if (!on) onSelect(t.id);
       });
