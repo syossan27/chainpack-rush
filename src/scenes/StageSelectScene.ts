@@ -1,6 +1,7 @@
 // 地域の一覧と敵情報（雑魚の傾向、ボスの出現順と特徴）
 import Phaser from 'phaser';
 import { sortieBlock } from '../core/economy';
+import { sellOverflow } from './LoadoutScene';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
 import { REGIONS, type RegionDef } from '../data/regions';
 import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
@@ -58,17 +59,20 @@ export class StageSelectScene extends Phaser.Scene {
     });
     if (!block)
       this.tweens.add({ targets: go, scale: 1.05, yoyo: true, repeat: -1, duration: 650 });
-    if (block) {
+    if (block === 'noOrigin') {
       this.add
-        .text(
-          W / 2,
-          H - 156,
-          block === 'noOrigin'
-            ? '起点がバックパックにありません'
-            : '倉庫があふれています（売却してください）',
-          textStyle(22, COLORS.textWarn),
-        )
+        .text(W / 2, H - 156, '起点がバックパックにありません', textStyle(22, COLORS.textWarn))
         .setOrigin(0.5);
+    } else if (block === 'storageFull') {
+      this.add
+        .text(W / 2 - 90, H - 162, '倉庫があふれています', textStyle(22, COLORS.textWarn))
+        .setOrigin(0.5);
+      new Button(this, W / 2 + 150, H - 162, 'あふれた分を売る', () => sellOverflow(this), {
+        width: 230,
+        height: 56,
+        fontSize: 20,
+        skin: 'red',
+      });
     }
   }
 

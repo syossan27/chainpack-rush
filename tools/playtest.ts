@@ -57,12 +57,10 @@ for (let p = 0; p < PLAYERS; p++) {
   const rng = new Rng(9000 + p);
   for (let run = 1; run <= RUNS; run++) {
     // 準備: 売る → 強化 → 配置を組み直す
-    const goldBefore = save.gold;
-    sellJunk(save);
+    let goldEarned = sellJunk(save);
     const bought = buyUpgrades(save);
     optimizeLoadout(save, rng);
-    sellJunk(save); // 組み直しで外れた装備が倉庫に戻るので、あふれたらもう一度売る
-    const goldEarned = save.gold - goldBefore;
+    goldEarned += sellJunk(save); // 組み直しで外れた装備が倉庫に戻るので、あふれたらもう一度売る
     const block = sortieBlock(save);
     if (block) {
       blocked.push(
@@ -206,6 +204,19 @@ for (const r of REGIONS) {
   );
 }
 out();
+{
+  // 序盤（1〜5回目）の死因
+  const early = logs.filter((l) => l.run <= 5);
+  const deaths = new Map<string, number>();
+  for (const l of early) if (l.deathBy) deaths.set(l.deathBy, (deaths.get(l.deathBy) ?? 0) + 1);
+  const top = [...deaths.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([k, v]) => `${k} ${pct(v / early.length)}`)
+    .join('、');
+  out(`序盤（1〜5回目）の死因: ${top || '-'}`);
+  out();
+}
 out('## 強化の購入（最初に買った出撃回数の中央値・最後まで何段階まで上げたか）');
 out();
 out('| 強化 | 1段目（出撃） | 最終の段階（平均） | 上限 |');

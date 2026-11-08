@@ -105,6 +105,23 @@ export function sellItems(save: SaveData, uids: readonly string[]): number {
   return total;
 }
 
+/**
+ * 倉庫があふれたときに売る候補: 装備中でないものを、安い順（コモン→…、消耗品は後回し）に、
+ * ちょうど容量に収まる数だけ選ぶ。
+ */
+export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number } {
+  const over = storageCount(save) - storageCapacity(save);
+  if (over <= 0) return { uids: [], gold: 0 };
+  const eq = equippedUids(save);
+  const picks = save.inventory
+    .filter((i) => !eq.has(i.uid))
+    .map((i) => ({ i, consumable: getItemDef(i.defId).kind === 'consumable' ? 1 : 0 }))
+    .sort((a, b) => a.consumable - b.consumable || sellPrice(a.i) - sellPrice(b.i))
+    .slice(0, over)
+    .map((x) => x.i);
+  return { uids: picks.map((i) => i.uid), gold: picks.reduce((s, i) => s + sellPrice(i), 0) };
+}
+
 export type RerollMode = 'reroll' | 'specify';
 
 export function rerollCost(item: ItemInstance, mode: RerollMode): number {

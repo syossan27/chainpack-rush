@@ -147,7 +147,7 @@ export const ESCORT_ID = 'goblin';
 export const BOSS_TRAITS: Record<string, string> = {
   big_slime: '単体、特殊能力なし（どちらの構成でも可）',
   goblin_king: '取り巻きゴブリンを常に4体呼ぶ（短い連鎖の複数・薙ぎ払いが有利）',
-  iron_knight: '一撃200未満のダメージを無効（一本の長い連鎖が有利）',
+  iron_knight: '一撃120未満のダメージを無効（連鎖の後半や大技で崩す）',
 };
 
 export function getEnemyDef(id: string): EnemyDef {

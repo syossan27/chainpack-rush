@@ -117,9 +117,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'attack',
     element: 'water',
     area: 'single',
-    atk: 2,
+    atk: 4,
     applies: 'wet',
-    description: '狙いを濡らす。雷で感電させられる。',
+    description: '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。',
   },
   {
     id: 'raincloud_staff',
@@ -127,9 +127,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'attack',
     element: 'water',
     area: 'all',
-    atk: 1,
+    atk: 2,
     applies: 'wet',
-    description: '画面内の全敵を濡らす。',
+    description: '画面内の全敵を濡らす。状態がついた敵へのダメージ×1.2。',
   },
   {
     id: 'oil_bottle',
@@ -137,9 +137,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'attack',
     element: 'oil',
     area: 'single',
-    atk: 0,
+    atk: 3,
     applies: 'oil',
-    description: '狙いに油をかける。炎で爆発させられる。',
+    description: '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。',
   },
 
   {

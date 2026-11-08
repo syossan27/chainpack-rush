@@ -51,6 +51,8 @@ export const AREA = {
 
 export const STATUS = {
   duration: 5,
+  /** 状態がついた相手へのコンボ以外の攻撃は ×1.2（状態付与の装備にも単体で役目を持たせる） */
+  exposedMult: 1.2,
 } as const;
 
 export interface ComboRule {
@@ -95,7 +97,7 @@ export const LOOP_SCALING = {
 } as const;
 
 export const BOSS = {
-  ironKnightThreshold: 200, // 一撃200未満のダメージを無効
+  ironKnightThreshold: 120, // 一撃120未満のダメージを無効（200だと特定の組み方しか通らなかった）
   goblinKingEscorts: 4,
   goblinKingSummonInterval: 4.0, // 秒。取り巻きが4体未満なら1体ずつ呼ぶ（初回は4体まとめて）
 } as const;
@@ -179,6 +181,7 @@ export const LOOT = {
   kindWeights: { attack: 0.6, defense: 0.15, consumable: 0.15, origin: 0.1 },
   commonShiftPerLoop: 0.1, // 1周ごとにコモンから10%分をレア以上へ
   consumableSell: 3,
+  bossDrops: 2, // ボスは戦利品を2個落とす（序盤の伸びを早める）
   originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
 } as const;
 
@@ -203,7 +206,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.6, maxLevel: 10 },
   atb: { id: 'atb', name: 'ATB短縮', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
   attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.6, maxLevel: 20 },
-  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 600, growth: 2.0, maxLevel: 5 }, // +2秒×5（高め）
+  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
   backpack: {
     id: 'backpack',
     name: 'バックパック拡張',

@@ -8,9 +8,11 @@ import {
   rerollCost,
   rerollItem,
   sellItems,
+  overflowSellPlan,
   sortieBlock,
   specifyExits,
   storageCapacity,
+  storageCount,
   upgradeCost,
 } from '../src/core/economy';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
@@ -140,6 +142,25 @@ describe('economy', () => {
     acceptLoot(s, drops);
     expect(s.inventory.length).toBe(67);
     expect(sortieBlock(s)).toBe('storageFull');
+  });
+
+  it('あふれた分の売却: 装備中以外を安い順に、ちょうど収まる数だけ', () => {
+    const s = createInitialSave();
+    const drops = Array.from({ length: 45 }, (_, i) => ({
+      uid: `d${i}`,
+      defId: i === 0 ? 'greatsword' : 'sword',
+      rarity: (i === 0 ? 'epic' : 'common') as 'epic' | 'common',
+      exits: [],
+      rerollCount: 0,
+    }));
+    acceptLoot(s, drops);
+    const over = storageCount(s) - storageCapacity(s);
+    const plan = overflowSellPlan(s);
+    expect(plan.uids).toHaveLength(over);
+    expect(plan.uids).not.toContain('d0');
+    sellItems(s, plan.uids);
+    expect(sortieBlock(s)).toBeNull();
+    expect(overflowSellPlan(s).uids).toEqual([]);
   });
 
   it('起点がなければ出撃できない', () => {

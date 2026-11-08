@@ -1,7 +1,14 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
-import { consumableSlots, equippedUids, itemMap, sortieBlock } from '../core/economy';
+import {
+  consumableSlots,
+  equippedUids,
+  itemMap,
+  overflowSellPlan,
+  sellItems,
+  sortieBlock,
+} from '../core/economy';
 import {
   clearLoadout,
   cycleOriginOrder,
@@ -80,7 +87,11 @@ export class LoadoutScene extends Phaser.Scene {
     this.slots = this.add.container(0, LOADOUT_LAYOUT.slotsTop);
     this.warn = this.add
       .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => {
+        if (sortieBlock(getSave()) === 'storageFull') sellOverflow(this);
+      });
     this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
       onTap: (it) => this.onListTap(it),
       onLongPress: (it) => this.openDetail(it, 'list'),
@@ -129,7 +140,7 @@ export class LoadoutScene extends Phaser.Scene {
       block === 'noOrigin'
         ? '起点が0個です。出撃できません'
         : block === 'storageFull'
-          ? '倉庫があふれています'
+          ? '倉庫があふれています（タップで売却）'
           : '',
     );
     const eq = equippedUids(save);
@@ -442,4 +453,23 @@ export class LoadoutScene extends Phaser.Scene {
     }
     this.commit();
   }
+}
+
+/** 倉庫からあふれた分を、安いものから売る（確認つき）。売ったらシーンを開き直す */
+export function sellOverflow(scene: Phaser.Scene): void {
+  const save = getSave();
+  const plan = overflowSellPlan(save);
+  if (plan.uids.length === 0) return;
+  confirmDialog(
+    scene,
+    'あふれた分を売る',
+    `安いものから${plan.uids.length}個を売って倉庫に収めます\n（+${plan.gold}G）`,
+    '売る',
+    () => {
+      sellItems(save, plan.uids);
+      persist();
+      sfx('drop');
+      scene.scene.restart();
+    },
+  );
 }

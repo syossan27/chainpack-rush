@@ -7,6 +7,7 @@ import {
   FIELD,
   HERO,
   LOOP_SCALING,
+  LOOT,
   RARITY,
   SIM,
   STATUS,
@@ -743,7 +744,7 @@ export class Combat {
         atk: def.atk ?? 0,
         rarity: inst.rarity,
         step: eff,
-        comboMult: combo?.mult ?? 1,
+        comboMult: combo?.mult ?? (t.statuses.size > 0 ? STATUS.exposedMult : 1),
         upgradeMult: this.cfg.hero.attackMult,
         area: def.area === 'all' ? 'all' : undefined,
       });
@@ -812,9 +813,12 @@ export class Combat {
     if (!e.escort && this.mode === 'run') {
       const roll = this.rng.next();
       if (roll < e.def.dropRate) {
-        const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, e.def.boss);
-        this.drops.push(item);
-        this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+        const count = e.def.boss ? LOOT.bossDrops : 1;
+        for (let k = 0; k < count; k++) {
+          const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, e.def.boss);
+          this.drops.push(item);
+          this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+        }
       }
     }
     // 一網打尽: 群れの全員を同じ1回の連鎖で倒した

@@ -36,6 +36,9 @@ const COMBO_TINT: Record<string, number> = {
   shatter: 0xc8f0ff,
 };
 
+/** 時間延長の表示位置（周回ゲージ y=140 の下、帯 y=250 の上） */
+const TIME_BONUS_Y = 188;
+
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
   private items!: Map<string, ItemInstance>;
@@ -437,20 +440,21 @@ export class RunScene extends Phaser.Scene {
   /** 時間が延びた: タイマーの横に「+8.0」が浮かび、タイマーが金色に光る */
   private showTimeBonus(seconds: number, capped: boolean): void {
     const label = seconds > 0 ? `+${seconds.toFixed(1)}` : '上限';
-    // タイマーの下から浮かび上がる。ゲームスピードに関係なく同じ長さで見せる
+    // 周回ゲージの下（地域名や一網打尽の帯と重ならない所）に出して、少し浮かせて消す。
+    // ゲームスピードに関係なく同じ長さで見せる
     const t = this.add
       .text(
         W / 2 + 74,
-        96,
-        label,
-        textStyle(40, capped && seconds <= 0 ? COLORS.textDim : '#ffe27a'),
+        TIME_BONUS_Y,
+        `時間 ${label}`,
+        textStyle(34, capped && seconds <= 0 ? COLORS.textDim : '#ffe27a'),
       )
       .setOrigin(0.5)
       .setDepth(80);
     const k = this.speed;
     this.tweens.add({
       targets: t,
-      y: 60,
+      y: TIME_BONUS_Y - 18,
       alpha: 0,
       delay: 600 * k,
       duration: 600 * k,

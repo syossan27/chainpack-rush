@@ -1,6 +1,6 @@
 // 自動プレイ用のボット（プレイヤーの代わりに、配置・消耗品・売却・強化を決める）
 // 人間の遊び方とは違うので、結果は「目安」として読む。
-import { AREA, RARITY, type UpgradeId } from '../src/config/balance';
+import { AREA, RARITY, STATUS, type UpgradeId } from '../src/config/balance';
 import { planChain, simulateChain } from '../src/core/chain';
 import type { Combat } from '../src/core/combat';
 import { computeDamage, findCombo } from '../src/core/damage';
@@ -64,7 +64,7 @@ export function scoreLoadout(
         atk: def.atk ?? 0,
         rarity: it.rarity,
         step: s.step,
-        comboMult: combo?.mult ?? 1,
+        comboMult: combo?.mult ?? (statuses.size > 0 ? STATUS.exposedMult : 1),
         upgradeMult: attackMult,
         area: def.area === 'all' ? 'all' : undefined,
       });
