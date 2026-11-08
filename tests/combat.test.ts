@@ -551,3 +551,34 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
     expect(evs.filter((e) => e.type === 'step')).toHaveLength(0);
   });
 });
+
+describe('撤退', () => {
+  it('撤退するとその場で終わり、拾った戦利品は結果に残る。カカシでは撤退できない', () => {
+    const save = createInitialSave();
+    const c = new Combat({
+      seed: 3,
+      regionId: 'grassland',
+      loadout: save.loadout,
+      items: itemMap(save),
+      hero: BASE_HERO_STATS,
+    });
+    while (!c.ended && c.drops.length === 0) c.step();
+    expect(c.ended).toBeNull();
+    const got = c.drops.length;
+    c.retreat();
+    expect(c.ended).toBe('retreat');
+    const end = c.drainEvents().find((e) => e.type === 'runEnd');
+    expect(end?.type === 'runEnd' && end.reason).toBe('retreat');
+    expect(c.result().drops).toHaveLength(got);
+
+    const d = new Combat({
+      ...specExample(),
+      seed: 1,
+      regionId: 'grassland',
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+    });
+    d.retreat();
+    expect(d.ended).toBeNull();
+  });
+});

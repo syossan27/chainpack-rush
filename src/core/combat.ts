@@ -70,7 +70,8 @@ export interface EnemyState {
   killedBy: number; // 倒した連鎖の番号（-1 は生存中・連鎖以外）
 }
 
-export type EndReason = 'timeout' | 'dead';
+/** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
+export type EndReason = 'timeout' | 'dead' | 'retreat';
 
 export type CombatEvent =
   | { type: 'loopStart'; tick: number; loop: number; bossId: string }
@@ -454,6 +455,12 @@ export class Combat {
 
   private emit(ev: CombatEvent): void {
     this.events.push(ev);
+  }
+
+  /** プレイヤーの撤退。ここまでの戦利品を持ち帰って終わる */
+  retreat(): void {
+    if (this.mode !== 'run') return;
+    this.end('retreat');
   }
 
   private end(reason: EndReason): void {

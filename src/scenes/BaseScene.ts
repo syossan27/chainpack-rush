@@ -30,7 +30,7 @@ import { describeItem, showItemDetail } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
-import { Button, RoundButton, ink, panel, ribbon } from '../ui/kit/widgets';
+import { Button, RoundButton, confirmDialog, ink, panel, ribbon } from '../ui/kit/widgets';
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, rarityCss, textStyle } from '../ui/theme';
 
@@ -56,6 +56,8 @@ export class BaseScene extends Phaser.Scene {
   private root!: Phaser.GameObjects.Container;
   private selected: string | null = null;
   private specify: Dir[] = [];
+  /** 倉庫の「まとめて売る」で選んでいる uid（null = 選ぶモードではない） */
+  private sellPick: Set<string> | null = null;
   private toast: Phaser.GameObjects.Text | null = null;
 
   constructor() {
@@ -65,6 +67,7 @@ export class BaseScene extends Phaser.Scene {
   init(data: { page?: Page }): void {
     this.page = data.page ?? 'home';
     this.selected = null;
+    this.sellPick = null;
   }
 
   create(): void {
@@ -76,6 +79,7 @@ export class BaseScene extends Phaser.Scene {
     this.page = page;
     this.selected = null;
     this.specify = [];
+    this.sellPick = null;
     this.render();
   }
 
@@ -287,50 +291,119 @@ export class BaseScene extends Phaser.Scene {
           },
         ],
       });
-    const list = new ItemList(this, CONTENT_TOP + 84, 900, {
-      onTap: openDetail,
-      onLongPress: openDetail,
-    });
-    list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
-    this.root.add(list);
-    this.root.add(
-      this.add
-        .text(
-          W / 2,
-          950,
-          'タップで能力を確認・売却。装備中のものは一覧に出ません',
-          textStyle(20, COLORS.textDim),
-        )
-        .setOrigin(0.5),
+    // まとめて売る: 選ぶモードではタップで選択／解除し、最後にまとめて売る
+    const pick = this.sellPick;
+    const stored = () => getSave().inventory.filter((i) => !eq.has(i.uid));
+    const list = new ItemList(
+      this,
+      CONTENT_TOP + 84,
+      900,
+      {
+        onTap: (it) => {
+          if (!pick) return openDetail(it);
+          if (pick.has(it.uid)) pick.delete(it.uid);
+          else pick.add(it.uid);
+          sfx('click');
+          list.setItems(stored());
+          refreshPick();
+        },
+        onLongPress: openDetail,
+      },
+      (it) => (pick?.has(it.uid) ? '売る' : null),
     );
-    const bulk = (x: number, label: string, pred: (it: ItemInstance) => boolean) => {
-      const targets = save.inventory.filter((i) => !eq.has(i.uid) && pred(i));
+    list.setItems(stored());
+    this.root.add(list);
+    const hint = this.add
+      .text(
+        W / 2,
+        950,
+        pick
+          ? '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）'
+          : 'タップで能力を確認・売却。装備中のものは一覧に出ません',
+        textStyle(20, pick ? COLORS.gold : COLORS.textDim),
+      )
+      .setOrigin(0.5);
+    this.root.add(hint);
+
+    const sellWithConfirm = (uids: string[], title: string) => {
+      const items = save.inventory.filter((i) => uids.includes(i.uid));
+      const gold = items.reduce((sum, i) => sum + sellPrice(i), 0);
+      confirmDialog(this, title, `${items.length}個を売ります（+${gold}G）`, '売る', () => {
+        const g = sellItems(save, uids);
+        persist();
+        sfx('drop');
+        this.sellPick = null;
+        this.showToast(`+${g}G`);
+        this.render();
+      });
+    };
+
+    let pickBtn: Button | null = null;
+    const refreshPick = () => {
+      if (!pick || !pickBtn) return;
+      const gold = save.inventory
+        .filter((i) => pick.has(i.uid))
+        .reduce((sum, i) => sum + sellPrice(i), 0);
+      pickBtn.setText(pick.size > 0 ? `${pick.size}個を売る +${gold}G` : '選んで売る');
+      pickBtn.setDisabled(pick.size === 0);
+    };
+
+    if (pick) {
       this.root.add(
         new Button(
           this,
-          x,
+          W / 2 - 166,
           1060,
-          `${label} ${targets.length}`,
+          'やめる',
           () => {
-            const g = sellItems(
-              save,
-              targets.map((t) => t.uid),
-            );
-            persist();
-            sfx('drop');
-            this.showToast(`+${g}G`);
+            this.sellPick = null;
             this.render();
           },
-          { width: 320, height: 72, fontSize: 22, skin: 'red', disabled: targets.length === 0 },
+          { width: 320, height: 72, fontSize: 24, skin: 'gray', icon: 'back' },
         ),
       );
-    };
-    bulk(
-      W / 2 - 166,
-      'コモン一括売却',
-      (i) => i.rarity === 'common' && getItemDef(i.defId).kind !== 'consumable',
-    );
-    bulk(W / 2 + 166, '消耗品一括売却', (i) => getItemDef(i.defId).kind === 'consumable');
+      pickBtn = new Button(
+        this,
+        W / 2 + 166,
+        1060,
+        '',
+        () => sellWithConfirm([...pick], 'まとめて売る'),
+        { width: 320, height: 72, fontSize: 22, skin: 'red' },
+      );
+      this.root.add(pickBtn);
+      refreshPick();
+    } else {
+      this.root.add(
+        new Button(
+          this,
+          W / 2 - 166,
+          1060,
+          'まとめて売る',
+          () => {
+            this.sellPick = new Set();
+            this.render();
+          },
+          { width: 320, height: 72, fontSize: 24, skin: 'blue', icon: 'coin' },
+        ),
+      );
+      const commons = stored().filter(
+        (i) => i.rarity === 'common' && getItemDef(i.defId).kind !== 'consumable',
+      );
+      this.root.add(
+        new Button(
+          this,
+          W / 2 + 166,
+          1060,
+          `コモン一括売却 ${commons.length}`,
+          () =>
+            sellWithConfirm(
+              commons.map((i) => i.uid),
+              'コモンを一括売却',
+            ),
+          { width: 320, height: 72, fontSize: 22, skin: 'red', disabled: commons.length === 0 },
+        ),
+      );
+    }
   }
 
   // ---- 鍛冶屋（向きの付け直し） ----

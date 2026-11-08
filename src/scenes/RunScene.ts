@@ -18,7 +18,7 @@ import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
-import { Bar, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
+import { Bar, Button, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor } from '../ui/pools';
@@ -207,9 +207,23 @@ export class RunScene extends Phaser.Scene {
     shade.on('pointerup', () => this.setPaused(false));
     pause.add([
       shade,
-      panel(this, W / 2, H / 2, 460, 260, 'panel'),
-      this.add.text(W / 2, H / 2 - 40, '一時停止中', textStyle(48, '#ffe27a')).setOrigin(0.5),
-      this.add.text(W / 2, H / 2 + 50, 'タップで再開', textStyle(28)).setOrigin(0.5),
+      panel(this, W / 2, H / 2, 480, 400, 'panel'),
+      this.add.text(W / 2, H / 2 - 120, '一時停止中', textStyle(48, '#ffe27a')).setOrigin(0.5),
+      new Button(this, W / 2, H / 2 - 10, '再開', () => this.setPaused(false), {
+        width: 300,
+        height: 88,
+        skin: 'gold',
+      }),
+      new Button(this, W / 2, H / 2 + 100, '撤退する', () => this.retreat(), {
+        width: 300,
+        height: 80,
+        fontSize: 26,
+        skin: 'red',
+        icon: 'back',
+      }),
+      this.add
+        .text(W / 2, H / 2 + 162, 'ここまでの戦利品を持ち帰ります', textStyle(18, COLORS.textDim))
+        .setOrigin(0.5),
     ]);
     this.hud = {
       timer,
@@ -318,6 +332,15 @@ export class RunScene extends Phaser.Scene {
         },
       });
     });
+  }
+
+  /** 撤退: 一時停止を解いてランを終える（戦利品は持ち帰り） */
+  private retreat(): void {
+    if (this.ending || this.combat.ended) return;
+    sfx('click');
+    this.setPaused(false);
+    this.combat.retreat();
+    this.handleEvents(this.combat.drainEvents());
   }
 
   private setPaused(p: boolean): void {

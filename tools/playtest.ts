@@ -2,7 +2,7 @@
 // 使い方: PLAYERS=30 RUNS=80 npm run playtest  → reports/playtest.md
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { SIM, UPGRADES, type UpgradeId } from '../src/config/balance';
-import { Combat } from '../src/core/combat';
+import { Combat, type EndReason } from '../src/core/combat';
 import {
   acceptLoot,
   consumeItems,
@@ -27,7 +27,7 @@ interface RunLog {
   run: number;
   region: string;
   loop: number;
-  reason: 'timeout' | 'dead';
+  reason: EndReason;
   deathBy: string | null; // 力尽きたときに戦っていた相手
   gold: number;
   goldEarned: number;
