@@ -20,6 +20,10 @@ export interface RegionDef {
   groupSize: [number, number];
   /** 周回ごとのボス候補（1周目, 2周目, 3周目…。最後の候補は4周目以降も使う） */
   bossPools: string[][];
+  /** 敵の強さの倍率（周回の伸びに掛ける。奥の地域ほど一気に強い） */
+  power: { hp: number; atk: number };
+  /** 戦利品: コモンからレア以上へ回す割合（周回の分に足す）と、アーティファクトの出やすさの倍率 */
+  loot: { rarityShift: number; artifactMult: number };
   bgColors: [number, number, number]; // 仮背景（奥→手前）
   groundColor: number;
 }
@@ -28,7 +32,7 @@ export const REGIONS: readonly RegionDef[] = [
   {
     id: 'grassland',
     name: '草原',
-    mobTrend: 'スライム、ゴブリン、狼（チュートリアル）',
+    mobTrend: 'スライム、ゴブリン、狼',
     mobs: [
       { id: 'slime', weight: 5 },
       { id: 'goblin', weight: 2 },
@@ -41,6 +45,8 @@ export const REGIONS: readonly RegionDef[] = [
       ['goblin_king', 'slime_mother'],
       ['iron_knight', 'golem'],
     ],
+    power: { hp: 1, atk: 1 },
+    loot: { rarityShift: 0, artifactMult: 1 },
     bgColors: [0x7ec8f0, 0x6ab070, 0x4a9050],
     groundColor: 0x6b4a2a,
   },
@@ -60,6 +66,8 @@ export const REGIONS: readonly RegionDef[] = [
       ['goblin_king', 'lich'],
       ['lich', 'bat_queen', 'golem'],
     ],
+    power: { hp: 2.5, atk: 1.8 },
+    loot: { rarityShift: 0.2, artifactMult: 2 },
     bgColors: [0x1c1828, 0x2c2638, 0x3c3448],
     groundColor: 0x3a3040,
   },
@@ -80,6 +88,8 @@ export const REGIONS: readonly RegionDef[] = [
       ['goblin_king', 'bat_queen'],
       ['iron_knight', 'golem', 'lich'],
     ],
+    power: { hp: 6, atk: 3 },
+    loot: { rarityShift: 0.4, artifactMult: 4 },
     bgColors: [0x9ab0c8, 0x7a8090, 0x5a6070],
     groundColor: 0x6a6a70,
   },

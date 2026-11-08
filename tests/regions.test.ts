@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD } from '../src/config/balance';
+import { FIELD, NO_LUCK } from '../src/config/balance';
+import { rarityWeights } from '../src/core/loot';
 import { Combat } from '../src/core/combat';
 import { REGIONS, bossPoolForLoop } from '../src/data/regions';
 import { groupSpan, rollLoop } from '../src/core/layout';
@@ -63,5 +64,49 @@ describe('regions（周回ごとの抽選）', () => {
         }
       }
     }
+  });
+});
+
+describe('地域の強さと戦利品', () => {
+  it('草原→洞窟→城壁の順に、敵の強さ・レア以上の出やすさ・アーティファクトの出やすさが上がる', () => {
+    for (let i = 1; i < REGIONS.length; i++) {
+      const a = REGIONS[i - 1]!;
+      const b = REGIONS[i]!;
+      expect(b.power.hp).toBeGreaterThan(a.power.hp);
+      expect(b.power.atk).toBeGreaterThan(a.power.atk);
+      expect(b.loot.rarityShift).toBeGreaterThan(a.loot.rarityShift);
+      expect(b.loot.artifactMult).toBeGreaterThan(a.loot.artifactMult);
+    }
+  });
+
+  it('同じ雑魚でも地域の倍率がかかる', () => {
+    const { loadout, items } = buildReference(REFERENCE_LOADOUTS[0]!);
+    const hpOf = (regionId: string) => {
+      const c = new Combat({
+        seed: 1,
+        regionId,
+        loadout,
+        items,
+        hero: referenceHeroStats(),
+        luck: NO_LUCK,
+      });
+      const e = c.enemies.find((x) => !x.def.boss)!;
+      return { ratio: e.maxHp / e.def.hp, atk: e.atk / e.def.atk };
+    };
+    for (const r of REGIONS) {
+      const v = hpOf(r.id);
+      expect(v.ratio).toBeCloseTo(r.power.hp);
+      expect(v.atk).toBeCloseTo(r.power.atk);
+    }
+  });
+
+  it('奥の地域ほどコモンが減り、レア以上が増える', () => {
+    const common = (shift: number) =>
+      rarityWeights(1, false, shift).find(([r]) => r === 'common')![1];
+    const shifts = REGIONS.map((r) => r.loot.rarityShift);
+    for (let i = 1; i < shifts.length; i++)
+      expect(common(shifts[i]!)).toBeLessThan(common(shifts[i - 1]!));
+    const total = rarityWeights(1, false, 0.4).reduce((s, [, w]) => s + w, 0);
+    expect(total).toBeCloseTo(1);
   });
 });

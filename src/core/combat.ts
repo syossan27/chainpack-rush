@@ -599,7 +599,9 @@ export class Combat {
     const def = getEnemyDef(defId);
     const scaleLoop = this.loop - 1;
     const el = elite ? ELITES[elite] : null;
-    const maxHp = def.hp * Math.pow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
+    // 地域の強さ × 周回の伸び × 精鋭
+    const maxHp =
+      def.hp * this.region.power.hp * Math.pow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
     const e: EnemyState = {
       id: this.nextEnemyId++,
       defId,
@@ -607,7 +609,7 @@ export class Combat {
       x,
       hp: maxHp,
       maxHp,
-      atk: def.atk * Math.pow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
+      atk: def.atk * this.region.power.atk * Math.pow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
       interval: def.interval * (el?.interval ?? 1),
       // 攻撃のタイミングはシードで少しずらす（同じシードなら同じ結果）
       attackTimer: def.boss ? 0 : this.rng.next() * def.interval * FIELD.attackPhaseJitter,
@@ -1031,7 +1033,13 @@ export class Combat {
         const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
         const rareOrBetter = e.def.boss || e.elite === 'golden';
         for (let k = 0; k < count; k++) {
-          const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, rareOrBetter);
+          const item = rollLoot(
+            this.rng,
+            e.loop,
+            `drop-${this.nextDropId++}`,
+            rareOrBetter,
+            this.region.loot,
+          );
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
         }

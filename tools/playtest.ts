@@ -75,8 +75,15 @@ for (let p = 0; p < PLAYERS; p++) {
       if (eqIds.has(it.uid)) placedCount.set(it.defId, (placedCount.get(it.defId) ?? 0) + 1);
     }
     const chain = chainSummary(save);
-    // 出撃: 開放済みの一番奥の地域
-    const region = save.progress.unlocked[save.progress.unlocked.length - 1]!;
+    // 出撃: 開放済みの一番奥の地域。ただしそこで直近5回の平均が1.5周未満なら、ひとつ手前で稼ぐ
+    // （10回に1回は奥へ挑み直す）
+    const opened = save.progress.unlocked;
+    let region = opened[opened.length - 1]!;
+    if (opened.length > 1 && run % 10 !== 0) {
+      const recent = logs.filter((l) => l.player === p && l.region === region).slice(-5);
+      const mean = recent.reduce((a, l) => a + l.loop, 0) / Math.max(1, recent.length);
+      if (recent.length >= 5 && mean < 1.5) region = opened[opened.length - 2]!;
+    }
     const items = itemMap(save);
     const c = new Combat({
       seed: p * 10000 + run,
@@ -146,7 +153,7 @@ const out = (s = '') => lines.push(s);
 out('# 自動プレイ レポート');
 out();
 out(
-  `ボット ${PLAYERS}人 × 最大 ${RUNS}出撃（${((Date.now() - t0) / 1000).toFixed(1)}秒で計算）。初期セーブから「売却 → 強化 → 配置の組み直し → 出撃」をくり返す。出撃先は開放済みの一番奥の地域。`,
+  `ボット ${PLAYERS}人 × 最大 ${RUNS}出撃（${((Date.now() - t0) / 1000).toFixed(1)}秒で計算）。初期セーブから「売却 → 強化 → 配置の組み直し → 出撃」をくり返す。出撃先は開放済みの一番奥の地域だが、そこで直近5回の平均が1.5周未満ならひとつ手前で稼ぐ（10回に1回は奥へ）。`,
 );
 out(
   'ボットの配置は「出口をたどってルートを組む」を24回試して、1秒あたりのダメージ見積もりが最大のものを選ぶ。人間の遊び方とは違うので、数字は目安。',

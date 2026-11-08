@@ -7,8 +7,15 @@ import type { Dir, ItemInstance, ItemKind, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
 /** 周回ごとにコモンの確率を下げ、その分をレア以上へ元の比率で振り分ける */
-export function rarityWeights(loop: number, rareOrBetter = false): [Rarity, number][] {
-  const shift = Math.min(RARITY.common.baseRate, LOOT.commonShiftPerLoop * Math.max(0, loop - 1));
+export function rarityWeights(
+  loop: number,
+  rareOrBetter = false,
+  regionShift = 0,
+): [Rarity, number][] {
+  const shift = Math.min(
+    RARITY.common.baseRate,
+    LOOT.commonShiftPerLoop * Math.max(0, loop - 1) + regionShift,
+  );
   const common = rareOrBetter ? 0 : RARITY.common.baseRate - shift;
   const upperBase = 1 - RARITY.common.baseRate;
   const scale = (upperBase + shift) / upperBase;
@@ -17,8 +24,8 @@ export function rarityWeights(loop: number, rareOrBetter = false): [Rarity, numb
   );
 }
 
-export function rollRarity(rng: Rng, loop: number, rareOrBetter = false): Rarity {
-  return rng.weighted(rarityWeights(loop, rareOrBetter));
+export function rollRarity(rng: Rng, loop: number, rareOrBetter = false, regionShift = 0): Rarity {
+  return rng.weighted(rarityWeights(loop, rareOrBetter, regionShift));
 }
 
 /** 起点石の出口の数に対応するレアリティ */
@@ -74,9 +81,22 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
 
 export const ARTIFACT_DEFS = ITEM_DEFS.filter((d) => d.artifact);
 
-export function rollLoot(rng: Rng, loop: number, uid: string, rareOrBetter = false): ItemInstance {
+/** 地域ごとの戦利品の上乗せ（奥の地域ほどレア以上・アーティファクトが出やすい） */
+export interface RegionLoot {
+  rarityShift: number;
+  artifactMult: number;
+}
+
+export function rollLoot(
+  rng: Rng,
+  loop: number,
+  uid: string,
+  rareOrBetter = false,
+  region: RegionLoot = { rarityShift: 0, artifactMult: 1 },
+): ItemInstance {
   // ごくまれにアーティファクト
-  const artifactChance = rareOrBetter ? LOOT.artifactChanceRare : LOOT.artifactChance;
+  const artifactChance =
+    (rareOrBetter ? LOOT.artifactChanceRare : LOOT.artifactChance) * region.artifactMult;
   if (rng.next() < artifactChance)
     return createItem(rng, rng.pick(ARTIFACT_DEFS).id, 'legendary', uid);
   let kind = rollKind(rng);
@@ -84,6 +104,6 @@ export function rollLoot(rng: Rng, loop: number, uid: string, rareOrBetter = fal
   if (rareOrBetter && kind === 'consumable') kind = 'attack';
   const defs = ITEM_DEFS.filter((d) => d.kind === kind && !d.artifact);
   const def = rng.pick(defs);
-  const rarity = rollRarity(rng, loop, rareOrBetter);
+  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift);
   return createItem(rng, def.id, rarity, uid);
 }

@@ -104,6 +104,22 @@ export class StageSelectScene extends Phaser.Scene {
         this.tweens.add({ targets: glow, alpha: 0.4, yoyo: true, repeat: -1, duration: 600 });
       }
       this.thumbnail(r, 150, y - 40);
+      // 地域の強さと戦利品（小窓の左上に重ねる）
+      if (r.power.hp !== 1) {
+        const label = this.add
+          .text(
+            48,
+            y - 100,
+            `敵HP×${r.power.hp} 攻撃×${r.power.atk}\nレア以上 +${Math.round(r.loot.rarityShift * 100)}%`,
+            {
+              ...textStyle(15, COLORS.gold, false),
+              backgroundColor: '#0c0a12cc',
+              padding: { x: 6, y: 3 },
+            },
+          )
+          .setOrigin(0, 0);
+        this.root.add(label);
+      }
       this.root.add(
         this.add.text(
           270,

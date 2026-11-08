@@ -50,7 +50,19 @@ export function runBalanceSim(runs: number): SimReport {
       let minFires = Infinity;
       let deaths = 0;
       for (let i = 0; i < runs; i++) {
-        const c = new Combat({ seed: 1000 + i, regionId: region.id, loadout, items, hero });
+        // 奥の地域は敵が一気に強いので、その地域に見合う装備・強化の分だけ勇者を強くして比べる
+        const regionHero = {
+          ...hero,
+          maxHp: hero.maxHp * region.power.atk,
+          attackMult: hero.attackMult * region.power.hp,
+        };
+        const c = new Combat({
+          seed: 1000 + i,
+          regionId: region.id,
+          loadout,
+          items,
+          hero: regionHero,
+        });
         const r = c.runToEnd();
         loops += r.reachedLoop;
         progress += r.progress;
