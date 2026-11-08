@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import {
   BOSS,
+  CHAIN_RULES,
+  CHAIN_RULES_OFF,
   CONSUMABLE,
   FIELD,
   HERO,
@@ -13,6 +15,7 @@ import {
 import { createInitialSave } from '../src/core/save';
 import { buyUpgrade, consumeItems, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
+import type { Dir } from '../src/core/types';
 
 function runAll(seed: number) {
   const save = createInitialSave();
@@ -50,9 +53,16 @@ describe('combat', () => {
     expect(c.tick).toBeGreaterThan(c.clock);
   });
 
-  it('連鎖中は ATB が止まり、無防備になる。終了時に防御値が加算される', () => {
+  it('連鎖中は ATB が止まり、無防備になる。終了時に防御値が加算される（仕様どおりのルール）', () => {
     const { loadout, items } = specExample();
-    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      rules: CHAIN_RULES_OFF,
+    });
     // 交戦するまで進める
     let started: CombatEvent | undefined;
     let ended: CombatEvent | undefined;
@@ -457,5 +467,87 @@ describe('出撃時間の時計', () => {
     }
     expect(runningTicks).toBeGreaterThan(0);
     expect(clockWhileRunning).toBe(0);
+  });
+});
+
+describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待ち / 守り）', () => {
+  const long = () =>
+    build(
+      7,
+      1,
+      [
+        { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+        ...[1, 2, 3, 4, 5].map((x) => ({
+          uid: `s${x}`,
+          defId: 'sword',
+          x,
+          y: 0,
+          exits: (x === 5 ? [] : ['right']) as Dir[],
+        })),
+      ],
+      ['o'],
+    );
+
+  it('B: 連鎖が終わると、次の発火までの待ちは段数に比例する', () => {
+    const { loadout, items } = long();
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+    });
+    c.fireNext();
+    while (c.chain) c.step();
+    const factor = 5 / CHAIN_RULES.atbRefSteps;
+    // 連鎖が終わったステップでそのまま1ステップ分たまる
+    expect(c.atb).toBeCloseTo(BASE_HERO_STATS.atbTime * (1 - factor) + SIM.fixedStep);
+  });
+
+  it('守り: guardSteps 段目までは無防備にならない', () => {
+    const { loadout, items } = long();
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+    });
+    c.fireNext();
+    const seen: [number, boolean][] = [];
+    while (c.chain) {
+      seen.push([c.chain.next, c.unguarded]);
+      c.step();
+    }
+    for (const [next, ug] of seen) expect(ug).toBe(next > CHAIN_RULES.guardSteps);
+  });
+
+  it('A: 無防備中に最大HPの一定割合を受けると、よろめいて残りの段が途切れる', () => {
+    const { loadout, items } = long();
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      mode: 'dummy',
+    });
+    c.fireNext();
+    while (c.chain && !c.unguarded) c.step();
+    c.drainEvents();
+    const hit = (
+      c as unknown as { damageHero(e: { id: number; atk: number }): void }
+    ).damageHero.bind(c);
+    hit({ id: -1, atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1 });
+    const evs: CombatEvent[] = [];
+    while (c.chain) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    const end = evs.find((e) => e.type === 'chainEnd');
+    expect(end?.type === 'chainEnd' && end.staggered).toBe(true);
+    expect(evs.filter((e) => e.type === 'step')).toHaveLength(0);
   });
 });

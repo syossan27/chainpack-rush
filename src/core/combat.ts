@@ -3,6 +3,7 @@
 import {
   AREA,
   BOSS,
+  CHAIN_RULES,
   CONSUMABLE,
   FIELD,
   HERO,
@@ -12,6 +13,7 @@ import {
   SIM,
   STATUS,
   TIME_BONUS,
+  type ChainRules,
 } from '../config/balance';
 import { ESCORT_ID, SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
@@ -44,6 +46,8 @@ export interface RunConfig {
   hero: HeroStats;
   mode?: 'run' | 'dummy';
   consumableSlots?: number;
+  /** 連鎖の性格づけ（省略時は CHAIN_RULES） */
+  rules?: Partial<ChainRules>;
 }
 
 export interface EnemyState {
@@ -126,7 +130,8 @@ export type CombatEvent =
       defenseCells: number[];
       totalDamage: number;
       duration: number;
-      cut: boolean; // 敵がいなくなって途中で打ち切った
+      cut: boolean; // 敵がいなくなった、またはよろめいて途中で打ち切った
+      staggered: boolean; // 被弾でよろめいて途切れた
     }
   | { type: 'bossDefeated'; tick: number; loop: number; bossId: string }
   | { type: 'consumable'; tick: number; uid: string; defId: string; effect: ConsumableEffect }
@@ -174,7 +179,9 @@ interface ActiveChain {
   exec: ExecInfo[];
   totalDamage: number;
   durationTicks: number;
-  cut: boolean; // 狙える敵がいなくなって打ち切った
+  cut: boolean; // 狙える敵がいなくなって打ち切った、またはよろめいた
+  staggered: boolean; // 被弾でよろめいて途切れた
+  taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -195,7 +202,8 @@ export class Combat {
   heroX = 0;
   hp: number;
   defense = 0;
-  atb = 0; // 秒
+  atb = 0; // 秒（B の待ちが長いときは負から始まる）
+  readonly rules: ChainRules;
   running = false; // 勇者が走っているか
   loop = 1;
   bossesDefeated = 0;
@@ -230,6 +238,7 @@ export class Combat {
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
+    this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.mode = cfg.mode ?? 'run';
     this.rng = new Rng(cfg.seed);
     this.region = getRegion(cfg.regionId);
@@ -267,12 +276,13 @@ export class Combat {
     return Math.max(0, (this.maxTicks - this.clock) / SIM.ticksPerSecond);
   }
 
+  /** 連鎖中は無防備。ただし起点のあと rules.guardSteps 段目までは守りが残る（next は起点を含む添字） */
   get unguarded(): boolean {
-    return this.chain !== null;
+    return this.chain !== null && this.chain.next > this.rules.guardSteps;
   }
 
   get atbRatio(): number {
-    return Math.min(1, this.atb / this.cfg.hero.atbTime);
+    return Math.max(0, Math.min(1, this.atb / this.cfg.hero.atbTime));
   }
 
   get maxHp(): number {
@@ -619,6 +629,8 @@ export class Combat {
       totalDamage: 0,
       durationTicks: secToTicks(plan.duration),
       cut: false,
+      staggered: false,
+      taken: 0,
     };
     this.atb = 0;
     this.chainSerial++;
@@ -638,6 +650,10 @@ export class Combat {
   private advanceChain(): void {
     const c = this.chain!;
     const elapsed = this.tick - c.startTick;
+    if (c.cut) {
+      this.finishChain(c, elapsed);
+      return;
+    }
     while (c.next < c.plan.steps.length && secToTicks(c.plan.steps[c.next]!.t) <= elapsed) {
       this.executeStep(c, c.next);
       if (c.cut) break;
@@ -669,9 +685,19 @@ export class Combat {
       totalDamage: c.totalDamage,
       duration: c.cut ? elapsed / SIM.ticksPerSecond : c.plan.duration,
       cut: c.cut,
+      staggered: c.staggered,
     });
     this.chain = null;
-    this.atb = 0;
+    // B: 次の発火までの待ちは、撃てた段数に比例（atb を負から始めることで待ちを伸ばす）
+    const r = this.rules;
+    if (r.atbPerStep) {
+      // 起点（先頭）は数えない
+      const steps = Math.max(0, (c.cut ? c.next : c.plan.steps.length) - 1);
+      const factor = Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps));
+      this.atb = this.cfg.hero.atbTime * (1 - factor);
+    } else {
+      this.atb = 0;
+    }
   }
 
   private executeStep(c: ActiveChain, index: number): void {
@@ -880,6 +906,15 @@ export class Combat {
     this.defense -= absorbed;
     dmg -= absorbed;
     this.hp = Math.max(0, this.hp - dmg);
+    // A: 連鎖中に大きく被弾するとよろめき、残りの段が途切れる
+    const c = this.chain;
+    if (c && !c.cut && this.rules.stagger && unguarded) {
+      c.taken += dmg;
+      if (c.taken >= this.maxHp * this.rules.staggerRatio) {
+        c.cut = true;
+        c.staggered = true;
+      }
+    }
     this.emit({
       type: 'heroHit',
       tick: this.tick,

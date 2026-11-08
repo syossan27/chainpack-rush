@@ -44,6 +44,42 @@ export const CHAIN = {
   tailDelay: 0.2, // 最後の発動から連鎖終了まで
 } as const;
 
+/**
+ * 短い連鎖と長い連鎖の性格づけ（試作。RunConfig.rules で切り替えられる）
+ * B: 次の発火までの待ちは、直前の連鎖の段数に比例（短い連鎖は回転が速い）
+ * A: 連鎖中に一定以上のダメージを受けると、よろめいて残りの段が途切れる（長い連鎖はリスクが大きい）
+ */
+export interface ChainRules {
+  atbPerStep: boolean;
+  /** この段数でちょうど atbTime 待つ */
+  atbRefSteps: number;
+  /** 待ちの倍率の下限・上限（atbTime に掛ける） */
+  atbMinFactor: number;
+  atbMaxFactor: number;
+  stagger: boolean;
+  /** 1回の連鎖中に受けたダメージ（防御で吸った分は除く）が最大HPのこの割合に達するとよろめく */
+  staggerRatio: number;
+  /** 連鎖のこの段数までは無防備にならない（0 = 連鎖中はずっと無防備。短い連鎖を安全にする） */
+  guardSteps: number;
+}
+
+export const CHAIN_RULES: ChainRules = {
+  atbPerStep: true,
+  atbRefSteps: 6,
+  atbMinFactor: 0.25,
+  atbMaxFactor: 2,
+  stagger: true,
+  staggerRatio: 0.15,
+  guardSteps: 3,
+};
+
+export const CHAIN_RULES_OFF: ChainRules = {
+  ...CHAIN_RULES,
+  atbPerStep: false,
+  stagger: false,
+  guardSteps: 0,
+};
+
 export const AREA = {
   splashRadius: 80, // 群れ内の横間隔と対応させる
   allMult: 0.4,

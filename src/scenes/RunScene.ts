@@ -604,6 +604,10 @@ export class RunScene extends Phaser.Scene {
         case 'chainEnd':
           this.field.aimId = null;
           this.endChainCount(ev.totalDamage);
+          if (ev.staggered) {
+            this.showBanner('よろめき！', COLORS.textWarn);
+            if (this.shake) this.cameras.main.shake(160, 0.008);
+          }
           if (ev.defenseGain > 0) {
             // 通過した防御装備から光の粒が飛んで防御値バーへ
             for (const cell of ev.defenseCells) {
