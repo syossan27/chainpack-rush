@@ -26,7 +26,7 @@ export function describeItem(it: ItemInstance): string[] {
   const lines: string[] = [];
   lines.push(
     def.artifact
-      ? `アーティファクト（能力 ×${r}・出口固定）`
+      ? `アーティファクト（能力 ×${r}・出口の数は固定）`
       : `${RARITY_NAMES[it.rarity]}（能力 ×${r}）`,
   );
   if (def.kind !== 'consumable') {
@@ -202,7 +202,7 @@ export function showItemDetail(
     rows.push([
       '出口',
       `${it.exits.length}方向`,
-      def.artifact ? '出口は固定' : 'レアリティで出口の数が決まる',
+      def.artifact ? '出口の数は固定' : 'レアリティで出口の数が決まる',
     ]);
   }
   for (const a of it.affixes ?? []) {

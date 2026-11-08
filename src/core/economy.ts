@@ -126,13 +126,15 @@ export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number
 export type RerollMode = 'reroll' | 'specify';
 
 export function rerollCost(item: ItemInstance, mode: RerollMode): number {
-  const base = RARITY[item.rarity].reroll * Math.pow(ECONOMY.rerollCostGrowth, item.rerollCount);
+  const first = getItemDef(item.defId).artifact
+    ? ECONOMY.artifactReroll
+    : RARITY[item.rarity].reroll;
+  const base = first * Math.pow(ECONOMY.rerollCostGrowth, item.rerollCount);
   return Math.round(base * (mode === 'specify' ? ECONOMY.specifyCostMult : 1));
 }
 
 export function canReorient(item: ItemInstance): boolean {
   const def = getItemDef(item.defId);
-  if (def.artifact) return false; // 出口は固定
   return def.kind !== 'consumable' && item.exits.length > 0 && item.exits.length < 4;
 }
 

@@ -280,6 +280,8 @@ export const LOOT = {
 export const ECONOMY = {
   specifyCostMult: 5,
   rerollCostGrowth: 1.5,
+  /** アーティファクトの付け直し（レジェンダリー250Gの上） */
+  artifactReroll: 1000,
 } as const;
 
 export type UpgradeId =

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN, HERO, LOOT, NO_LUCK } from '../src/config/balance';
+import { CHAIN, ECONOMY, HERO, LOOT, NO_LUCK, RARITY } from '../src/config/balance';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
-import { canReorient, sellPrice } from '../src/core/economy';
+import { canReorient, rerollCost, sellPrice, specifyExits } from '../src/core/economy';
 import { ARTIFACT_DEFS, createItem, rollLoot } from '../src/core/loot';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
@@ -32,7 +32,7 @@ const fireOnce = (c: Combat): CombatEvent[] => {
 };
 
 describe('アーティファクト', () => {
-  it('常にレジェンダリー、出口は固定、追加効果なし、付け直し不可、売値は高い', () => {
+  it('常にレジェンダリー、出口は決まった形、追加効果なし、売値は高い。鍛冶屋の料金はレジェンダリーの上', () => {
     const rng = new Rng(2);
     expect(ARTIFACT_DEFS.length).toBeGreaterThanOrEqual(5);
     for (const d of ARTIFACT_DEFS) {
@@ -41,7 +41,10 @@ describe('アーティファクト', () => {
         expect(it.rarity).toBe('legendary');
         expect(it.exits).toEqual(d.artifact!.exits);
         expect(it.affixes).toBeUndefined();
-        expect(canReorient(it)).toBe(false);
+        expect(canReorient(it)).toBe(it.exits.length < 4);
+        expect(rerollCost(it, 'reroll')).toBe(ECONOMY.artifactReroll);
+        expect(rerollCost(it, 'specify')).toBe(ECONOMY.artifactReroll * ECONOMY.specifyCostMult);
+        expect(ECONOMY.artifactReroll).toBeGreaterThan(RARITY.legendary.reroll);
         expect(sellPrice(it)).toBe(LOOT.artifactSell);
       }
     }
@@ -73,7 +76,7 @@ describe('アーティファクト', () => {
     });
     const it = deserializeSave(serializeSave(s)).inventory.find((i) => i.uid === 'z')!;
     expect(it.rarity).toBe('legendary');
-    expect(it.exits).toEqual(['right']);
+    expect(it.exits).toEqual(['right']); // 数が合わない出口は決まった形に戻す
     expect(it.affixes).toBeUndefined();
   });
 
@@ -170,5 +173,23 @@ describe('廃止したアーティファクト', () => {
     expect(loaded.loadout.cells).not.toContain('cg');
     expect(loaded.loadout.originOrder).not.toContain('cg');
     expect(loaded.inventory.length).toBe(s.inventory.length - 1);
+  });
+});
+
+describe('アーティファクトの付け直し', () => {
+  it('鍛冶屋で向きを変えた分は、読み込み後も残る', () => {
+    const s = createInitialSave();
+    s.gold = 1e6;
+    s.inventory.push({
+      uid: 'df',
+      defId: 'dragon_fang',
+      rarity: 'legendary',
+      exits: ['right'],
+      rerollCount: 0,
+    });
+    expect(specifyExits(s, 'df', ['down'])).toBe(true);
+    expect(s.gold).toBe(1e6 - ECONOMY.artifactReroll * ECONOMY.specifyCostMult);
+    const it = deserializeSave(serializeSave(s)).inventory.find((i) => i.uid === 'df')!;
+    expect(it.exits).toEqual(['down']);
   });
 });

@@ -51,7 +51,7 @@ export function rollKind(rng: Rng): ItemKind {
 
 export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string): ItemInstance {
   const def = getItemDef(defId);
-  // アーティファクト: 常にレジェンダリー、出口は固定、追加効果なし
+  // アーティファクト: 常にレジェンダリー、出口は決まった形で出る（向きは鍛冶屋で変えられる）、追加効果なし
   if (def.artifact)
     return { uid, defId, rarity: 'legendary', exits: def.artifact.exits.slice(), rerollCount: 0 };
   const exits =

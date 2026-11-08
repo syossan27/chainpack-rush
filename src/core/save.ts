@@ -166,7 +166,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       const d = getItemDef(it.defId);
       // アーティファクトは出口・レアリティ固定、追加効果なし
       if (d.artifact) {
-        it.exits = d.artifact.exits.slice();
+        // 向きは鍛冶屋で変えられるが、出口の数は固定
+        if (it.exits.length !== d.artifact.exits.length) it.exits = d.artifact.exits.slice();
         it.rarity = 'legendary';
         delete it.affixes;
         continue;
