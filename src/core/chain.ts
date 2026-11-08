@@ -1,4 +1,5 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
+import { affixValue } from './affixes';
 import { CHAIN, RARITY } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type { ChainPlan, ChainStep, Dir, ItemInstance, Loadout } from './types';
@@ -117,7 +118,8 @@ export function planChain(
       step = count;
       if (count > maxStep) maxStep = count;
     } else if (def.kind === 'defense') {
-      defenseGain += (def.defense ?? 0) * RARITY[inst.rarity].mult;
+      defenseGain +=
+        (def.defense ?? 0) * RARITY[inst.rarity].mult * (1 + affixValue(inst, 'sturdy') / 100);
     }
     // 起点同士がつながっている場合、後ろの起点は「通すだけ」のマスとして扱う
     steps.push({

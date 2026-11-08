@@ -35,6 +35,8 @@ export interface ItemInstance {
   rarity: Rarity;
   exits: Dir[]; // 入手時に抽選。付け直しで方向だけ変わる
   rerollCount: number;
+  /** 追加効果（入手時に抽選。src/core/affixes.ts）。古いセーブにはない */
+  affixes?: { id: import('./affixes').AffixId; value: number }[];
 }
 
 export interface Loadout {

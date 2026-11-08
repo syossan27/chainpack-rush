@@ -24,6 +24,7 @@ import { getItemDef } from '../data/items';
 import { getRegion, type RegionDef } from '../data/regions';
 import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, planChain } from './chain';
+import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { Rng } from './rng';
@@ -778,9 +779,20 @@ export class Combat {
     const gain = c.cut
       ? defenseSteps.reduce((sum, s) => {
           const it = this.cfg.items.get(s.uid)!;
-          return sum + (getItemDef(it.defId).defense ?? 0) * RARITY[it.rarity].mult;
+          return (
+            sum +
+            (getItemDef(it.defId).defense ?? 0) *
+              RARITY[it.rarity].mult *
+              (1 + affixValue(it, 'sturdy') / 100)
+          );
         }, 0)
       : c.plan.defenseGain;
+    // 癒し: 通った防御装備の分だけ回復
+    const mend = defenseSteps.reduce(
+      (sum, s) => sum + affixValue(this.cfg.items.get(s.uid)!, 'mend'),
+      0,
+    );
+    if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
     this.defense = Math.min(this.maxHp, this.defense + gain);
     this.emit({
       type: 'chainEnd',
@@ -799,7 +811,9 @@ export class Combat {
     if (r.atbPerStep) {
       // 起点（先頭）は数えない
       const steps = Math.max(0, (c.cut ? c.next : c.plan.steps.length) - 1);
-      const factor = Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps));
+      const quick = affixValue(this.cfg.items.get(c.plan.originUid)!, 'quick') / 100;
+      const factor =
+        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
       this.atb = this.cfg.hero.atbTime * (1 - factor);
     } else {
       this.atb = 0;
@@ -861,6 +875,7 @@ export class Combat {
     const critChance =
       this.luck.critChance +
       (def.critBonus ?? 0) +
+      affixValue(inst, 'keen') / 100 +
       (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
     for (let h = 0; h < (def.hits ?? 1); h++)
       this.strike(c, s.uid, inst, def, eff, aim, critChance);
@@ -886,6 +901,7 @@ export class Combat {
     const area = effectiveArea(def.area ?? 'single', aimCombo);
     const targets = this.resolveTargets(aim, area, def.pierce ?? 0);
     for (const t of targets) {
+      const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
       if (combo) {
         t.statuses.delete(combo.status);
@@ -907,7 +923,14 @@ export class Combat {
       });
       const v = this.luck.damageVariance;
       const roll = v > 0 ? 1 + (this.rng.next() * 2 - 1) * v : 1;
-      const raw = Math.round(base * roll * (crit ? this.luck.critMult : 1) * 100) / 100;
+      const raw =
+        Math.round(
+          base *
+            roll *
+            (crit ? this.luck.critMult : 1) *
+            this.affixMult(c, inst, eff, t, statused) *
+            100,
+        ) / 100;
       if (raw > 0) {
         const nullified = t.def.ability === 'damageThreshold' && raw < BOSS.ironKnightThreshold;
         const dmg = nullified ? 0 : raw;
@@ -931,6 +954,26 @@ export class Combat {
       if (def.applies && t.hp > 0) this.applyStatus(t, def.applies);
       if (t.hp <= 0) this.killEnemy(t);
     }
+  }
+
+  /** 追加効果によるダメージ倍率（装備の分と、起点の「初撃」） */
+  private affixMult(
+    c: ActiveChain,
+    inst: ItemInstance,
+    eff: number,
+    t: EnemyState,
+    statused: boolean,
+  ): number {
+    let m = 1 + affixValue(inst, 'sharp') / 100;
+    if (eff <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;
+    if (eff >= 6) m *= 1 + affixValue(inst, 'finisher') / 100;
+    if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
+    if (t.def.boss) m *= 1 + affixValue(inst, 'slayer') / 100;
+    if (eff === 1) {
+      const origin = this.cfg.items.get(c.plan.originUid);
+      if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
+    }
+    return m;
   }
 
   private resolveTargets(aim: EnemyState, area: Area, pierce: number): EnemyState[] {

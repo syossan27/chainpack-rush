@@ -1,5 +1,6 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
 import { originRarity } from './loot';
+import { isAffix } from './affixes';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
@@ -90,6 +91,8 @@ function validItem(v: unknown): v is ItemInstance {
   if (!RARITIES.includes(v.rarity as Rarity)) return false;
   if (!Array.isArray(v.exits) || !v.exits.every((d) => DIRS.includes(d as Dir))) return false;
   if (!isNum(v.rerollCount)) return false;
+  if (v.affixes !== undefined && (!Array.isArray(v.affixes) || !v.affixes.every(isAffix)))
+    return false;
   try {
     getItemDef(v.defId);
   } catch {

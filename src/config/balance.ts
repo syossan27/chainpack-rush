@@ -128,7 +128,7 @@ export const COMBOS: readonly ComboRule[] = [
 ];
 
 export const LOOP_SCALING = {
-  hp: 1.3,
+  hp: 1.4, // 装備の追加効果・新装備で強くなりやすくなったぶん 1.3 から上げた
   atk: 1.3,
 } as const;
 

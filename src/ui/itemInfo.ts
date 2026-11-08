@@ -1,4 +1,5 @@
 // 装備をタップして出す詳細（数値、属性、コンボの相手、この配置での段数）。配置は時間制限がないので文章で説明してよい
+import { AFFIXES, affixText } from '../core/affixes';
 import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
 import { simulateChain } from '../core/chain';
@@ -26,6 +27,7 @@ export function describeItem(it: ItemInstance): string[] {
       `出口: ${it.exits.length === 0 ? 'なし（末端）' : it.exits.map((d) => DIR_NAMES[d]).join('・')}`,
     );
   }
+  for (const a of it.affixes ?? []) lines.push(`✦ ${affixText(a)}`);
   if (def.kind === 'attack') {
     lines.push(
       `攻撃力 ${(def.atk ?? 0) * r}（${ELEMENT_NAMES[def.element ?? 'physical']}・${AREA_NAMES[def.area ?? 'single']}）`,
@@ -179,6 +181,10 @@ export function showItemDetail(
     rows.push(['防御値', `+${fmt((def.defense ?? 0) * r)}`, '連鎖終了時に加算']);
   } else if (def.kind === 'origin') {
     rows.push(['出口', `${it.exits.length}方向`, 'レアリティで出口の数が決まる']);
+  }
+  for (const a of it.affixes ?? []) {
+    const d = AFFIXES[a.id];
+    rows.push([`✦ ${d.name}`, d.text.replace('{v}', `${a.value}`)]);
   }
   if (opts.context !== undefined && def.kind !== 'consumable') {
     const ctx = opts.context;

@@ -28,9 +28,20 @@ const RARITY_RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
 const AREA_WEIGHT = { single: 1, sweep: 2.5, splash: 1.8, all: 3 * AREA.allMult } as const;
 const DEFENSE_WEIGHT = 0.6; // 防御値1あたりをダメージ何点ぶんとみなすか
 
+/** 追加効果のおおまかな上乗せ（条件つきのものは半分に見積もる） */
+function affixBoost(it: ItemInstance): number {
+  let b = 0;
+  for (const a of it.affixes ?? []) {
+    if (a.id === 'sharp' || a.id === 'sturdy') b += a.value / 100;
+    else if (a.id === 'keen') b += a.value / 100;
+    else b += a.value / 200;
+  }
+  return 1 + b;
+}
+
 function power(it: ItemInstance): number {
   const def = getItemDef(it.defId);
-  const r = RARITY[it.rarity].mult;
+  const r = RARITY[it.rarity].mult * affixBoost(it);
   if (def.kind === 'attack')
     return (
       (def.atk ?? 0) *
