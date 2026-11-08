@@ -146,9 +146,9 @@ export class FieldView {
     this.heroGlow.y = this.hero.y + 4;
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
-    this.playHeroAnim(
-      now < this.heroHurtUntil ? 'hit' : c.unguarded ? 'attack' : c.running ? 'run' : 'idle',
-    );
+    // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、連鎖中は攻撃を続ける）
+    const state: UnitAnimName = c.unguarded ? 'attack' : c.running ? 'run' : 'idle';
+    this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);
     this.atbBar.width = 110 * c.atbRatio;
     this.atbBar.setFillStyle(c.atbRatio >= 1 ? 0xfff8b0 : COLORS.atb);
 
@@ -214,15 +214,11 @@ export class FieldView {
     this.visibleEnemies = visible;
   }
 
-  private playHeroAnim(name: 'idle' | 'run' | 'attack' | 'hit'): void {
+  private playHeroAnim(candidates: readonly UnitAnimName[]): void {
     const def = UNIT_SPRITES.hero!;
-    // 未登録の動作（走り・被弾）は待機で代用する。攻撃は1回再生で、状態が変わるまでやり直さない
-    const chosen: UnitAnimName | null =
-      def.anims?.[name] && this.scene.anims.exists(animKey('hero', name))
-        ? name
-        : def.anims?.idle && this.scene.anims.exists(animKey('hero', 'idle'))
-          ? 'idle'
-          : null;
+    // 未登録の動作は次の候補へ。攻撃は1回再生で、状態が変わるまでやり直さない
+    const chosen =
+      candidates.find((n) => def.anims?.[n] && this.scene.anims.exists(animKey('hero', n))) ?? null;
     if (!chosen) return;
     const anim = def.anims![chosen]!;
     const key = animKey('hero', chosen);
