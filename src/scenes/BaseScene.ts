@@ -1,6 +1,6 @@
 // 拠点: 出撃、配置、倉庫（売却）、鍛冶屋（付け直し）、強化、カカシ、設定
 import Phaser from 'phaser';
-import { UPGRADES, type UpgradeId } from '../config/balance';
+import { SIM, UPGRADES, type UpgradeId } from '../config/balance';
 import {
   backpackSize,
   buyUpgrade,
@@ -20,7 +20,7 @@ import {
 import { Rng, randomSeed } from '../core/rng';
 import type { Dir, ItemInstance } from '../core/types';
 import { DIRS } from '../core/types';
-import { getItemDef, RARITY_NAMES } from '../data/items';
+import { getItemDef } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
 import { UNIT_SPRITES, animKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
@@ -30,7 +30,7 @@ import { describeItem, showItemDetail } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
-import { Button, RoundButton, icon, ink, panel, ribbon } from '../ui/kit/widgets';
+import { Button, RoundButton, ink, panel, ribbon } from '../ui/kit/widgets';
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, rarityCss, textStyle } from '../ui/theme';
 
@@ -268,45 +268,40 @@ export class BaseScene extends Phaser.Scene {
     const save = getSave();
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '倉庫'));
     const eq = equippedUids(save);
-    const list = new ItemList(this, CONTENT_TOP + 84, 840, {
-      onTap: (it) => {
-        this.selected = this.selected === it.uid ? null : it.uid;
-        list.setSelected(this.selected);
-        info.setText(
-          this.selected
-            ? `${getItemDef(it.defId).name}（${RARITY_NAMES[it.rarity]}）`
-            : '売るアイテムを選んでください',
-        );
-        price.setText(this.selected ? `${sellPrice(it)}` : '');
-        sellBtn.setDisabled(!this.selected);
-      },
-      onLongPress: (it) => showItemDetail(this, it),
+    // タップで能力の詳細。売却はカードから
+    const openDetail = (it: ItemInstance) =>
+      showItemDetail(this, it, {
+        actions: [
+          {
+            label: `売る ${sellPrice(it)}G`,
+            skin: 'gold',
+            icon: 'coin',
+            onTap: () => {
+              const g = sellItems(save, [it.uid]);
+              persist();
+              sfx('drop');
+              this.render();
+              this.showToast(`+${g}G`);
+            },
+          },
+        ],
+      });
+    const list = new ItemList(this, CONTENT_TOP + 84, 900, {
+      onTap: openDetail,
+      onLongPress: openDetail,
     });
     list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
     this.root.add(list);
-    this.root.add(panel(this, W / 2, 920, W - 40, 120, 'plate'));
-    const info = this.add.text(50, 890, '売るアイテムを選んでください', textStyle(24));
-    this.root.add(info);
-    this.root.add(icon(this, 64, 938, 'coin', 2));
-    const price = this.add.text(84, 924, '', textStyle(26, COLORS.gold));
-    this.root.add(price);
-    const sellBtn = new Button(
-      this,
-      W - 140,
-      920,
-      '売る',
-      () => {
-        if (!this.selected) return;
-        const g = sellItems(save, [this.selected]);
-        persist();
-        sfx('drop');
-        this.showToast(`+${g}G`);
-        this.selected = null;
-        this.render();
-      },
-      { width: 200, height: 80, skin: 'gold', icon: 'coin', disabled: true },
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          950,
+          'タップで能力を確認・売却。装備中のものは一覧に出ません',
+          textStyle(20, COLORS.textDim),
+        )
+        .setOrigin(0.5),
     );
-    this.root.add(sellBtn);
     const bulk = (x: number, label: string, pred: (it: ItemInstance) => boolean) => {
       const targets = save.inventory.filter((i) => !eq.has(i.uid) && pred(i));
       this.root.add(
@@ -524,7 +519,7 @@ export class BaseScene extends Phaser.Scene {
     const save = getSave();
     const st = save.settings;
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '設定'));
-    this.root.add(panel(this, W / 2, 470, W - 40, 520, 'paper'));
+    this.root.add(panel(this, W / 2, 545, W - 40, 670, 'paper'));
     const row = (
       y: number,
       label: string,
@@ -564,6 +559,23 @@ export class BaseScene extends Phaser.Scene {
         changed();
       },
     );
+    // 検証用: ゲームスピード（ルールの秒数は変えず、進む速さだけを倍にする）
+    const speeds: readonly number[] = SIM.speedOptions;
+    const si = Math.max(0, speeds.indexOf(st.gameSpeed));
+    row(
+      690,
+      'ゲームスピード',
+      `×${st.gameSpeed}`,
+      () => {
+        st.gameSpeed = speeds[Math.max(0, si - 1)]!;
+        changed();
+      },
+      () => {
+        st.gameSpeed = speeds[Math.min(speeds.length - 1, si + 1)]!;
+        changed();
+      },
+    );
+    this.root.add(ink(this, 70, 760, '検証用。×2 なら30秒のランが15秒で終わります', 18, '#7a5a30'));
     row(430, '振動', st.haptics ? 'ON' : 'OFF', null, () => {
       st.haptics = !st.haptics;
       changed();

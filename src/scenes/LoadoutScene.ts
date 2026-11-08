@@ -14,7 +14,7 @@ import { SKIN } from '../ui/kit/skin';
 import { Pill, RoundButton, ribbon } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
-import { showItemDetail } from '../ui/itemInfo';
+import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { COLORS, LOADOUT_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -67,7 +67,7 @@ export class LoadoutScene extends Phaser.Scene {
       .setOrigin(0.5);
     this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
       onTap: (it) => this.onListTap(it),
-      onLongPress: (it) => showItemDetail(this, it),
+      onLongPress: (it) => this.openDetail(it, 'list'),
       onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
     });
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
@@ -99,7 +99,7 @@ export class LoadoutScene extends Phaser.Scene {
       .map((p, i) => `${originLabel(i)} ${p.maxStep}段・${p.duration.toFixed(1)}秒`)
       .join('　');
     this.infoPill.setValue(durs || '起点を置いてください', durs ? COLORS.text : COLORS.textWarn);
-    this.info.setText(`長押しで詳細・起点タップで発火順（計算 ${ms.toFixed(1)}ms）`);
+    this.info.setText(`タップで能力・ドラッグで移動（計算 ${ms.toFixed(1)}ms）`);
     this.info.setVisible(save.loadout.height < 5);
     this.info.setY(this.infoPill.y + 34);
     this.infoPill.setY(this.view.y + this.view.gridHeight + 26);
@@ -164,19 +164,70 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   private onListTap(it: ItemInstance): void {
-    this.selected = this.selected?.uid === it.uid ? null : it;
-    this.list.setSelected(this.selected?.uid ?? null);
-    if (this.selected) {
-      const kind = getItemDef(it.defId).kind;
-      this.infoPill.setValue(
-        kind === 'consumable' ? '空いている消耗品枠をタップ' : '置きたいマスをタップ',
-        COLORS.gold,
-      );
+    this.openDetail(it, 'list');
+  }
+
+  /** 選んで「置く」: 次にタップしたマスへ置く */
+  private selectForPlacing(it: ItemInstance): void {
+    this.selected = it;
+    this.list.setSelected(it.uid);
+    this.infoPill.setValue('置きたいマスをタップ', COLORS.gold);
+  }
+
+  /** 装備の詳細カード。置き場所に応じた操作をカードに並べる */
+  private openDetail(it: ItemInstance, where: 'grid' | 'slot' | 'list'): void {
+    const save = getSave();
+    const items = itemMap(save);
+    const kind = getItemDef(it.defId).kind;
+    const actions: DetailAction[] = [];
+    if (where === 'grid' || where === 'slot') {
+      actions.push({
+        label: '外す',
+        skin: 'red',
+        onTap: () => {
+          save.loadout = removeItem(save.loadout, items, it.uid);
+          this.commit();
+        },
+      });
+      const order = save.loadout.originOrder;
+      if (kind === 'origin' && order.length >= 2) {
+        actions.push({
+          label: '発火順を前へ',
+          skin: 'blue',
+          onTap: () => {
+            save.loadout = cycleOriginOrder(save.loadout, it.uid);
+            this.commit();
+          },
+        });
+      }
+    } else if (kind === 'consumable') {
+      const n = consumableSlots(save);
+      const free = save.loadout.consumables.length < n;
+      actions.push({
+        label: free ? '枠に入れる' : '枠がいっぱい',
+        skin: 'green',
+        disabled: !free,
+        onTap: () => {
+          save.loadout = setConsumable(save.loadout, save.loadout.consumables.length, it.uid, n);
+          this.commit();
+        },
+      });
+    } else {
+      actions.push({
+        label: '置く',
+        skin: 'green',
+        icon: 'bag',
+        onTap: () => this.selectForPlacing(it),
+      });
     }
+    showItemDetail(this, it, {
+      actions,
+      context: where === 'grid' ? chainContext(save.loadout, items, it.uid) : undefined,
+    });
   }
 
   private setupGridInput(): void {
-    // バックパックのマス: タップ（起点の順番入れ替え／選択中を置く）、長押し（詳細）、ドラッグ（移動・外す）
+    // バックパックのマス: タップ（能力の詳細／選択中を置く）、ドラッグ（移動・外す）
     const zone = this.add
       .zone(0, LOADOUT_LAYOUT.backpackTop, W, this.view.gridHeight)
       .setOrigin(0, 0)
@@ -209,12 +260,15 @@ export class LoadoutScene extends Phaser.Scene {
     const sx = p.x;
     const sy = p.y;
     let moved = false;
+    const where = cell >= 0 ? 'grid' : 'slot';
     const long = this.time.delayedCall(LONG_PRESS_MS, () => {
       if (!moved && !this.drag) {
         cleanup();
-        showItemDetail(this, it);
+        done = true;
+        this.openDetail(it, where);
       }
     });
+    let done = false;
     const onMove = (q: Phaser.Input.Pointer) => {
       if (moved || Math.hypot(q.x - sx, q.y - sy) < DRAG_THRESHOLD) return;
       moved = true;
@@ -225,13 +279,9 @@ export class LoadoutScene extends Phaser.Scene {
     const onUp = () => {
       long.remove();
       cleanup();
-      if (moved) return;
-      // タップ: 起点なら発火順を入れ替える
-      if (cell >= 0 && getItemDef(it.defId).kind === 'origin') {
-        const save = getSave();
-        save.loadout = cycleOriginOrder(save.loadout, it.uid);
-        this.commit();
-      }
+      if (moved || done) return;
+      // タップ: 能力の詳細（外す・発火順の入れ替えはカードから）
+      this.openDetail(it, where);
     };
     const cleanup = () => {
       this.input.off('pointermove', onMove);

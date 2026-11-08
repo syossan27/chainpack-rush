@@ -136,7 +136,8 @@ export class FieldView {
     s.aim.setVisible(false);
   }
 
-  update(c: Combat, now: number): void {
+  /** speed: モーションの再生速度（ゲームスピード。止めているときは 0） */
+  update(c: Combat, now: number, speed = 1): void {
     // 背景の多重スクロール
     const speeds = [0.1, 0.3, 0.6];
     this.bgLayers.forEach((l, i) => (l.tilePositionX = Math.floor((c.heroX * speeds[i]!) / 2)));
@@ -148,6 +149,8 @@ export class FieldView {
     this.hero.setAngle(placeholder && c.unguarded ? Math.sin(now / 40) * 4 : 0);
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
+    this.hero.anims.timeScale = speed;
+    this.heroGlow.anims.timeScale = speed;
     // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、走り中は走りを、連鎖中は攻撃を続ける）
     const state: UnitAnimName = c.unguarded ? 'attack' : c.running ? 'run' : 'idle';
     this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);

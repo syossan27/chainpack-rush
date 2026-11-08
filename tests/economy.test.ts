@@ -41,6 +41,24 @@ describe('save', () => {
   });
 });
 
+describe('settings', () => {
+  it('ゲームスピードは既定で×1。範囲外や欠けた値は×1に戻す', () => {
+    const s = createInitialSave();
+    expect(s.settings.gameSpeed).toBe(1);
+    const old = JSON.parse(serializeSave(s));
+    delete old.settings.gameSpeed;
+    expect(deserializeSave(JSON.stringify(old)).settings.gameSpeed).toBe(1);
+    expect(
+      deserializeSave(JSON.stringify({ ...s, settings: { ...s.settings, gameSpeed: 99 } })).settings
+        .gameSpeed,
+    ).toBe(1);
+    expect(
+      deserializeSave(JSON.stringify({ ...s, settings: { ...s.settings, gameSpeed: 2 } })).settings
+        .gameSpeed,
+    ).toBe(2);
+  });
+});
+
 describe('economy', () => {
   it('売却価格とまとめ売り', () => {
     const s = createInitialSave();

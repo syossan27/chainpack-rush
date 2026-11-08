@@ -9,7 +9,8 @@ import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep } from '../audio/sfx';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
-import { getSave } from '../platform/store';
+import { gameSpeed, getSave } from '../platform/store';
+import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
@@ -78,21 +79,40 @@ export class DummyScene extends Phaser.Scene {
       skin: 'gray',
       icon: 'back',
     }).setDepth(70);
+    this.setupBackpackTap();
   }
 
   override update(_t: number, delta: number): void {
     const now = this.time.now;
-    this.acc += Math.min(delta / 1000, SIM.fixedStep * 5);
+    const speed = gameSpeed();
+    this.tweens.timeScale = speed;
+    this.acc += Math.min((delta / 1000) * speed, SIM.fixedStep * Math.ceil(5 * speed));
     while (this.acc >= SIM.fixedStep) {
       this.combat.step();
       this.acc -= SIM.fixedStep;
       this.handle(this.combat.drainEvents());
     }
-    this.field.update(this.combat, now);
+    this.field.update(this.combat, now, speed);
     this.view.setBlinkOrigin(this.combat.chain ? null : this.combat.nextOriginUid);
     this.view.tick(now);
-    this.numbers.update(delta / 1000);
-    this.effects.update(delta / 1000);
+    this.numbers.update((delta / 1000) * speed);
+    this.effects.update((delta / 1000) * speed);
+  }
+
+  /** バックパックの装備をタップ: 能力の詳細 */
+  private setupBackpackTap(): void {
+    const loadout = getSave().loadout;
+    const zone = this.add
+      .zone(0, RUN_LAYOUT.backpackTop, W, this.view.gridHeight)
+      .setOrigin(0, 0)
+      .setDepth(45)
+      .setInteractive();
+    zone.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      const uid = loadout.cells[this.view.cellAt(p.x, p.y)];
+      const it = uid ? this.items.get(uid) : undefined;
+      if (it) showItemDetail(this, it, { context: chainContext(loadout, this.items, it.uid) });
+    });
   }
 
   private handle(events: CombatEvent[]): void {

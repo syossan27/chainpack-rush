@@ -5,6 +5,9 @@ export const SIM = {
   fixedStep: 1 / 60, // 固定ステップ（秒）
   ticksPerSecond: 60,
   runDuration: 30, // 秒
+  /** 検証用のゲームスピード（設定画面と ?speed= で選ぶ）。ルールの秒数は変えず、進む速さだけを倍にする */
+  speedOptions: [0.5, 1, 1.5, 2, 3],
+  maxSpeed: 4,
 } as const;
 
 export const HERO = {

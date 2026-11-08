@@ -10,6 +10,7 @@ import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
 import { Button, ink, panel, ribbon } from '../ui/kit/widgets';
 import { ItemIcon } from '../ui/itemIcon';
+import { showItemDetail } from '../ui/itemInfo';
 import { COLORS, H, W, rarityColor, rarityCss, textStyle } from '../ui/theme';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
@@ -154,6 +155,11 @@ export class ResultScene extends Phaser.Scene {
     }
     const icon = new ItemIcon(this, x, y, it, ICON);
     this.grid.add(icon);
+    // 開封がすべて終わったら、タップで能力の詳細
+    icon.setInteractive({ useHandCursor: true });
+    icon.on('pointerup', () => {
+      if (this.opened >= this.queue.length) showItemDetail(this, it);
+    });
     this.grid.add(
       this.add
         .text(x, y + ICON / 2 + 2, getItemDef(it.defId).name, textStyle(16, rarityCss(it.rarity)))

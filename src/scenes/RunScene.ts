@@ -13,7 +13,8 @@ import { debugFps, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
 import { session } from '../platform/session';
-import { getSave } from '../platform/store';
+import { gameSpeed, getSave } from '../platform/store';
+import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
@@ -39,6 +40,9 @@ export class RunScene extends Phaser.Scene {
   private effects!: Effects;
   private acc = 0;
   private paused = false;
+  /** 装備の詳細を見ているあいだ止める（一時停止の幕は出さない） */
+  private inspecting = false;
+  private speed = 1;
   private ending = false;
   private seed = 0;
   private regionId = '';
@@ -83,6 +87,8 @@ export class RunScene extends Phaser.Scene {
     });
     this.acc = 0;
     this.paused = false;
+    this.inspecting = false;
+    this.speed = gameSpeed();
     this.ending = false;
     this.cameras.main.setBackgroundColor(COLORS.bg);
 
@@ -103,6 +109,7 @@ export class RunScene extends Phaser.Scene {
     );
     this.buildHud();
     this.buildConsumables();
+    this.setupBackpackTap();
 
     this.unsubscribe = onAppStateChange((active) => {
       if (!active) this.setPaused(true);
@@ -260,6 +267,33 @@ export class RunScene extends Phaser.Scene {
     g.fillCircle(x1 + 10, y - 2, 3);
   }
 
+  /** バックパックの装備をタップ: 止めて能力の詳細を出し、閉じたら再開 */
+  private setupBackpackTap(): void {
+    const loadout = getSave().loadout;
+    const zone = this.add
+      .zone(0, RUN_LAYOUT.backpackTop, W, this.view.gridHeight)
+      .setOrigin(0, 0)
+      .setDepth(45)
+      .setInteractive();
+    zone.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (this.paused || this.ending || this.inspecting) return;
+      if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      const uid = loadout.cells[this.view.cellAt(p.x, p.y)];
+      const it = uid ? this.items.get(uid) : undefined;
+      if (!it) return;
+      this.inspecting = true;
+      setAudioSuspended(true);
+      showItemDetail(this, it, {
+        context: chainContext(loadout, this.items, it.uid),
+        onClose: () => {
+          this.inspecting = false;
+          this.acc = 0;
+          setAudioSuspended(false);
+        },
+      });
+    });
+  }
+
   private setPaused(p: boolean): void {
     if (this.ending) return;
     this.paused = p;
@@ -270,22 +304,27 @@ export class RunScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const now = this.time.now;
-    if (!this.paused && !this.ending) {
-      this.acc += Math.min(delta / 1000, SIM.fixedStep * MAX_STEPS_PER_FRAME);
+    const halted = this.paused || this.inspecting;
+    if (!halted && !this.ending) {
+      // ゲームスピード: 1フレームで進める固定ステップの数を倍にする（ルールの秒数は変えない）
+      const maxSteps = Math.ceil(MAX_STEPS_PER_FRAME * this.speed);
+      this.acc += Math.min((delta / 1000) * this.speed, SIM.fixedStep * maxSteps);
       let n = 0;
-      while (this.acc >= SIM.fixedStep && n < MAX_STEPS_PER_FRAME && !this.combat.ended) {
+      while (this.acc >= SIM.fixedStep && n < maxSteps && !this.combat.ended) {
         this.combat.step();
         this.acc -= SIM.fixedStep;
         n++;
         this.handleEvents(this.combat.drainEvents());
       }
     }
-    const dt = this.paused ? 0 : delta / 1000;
+    const dt = halted ? 0 : (delta / 1000) * this.speed;
+    // 止めているあいだも UI（詳細カードなど）の動きは通常の速さで動かす
+    this.tweens.timeScale = halted ? 1 : this.speed;
     if (this.stress) {
       this.effects.burst(400 + Math.random() * 200, 300 + Math.random() * 150, 0xffffff, 12, 260);
       this.numbers.show(300 + Math.random() * 350, 280 + Math.random() * 180, Math.random() * 3000);
     }
-    this.field.update(this.combat, now);
+    this.field.update(this.combat, now, halted ? 0 : this.speed);
     this.view.tick(now);
     this.numbers.update(dt);
     this.effects.update(dt);
@@ -299,7 +338,9 @@ export class RunScene extends Phaser.Scene {
     const cs = Math.floor((r - sec) * 100);
     this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
     this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
-    this.hud.loop.setText(`${getRegion(this.regionId).name}　${c.loop}周目`);
+    this.hud.loop.setText(
+      `${getRegion(this.regionId).name}　${c.loop}周目${this.speed !== 1 ? `　×${this.speed}` : ''}`,
+    );
     this.hud.hp.setRatio(c.hp / c.maxHp);
     this.hud.def.setRatio(Math.min(1, c.defense / c.maxHp));
     this.hud.hpText.setText(`${Math.ceil(c.hp)}/${c.maxHp}`);

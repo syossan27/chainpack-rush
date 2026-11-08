@@ -1,5 +1,5 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
-import { BACKPACK, CONSUMABLE, type UpgradeId } from '../config/balance';
+import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
@@ -17,7 +17,7 @@ export interface SaveData {
   upgrades: Record<UpgradeId, number>;
   progress: { unlocked: string[]; best: Record<string, number> };
   stats: { runs: number; maxStep: number; maxDamage: number };
-  settings: { volume: number; haptics: boolean; shake: boolean };
+  settings: { volume: number; haptics: boolean; shake: boolean; gameSpeed: number };
 }
 
 export function emptyLoadout(
@@ -63,7 +63,7 @@ export function createInitialSave(): SaveData {
     upgrades: { maxHp: 0, atb: 0, attack: 0, backpack: 0, consumableSlots: 0, storage: 0 },
     progress: { unlocked: [REGIONS[0]!.id], best: {} },
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
-    settings: { volume: 0.7, haptics: true, shake: true },
+    settings: { volume: 0.7, haptics: true, shake: true, gameSpeed: 1 },
   };
 }
 
@@ -129,6 +129,9 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...(isObj(data.settings) ? (data.settings as Partial<SaveData['settings']>) : {}),
       },
     };
+    const sp = save.settings.gameSpeed;
+    if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
+      save.settings.gameSpeed = 1;
     // 参照の整合性: 倉庫にない uid は配置から外す
     const owned = new Set(save.inventory.map((i) => i.uid));
     save.loadout.cells = save.loadout.cells.map((c) => (c && owned.has(c) ? c : null));
