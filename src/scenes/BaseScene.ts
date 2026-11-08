@@ -22,7 +22,7 @@ import type { Dir, ItemInstance } from '../core/types';
 import { DIRS } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
-import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
+import { UNIT_SPRITES, animKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
@@ -165,18 +165,24 @@ export class BaseScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD);
     const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
     const hero = this.add
-      .image(W / 2, groundY, 'hero')
+      .sprite(W / 2, groundY, 'hero')
       .setScale(3)
       .setOrigin(heroOrigin.originX, heroOrigin.originY);
     this.root.add([glow, hero]);
-    this.tweens.add({
-      targets: hero,
-      y: groundY - 8,
-      yoyo: true,
-      repeat: -1,
-      duration: 800,
-      ease: 'Sine.easeInOut',
-    });
+    // 本素材があれば地面に立ったまま待機モーション。仮素材のときだけ上下に揺らす
+    const idleKey = animKey('hero', 'idle');
+    if (this.anims.exists(idleKey)) {
+      hero.play(idleKey);
+    } else {
+      this.tweens.add({
+        targets: hero,
+        y: groundY - 8,
+        yoyo: true,
+        repeat: -1,
+        duration: 800,
+        ease: 'Sine.easeInOut',
+      });
+    }
     this.tweens.add({ targets: glow, alpha: 0.15, yoyo: true, repeat: -1, duration: 1200 });
 
     // 左右の丸ボタン（イベントアイコン風）

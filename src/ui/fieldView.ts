@@ -33,6 +33,8 @@ export class FieldView {
   private readonly slots: EnemySlot[] = [];
   private readonly byId = new Map<number, EnemySlot>();
   private heroHurtUntil = 0;
+  /** 勇者の本素材（待機）が読み込まれているか */
+  private readonly heroHasSprites: boolean;
   aimId: number | null = null;
   visibleEnemies = 0;
 
@@ -59,6 +61,7 @@ export class FieldView {
     });
 
     const heroDef = UNIT_SPRITES.hero!;
+    this.heroHasSprites = !!heroDef.anims?.idle && scene.anims.exists(animKey('hero', 'idle'));
     const origin = stillOrigin(heroDef);
     this.heroGlow = scene.add
       .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
@@ -139,11 +142,13 @@ export class FieldView {
     this.bgLayers.forEach((l, i) => (l.tilePositionX = Math.floor((c.heroX * speeds[i]!) / 2)));
 
     // 勇者: 走り・攻撃（連鎖中）・被弾。無防備の間は輪郭を赤く
-    const bob = c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
+    // 仮素材のときだけ、上下の揺れ（走り）と傾け（連鎖中）で動きを出す。本素材は地面に接地したままモーションに任せる
+    const placeholder = !this.heroHasSprites;
+    const bob = placeholder && c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
     this.hero.y = RUN_LAYOUT.groundY - bob;
     this.hero.setTint(now < this.heroHurtUntil ? 0xff8080 : 0xffffff);
-    this.hero.setAngle(c.unguarded ? Math.sin(now / 40) * 4 : 0);
-    this.heroGlow.y = this.hero.y + 4;
+    this.hero.setAngle(placeholder && c.unguarded ? Math.sin(now / 40) * 4 : 0);
+    this.heroGlow.y = this.hero.y + (placeholder ? 4 : 0);
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
     // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、連鎖中は攻撃を続ける）
