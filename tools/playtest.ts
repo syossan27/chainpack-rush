@@ -13,7 +13,7 @@ import {
   sortieBlock,
 } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
-import { createInitialSave } from '../src/core/save';
+import { createInitialSave, serializeSave } from '../src/core/save';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
 import { REGIONS, getRegion, bossForLoop } from '../src/data/regions';
 import { getEnemyDef } from '../src/data/enemies';
@@ -129,6 +129,8 @@ for (let p = 0; p < PLAYERS; p++) {
       bought,
     });
   }
+  // SAVE_OUT=path: 1体目のボットのセーブを書き出す（画面の点検用）
+  if (p === 0 && process.env.SAVE_OUT) writeFileSync(process.env.SAVE_OUT, serializeSave(save));
 }
 
 // ---- 集計 ----
