@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
-import { BOSS, CONSUMABLE, HERO, SIM, TIME_BONUS } from '../src/config/balance';
+import { BOSS, CONSUMABLE, FIELD, HERO, SIM, TIME_BONUS } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
 import { buyUpgrade, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
@@ -289,5 +289,74 @@ describe('時間の延長', () => {
     for (let i = 0; i < 10; i++) buyUpgrade(s, 'runTime');
     expect(s.upgrades.runTime).toBe(5);
     expect(heroStats(s).runTime).toBe(SIM.runDuration + 10);
+  });
+});
+
+describe('接敵と連鎖の打ち切り', () => {
+  it('連鎖は先頭の敵が目の前の立ち位置まで来てから始まる', () => {
+    const { loadout, items } = specExample();
+    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });
+    let firstFire = -1;
+    while (!c.ended && firstFire < 0) {
+      c.step();
+      for (const e of c.drainEvents()) if (e.type === 'chainStart') firstFire = e.tick;
+    }
+    const front = c.enemies.filter((e) => e.alive).sort((a, b) => a.x - b.x)[0]!;
+    expect(front.x - c.heroX).toBeLessThanOrEqual(FIELD.frontStand + 0.5);
+  });
+
+  it('狙える敵がいなくなったら残りの段は打ち切り、防御値は通った盾の分だけ', () => {
+    // 斧（薙ぎ払い）→ 盾 → 剣×5 → 鉄の盾。最初の斧で群れが全滅したら、剣の段で打ち切る
+    const { loadout, items } = build(9, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'axe', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
+      { uid: 'w', defId: 'wood_shield', x: 2, y: 0, exits: ['right'] },
+      { uid: 's1', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 's2', defId: 'sword', x: 4, y: 0, exits: ['right'] },
+      { uid: 's3', defId: 'sword', x: 5, y: 0, exits: ['right'] },
+      { uid: 's4', defId: 'sword', x: 6, y: 0, exits: ['right'] },
+      { uid: 's5', defId: 'sword', x: 7, y: 0, exits: ['right'] },
+      { uid: 'i', defId: 'iron_shield', x: 8, y: 0, exits: [] },
+    ]);
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: { ...BASE_HERO_STATS, attackMult: 5 },
+    });
+    let end: CombatEvent | undefined;
+    let start = -1;
+    while (!c.ended && !end) {
+      c.step();
+      for (const e of c.drainEvents()) {
+        if (e.type === 'chainStart' && start < 0) start = e.tick;
+        if (e.type === 'chainEnd') end = e;
+      }
+    }
+    expect(end?.type === 'chainEnd' && end.cut).toBe(true);
+    if (end?.type === 'chainEnd') {
+      expect(end.defenseGain).toBe(8); // 木の盾だけ（鉄の盾には届いていない）
+      expect(end.tick - start).toBeLessThan(Math.round(1.6 * SIM.ticksPerSecond));
+    }
+    expect(c.chain).toBeNull();
+  });
+
+  it('取り巻きのいないボスは目の前まで出てくる', () => {
+    const { loadout, items } = build(1, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: [] },
+    ]);
+    const c = new Combat({
+      seed: 1,
+      regionId: 'rampart',
+      loadout,
+      items,
+      hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
+    });
+    for (const e of c.enemies) if (!e.def.boss) e.alive = false;
+    for (let i = 0; i < 60 * 8; i++) c.step();
+    const knight = c.enemies.find((e) => e.def.boss)!;
+    expect(knight.standOffset).toBe(FIELD.bossSoloStand);
+    expect(knight.x - c.heroX).toBeCloseTo(FIELD.bossSoloStand, 0);
   });
 });

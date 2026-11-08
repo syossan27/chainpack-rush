@@ -7,6 +7,7 @@ import {
   FIELD,
   HERO,
   LOOP_SCALING,
+  RARITY,
   SIM,
   STATUS,
   TIME_BONUS,
@@ -124,6 +125,7 @@ export type CombatEvent =
       defenseCells: number[];
       totalDamage: number;
       duration: number;
+      cut: boolean; // 敵がいなくなって途中で打ち切った
     }
   | { type: 'bossDefeated'; tick: number; loop: number; bossId: string }
   | { type: 'consumable'; tick: number; uid: string; defId: string; effect: ConsumableEffect }
@@ -169,6 +171,7 @@ interface ActiveChain {
   exec: ExecInfo[];
   totalDamage: number;
   durationTicks: number;
+  cut: boolean; // 狙える敵がいなくなって打ち切った
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -293,6 +296,11 @@ export class Combat {
     return this.enemies.filter((e) => e.alive && e.x - this.heroX <= HERO.engageRange);
   }
 
+  /** 接敵: 交戦範囲の敵が、勇者の前の立ち位置まで来ている（連鎖はここから撃つ） */
+  inContact(): boolean {
+    return this.engagedEnemies().some((e) => e.x <= this.heroX + e.standOffset + 0.5);
+  }
+
   get engaged(): boolean {
     return this.engagedEnemies().length > 0;
   }
@@ -381,7 +389,7 @@ export class Combat {
     // 2. ATB と発火
     if (!this.chain) {
       this.atb = Math.min(this.cfg.hero.atbTime, this.atb + dt);
-      if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.engaged) this.fire();
+      if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.inContact()) this.fire();
     }
 
     // 3. 状態の失効
@@ -551,6 +559,12 @@ export class Combat {
       if (!g) groups.set(e.group, (g = []));
       g.push(e);
     }
+    // 取り巻きがいないボスは目の前まで出てくる
+    const escortsAlive = this.enemies.some((e) => e.alive && e.escort);
+    for (const e of this.enemies) {
+      if (e.alive && e.def.boss)
+        e.standOffset = escortsAlive ? FIELD.bossStand : FIELD.bossSoloStand;
+    }
     for (const members of groups.values()) {
       members.sort((a, b) => Number(a.def.backRow) - Number(b.def.backRow) || a.id - b.id);
       members.forEach((e, i) => {
@@ -594,6 +608,7 @@ export class Combat {
       exec: [],
       totalDamage: 0,
       durationTicks: secToTicks(plan.duration),
+      cut: false,
     };
     this.atb = 0;
     this.chainSerial++;
@@ -615,26 +630,38 @@ export class Combat {
     const elapsed = this.tick - c.startTick;
     while (c.next < c.plan.steps.length && secToTicks(c.plan.steps[c.next]!.t) <= elapsed) {
       this.executeStep(c, c.next);
+      if (c.cut) break;
       c.next++;
     }
-    if (c.next >= c.plan.steps.length && elapsed >= c.durationTicks) {
-      const gain = c.plan.defenseGain;
-      this.defense = Math.min(this.maxHp, this.defense + gain);
-      const defenseCells = c.plan.steps
-        .filter((s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind === 'defense')
-        .map((s) => s.cell);
-      this.emit({
-        type: 'chainEnd',
-        tick: this.tick,
-        originUid: c.plan.originUid,
-        defenseGain: gain,
-        defenseCells,
-        totalDamage: c.totalDamage,
-        duration: c.plan.duration,
-      });
-      this.chain = null;
-      this.atb = 0;
-    }
+    if (c.cut || (c.next >= c.plan.steps.length && elapsed >= c.durationTicks))
+      this.finishChain(c, elapsed);
+  }
+
+  /** 連鎖の終了。打ち切ったときは、それまでに通った防御装備の分だけ防御値に加える */
+  private finishChain(c: ActiveChain, elapsed: number): void {
+    const passed = c.cut ? c.plan.steps.slice(0, c.next) : c.plan.steps;
+    const defenseSteps = passed.filter(
+      (s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind === 'defense',
+    );
+    const gain = c.cut
+      ? defenseSteps.reduce((sum, s) => {
+          const it = this.cfg.items.get(s.uid)!;
+          return sum + (getItemDef(it.defId).defense ?? 0) * RARITY[it.rarity].mult;
+        }, 0)
+      : c.plan.defenseGain;
+    this.defense = Math.min(this.maxHp, this.defense + gain);
+    this.emit({
+      type: 'chainEnd',
+      tick: this.tick,
+      originUid: c.plan.originUid,
+      defenseGain: gain,
+      defenseCells: defenseSteps.map((s) => s.cell),
+      totalDamage: c.totalDamage,
+      duration: c.cut ? elapsed / SIM.ticksPerSecond : c.plan.duration,
+      cut: c.cut,
+    });
+    this.chain = null;
+    this.atb = 0;
   }
 
   private executeStep(c: ActiveChain, index: number): void {
@@ -666,8 +693,13 @@ export class Combat {
     let aim =
       parent?.aim != null ? this.enemies.find((e) => e.id === parent.aim && e.alive) : undefined;
     if (!aim) aim = this.targetOrder()[0];
-    const aimId = aim?.id ?? null;
-    const eff = parent && parent.aim === aimId && aimId !== null ? parent.eff + 1 : 1;
+    // 狙える敵がもういない: 残りの段は空振りせず、連鎖を打ち切る
+    if (!aim) {
+      c.cut = true;
+      return;
+    }
+    const aimId = aim.id;
+    const eff = parent && parent.aim === aimId ? parent.eff + 1 : 1;
     c.exec[index] = { eff, aim: aimId };
     const mult = chainMultiplier(eff);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
@@ -680,9 +712,8 @@ export class Combat {
       fromCell,
       step: eff,
       mult,
-      whiff: !aim,
+      whiff: false,
     });
-    if (!aim) return;
 
     const aimCombo = findCombo(def.element, aim.statuses);
     const area = effectiveArea(def.area ?? 'single', aimCombo);
