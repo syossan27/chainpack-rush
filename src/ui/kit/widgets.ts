@@ -356,3 +356,58 @@ export function confirmDialog(
   root.add([shade, bg, t, msg, ok, cancel]);
   return root;
 }
+
+export interface Choice {
+  label: string;
+  onPick: () => void;
+  disabled?: boolean;
+  skin?: ButtonSkin;
+}
+
+/** 縦に並んだ選択肢のダイアログ。外側か「やめる」で閉じる。note は一番下に小さく出す */
+export function choiceDialog(
+  scene: Phaser.Scene,
+  title: string,
+  choices: Choice[],
+  note?: string,
+): Phaser.GameObjects.Container {
+  const W = scene.scale.gameSize.width;
+  const H = scene.scale.gameSize.height;
+  const root = scene.add.container(0, 0).setDepth(2600);
+  const close = () => root.destroy();
+  const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+  shade.on('pointerup', close);
+  const cw = W - 80;
+  const rowH = 92;
+  const ch = 120 + choices.length * rowH + (note ? 40 : 0) + 110;
+  const top = H / 2 - ch / 2;
+  const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
+  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
+  root.add([shade, bg, t]);
+  choices.forEach((c, i) => {
+    root.add(
+      new Button(
+        scene,
+        W / 2,
+        top + 130 + i * rowH,
+        c.label,
+        () => {
+          close();
+          c.onPick();
+        },
+        { width: cw - 80, height: 78, fontSize: 24, skin: c.skin ?? 'red', disabled: c.disabled },
+      ),
+    );
+  });
+  let y = top + 130 + choices.length * rowH;
+  if (note) {
+    root.add(
+      scene.add.text(W / 2, y - 20, note, textStyle(18, COLORS.textDim, false)).setOrigin(0.5, 0),
+    );
+    y += 40;
+  }
+  root.add(
+    new Button(scene, W / 2, y + 20, 'やめる', close, { width: 230, height: 72, skin: 'gray' }),
+  );
+  return root;
+}

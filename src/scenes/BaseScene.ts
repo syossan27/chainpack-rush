@@ -18,9 +18,9 @@ import {
   upgradeCost,
 } from '../core/economy';
 import { Rng, randomSeed } from '../core/rng';
-import type { Dir, ItemInstance } from '../core/types';
+import type { Dir, ItemInstance, Rarity } from '../core/types';
 import { DIRS } from '../core/types';
-import { getItemDef } from '../data/items';
+import { RARITY_NAMES, getItemDef } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
 import { UNIT_SPRITES, animKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
@@ -30,7 +30,16 @@ import { describeItem, showItemDetail } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
-import { Button, RoundButton, confirmDialog, ink, panel, ribbon } from '../ui/kit/widgets';
+import {
+  Button,
+  RoundButton,
+  choiceDialog,
+  confirmDialog,
+  ink,
+  panel,
+  ribbon,
+  type Choice,
+} from '../ui/kit/widgets';
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, rarityCss, textStyle } from '../ui/theme';
 
@@ -54,6 +63,8 @@ const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
 /** 拠点の勇者を地面の帯へ沈める量（論理px。勇者は×3表示なので 4ドット分） */
 const HOME_HERO_SINK = 12;
 
+const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
 export class BaseScene extends Phaser.Scene {
   private page: Page = 'home';
   private root!: Phaser.GameObjects.Container;
@@ -61,6 +72,8 @@ export class BaseScene extends Phaser.Scene {
   private specify: Dir[] = [];
   /** 倉庫の「まとめて売る」で選んでいる uid（null = 選ぶモードではない） */
   private sellPick: Set<string> | null = null;
+  /** 一括売却で、追加効果（✦）つきの装備を残すか */
+  private keepAffixes = true;
   private toast: Phaser.GameObjects.Text | null = null;
 
   constructor() {
@@ -404,22 +417,45 @@ export class BaseScene extends Phaser.Scene {
           { width: 320, height: 72, fontSize: 24, skin: 'blue', icon: 'coin' },
         ),
       );
-      const commons = stored().filter(
-        (i) => i.rarity === 'common' && getItemDef(i.defId).kind !== 'consumable',
-      );
+      // レアリティ以下を一括売却（装備のみ。消耗品・アーティファクトは含めない）
+      const below = (max: Rarity) =>
+        stored().filter((i) => {
+          const d = getItemDef(i.defId);
+          if (d.kind === 'consumable' || d.artifact) return false;
+          if (this.keepAffixes && (i.affixes?.length ?? 0) > 0) return false;
+          return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
+        });
+      const openBulk = (): void => {
+        const choices: Choice[] = (['common', 'rare', 'epic'] as const).map((r) => {
+          const list = below(r);
+          const gold = list.reduce((sum, i) => sum + sellPrice(i), 0);
+          return {
+            label: `${RARITY_NAMES[r]}${r === 'common' ? '' : '以下'}  ${list.length}個 +${gold}G`,
+            disabled: list.length === 0,
+            onPick: () =>
+              sellWithConfirm(
+                list.map((i) => i.uid),
+                `${RARITY_NAMES[r]}${r === 'common' ? '' : '以下'}を一括売却`,
+              ),
+          };
+        });
+        choices.push({
+          label: this.keepAffixes ? '✦付きは残す：オン' : '✦付きは残す：オフ',
+          skin: 'blue',
+          onPick: () => {
+            this.keepAffixes = !this.keepAffixes;
+            openBulk();
+          },
+        });
+        choiceDialog(this, '一括売却', choices, '装備中・消耗品・アーティファクトは売りません');
+      };
       this.root.add(
-        new Button(
-          this,
-          W / 2 + 166,
-          1060,
-          `コモン一括売却 ${commons.length}`,
-          () =>
-            sellWithConfirm(
-              commons.map((i) => i.uid),
-              'コモンを一括売却',
-            ),
-          { width: 320, height: 72, fontSize: 22, skin: 'red', disabled: commons.length === 0 },
-        ),
+        new Button(this, W / 2 + 166, 1060, '一括売却', openBulk, {
+          width: 320,
+          height: 72,
+          fontSize: 24,
+          skin: 'red',
+        }),
       );
     }
   }
