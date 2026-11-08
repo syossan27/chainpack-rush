@@ -2,7 +2,13 @@
 import Phaser from 'phaser';
 import { simulateChain } from '../core/chain';
 import { consumableSlots, equippedUids, itemMap, sortieBlock } from '../core/economy';
-import { cycleOriginOrder, placeItem, removeItem, setConsumable } from '../core/loadout';
+import {
+  clearLoadout,
+  cycleOriginOrder,
+  placeItem,
+  removeItem,
+  setConsumable,
+} from '../core/loadout';
 import type { ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
@@ -11,7 +17,7 @@ import { BackpackView } from '../ui/backpackView';
 import { originLabel } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
 import { SKIN } from '../ui/kit/skin';
-import { Pill, RoundButton, ribbon } from '../ui/kit/widgets';
+import { Button, Pill, RoundButton, confirmDialog, ribbon } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
@@ -35,6 +41,7 @@ export class LoadoutScene extends Phaser.Scene {
   private slots!: Phaser.GameObjects.Container;
   private info!: Phaser.GameObjects.Text;
   private infoPill!: Pill;
+  private resetBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
@@ -50,6 +57,20 @@ export class LoadoutScene extends Phaser.Scene {
     this.selected = null;
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
     this.add.existing(ribbon(this, W / 2, LOADOUT_LAYOUT.backpackTop - 34, 'バックパック', 320));
+    // 全部外す（確認してから）
+    this.resetBtn = new Button(
+      this,
+      W - 88,
+      LOADOUT_LAYOUT.backpackTop - 38,
+      '全部外す',
+      () => this.confirmReset(),
+      {
+        width: 140,
+        height: 56,
+        fontSize: 20,
+        skin: 'red',
+      },
+    );
     this.infoPill = new Pill(
       this,
       W / 2,
@@ -100,6 +121,9 @@ export class LoadoutScene extends Phaser.Scene {
       .join('　');
     this.infoPill.setValue(durs || '起点を置いてください', durs ? COLORS.text : COLORS.textWarn);
     this.info.setText(`タップで能力・ドラッグで移動（計算 ${ms.toFixed(1)}ms）`);
+    this.resetBtn.setDisabled(
+      save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
+    );
     this.info.setVisible(save.loadout.height < 5);
     this.info.setY(this.infoPill.y + 34);
     this.infoPill.setY(this.view.y + this.view.gridHeight + 26);
@@ -161,6 +185,23 @@ export class LoadoutScene extends Phaser.Scene {
     persist();
     sfx('click');
     this.refresh();
+  }
+
+  private confirmReset(): void {
+    const save = getSave();
+    const placed = save.loadout.cells.filter(Boolean).length + save.loadout.consumables.length;
+    if (placed === 0) return;
+    confirmDialog(
+      this,
+      '全部外す',
+      `バックパックと消耗品枠の ${placed}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。`,
+      '全部外す',
+      () => {
+        save.loadout = clearLoadout(save.loadout);
+        this.selected = null;
+        this.commit();
+      },
+    );
   }
 
   private onListTap(it: ItemInstance): void {

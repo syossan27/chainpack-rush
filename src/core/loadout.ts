@@ -84,6 +84,17 @@ export function setConsumable(
   return out;
 }
 
+/** 全部外す: バックパックと消耗品枠を空にする（大きさはそのまま） */
+export function clearLoadout(l: Loadout): Loadout {
+  return {
+    width: l.width,
+    height: l.height,
+    cells: new Array<string | null>(l.cells.length).fill(null),
+    originOrder: [],
+    consumables: [],
+  };
+}
+
 /** 拡張時: 既存の配置は同じ (x, y) に残す */
 export function resizeLoadout(l: Loadout, width: number, height: number): Loadout {
   const cells = new Array<string | null>(width * height).fill(null);

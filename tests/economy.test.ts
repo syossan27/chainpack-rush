@@ -14,7 +14,7 @@ import {
   upgradeCost,
 } from '../src/core/economy';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
-import { placeItem, cycleOriginOrder, removeItem } from '../src/core/loadout';
+import { clearLoadout, placeItem, cycleOriginOrder, removeItem } from '../src/core/loadout';
 import { itemMap } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
 import type { RunResult } from '../src/core/combat';
@@ -166,5 +166,16 @@ describe('loadout', () => {
     l = placeItem(l, items, o1!, 3);
     expect(l.cells[3]).toBe(o1);
     expect(l.cells[0]).toBe(sword);
+  });
+
+  it('全部外す: マス・発火順・消耗品枠が空になり、大きさとアイテムは残る', () => {
+    const s = createInitialSave();
+    const n = s.inventory.length;
+    s.loadout = clearLoadout(s.loadout);
+    expect(s.loadout.cells.every((c) => c === null)).toBe(true);
+    expect(s.loadout.cells).toHaveLength(5 * 4);
+    expect(s.loadout.originOrder).toEqual([]);
+    expect(s.loadout.consumables).toEqual([]);
+    expect(s.inventory).toHaveLength(n);
   });
 });

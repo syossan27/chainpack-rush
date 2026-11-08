@@ -285,3 +285,52 @@ export class Bar extends Phaser.GameObjects.Container {
     return this.barH;
   }
 }
+
+/** ゲーム内の確認ダイアログ（ブラウザの confirm() はスマホ版のページで出ないため） */
+export function confirmDialog(
+  scene: Phaser.Scene,
+  title: string,
+  message: string,
+  okLabel: string,
+  onOk: () => void,
+  okSkin: ButtonSkin = 'red',
+): Phaser.GameObjects.Container {
+  const W = scene.scale.gameSize.width;
+  const H = scene.scale.gameSize.height;
+  const root = scene.add.container(0, 0).setDepth(2600);
+  const close = () => root.destroy();
+  const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+  shade.on('pointerup', close);
+  const cw = W - 80;
+  const msg = scene.add
+    .text(W / 2, 0, message, {
+      ...textStyle(24, COLORS.text, false),
+      align: 'center',
+      wordWrap: { width: cw - 80, useAdvancedWrap: true },
+    })
+    .setOrigin(0.5, 0);
+  const ch = 120 + msg.height + 150;
+  const top = H / 2 - ch / 2;
+  const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
+  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
+  msg.setY(top + 96);
+  const by = top + ch - 70;
+  const ok = new Button(
+    scene,
+    W / 2 - 130,
+    by,
+    okLabel,
+    () => {
+      close();
+      onOk();
+    },
+    { width: 230, height: 80, skin: okSkin },
+  );
+  const cancel = new Button(scene, W / 2 + 130, by, 'やめる', close, {
+    width: 230,
+    height: 80,
+    skin: 'gray',
+  });
+  root.add([shade, bg, t, msg, ok, cancel]);
+  return root;
+}
