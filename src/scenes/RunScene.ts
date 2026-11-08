@@ -364,6 +364,35 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
+  /** 時間が延びた: タイマーの横に「+8.0」が浮かび、タイマーが金色に光る */
+  private showTimeBonus(seconds: number, capped: boolean): void {
+    const label = seconds > 0 ? `+${seconds.toFixed(1)}` : '上限';
+    // タイマーの下から浮かび上がる。ゲームスピードに関係なく同じ長さで見せる
+    const t = this.add
+      .text(
+        W / 2 + 74,
+        96,
+        label,
+        textStyle(40, capped && seconds <= 0 ? COLORS.textDim : '#ffe27a'),
+      )
+      .setOrigin(0.5)
+      .setDepth(80);
+    const k = this.speed;
+    this.tweens.add({
+      targets: t,
+      y: 60,
+      alpha: 0,
+      delay: 600 * k,
+      duration: 600 * k,
+      onComplete: () => t.destroy(),
+    });
+    if (seconds > 0) {
+      this.hud.timer.setTint(0xffe27a);
+      this.time.delayedCall(400, () => this.hud.timer.clearTint());
+      sfx('defense');
+    }
+  }
+
   private showBanner(text: string, color = '#ffffff'): void {
     const b = this.hud.banner;
     this.tweens.killTweensOf(b);
@@ -493,6 +522,10 @@ export class RunScene extends Phaser.Scene {
             }
             sfx('defense');
           }
+          break;
+        case 'timeBonus':
+          this.showTimeBonus(ev.seconds, ev.capped);
+          if (ev.reason === 'sweep') this.showBanner('一網打尽！', '#8be06a');
           break;
         case 'bossDefeated':
           this.showBanner('ボス撃破！', COLORS.gold);

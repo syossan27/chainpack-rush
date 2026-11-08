@@ -7,7 +7,9 @@ import {
   LOOT,
   PROGRESS,
   RARITY,
+  SIM,
   STORAGE,
+  TIME_BONUS,
   UPGRADES,
   type UpgradeId,
 } from '../config/balance';
@@ -26,6 +28,7 @@ export function heroStats(save: SaveData): HeroStats {
     maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp,
     atbTime: Math.max(HERO.minAtbTime, HERO.atbTime - UPGRADES.atb.effect * u.atb),
     attackMult: 1 + UPGRADES.attack.effect * u.attack,
+    runTime: Math.min(TIME_BONUS.maxRunTime, SIM.runDuration + UPGRADES.runTime.effect * u.runTime),
   };
 }
 

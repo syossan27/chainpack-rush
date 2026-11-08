@@ -157,7 +157,15 @@ describe('economy', () => {
       reachedLoop: 4,
       drops: [],
       ticks: 0,
-      stats: { fires: 10, maxStep: 5, maxDamage: 99, totalDamage: 1000, bossesDefeated: 3 },
+      stats: {
+        fires: 10,
+        maxStep: 5,
+        maxDamage: 99,
+        totalDamage: 1000,
+        bossesDefeated: 3,
+        timeGained: 0,
+        sweeps: 0,
+      },
     };
     expect(recordRun(s, 'grassland', r).unlocked).toBe('cave');
     expect(s.progress.best.grassland).toBe(4);

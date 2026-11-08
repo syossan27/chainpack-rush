@@ -99,9 +99,17 @@ export const BOSS = {
   goblinKingSummonInterval: 4.0, // 秒。取り巻きが4体未満なら1体ずつ呼ぶ（初回は4体まとめて）
 } as const;
 
+/** ラン中の時間延長（基本の出撃時間は SIM.runDuration） */
+export const TIME_BONUS = {
+  boss: 8, // ボス撃破
+  sweep: 1.5, // 1回の連鎖で群れを丸ごと倒した（一網打尽）
+  maxRunTime: 60, // 強化・延長をすべて込みにした出撃時間の上限（秒）
+} as const;
+
 export const CONSUMABLE = {
   timeStopDuration: 3,
   healAmount: 40,
+  timeSandSeconds: 5, // 時の砂
   baseSlots: 3,
 } as const;
 
@@ -178,7 +186,8 @@ export const ECONOMY = {
   rerollCostGrowth: 1.5,
 } as const;
 
-export type UpgradeId = 'maxHp' | 'atb' | 'attack' | 'backpack' | 'consumableSlots' | 'storage';
+export type UpgradeId =
+  'maxHp' | 'atb' | 'attack' | 'runTime' | 'backpack' | 'consumableSlots' | 'storage';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -193,6 +202,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.6, maxLevel: 10 },
   atb: { id: 'atb', name: 'ATB短縮', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
   attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.6, maxLevel: 20 },
+  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 600, growth: 2.0, maxLevel: 5 }, // +2秒×5（高め）
   backpack: {
     id: 'backpack',
     name: 'バックパック拡張',

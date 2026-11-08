@@ -1,6 +1,16 @@
 // 30秒のランを固定ステップで進め、イベント列を出す（仕様書 第4〜6章）
 // Phaser 非依存。シーンはここが出すイベントと状態を描画するだけ。
-import { AREA, BOSS, CONSUMABLE, FIELD, HERO, LOOP_SCALING, SIM, STATUS } from '../config/balance';
+import {
+  AREA,
+  BOSS,
+  CONSUMABLE,
+  FIELD,
+  HERO,
+  LOOP_SCALING,
+  SIM,
+  STATUS,
+  TIME_BONUS,
+} from '../config/balance';
 import { ESCORT_ID, SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
 import { bossForLoop, getRegion, type RegionDef } from '../data/regions';
@@ -14,12 +24,14 @@ export interface HeroStats {
   maxHp: number;
   atbTime: number;
   attackMult: number; // 永続強化の攻撃倍率 U
+  runTime: number; // 出撃時間（秒）。強化込み、延長前
 }
 
 export const BASE_HERO_STATS: HeroStats = {
   maxHp: HERO.maxHp,
   atbTime: HERO.atbTime,
   attackMult: 1,
+  runTime: SIM.runDuration,
 };
 
 export interface RunConfig {
@@ -49,6 +61,7 @@ export interface EnemyState {
   loop: number;
   group: number; // 同じ群れは一緒に寄ってくる
   row: number; // 見た目の前後列（描画のみ。core の距離・標的順には使わない）
+  killedBy: number; // 倒した連鎖の番号（-1 は生存中・連鎖以外）
 }
 
 export type EndReason = 'timeout' | 'dead';
@@ -114,7 +127,16 @@ export type CombatEvent =
     }
   | { type: 'bossDefeated'; tick: number; loop: number; bossId: string }
   | { type: 'consumable'; tick: number; uid: string; defId: string; effect: ConsumableEffect }
+  | {
+      type: 'timeBonus';
+      tick: number;
+      reason: TimeBonusReason;
+      seconds: number; // 実際に増えた秒数（上限で削られた後）
+      capped: boolean;
+    }
   | { type: 'runEnd'; tick: number; reason: EndReason; reachedLoop: number };
+
+export type TimeBonusReason = 'boss' | 'sweep' | 'consumable';
 
 export interface RunStats {
   fires: number;
@@ -122,6 +144,8 @@ export interface RunStats {
   maxDamage: number;
   totalDamage: number;
   bossesDefeated: number;
+  timeGained: number; // 延長した秒数
+  sweeps: number; // 一網打尽の回数
 }
 
 export interface RunResult {
@@ -156,7 +180,9 @@ const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 export class Combat {
   readonly region: RegionDef;
   readonly mode: 'run' | 'dummy';
-  readonly maxTicks: number;
+  /** 終了する tick。時間延長で増える（上限 TIME_BONUS.maxRunTime） */
+  maxTicks: number;
+  private chainSerial = 0;
   tick = 0;
   heroX = 0;
   hp: number;
@@ -172,7 +198,15 @@ export class Combat {
   enemies: EnemyState[] = [];
   drops: ItemInstance[] = [];
   consumables: (string | null)[];
-  stats: RunStats = { fires: 0, maxStep: 0, maxDamage: 0, totalDamage: 0, bossesDefeated: 0 };
+  stats: RunStats = {
+    fires: 0,
+    maxStep: 0,
+    maxDamage: 0,
+    totalDamage: 0,
+    bossesDefeated: 0,
+    timeGained: 0,
+    sweeps: 0,
+  };
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
@@ -191,7 +225,10 @@ export class Combat {
     this.rng = new Rng(cfg.seed);
     this.region = getRegion(cfg.regionId);
     this.hp = cfg.hero.maxHp;
-    this.maxTicks = this.mode === 'dummy' ? Number.POSITIVE_INFINITY : secToTicks(SIM.runDuration);
+    this.maxTicks =
+      this.mode === 'dummy'
+        ? Number.POSITIVE_INFINITY
+        : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
     this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
@@ -322,6 +359,9 @@ export class Combat {
         break;
       case 'wetAll':
         for (const e of this.onScreen()) this.applyStatus(e, 'wet');
+        break;
+      case 'addTime':
+        this.addTime(CONSUMABLE.timeSandSeconds, 'consumable');
         break;
       case 'heal':
         this.hp = Math.min(this.maxHp, this.hp + CONSUMABLE.healAmount);
@@ -458,6 +498,7 @@ export class Combat {
       loop: this.loop,
       group,
       row,
+      killedBy: -1,
     };
     this.enemies.push(e);
     this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort });
@@ -555,6 +596,7 @@ export class Combat {
       durationTicks: secToTicks(plan.duration),
     };
     this.atb = 0;
+    this.chainSerial++;
     this.stats.fires++;
     this.emit({
       type: 'chainStart',
@@ -718,6 +760,7 @@ export class Combat {
     if (!e.alive) return;
     e.alive = false;
     e.hp = 0;
+    e.killedBy = this.chain ? this.chainSerial : -1;
     this.emit({
       type: 'enemyDeath',
       tick: this.tick,
@@ -732,6 +775,14 @@ export class Combat {
         const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, e.def.boss);
         this.drops.push(item);
         this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+      }
+    }
+    // 一網打尽: 群れの全員を同じ1回の連鎖で倒した
+    if (!e.escort && !e.def.boss && this.chain && this.mode === 'run') {
+      const members = this.enemies.filter((o) => o.group === e.group);
+      if (members.every((o) => !o.alive && o.killedBy === this.chainSerial)) {
+        this.stats.sweeps++;
+        this.addTime(TIME_BONUS.sweep, 'sweep');
       }
     }
     if (e.def.boss) {
@@ -752,11 +803,29 @@ export class Combat {
       this.bossesDefeated++;
       this.stats.bossesDefeated = this.bossesDefeated;
       this.emit({ type: 'bossDefeated', tick: this.tick, loop: this.loop, bossId: e.defId });
+      this.addTime(TIME_BONUS.boss, 'boss');
       this.loop++;
       this.loopStartX = this.heroX + FIELD.loopGap;
       this.enemies = this.enemies.filter((x) => x.alive);
       this.startLoop();
     }
+  }
+
+  /** 出撃時間をのばす（上限 TIME_BONUS.maxRunTime）。実際に増えた分をイベントで出す */
+  private addTime(seconds: number, reason: TimeBonusReason): void {
+    if (this.mode !== 'run' || this.ended) return;
+    const cap = secToTicks(TIME_BONUS.maxRunTime);
+    const before = this.maxTicks;
+    this.maxTicks = Math.min(cap, this.maxTicks + secToTicks(seconds));
+    const gained = (this.maxTicks - before) / SIM.ticksPerSecond;
+    this.stats.timeGained += gained;
+    this.emit({
+      type: 'timeBonus',
+      tick: this.tick,
+      reason,
+      seconds: gained,
+      capped: gained < seconds,
+    });
   }
 
   private damageHero(e: EnemyState): void {

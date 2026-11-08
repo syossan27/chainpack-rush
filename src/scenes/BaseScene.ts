@@ -1,6 +1,6 @@
 // 拠点: 出撃、配置、倉庫（売却）、鍛冶屋（付け直し）、強化、カカシ、設定
 import Phaser from 'phaser';
-import { SIM, UPGRADES, type UpgradeId } from '../config/balance';
+import { SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
 import {
   backpackSize,
   buyUpgrade,
@@ -42,6 +42,7 @@ const UPGRADE_ICON: Record<UpgradeId, IconName> = {
   maxHp: 'shield',
   atb: 'clock',
   attack: 'swords',
+  runTime: 'hourglass',
   backpack: 'bag',
   consumableSlots: 'star',
   storage: 'chest',
@@ -463,6 +464,7 @@ export class BaseScene extends Phaser.Scene {
       maxHp: `最大HP ${hs.maxHp}`,
       atb: `ATB ${hs.atbTime.toFixed(2)}秒`,
       attack: `攻撃倍率 ×${hs.attackMult.toFixed(2)}`,
+      runTime: `出撃 ${hs.runTime}秒（延長込みの上限 ${TIME_BONUS.maxRunTime}秒）`,
       backpack: `${bp.width}×${bp.height}マス`,
       consumableSlots: `${consumableSlots(save)}枠`,
       storage: `${storageCapacity(save)}個`,
@@ -471,18 +473,19 @@ export class BaseScene extends Phaser.Scene {
       const def = UPGRADES[id];
       const lv = save.upgrades[id];
       const cost = upgradeCost(id, lv);
-      const y = CONTENT_TOP + 150 + i * 150;
-      this.root.add(panel(this, W / 2, y, W - 30, 138, 'panel'));
-      this.root.add(new RoundButton(this, 86, y, 96, UPGRADE_ICON[id], null, () => undefined));
-      this.root.add(this.add.text(150, y - 46, def.name, textStyle(28)));
-      this.root.add(this.add.text(150, y - 6, now[id], textStyle(20, COLORS.textDim)));
+      // 7項目を1画面に収める（1行 128px）
+      const y = CONTENT_TOP + 132 + i * 128;
+      this.root.add(panel(this, W / 2, y, W - 30, 120, 'panel'));
+      this.root.add(new RoundButton(this, 80, y, 84, UPGRADE_ICON[id], null, () => undefined));
+      this.root.add(this.add.text(140, y - 44, def.name, textStyle(26)));
+      this.root.add(this.add.text(140, y - 8, now[id], textStyle(18, COLORS.textDim)));
       // 段階のつぶ
       const pips = def.maxLevel;
       const pw = Math.min(22, 300 / pips);
       for (let k = 0; k < pips; k++) {
         this.root.add(
           this.add
-            .rectangle(152 + k * pw, y + 36, pw - 4, 12, k < lv ? 0xffd25a : 0x2a2234)
+            .rectangle(142 + k * pw, y + 30, pw - 4, 12, k < lv ? 0xffd25a : 0x2a2234)
             .setOrigin(0, 0.5)
             .setStrokeStyle(2, 0x0c0a12),
         );
@@ -503,8 +506,8 @@ export class BaseScene extends Phaser.Scene {
             this.render();
           },
           {
-            width: 190,
-            height: 84,
+            width: 180,
+            height: 76,
             skin: 'green',
             icon: cost === null ? undefined : 'coin',
             disabled: cost === null || save.gold < cost,

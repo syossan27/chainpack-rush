@@ -6,7 +6,7 @@ export type ItemKind = 'origin' | 'attack' | 'defense' | 'consumable';
 export type Element = 'physical' | 'blunt' | 'fire' | 'thunder' | 'ice' | 'water' | 'oil';
 export type Area = 'single' | 'sweep' | 'splash' | 'all';
 export type Status = 'wet' | 'oil' | 'frozen';
-export type ConsumableEffect = 'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal';
+export type ConsumableEffect = 'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal' | 'addTime';
 
 export const DIRS: readonly Dir[] = ['up', 'right', 'down', 'left'];
 export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];

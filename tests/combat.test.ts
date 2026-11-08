@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
-import { BOSS, HERO, SIM } from '../src/config/balance';
+import { BOSS, CONSUMABLE, HERO, SIM, TIME_BONUS } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
-import { itemMap } from '../src/core/economy';
+import { buyUpgrade, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
 
 function runAll(seed: number) {
@@ -221,5 +221,73 @@ describe('combat', () => {
     expect(escorts()).toHaveLength(3);
     for (let i = 0; i < Math.round(BOSS.goblinKingSummonInterval * 60) + 2; i++) c.step();
     expect(escorts()).toHaveLength(4);
+  });
+});
+
+describe('時間の延長', () => {
+  const strong = () =>
+    build(4, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'axe', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
+      { uid: 'g', defId: 'greatsword', x: 2, y: 0, exits: ['right'], rarity: 'legendary' },
+      { uid: 'b', defId: 'axe', x: 3, y: 0, exits: [], rarity: 'legendary' },
+    ]);
+  const hero = { ...BASE_HERO_STATS, attackMult: 3, maxHp: 1e6 };
+
+  it('一網打尽（群れを1回の連鎖で全滅）で +1.5秒、ボス撃破で +8秒', () => {
+    const { loadout, items } = strong();
+    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero });
+    const bonuses: { reason: string; seconds: number }[] = [];
+    while (!c.ended && c.bossesDefeated < 1) {
+      c.step();
+      for (const e of c.drainEvents())
+        if (e.type === 'timeBonus') bonuses.push({ reason: e.reason, seconds: e.seconds });
+    }
+    expect(bonuses.some((b) => b.reason === 'sweep' && b.seconds === TIME_BONUS.sweep)).toBe(true);
+    expect(bonuses.some((b) => b.reason === 'boss' && b.seconds === TIME_BONUS.boss)).toBe(true);
+    const gained = bonuses.reduce((s, b) => s + b.seconds, 0);
+    expect(c.stats.timeGained).toBeCloseTo(gained);
+    expect(c.maxTicks).toBe(Math.round((SIM.runDuration + gained) * SIM.ticksPerSecond));
+  });
+
+  it('延長は上限60秒で止まる', () => {
+    const { loadout, items } = strong();
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: { ...hero, runTime: 58 },
+    });
+    while (!c.ended && c.bossesDefeated < 1) c.step();
+    expect(c.maxTicks).toBe(TIME_BONUS.maxRunTime * SIM.ticksPerSecond);
+  });
+
+  it('時の砂で +5秒', () => {
+    const save = createInitialSave();
+    const items = itemMap(save);
+    items.set('sand', {
+      uid: 'sand',
+      defId: 'time_sand',
+      rarity: 'common',
+      exits: [],
+      rerollCount: 0,
+    });
+    const loadout = { ...save.loadout, consumables: ['sand'] };
+    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });
+    const before = c.maxTicks;
+    expect(c.useConsumable(0)).toBe(true);
+    expect(c.maxTicks - before).toBe(CONSUMABLE.timeSandSeconds * SIM.ticksPerSecond);
+  });
+
+  it('永続強化「出撃時間」: +2秒×5、費用は 600G から2倍ずつ', () => {
+    const s = createInitialSave();
+    expect(heroStats(s).runTime).toBe(SIM.runDuration);
+    expect(upgradeCost('runTime', 0)).toBe(600);
+    expect(upgradeCost('runTime', 4)).toBe(9600);
+    s.gold = 1e9;
+    for (let i = 0; i < 10; i++) buyUpgrade(s, 'runTime');
+    expect(s.upgrades.runTime).toBe(5);
+    expect(heroStats(s).runTime).toBe(SIM.runDuration + 10);
   });
 });

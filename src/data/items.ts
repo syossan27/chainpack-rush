@@ -192,6 +192,13 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     effect: 'wetAll',
     description: '画面内の全敵に濡れを付与。',
   },
+  {
+    id: 'time_sand',
+    name: '時の砂',
+    kind: 'consumable',
+    effect: 'addTime',
+    description: '出撃時間を5秒のばす（上限60秒）。',
+  },
   { id: 'potion', name: '回復薬', kind: 'consumable', effect: 'heal', description: 'HPを40回復。' },
 ];
 

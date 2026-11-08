@@ -57,12 +57,14 @@ export class ResultScene extends Phaser.Scene {
       .text(W / 2, 246, `到達 ${result.reachedLoop}周目`, textStyle(56, '#ffe27a'))
       .setOrigin(0.5);
     // 記録（羊皮紙）
-    panel(this, W / 2, 380, W - 60, 150, 'paper');
+    panel(this, W / 2, 408, W - 60, 206, 'paper');
     const stats: [string, string][] = [
       ['ボス撃破', `${result.stats.bossesDefeated}`],
       ['発火', `${result.stats.fires}回`],
       ['最大連鎖', `${result.stats.maxStep}段`],
       ['最大ダメージ', `${Math.round(result.stats.maxDamage)}`],
+      ['時間の延長', `+${result.stats.timeGained.toFixed(1)}秒`],
+      ['一網打尽', `${result.stats.sweeps}回`],
     ];
     stats.forEach(([k, v], i) => {
       const x = i % 2 === 0 ? 70 : W / 2 + 20;
@@ -74,14 +76,14 @@ export class ResultScene extends Phaser.Scene {
       this.add
         .text(
           W / 2,
-          486,
+          530,
           `新しい地域「${getRegion(unlocked).name}」が開放された！`,
           textStyle(28, COLORS.accentText),
         )
         .setOrigin(0.5);
     }
-    ribbon(this, W / 2, 548, `戦利品 ${added.length}`, 300).setScale(0.8);
-    panel(this, W / 2, 820, W - 30, 470, 'inset');
+    ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
+    panel(this, W / 2, 850, W - 30, 420, 'inset');
 
     this.grid = this.add.container(0, 0);
     this.queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
@@ -116,7 +118,7 @@ export class ResultScene extends Phaser.Scene {
     }
     const i = this.opened++;
     const x = (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2;
-    const y = 660 + Math.floor(i / COLS) * (ICON + 34);
+    const y = 700 + Math.floor(i / COLS) * (ICON + 34);
     const epic = ORDER[it.rarity] >= ORDER.epic;
     if (epic) {
       // 後光（残る）

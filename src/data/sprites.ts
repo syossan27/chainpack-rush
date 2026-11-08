@@ -650,6 +650,7 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   rally: { shape: 'flag', A: 'r', S: 'R', L: 'p' },
   time_stop: { shape: 'hourglass', A: 'l', S: 'u', L: 'W' },
   oil_barrel: { shape: 'barrel', A: 'b', S: 'B', L: 'n' },
+  time_sand: { shape: 'hourglass', A: 'y', S: 'o', L: 'W' },
   rain_charm: { shape: 'charm', A: 'w', S: 'u', L: 'l' },
   potion: { shape: 'flask', A: 'r', S: 'R', L: 'p' },
 };

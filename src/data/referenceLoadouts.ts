@@ -24,6 +24,7 @@ export const REFERENCE_UPGRADES = {
   maxHp: 10,
   atb: 10,
   attack: 20,
+  runTime: 0, // 参考配置は出撃時間の強化なし（延長はボス・一網打尽だけ）
   backpack: 0,
   consumableSlots: 0,
   storage: 0,
