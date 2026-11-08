@@ -1,6 +1,6 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
 import Phaser from 'phaser';
-import { simulateChain } from '../core/chain';
+import { simulateChain, type ChainPreview } from '../core/chain';
 import { consumableSlots, equippedUids, itemMap, sortieBlock } from '../core/economy';
 import {
   clearLoadout,
@@ -14,10 +14,10 @@ import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
 import { BackpackView } from '../ui/backpackView';
-import { originLabel } from '../ui/backpackView';
+import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
-import { SKIN } from '../ui/kit/skin';
-import { Button, Pill, RoundButton, confirmDialog, ribbon } from '../ui/kit/widgets';
+import { SKIN, SLICE } from '../ui/kit/skin';
+import { Button, RoundButton, confirmDialog, panel, ribbon } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
@@ -40,7 +40,10 @@ export class LoadoutScene extends Phaser.Scene {
   private list!: ItemList;
   private slots!: Phaser.GameObjects.Container;
   private info!: Phaser.GameObjects.Text;
-  private infoPill!: Pill;
+  /** ルートの選択（起点の発火順の添字。null は全部） */
+  private focus: number | null = null;
+  private routeBar!: Phaser.GameObjects.Container;
+  private routeText!: Phaser.GameObjects.Text;
   private resetBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
@@ -71,17 +74,9 @@ export class LoadoutScene extends Phaser.Scene {
         skin: 'red',
       },
     );
-    this.infoPill = new Pill(
-      this,
-      W / 2,
-      this.view.y + this.view.gridHeight + 26,
-      W - 120,
-      null,
-      '',
-    );
-    this.info = this.add
-      .text(W / 2, this.infoPill.y + 40, '', textStyle(18, COLORS.textDim))
-      .setOrigin(0.5, 0);
+    this.focus = null;
+    this.routeBar = this.add.container(0, this.view.y + this.view.gridHeight + 30);
+    this.info = this.add.text(W / 2, 0, '', textStyle(18, COLORS.textDim)).setOrigin(0.5, 0);
     this.slots = this.add.container(0, LOADOUT_LAYOUT.slotsTop);
     this.warn = this.add
       .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
@@ -108,25 +103,27 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
+  override update(): void {
+    this.view.tick(this.time.now);
+  }
+
   private refresh(): void {
     const save = getSave();
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
     const t0 = performance.now();
     const preview = simulateChain(save.loadout, items);
-    this.view.showPreview(preview);
+    if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
+    this.view.showPreview(preview, this.focus);
     const ms = performance.now() - t0;
-    const durs = preview.plans
-      .map((p, i) => `${originLabel(i)} ${p.maxStep}段・${p.duration.toFixed(1)}秒`)
-      .join('　');
-    this.infoPill.setValue(durs || '起点を置いてください', durs ? COLORS.text : COLORS.textWarn);
+    this.buildRouteBar(preview);
     this.info.setText(`タップで能力・ドラッグで移動（計算 ${ms.toFixed(1)}ms）`);
     this.resetBtn.setDisabled(
       save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
     );
     this.info.setVisible(save.loadout.height < 5);
-    this.info.setY(this.infoPill.y + 34);
-    this.infoPill.setY(this.view.y + this.view.gridHeight + 26);
+    this.routeBar.setY(this.view.y + this.view.gridHeight + 30);
+    this.info.setY(this.routeBar.y + 32);
     const block = sortieBlock(save);
     this.warn.setText(
       block === 'noOrigin'
@@ -139,6 +136,76 @@ export class LoadoutScene extends Phaser.Scene {
     this.list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
     this.list.setSelected(this.selected?.uid ?? null);
     this.renderSlots();
+  }
+
+  /** ルートの選択: [全部] [①] [②]… と、選んだルートの要約 */
+  private buildRouteBar(preview: ChainPreview): void {
+    const bar = this.routeBar;
+    bar.removeAll(true);
+    bar.add(panel(this, W / 2, 0, W - 40, 56, 'plate'));
+    const chip = (x: number, w: number, on: boolean, onTap: () => void) => {
+      const bg = this.add
+        .nineslice(
+          x + w / 2,
+          0,
+          on ? SKIN.tabOn : SKIN.tab,
+          undefined,
+          w,
+          44,
+          SLICE.tab,
+          SLICE.tab,
+          14,
+          14,
+        )
+        .setInteractive({ useHandCursor: true });
+      bg.on('pointerup', () => {
+        sfx('click');
+        onTap();
+      });
+      bar.add(bg);
+      return bg;
+    };
+    let x = 30;
+    chip(x, 72, this.focus === null, () => this.setFocus(null));
+    bar.add(
+      this.add
+        .text(x + 36, -2, '全部', textStyle(18, this.focus === null ? '#fff6d0' : COLORS.text))
+        .setOrigin(0.5),
+    );
+    x += 78;
+    preview.plans.forEach((_, i) => {
+      chip(x, 50, this.focus === i, () => this.setFocus(this.focus === i ? null : i));
+      bar.add(this.add.circle(x + 25, -1, 14, routeColor(i)).setStrokeStyle(3, 0x0c0a12));
+      bar.add(
+        this.add
+          .text(x + 25, -2, `${i + 1}`, textStyle(16, '#1a1424'))
+          .setOrigin(0.5)
+          .setStroke('#fff6d0', 2)
+          .setShadow(0, 0, '#000', 0),
+      );
+      x += 54;
+    });
+    const summary = (() => {
+      if (preview.plans.length === 0)
+        return { text: '起点を置いてください', color: COLORS.textWarn };
+      if (this.focus === null)
+        return { text: '番号を選ぶとそのルートを強調', color: COLORS.textDim };
+      const p = preview.plans[this.focus]!;
+      const def = p.defenseGain > 0 ? `・防御+${p.defenseGain}` : '';
+      return {
+        text: `${p.maxStep}段・${p.duration.toFixed(1)}秒${def}`,
+        color: routeCss(this.focus),
+      };
+    })();
+    this.routeText = this.add
+      .text(W - 40, -2, summary.text, textStyle(18, summary.color))
+      .setOrigin(1, 0.5);
+    bar.add(this.routeText);
+  }
+
+  private setFocus(i: number | null): void {
+    this.focus = i;
+    this.refresh();
   }
 
   private renderSlots(): void {
@@ -212,13 +279,19 @@ export class LoadoutScene extends Phaser.Scene {
   private selectForPlacing(it: ItemInstance): void {
     this.selected = it;
     this.list.setSelected(it.uid);
-    this.infoPill.setValue('置きたいマスをタップ', COLORS.gold);
+    this.routeText.setText('置きたいマスをタップ').setColor(COLORS.gold);
   }
 
   /** 装備の詳細カード。置き場所に応じた操作をカードに並べる */
   private openDetail(it: ItemInstance, where: 'grid' | 'slot' | 'list'): void {
     const save = getSave();
     const items = itemMap(save);
+    if (where === 'grid') {
+      // タップした装備が乗っているルートを強調する
+      const plans = simulateChain(save.loadout, items).plans;
+      const i = plans.findIndex((p) => p.steps.some((s) => s.uid === it.uid));
+      if (i >= 0 && i !== this.focus) this.setFocus(i);
+    }
     const kind = getItemDef(it.defId).kind;
     const actions: DetailAction[] = [];
     if (where === 'grid' || where === 'slot') {

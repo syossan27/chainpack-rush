@@ -11,6 +11,19 @@ import { CELL_SIZE, COLORS, W, textStyle } from './theme';
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
 
+/** 起点ごとのルートの色（起点の番号バッジ・線・チップで共通） */
+export const ROUTE_COLORS = [
+  0xfff080, 0x80e0ff, 0xff90c0, 0xa0ff90, 0xffb060, 0xc8a0ff, 0x70f0d0, 0xff7070,
+];
+
+export function routeColor(index: number): number {
+  return ROUTE_COLORS[index % ROUTE_COLORS.length]!;
+}
+
+export function routeCss(index: number): string {
+  return `#${routeColor(index).toString(16).padStart(6, '0')}`;
+}
+
 export function originLabel(index: number): string {
   return CIRCLED[index] ?? `${index + 1}`;
 }
@@ -23,6 +36,16 @@ export class BackpackView extends Phaser.GameObjects.Container {
   private cellImgs: Phaser.GameObjects.Image[] = [];
   private readonly iconLayer: Phaser.GameObjects.Container;
   private readonly lineG: Phaser.GameObjects.Graphics;
+  private readonly flowG: Phaser.GameObjects.Graphics;
+  /** 選んだルートの辺（光の粒が伝わる順に流れる） */
+  private flowEdges: {
+    a: { x: number; y: number };
+    b: { x: number; y: number };
+    t0: number;
+    t1: number;
+  }[] = [];
+  private flowSpan = 0;
+  private flowColor = 0xffffff;
   private readonly glowG: Phaser.GameObjects.Graphics;
   private readonly labelLayer: Phaser.GameObjects.Container;
   private icons = new Map<number, ItemIcon>();
@@ -42,9 +65,10 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.cellLayer = scene.add.container(0, 0);
     this.iconLayer = scene.add.container(0, 0);
     this.lineG = scene.add.graphics();
+    this.flowG = scene.add.graphics();
     this.glowG = scene.add.graphics();
     this.labelLayer = scene.add.container(0, 0);
-    this.add([this.cellLayer, this.iconLayer, this.lineG, this.glowG, this.labelLayer]);
+    this.add([this.cellLayer, this.iconLayer, this.lineG, this.flowG, this.glowG, this.labelLayer]);
     scene.add.existing(this);
     this.rebuild();
   }
@@ -135,7 +159,9 @@ export class BackpackView extends Phaser.GameObjects.Container {
       // 起点の発火順: 金の丸バッジ
       const bx = c.x - this.cell / 2 + 16;
       const by = c.y - this.cell / 2 + 16;
-      this.labelLayer.add(this.scene.add.circle(bx, by, 15, 0xffd25a).setStrokeStyle(3, 0x5c3608));
+      this.labelLayer.add(
+        this.scene.add.circle(bx, by, 15, routeColor(idx)).setStrokeStyle(3, 0x0c0a12),
+      );
       this.labelLayer.add(
         this.scene.add
           .text(bx, by, `${idx + 1}`, textStyle(20, '#3a2410', true))
@@ -146,23 +172,51 @@ export class BackpackView extends Phaser.GameObjects.Container {
     });
   }
 
-  /** 配置画面のプレビュー: 連鎖の通り道を線で、各マスの段数と倍率、届かない装備はグレー */
-  showPreview(p: ChainPreview): void {
+  /**
+   * 配置画面のプレビュー: 連鎖の通り道を線で、各マスの段数と倍率、届かない装備はグレー。
+   * focus を指定すると、その起点のルートだけを太く描き、通るマスを縁取り、ほかの装備は薄くする
+   */
+  showPreview(p: ChainPreview, focus: number | null = null): void {
     this.lineG.clear();
+    this.flowEdges = [];
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
-    for (const [cell, icon] of this.icons) icon.setDimmed(p.unreachable.has(cell));
-    const colors = [0xfff080, 0x80e0ff, 0xff90c0, 0xa0ff90, 0xffb060];
+    const focused = focus !== null ? p.plans[focus] : undefined;
+    const onRoute = new Set(focused?.steps.map((s) => s.cell) ?? []);
+    for (const [cell, icon] of this.icons) {
+      icon.setDimmed(p.unreachable.has(cell));
+      if (focused && !onRoute.has(cell)) icon.setAlpha(0.35);
+    }
     p.plans.forEach((plan, pi) => {
-      const color = colors[pi % colors.length]!;
-      this.lineG.lineStyle(4, color, 0.85);
+      if (focused && plan !== focused) return;
+      const color = routeColor(pi);
+      const width = focused ? 7 : 4;
+      if (focused) {
+        // 通るマスをルートの色で縁取る
+        this.lineG.lineStyle(4, color, 1);
+        for (const s of plan.steps) {
+          const c = this.cellCenter(s.cell);
+          this.lineG.strokeRoundedRect(
+            c.x - this.cell / 2 + 4,
+            c.y - this.cell / 2 + 4,
+            this.cell - 8,
+            this.cell - 8,
+            10,
+          );
+        }
+      }
       for (const s of plan.steps) {
         if (s.parentIndex < 0) continue;
-        const a = this.cellCenter(plan.steps[s.parentIndex]!.cell);
+        const parent = plan.steps[s.parentIndex]!;
+        const a = this.cellCenter(parent.cell);
         const b = this.cellCenter(s.cell);
+        this.lineG.lineStyle(width + 4, 0x0c0a12, 0.6);
+        this.lineG.lineBetween(a.x, a.y, b.x, b.y);
+        this.lineG.lineStyle(width, color, 0.95);
         this.lineG.lineBetween(a.x, a.y, b.x, b.y);
         this.lineG.fillStyle(color, 1);
-        this.lineG.fillCircle(b.x, b.y, 5);
+        this.lineG.fillCircle(b.x, b.y, focused ? 7 : 5);
+        if (focused) this.flowEdges.push({ a, b, t0: parent.t, t1: s.t });
       }
       for (const s of plan.steps) {
         if (s.step === null) continue;
@@ -172,16 +226,21 @@ export class BackpackView extends Phaser.GameObjects.Container {
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
             `${s.step}段 ×${s.mult.toFixed(2)}`,
-            textStyle(13, '#fff4a0'),
+            textStyle(focused ? 15 : 13, focused ? routeCss(pi) : '#fff4a0'),
           )
           .setOrigin(1, 1);
         this.labelLayer.add(t);
+      }
+      if (focused) {
+        this.flowSpan = plan.duration;
+        this.flowColor = color;
       }
     });
   }
 
   clearPreview(): void {
     this.lineG.clear();
+    this.flowEdges = [];
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
     for (const icon of this.icons.values()) icon.setDimmed(false);
@@ -215,6 +274,23 @@ export class BackpackView extends Phaser.GameObjects.Container {
 
   /** 毎フレーム呼ぶ（光と点滅） */
   tick(now: number): void {
+    // 選んだルート: 連鎖と同じ時間の流れで、光の粒が起点から伝わっていく（くり返し）
+    const f = this.flowG;
+    f.clear();
+    if (this.flowEdges.length > 0) {
+      const period = this.flowSpan + 0.6;
+      const ph = ((now / 1000) % period) * 1;
+      for (const e of this.flowEdges) {
+        if (ph < e.t0 || ph > e.t1) continue;
+        const k = (ph - e.t0) / Math.max(0.01, e.t1 - e.t0);
+        const x = e.a.x + (e.b.x - e.a.x) * k;
+        const y = e.a.y + (e.b.y - e.a.y) * k;
+        f.fillStyle(this.flowColor, 0.45);
+        f.fillCircle(x, y, 14);
+        f.fillStyle(0xffffff, 1);
+        f.fillCircle(x, y, 7);
+      }
+    }
     const g = this.glowG;
     g.clear();
     this.glows = this.glows.filter((gl) => gl.until > now);
