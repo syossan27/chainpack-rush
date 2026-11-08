@@ -146,7 +146,15 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       save.settings.gameSpeed = 1;
     // 起点石: 出口0（以前の抽選で出たもの）は右向き1方向にし、レアリティは出口の数に合わせる
     for (const it of save.inventory) {
-      if (getItemDef(it.defId).kind !== 'origin') continue;
+      const d = getItemDef(it.defId);
+      // アーティファクトは出口・レアリティ固定、追加効果なし
+      if (d.artifact) {
+        it.exits = d.artifact.exits.slice();
+        it.rarity = 'legendary';
+        delete it.affixes;
+        continue;
+      }
+      if (d.kind !== 'origin') continue;
       if (it.exits.length === 0) it.exits = ['right'];
       it.rarity = originRarity(it.exits.length);
     }

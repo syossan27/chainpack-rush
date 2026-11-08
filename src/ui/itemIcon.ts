@@ -43,6 +43,29 @@ export class ItemIcon extends Phaser.GameObjects.Container {
     this.arrows = scene.add.graphics();
     this.drawArrows();
     this.add([this.frame, this.img, this.arrows]);
+    // アーティファクト: 虹色にゆらめく縁取り
+    if (def.artifact) {
+      const ring = scene.add.graphics();
+      const w = size - 4;
+      let hue = 0;
+      const draw = () => {
+        ring.clear();
+        const c = Phaser.Display.Color.HSVToRGB(hue, 0.6, 1) as Phaser.Display.Color;
+        ring.lineStyle(Math.max(3, size * 0.05), c.color, 1);
+        ring.strokeRoundedRect(-w / 2, -w / 2, w, w, 8);
+      };
+      draw();
+      const ev = scene.time.addEvent({
+        delay: 60,
+        loop: true,
+        callback: () => {
+          hue = (hue + 0.02) % 1;
+          if (ring.active) draw();
+        },
+      });
+      this.once('destroy', () => ev.remove());
+      this.addAt(ring, 1);
+    }
     // 追加効果の数を左下に小さな星で
     const n = item.affixes?.length ?? 0;
     if (n > 0) {

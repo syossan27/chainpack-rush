@@ -240,6 +240,7 @@ export class Combat {
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
   readonly luck: LuckRules;
+  private readonly guardAll: boolean;
   private readonly layoutRng: Rng;
   /** 今の周回の並び（地域選択・進み具合の表示用） */
   layout: LoopLayout | null = null;
@@ -279,6 +280,10 @@ export class Combat {
     this.cfg = cfg;
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.luck = { ...LUCK, ...cfg.luck };
+    // 不落の城門: バックパックに置いてあれば常に守られる
+    this.guardAll = cfg.loadout.cells.some(
+      (u) => !!u && !!cfg.items.get(u) && !!getItemDef(cfg.items.get(u)!.defId).guardAll,
+    );
     // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
     this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
@@ -320,6 +325,7 @@ export class Combat {
 
   /** 連鎖中は無防備。ただし起点のあと rules.guardSteps 段目までは守りが残る（next は起点を含む添字） */
   get unguarded(): boolean {
+    if (this.guardAll) return false;
     return this.chain !== null && this.chain.next > this.rules.guardSteps;
   }
 
@@ -811,12 +817,17 @@ export class Combat {
     if (r.atbPerStep) {
       // 起点（先頭）は数えない
       const steps = Math.max(0, (c.cut ? c.next : c.plan.steps.length) - 1);
-      const quick = affixValue(this.cfg.items.get(c.plan.originUid)!, 'quick') / 100;
+      const origin = this.cfg.items.get(c.plan.originUid)!;
+      const quick = affixValue(origin, 'quick') / 100;
       const factor =
-        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
+        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) *
+        (1 - quick) *
+        (getItemDef(origin.defId).waitMult ?? 1);
       this.atb = this.cfg.hero.atbTime * (1 - factor);
     } else {
-      this.atb = 0;
+      // 時渡りの砂時計は、段数に比例する待ちがなくても待たずに次を撃つ
+      const origin = this.cfg.items.get(c.plan.originUid);
+      this.atb = origin && getItemDef(origin.defId).waitMult === 0 ? this.cfg.hero.atbTime : 0;
     }
   }
 
@@ -857,7 +868,7 @@ export class Combat {
     const aimId = aim.id;
     const eff = parent && parent.aim === aimId ? parent.eff + 1 : 1;
     c.exec[index] = { eff, aim: aimId };
-    const mult = chainMultiplier(eff);
+    const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
     this.emit({
       type: 'step',
@@ -920,6 +931,7 @@ export class Combat {
         comboMult: combo?.mult ?? (t.statuses.size > 0 ? STATUS.exposedMult : 1),
         upgradeMult: this.cfg.hero.attackMult,
         area: def.area === 'all' ? 'all' : undefined,
+        multCap: c.plan.multCap,
       });
       const v = this.luck.damageVariance;
       const roll = v > 0 ? 1 + (this.rng.next() * 2 - 1) * v : 1;
@@ -952,6 +964,8 @@ export class Combat {
         }
       }
       if (def.applies && t.hp > 0) this.applyStatus(t, def.applies);
+      if (def.appliesAll && t.hp > 0)
+        for (const st of ['wet', 'oil', 'frozen'] as const) this.applyStatus(t, st);
       if (t.hp <= 0) this.killEnemy(t);
     }
   }
@@ -968,7 +982,8 @@ export class Combat {
     if (eff <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;
     if (eff >= 6) m *= 1 + affixValue(inst, 'finisher') / 100;
     if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
-    if (t.def.boss) m *= 1 + affixValue(inst, 'slayer') / 100;
+    if (t.def.boss)
+      m *= (1 + affixValue(inst, 'slayer') / 100) * (getItemDef(inst.defId).bossMult ?? 1);
     if (eff === 1) {
       const origin = this.cfg.items.get(c.plan.originUid);
       if (origin) m *= 1 + affixValue(origin, 'spark') / 100;

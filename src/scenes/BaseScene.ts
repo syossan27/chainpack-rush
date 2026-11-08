@@ -288,11 +288,23 @@ export class BaseScene extends Phaser.Scene {
             skin: 'gold',
             icon: 'coin',
             onTap: () => {
-              const g = sellItems(save, [it.uid]);
-              persist();
-              sfx('drop');
-              this.render();
-              this.showToast(`+${g}G`);
+              const sell = () => {
+                const g = sellItems(save, [it.uid]);
+                persist();
+                sfx('drop');
+                this.render();
+                this.showToast(`+${g}G`);
+              };
+              // アーティファクトは誤って売らないよう確認する
+              if (getItemDef(it.defId).artifact)
+                confirmDialog(
+                  this,
+                  'アーティファクトを売る',
+                  `${getItemDef(it.defId).name}を${sellPrice(it)}Gで売ります`,
+                  '売る',
+                  sell,
+                );
+              else sell();
             },
           },
         ],

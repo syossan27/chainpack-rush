@@ -17,11 +17,18 @@ import { COLORS, W, rarityCss, textStyle } from './theme';
 
 const DIR_NAMES: Record<Dir, string> = { up: '上', right: '右', down: '下', left: '左' };
 
+/** アーティファクトの名前の色 */
+const ARTIFACT_CSS = '#ff8ce8';
+
 export function describeItem(it: ItemInstance): string[] {
   const def = getItemDef(it.defId);
   const r = RARITY[it.rarity].mult;
   const lines: string[] = [];
-  lines.push(`${RARITY_NAMES[it.rarity]}（能力 ×${r}）`);
+  lines.push(
+    def.artifact
+      ? `アーティファクト（能力 ×${r}・出口固定）`
+      : `${RARITY_NAMES[it.rarity]}（能力 ×${r}）`,
+  );
   if (def.kind !== 'consumable') {
     lines.push(
       `出口: ${it.exits.length === 0 ? 'なし（末端）' : it.exits.map((d) => DIR_NAMES[d]).join('・')}`,
@@ -151,8 +158,15 @@ export function showItemDetail(
 
   // 見出し: アイコン・名前・レアリティ・種類・出口
   card.add(new ItemIcon(scene, left + 60, y + 60, it, 120));
-  card.add(scene.add.text(left + 140, y + 4, def.name, textStyle(40, rarityCss(it.rarity))));
-  const tags = [RARITY_NAMES[it.rarity]!];
+  card.add(
+    scene.add.text(
+      left + 140,
+      y + 4,
+      def.name,
+      textStyle(40, def.artifact ? ARTIFACT_CSS : rarityCss(it.rarity)),
+    ),
+  );
+  const tags = [def.artifact ? 'アーティファクト' : RARITY_NAMES[it.rarity]!];
   if (def.kind === 'attack')
     tags.push(ELEMENT_NAMES[def.element ?? 'physical']!, AREA_NAMES[def.area ?? 'single']!);
   else tags.push({ origin: '起点', defense: '防御', consumable: '消耗品', attack: '' }[def.kind]);
@@ -176,11 +190,21 @@ export function showItemDetail(
     if (def.pierce) rows.push(['貫通', `狙いの後ろ ${def.pierce}体にも同じダメージ`]);
     if (def.hits && def.hits > 1) rows.push(['連撃', `1段で${def.hits}回攻撃`]);
     if (def.critBonus) rows.push(['会心率', `+${Math.round(def.critBonus * 100)}%`]);
+    if (def.multCap)
+      rows.push(['連鎖倍率の上限', `×${def.multCap.toFixed(1)}`, 'この環を通る連鎖すべて']);
+    if (def.bossMult) rows.push(['ボス特効', `×${def.bossMult}`]);
+    if (def.appliesAll) rows.push(['付与', '濡れ・油・凍結をまとめて']);
     rows.push(['次への伝達', `${def.relayDelay ?? CHAIN.relayDelay}秒`]);
   } else if (def.kind === 'defense') {
     rows.push(['防御値', `+${fmt((def.defense ?? 0) * r)}`, '連鎖終了時に加算']);
+    if (def.guardAll) rows.push(['守り', '連鎖中も無防備にならない', 'バックパックにある限り']);
   } else if (def.kind === 'origin') {
-    rows.push(['出口', `${it.exits.length}方向`, 'レアリティで出口の数が決まる']);
+    rows.push([
+      '出口',
+      `${it.exits.length}方向`,
+      def.artifact ? '出口は固定' : 'レアリティで出口の数が決まる',
+    ]);
+    if (def.waitMult === 0) rows.push(['待ち', 'なし', 'この連鎖のあと、すぐ次を撃つ']);
   }
   for (const a of it.affixes ?? []) {
     const d = AFFIXES[a.id];

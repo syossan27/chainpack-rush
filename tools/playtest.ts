@@ -260,6 +260,14 @@ for (const d of ITEM_DEFS.filter((x) => x.kind === 'consumable')) {
   out(`| ${d.name} | ${dropCount.get(d.id) ?? 0} | ${used} |`);
 }
 out();
+{
+  const arts = ITEM_DEFS.filter((d) => d.artifact);
+  const total = arts.reduce((sum, d) => sum + (dropCount.get(d.id) ?? 0), 0);
+  out(
+    `アーティファクト: ${PLAYERS}人×${RUNS}出撃で計 ${total}個（1人あたり ${(total / PLAYERS).toFixed(1)}個）。${arts.map((d) => `${d.name} ${dropCount.get(d.id) ?? 0}`).join('、')}`,
+  );
+  out();
+}
 const bossRows = REGIONS.map(
   (r) =>
     `${r.name}: ${[1, 2, 3]

@@ -621,6 +621,13 @@ export class RunScene extends Phaser.Scene {
             );
           sfx('drop');
           if (ev.item.rarity !== 'common') hapticMedium(); // レア以上の取得
+          if (getItemDef(ev.item.defId).artifact) {
+            this.showBanner(`アーティファクト！ ${getItemDef(ev.item.defId).name}`, '#ff8ce8');
+            if (p) this.effects.burst(p.x, p.y, 0xff8ce8, 40, 420);
+            if (this.shake) this.cameras.main.flash(300, 255, 200, 255);
+            sfx('openRare');
+            hapticSuccess();
+          }
           break;
         }
         case 'heroHit':

@@ -751,6 +751,20 @@ const SHAPES: Record<string, readonly string[]> = {
     '....KKKKKK..',
     '............',
   ],
+  ring: [
+    '....KKKK....',
+    '..KKLLAAKK..',
+    '.KLAKKKKAAK.',
+    '.KAK....KAK.',
+    'KLK......KSK',
+    'KAK..yy..KSK',
+    'KAK..yy..KSK',
+    'KAK......KSK',
+    '.KAK....KSK.',
+    '.KSAKKKKSSK.',
+    '..KKSSSSKK..',
+    '....KKKK....',
+  ],
   coin: [
     '....KKKK....',
     '..KKLLAAKK..',
@@ -810,6 +824,12 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   tower_shield: { shape: 'kiteShield', A: 'G', S: 'D', L: 'g' },
   bomb: { shape: 'bomb', A: 'D', S: 'k', L: 'G' },
   lucky_coin: { shape: 'coin', A: 'y', S: 'o', L: 'W' },
+  chrono_glass: { shape: 'hourglass', A: 'm', S: 'V', L: 'W' },
+  ouroboros: { shape: 'ring', A: 'c', S: 't', L: 'W' },
+  dragon_fang: { shape: 'greatsword', A: 'r', S: 'R', L: 'y' },
+  sky_hammer: { shape: 'hammer', A: 'y', S: 'u', L: 'W' },
+  sage_stone: { shape: 'stone', A: 'r', S: 'm', L: 'y' },
+  aegis_gate: { shape: 'kiteShield', A: 'y', S: 'o', L: 'W' },
 };
 
 export function iconPixels(defId: string): string[] {

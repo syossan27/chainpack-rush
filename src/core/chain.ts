@@ -15,8 +15,8 @@ const DIR_DELTA: Record<Dir, readonly [number, number]> = {
 /** 時間は整数ミリ秒で扱い、浮動小数の誤差で同時判定がぶれないようにする */
 const MS = 1000;
 
-export function chainMultiplier(step: number): number {
-  return Math.min(CHAIN.multCap, Math.pow(CHAIN.multBase, step - 1));
+export function chainMultiplier(step: number, cap: number = CHAIN.multCap): number {
+  return Math.min(cap, Math.pow(CHAIN.multBase, step - 1));
 }
 
 export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number | null {
@@ -51,7 +51,7 @@ export function planChain(
   const originCell = loadout.cells.indexOf(originUid);
   const steps: ChainStep[] = [];
   if (originCell < 0) {
-    return { originUid, steps, duration: 0, defenseGain: 0, maxStep: 0 };
+    return { originUid, steps, duration: 0, defenseGain: 0, maxStep: 0, multCap: CHAIN.multCap };
   }
 
   const visited = new Set<number>([originCell]);
@@ -137,12 +137,20 @@ export function planChain(
     expand(steps.length - 1, p.tMs);
   }
 
+  // 循環の環を通る連鎖は、連鎖倍率の上限が上がる
+  const multCap = Math.max(
+    CHAIN.multCap,
+    ...steps.map((s) => getItemDef(items.get(s.uid)!.defId).multCap ?? 0),
+  );
+  if (multCap !== CHAIN.multCap)
+    for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, multCap);
   return {
     originUid,
     steps,
     duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
     defenseGain,
     maxStep,
+    multCap,
   };
 }
 

@@ -1,4 +1,5 @@
 import type { Dir, ItemInstance, Loadout, Rarity } from '../src/core/types';
+import { getItemDef } from '../src/data/items';
 
 export interface Placed {
   uid: string;
@@ -26,7 +27,8 @@ export function build(width: number, height: number, placed: Placed[], originOrd
     width,
     height,
     cells,
-    originOrder: originOrder ?? placed.filter((p) => p.defId === 'origin_stone').map((p) => p.uid),
+    originOrder:
+      originOrder ?? placed.filter((p) => getItemDef(p.defId).kind === 'origin').map((p) => p.uid),
     consumables: [],
   };
   return { loadout, items };

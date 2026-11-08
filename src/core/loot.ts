@@ -51,6 +51,9 @@ export function rollKind(rng: Rng): ItemKind {
 
 export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string): ItemInstance {
   const def = getItemDef(defId);
+  // アーティファクト: 常にレジェンダリー、出口は固定、追加効果なし
+  if (def.artifact)
+    return { uid, defId, rarity: 'legendary', exits: def.artifact.exits.slice(), rerollCount: 0 };
   const exits =
     def.kind === 'consumable'
       ? []
@@ -69,11 +72,17 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
   };
 }
 
+export const ARTIFACT_DEFS = ITEM_DEFS.filter((d) => d.artifact);
+
 export function rollLoot(rng: Rng, loop: number, uid: string, rareOrBetter = false): ItemInstance {
+  // ごくまれにアーティファクト
+  const artifactChance = rareOrBetter ? LOOT.artifactChanceRare : LOOT.artifactChance;
+  if (rng.next() < artifactChance)
+    return createItem(rng, rng.pick(ARTIFACT_DEFS).id, 'legendary', uid);
   let kind = rollKind(rng);
   // 消耗品にはレアリティがないので、レア以上確定のときは装備から選ぶ
   if (rareOrBetter && kind === 'consumable') kind = 'attack';
-  const defs = ITEM_DEFS.filter((d) => d.kind === kind);
+  const defs = ITEM_DEFS.filter((d) => d.kind === kind && !d.artifact);
   const def = rng.pick(defs);
   const rarity = rollRarity(rng, loop, rareOrBetter);
   return createItem(rng, def.id, rarity, uid);

@@ -73,6 +73,7 @@ export function buyUpgrade(save: SaveData, id: UpgradeId): boolean {
 export function sellPrice(item: ItemInstance): number {
   const def = getItemDef(item.defId);
   if (def.kind === 'consumable') return LOOT.consumableSell;
+  if (def.artifact) return LOOT.artifactSell;
   return RARITY[item.rarity].sell;
 }
 
@@ -131,6 +132,7 @@ export function rerollCost(item: ItemInstance, mode: RerollMode): number {
 
 export function canReorient(item: ItemInstance): boolean {
   const def = getItemDef(item.defId);
+  if (def.artifact) return false; // 出口は固定
   return def.kind !== 'consumable' && item.exits.length > 0 && item.exits.length < 4;
 }
 
