@@ -51,6 +51,9 @@ const UPGRADE_ICON: Record<UpgradeId, IconName> = {
 const CONTENT_TOP = TOP_BAR_H + 8;
 const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
 
+/** 拠点の勇者を地面の帯へ沈める量（論理px。勇者は×3表示なので 4ドット分） */
+const HOME_HERO_SINK = 12;
+
 export class BaseScene extends Phaser.Scene {
   private page: Page = 'home';
   private root!: Phaser.GameObjects.Container;
@@ -169,11 +172,14 @@ export class BaseScene extends Phaser.Scene {
       .setAlpha(0.35)
       .setBlendMode(Phaser.BlendModes.ADD);
     const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
+    // 足元の線ちょうどだと浮いて見えるので、地面の帯へ少し沈めて影を敷く
+    const footY = groundY + HOME_HERO_SINK;
+    const shadow = this.add.ellipse(W / 2 + 6, footY - 2, 150, 22, 0x000000, 0.28);
     const hero = this.add
-      .sprite(W / 2, groundY, 'hero')
+      .sprite(W / 2, footY, 'hero')
       .setScale(3)
       .setOrigin(heroOrigin.originX, heroOrigin.originY);
-    this.root.add([glow, hero]);
+    this.root.add([glow, shadow, hero]);
     // 本素材があれば地面に立ったまま待機モーション。仮素材のときだけ上下に揺らす
     const idleKey = animKey('hero', 'idle');
     if (this.anims.exists(idleKey)) {
@@ -181,7 +187,7 @@ export class BaseScene extends Phaser.Scene {
     } else {
       this.tweens.add({
         targets: hero,
-        y: groundY - 8,
+        y: footY - 8,
         yoyo: true,
         repeat: -1,
         duration: 800,
