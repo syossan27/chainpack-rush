@@ -31,6 +31,21 @@ describe('rng / loot', () => {
     expect(w3.rare / w3.epic).toBeCloseTo(0.3 / 0.09);
   });
 
+  it('起点石のレアリティは出口の数で決まる（コモン1・レア2・エピック3・レジェンダリー4）', () => {
+    const rng = new Rng(5);
+    for (const [r, n] of [
+      ['common', 1],
+      ['rare', 2],
+      ['epic', 3],
+      ['legendary', 4],
+    ] as const) {
+      const it = createItem(rng, 'origin_stone', r, 'o');
+      expect(it.exits).toHaveLength(n);
+      expect(it.rarity).toBe(r);
+      expect(new Set(it.exits).size).toBe(n);
+    }
+  });
+
   it('起点石は出口0を出さない（コモンでも最低1方向）。装備の出口0（末端）は残る', () => {
     const rng = new Rng(11);
     let zeroAttack = 0;

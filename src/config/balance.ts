@@ -219,6 +219,8 @@ export const LOOT = {
   consumableSell: 3,
   bossDrops: 2, // ボスは戦利品を2個落とす（序盤の伸びを早める）
   originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
+  /** 起点石はレアリティ＝出口の数（コモン1・レア2・エピック3・レジェンダリー4）。ATK を持たないので、違いを出口の数で出す */
+  originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
 } as const;
 
 export const ECONOMY = {

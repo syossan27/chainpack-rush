@@ -6,7 +6,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     id: 'origin_stone',
     name: '起点石',
     kind: 'origin',
-    description: '連鎖の始まり。攻撃力なし。レアな起点ほど出口が多く、最初から分岐できる。',
+    description:
+      '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。',
   },
 
   {

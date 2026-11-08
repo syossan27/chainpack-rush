@@ -1,4 +1,5 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
+import { originRarity } from './loot';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
@@ -140,9 +141,11 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;
-    // 出口0の起点石（以前の抽選で出たもの）は右向き1方向にする
+    // 起点石: 出口0（以前の抽選で出たもの）は右向き1方向にし、レアリティは出口の数に合わせる
     for (const it of save.inventory) {
-      if (it.exits.length === 0 && getItemDef(it.defId).kind === 'origin') it.exits = ['right'];
+      if (getItemDef(it.defId).kind !== 'origin') continue;
+      if (it.exits.length === 0) it.exits = ['right'];
+      it.rarity = originRarity(it.exits.length);
     }
     // 参照の整合性: 倉庫にない uid は配置から外す
     const owned = new Set(save.inventory.map((i) => i.uid));

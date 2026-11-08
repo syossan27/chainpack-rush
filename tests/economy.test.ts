@@ -52,7 +52,19 @@ describe('save migration', () => {
     sword.exits = [];
     const loaded = deserializeSave(serializeSave(s));
     expect(loaded.inventory.find((i) => i.uid === origin.uid)!.exits).toEqual(['right']);
+    expect(loaded.inventory.find((i) => i.uid === origin.uid)!.rarity).toBe('common');
     expect(loaded.inventory.find((i) => i.uid === sword.uid)!.exits).toEqual([]);
+  });
+});
+
+describe('save migration: 起点石のレアリティ', () => {
+  it('読み込み時に、起点石のレアリティを出口の数に合わせる', () => {
+    const s = createInitialSave();
+    const origin = s.inventory.find((i) => i.defId === 'origin_stone')!;
+    origin.exits = ['up', 'right', 'down'];
+    origin.rarity = 'common';
+    const loaded = deserializeSave(serializeSave(s));
+    expect(loaded.inventory.find((i) => i.uid === origin.uid)!.rarity).toBe('epic');
   });
 });
 
