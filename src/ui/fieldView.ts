@@ -139,16 +139,19 @@ export class FieldView {
     this.bgLayers.forEach((l, i) => (l.tilePositionX = Math.floor((c.heroX * speeds[i]!) / 2)));
 
     // 勇者: 走り・攻撃（連鎖中）・被弾。無防備の間は輪郭を赤く
-    const bob = c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
-    this.hero.y = RUN_LAYOUT.groundY - bob;
     this.hero.setTint(now < this.heroHurtUntil ? 0xff8080 : 0xffffff);
     this.hero.setAngle(c.unguarded ? Math.sin(now / 40) * 4 : 0);
-    this.heroGlow.y = this.hero.y + 4;
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
-    // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、連鎖中は攻撃を続ける）
+    // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、走り中は走りを、連鎖中は攻撃を続ける）
     const state: UnitAnimName = c.unguarded ? 'attack' : c.running ? 'run' : 'idle';
-    this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);
+    const playing = this.playHeroAnim(
+      now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle'],
+    );
+    // 走りの本素材は足元（原点）を地面に固定する。未登録で待機に戻しているあいだだけ上下に揺らす
+    const bob = playing === 'run' ? 0 : c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
+    this.hero.y = RUN_LAYOUT.groundY - bob;
+    this.heroGlow.y = this.hero.y + 4;
     this.atbBar.width = 110 * c.atbRatio;
     this.atbBar.setFillStyle(c.atbRatio >= 1 ? 0xfff8b0 : COLORS.atb);
 
@@ -214,12 +217,12 @@ export class FieldView {
     this.visibleEnemies = visible;
   }
 
-  private playHeroAnim(candidates: readonly UnitAnimName[]): void {
+  private playHeroAnim(candidates: readonly UnitAnimName[]): UnitAnimName | null {
     const def = UNIT_SPRITES.hero!;
     // 未登録の動作は次の候補へ。攻撃は1回再生で、状態が変わるまでやり直さない
     const chosen =
       candidates.find((n) => def.anims?.[n] && this.scene.anims.exists(animKey('hero', n))) ?? null;
-    if (!chosen) return;
+    if (!chosen) return null;
     const anim = def.anims![chosen]!;
     const key = animKey('hero', chosen);
     const { originX, originY } = animOrigin(def, anim);
@@ -228,6 +231,7 @@ export class FieldView {
       sprite.setOrigin(originX, originY);
       if (sprite.anims.currentAnim?.key !== key) sprite.play(key);
     }
+    return chosen;
   }
 
   /** 交戦範囲の目安（デバッグ表示用） */
