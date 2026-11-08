@@ -90,7 +90,8 @@ export const CELL_SIZE = 88;
 /** ラン画面のレイアウト（縦 720×1280） */
 export const RUN_LAYOUT = {
   fieldHeight: 576, // 上部 約45%
-  groundY: 540, // 足元の線
+  groundY: 540, // 地面の帯の上端
+  footY: 548, // キャラクターの足元（地面の帯へ4ドット沈める。線ちょうどだと浮いて見える）
   heroScreenX: FIELD.viewBehind, // 勇者の足元基準点の画面内位置（中央寄り。前方の見える範囲は FIELD.viewRange）
   rowOffsetY: 48, // 群れの後列の見た目の縦ずらし
   enemyDrawOffsetX: 40, // 敵の描画だけを右へずらす（勇者の剣・マントと顔が重ならないように。core の距離は変えない）

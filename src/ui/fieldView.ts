@@ -20,6 +20,7 @@ interface EnemySlot {
   hpBack: Phaser.GameObjects.Rectangle;
   hp: Phaser.GameObjects.Rectangle;
   status: Phaser.GameObjects.Graphics;
+  shadow: Phaser.GameObjects.Ellipse;
   aim: Phaser.GameObjects.Text;
   flashUntil: number;
   knock: number; // のけぞりの量（px、時間で戻る）
@@ -68,26 +69,30 @@ export class FieldView {
     this.heroHasSprites = !!heroDef.anims?.idle && scene.anims.exists(animKey('hero', 'idle'));
     const origin = stillOrigin(heroDef);
     this.heroGlow = scene.add
-      .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
+      .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.footY, heroDef.key)
       .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale * 1.08)
       .setTintFill(COLORS.unguarded)
       .setAlpha(0)
       .setDepth(19);
     this.hero = scene.add
-      .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
+      .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.footY, heroDef.key)
       .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale)
       .setDepth(20);
+    // 足元の影
+    scene.add
+      .ellipse(RUN_LAYOUT.heroScreenX + 4, RUN_LAYOUT.footY - 2, 100, 16, 0x000000, 0.28)
+      .setDepth(18);
     // 勇者の足元の ATB メーター
     const atbW = 110;
     scene.add
-      .rectangle(RUN_LAYOUT.heroScreenX - atbW / 2, RUN_LAYOUT.groundY + 10, atbW, 12, 0x2a2638)
+      .rectangle(RUN_LAYOUT.heroScreenX - atbW / 2, RUN_LAYOUT.footY + 12, atbW, 12, 0x2a2638)
       .setOrigin(0, 0.5)
       .setStrokeStyle(2, 0x0c0a12)
       .setDepth(21);
     this.atbBar = scene.add
-      .rectangle(RUN_LAYOUT.heroScreenX - atbW / 2, RUN_LAYOUT.groundY + 10, atbW, 10, COLORS.atb)
+      .rectangle(RUN_LAYOUT.heroScreenX - atbW / 2, RUN_LAYOUT.footY + 12, atbW, 10, COLORS.atb)
       .setOrigin(0, 0.5)
       .setDepth(22);
 
@@ -99,6 +104,7 @@ export class FieldView {
         .setVisible(false);
       const hp = scene.add.rectangle(0, 0, 60, 6, COLORS.hp).setOrigin(0, 0.5).setVisible(false);
       const status = scene.add.graphics().setVisible(false);
+      const shadow = scene.add.ellipse(0, 0, 60, 14, 0x000000, 0.25).setVisible(false);
       const aim = scene.add
         .text(0, 0, '▼', textStyle(26, '#ffef60'))
         .setOrigin(0.5, 1)
@@ -109,6 +115,7 @@ export class FieldView {
         hpBack,
         hp,
         status,
+        shadow,
         aim,
         flashUntil: 0,
         knock: 0,
@@ -127,7 +134,7 @@ export class FieldView {
     const h = def ? def.frameHeight * def.displayScale : 96;
     return {
       x: this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX,
-      y: RUN_LAYOUT.groundY - e.row * RUN_LAYOUT.rowOffsetY - h * 0.6,
+      y: RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY - h * 0.6,
     };
   }
 
@@ -151,6 +158,7 @@ export class FieldView {
     s.hpBack.setVisible(false);
     s.hp.setVisible(false);
     s.status.setVisible(false);
+    s.shadow.setVisible(false);
     s.aim.setVisible(false);
   }
 
@@ -174,7 +182,7 @@ export class FieldView {
     this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);
     // 足元（原点）は地面の線に固定。仮素材で走っているときだけ上下に揺らす
     const bob = placeholder && c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
-    this.hero.y = RUN_LAYOUT.groundY - bob;
+    this.hero.y = RUN_LAYOUT.footY - bob;
     this.heroGlow.y = this.hero.y + (placeholder ? 4 : 0);
     this.atbBar.width = 110 * c.atbRatio;
     this.atbBar.setFillStyle(c.atbRatio >= 1 ? 0xfff8b0 : COLORS.atb);
@@ -203,11 +211,12 @@ export class FieldView {
         s.hpBack.setVisible(true);
         s.hp.setVisible(true);
         s.status.setVisible(true);
+        s.shadow.setVisible(true);
       }
       visible++;
       const def = UNIT_SPRITES[e.defId]!;
       const sx = this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX;
-      const footY = RUN_LAYOUT.groundY - e.row * RUN_LAYOUT.rowOffsetY;
+      const footY = RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY;
       const hgt = def.frameHeight * def.displayScale;
       const wob = Math.sin(now / 160 + e.id) * 2;
       this.lastSeen.set(e.id, { x: sx, y: footY - hgt * 0.6 });
@@ -215,7 +224,12 @@ export class FieldView {
       const kt = Math.min(1, (now - s.knockAt) / 150);
       const knock = s.knock * (1 - kt);
       if (kt >= 1) s.knock = 0;
-      s.sprite.setPosition(sx + knock, footY + wob).setDepth(10 - e.row + (e.def.boss ? -1 : 0));
+      const depth = 10 - e.row + (e.def.boss ? -1 : 0);
+      s.sprite.setPosition(sx + knock, footY + wob).setDepth(depth);
+      s.shadow
+        .setPosition(sx + knock, footY - 2)
+        .setSize(def.frameWidth * def.displayScale * 0.5, e.def.boss ? 20 : 14)
+        .setDepth(depth - 0.5);
       if (now < s.flashUntil) s.sprite.setTintFill(0xffffff);
       else s.sprite.setTint(c.timeStopped ? 0x8090ff : 0xffffff);
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
