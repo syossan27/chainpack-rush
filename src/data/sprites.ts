@@ -81,8 +81,8 @@ export const ICON_SIZE = 16;
 export const ICON_SCALE = 4;
 
 /**
- * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃）。
- * 待機と攻撃は anims に登録済み。走り・被弾は未登録なので待機（なければ仮素材）で代用する。
+ * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃・走り）。
+ * 待機・走り・攻撃は anims に登録済み。被弾は未登録なので、そのときの動作（なければ待機）で代用する。
  */
 export const HERO_REFERENCE = 'assets/raw/hero/hero_idle_v4_helm.png';
 
@@ -257,6 +257,17 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         frameHeight: 64,
         originX: 32 / 64,
         originY: 56 / 64,
+      },
+      // 地面は y=71、体の位置は x=41 で全コマ固定。足元のコマごとのずれには寄せない
+      run: {
+        file: 'hero/hero_run.png',
+        frames: 8,
+        fps: 12,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 80,
+        originX: 41 / 96,
+        originY: 71 / 80,
       },
       attack: {
         file: 'hero/hero_attack.png',
