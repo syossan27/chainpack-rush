@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../src/core/rng';
-import { rarityWeights, rollExits, rollLoot } from '../src/core/loot';
+import { createItem, rarityWeights, rollExits, rollLoot } from '../src/core/loot';
 
 describe('rng / loot', () => {
   it('同じシードなら同じ列', () => {
@@ -29,6 +29,16 @@ describe('rng / loot', () => {
     expect(w3.common).toBeCloseTo(0.4);
     expect(Object.values(w3).reduce((a, b) => a + b, 0)).toBeCloseTo(1);
     expect(w3.rare / w3.epic).toBeCloseTo(0.3 / 0.09);
+  });
+
+  it('起点石は出口0を出さない（コモンでも最低1方向）。装備の出口0（末端）は残る', () => {
+    const rng = new Rng(11);
+    let zeroAttack = 0;
+    for (let i = 0; i < 2000; i++) {
+      expect(createItem(rng, 'origin_stone', 'common', 'o').exits.length).toBeGreaterThanOrEqual(1);
+      if (createItem(rng, 'sword', 'common', 's').exits.length === 0) zeroAttack++;
+    }
+    expect(zeroAttack).toBeGreaterThan(0);
   });
 
   it('ボスはレア以上確定', () => {

@@ -170,6 +170,7 @@ export const LOOT = {
   kindWeights: { attack: 0.6, defense: 0.15, consumable: 0.15, origin: 0.1 },
   commonShiftPerLoop: 0.1, // 1周ごとにコモンから10%分をレア以上へ
   consumableSell: 3,
+  originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
 } as const;
 
 export const ECONOMY = {

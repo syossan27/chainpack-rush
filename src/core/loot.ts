@@ -20,9 +20,11 @@ export function rollRarity(rng: Rng, loop: number, rareOrBetter = false): Rarity
   return rng.weighted(rarityWeights(loop, rareOrBetter));
 }
 
-export function rollExits(rng: Rng, rarity: Rarity): Dir[] {
-  const count = rng.weighted(RARITY[rarity].exitCounts);
-  return rng.sample(DIRS, count);
+/** minExits 未満の数は抽選から外し、残りの確率の比はそのまま */
+export function rollExits(rng: Rng, rarity: Rarity, minExits = 0): Dir[] {
+  const counts = RARITY[rarity].exitCounts.filter(([n]) => n >= minExits);
+  const count = rng.weighted(counts.length > 0 ? counts : RARITY[rarity].exitCounts);
+  return rng.sample(DIRS, Math.max(count, minExits));
 }
 
 /** 出口の数は変えず、方向だけを振り直す */
@@ -42,7 +44,10 @@ export function rollKind(rng: Rng): ItemKind {
 
 export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string): ItemInstance {
   const def = getItemDef(defId);
-  const exits = def.kind === 'consumable' ? [] : rollExits(rng, rarity);
+  const exits =
+    def.kind === 'consumable'
+      ? []
+      : rollExits(rng, rarity, def.kind === 'origin' ? LOOT.originMinExits : 0);
   return {
     uid,
     defId,

@@ -41,6 +41,19 @@ describe('save', () => {
   });
 });
 
+describe('save migration', () => {
+  it('出口0の起点石は読み込み時に右向き1方向にする', () => {
+    const s = createInitialSave();
+    const origin = s.inventory.find((i) => i.defId === 'origin_stone')!;
+    const sword = s.inventory.find((i) => i.defId === 'sword')!;
+    origin.exits = [];
+    sword.exits = [];
+    const loaded = deserializeSave(serializeSave(s));
+    expect(loaded.inventory.find((i) => i.uid === origin.uid)!.exits).toEqual(['right']);
+    expect(loaded.inventory.find((i) => i.uid === sword.uid)!.exits).toEqual([]);
+  });
+});
+
 describe('settings', () => {
   it('ゲームスピードは既定で×1。範囲外や欠けた値は×1に戻す', () => {
     const s = createInitialSave();
