@@ -820,14 +820,10 @@ export class Combat {
       const origin = this.cfg.items.get(c.plan.originUid)!;
       const quick = affixValue(origin, 'quick') / 100;
       const factor =
-        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) *
-        (1 - quick) *
-        (getItemDef(origin.defId).waitMult ?? 1);
+        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
       this.atb = this.cfg.hero.atbTime * (1 - factor);
     } else {
-      // 時渡りの砂時計は、段数に比例する待ちがなくても待たずに次を撃つ
-      const origin = this.cfg.items.get(c.plan.originUid);
-      this.atb = origin && getItemDef(origin.defId).waitMult === 0 ? this.cfg.hero.atbTime : 0;
+      this.atb = 0;
     }
   }
 

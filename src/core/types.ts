@@ -29,8 +29,6 @@ export interface ItemDef {
   artifact?: { exits: Dir[] };
   /** この装備を通る連鎖は、連鎖倍率の上限がこの値になる（循環の環） */
   multCap?: number;
-  /** 起点: この連鎖のあとの待ちに掛ける（0 = 待たずに次を撃つ。時渡りの砂時計） */
-  waitMult?: number;
   /** ボスへのダメージ倍率（竜牙の剣） */
   bossMult?: number;
   /** バックパックに置いてあれば、連鎖中も無防備にならず、よろめかない（不落の城門） */

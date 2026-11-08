@@ -123,15 +123,6 @@ describe('アーティファクト', () => {
     expect(getItemDef('dragon_fang').bossMult).toBe(2);
   });
 
-  it('時渡りの砂時計: 連鎖のあと待たずに次を撃てる', () => {
-    const c = dummy([
-      { uid: 'o', defId: 'chrono_glass', x: 0, y: 0, exits: ['right', 'down'] },
-      { uid: 's', defId: 'sword', x: 1, y: 0, exits: [] },
-    ]);
-    fireOnce(c);
-    expect(c.atbRatio).toBe(1);
-  });
-
   it('不落の城門: 置いてあれば連鎖中も無防備にならない', () => {
     const placed: Placed[] = [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
@@ -158,5 +149,26 @@ describe('アーティファクト', () => {
       seen([...placed, { uid: 'a', defId: 'aegis_gate', x: 6, y: 2, exits: ['up', 'down'] }]),
     ).toBe(false);
     expect(HERO.unguardedTakenMult).toBeGreaterThan(1);
+  });
+});
+
+describe('廃止したアーティファクト', () => {
+  it('時渡りの砂時計は読み込み時に外し、1000G を返す。配置からも外れる', () => {
+    const s = createInitialSave();
+    s.inventory.push({
+      uid: 'cg',
+      defId: 'chrono_glass',
+      rarity: 'legendary',
+      exits: ['right', 'down'],
+      rerollCount: 0,
+    });
+    s.loadout.cells[19] = 'cg';
+    s.loadout.originOrder.push('cg');
+    const loaded = deserializeSave(serializeSave(s));
+    expect(loaded.inventory.some((i) => i.uid === 'cg')).toBe(false);
+    expect(loaded.gold).toBe(s.gold + 1000);
+    expect(loaded.loadout.cells).not.toContain('cg');
+    expect(loaded.loadout.originOrder).not.toContain('cg');
+    expect(loaded.inventory.length).toBe(s.inventory.length - 1);
   });
 });

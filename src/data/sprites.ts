@@ -824,7 +824,6 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   tower_shield: { shape: 'kiteShield', A: 'G', S: 'D', L: 'g' },
   bomb: { shape: 'bomb', A: 'D', S: 'k', L: 'G' },
   lucky_coin: { shape: 'coin', A: 'y', S: 'o', L: 'W' },
-  chrono_glass: { shape: 'hourglass', A: 'm', S: 'V', L: 'W' },
   ouroboros: { shape: 'ring', A: 'c', S: 't', L: 'W' },
   dragon_fang: { shape: 'greatsword', A: 'r', S: 'R', L: 'y' },
   sky_hammer: { shape: 'hammer', A: 'y', S: 'u', L: 'W' },

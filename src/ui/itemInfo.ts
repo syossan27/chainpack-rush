@@ -204,7 +204,6 @@ export function showItemDetail(
       `${it.exits.length}方向`,
       def.artifact ? '出口は固定' : 'レアリティで出口の数が決まる',
     ]);
-    if (def.waitMult === 0) rows.push(['待ち', 'なし', 'この連鎖のあと、すぐ次を撃つ']);
   }
   for (const a of it.affixes ?? []) {
     const d = AFFIXES[a.id];

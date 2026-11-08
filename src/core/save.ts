@@ -7,6 +7,11 @@ import { REGIONS } from '../data/regions';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
+/** 廃止したアイテム → 返金するゴールド（読み込み時に倉庫から外す） */
+const REMOVED_ITEMS: Record<string, number> = {
+  chrono_glass: 1000, // 時渡りの砂時計（起点のアーティファクト。強すぎたため廃止）
+};
+
 export const SAVE_KEY = 'bp30.save.v1';
 export const SAVE_VERSION = 1;
 
@@ -109,7 +114,19 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (!isObj(data) || data.version !== SAVE_VERSION) return createInitialSave();
     const base = createInitialSave();
     if (!isNum(data.gold) || !isNum(data.nextUid)) return base;
-    if (!Array.isArray(data.inventory) || !data.inventory.every(validItem)) return base;
+    if (!Array.isArray(data.inventory)) return base;
+    // 廃止したアイテムは倉庫・配置から外し、売値ぶんのゴールドを返す
+    let refund = 0;
+    const inventory = (data.inventory as unknown[]).filter((v) => {
+      const id = isObj(v) ? v.defId : undefined;
+      if (typeof id === 'string' && id in REMOVED_ITEMS) {
+        refund += REMOVED_ITEMS[id]!;
+        return false;
+      }
+      return true;
+    });
+    if (!inventory.every(validItem)) return base;
+    const gold = data.gold + refund;
     const lo = data.loadout;
     if (!isObj(lo) || !isNum(lo.width) || !isNum(lo.height) || !Array.isArray(lo.cells))
       return base;
@@ -117,9 +134,9 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (!Array.isArray(lo.originOrder) || !Array.isArray(lo.consumables)) return base;
     const save: SaveData = {
       version: SAVE_VERSION,
-      gold: data.gold,
+      gold,
       nextUid: data.nextUid,
-      inventory: data.inventory,
+      inventory,
       loadout: {
         width: lo.width,
         height: lo.height,

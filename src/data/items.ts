@@ -254,14 +254,6 @@ export const ITEM_DEFS: readonly ItemDef[] = [
 
   // ---- アーティファクト（レジェンダリーの中のレジェンダリー） ----
   {
-    id: 'chrono_glass',
-    name: '時渡りの砂時計',
-    kind: 'origin',
-    artifact: { exits: ['right', 'down'] },
-    waitMult: 0,
-    description: '起点。この連鎖が終わると、待たずに次の起点を撃つ。',
-  },
-  {
     id: 'ouroboros',
     name: '循環の環',
     kind: 'attack',
