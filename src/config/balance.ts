@@ -22,8 +22,8 @@ export const HERO = {
 // 距離・速度はすべて 720×1280 の論理px。判定は足元基準点（キャラクターの足元の x）で行う。
 export const FIELD = {
   aggroRange: 300, // 群れの先頭がこの距離に入ると、群れごと勇者へ寄ってくる
-  viewRange: 560, // 画面内（勇者の前方。全体攻撃・油の大樽などの対象）
-  viewBehind: 160, // 勇者より後ろに見える幅（勇者の画面内位置）
+  viewRange: 440, // 画面内（勇者の前方。全体攻撃・油の大樽などの対象）= 720 − viewBehind
+  viewBehind: 280, // 勇者より後ろに見える幅 = 勇者の画面内位置（中央寄りで戦う）
   enemySpeed: 240, // 敵の接近速度 px/秒
   columnSpacing: 80, // 群れ内の横間隔（足元基準点）
   rowsPerColumn: 2, // 群れは前後2列。見た目の縦ずらしだけで core の距離は同じ

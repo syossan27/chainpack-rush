@@ -21,14 +21,19 @@ import { avatar } from '../ui/kit/chrome';
 import { Bar, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
-import { DamageNumbers, Effects } from '../ui/pools';
-import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
+import { DamageNumbers, Effects, damageColor } from '../ui/pools';
+import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 const MAX_STEPS_PER_FRAME = 5;
 const COMBO_COLOR: Record<string, string> = {
   shock: '#fff060',
   explode: '#ff8030',
   shatter: '#c8f0ff',
+};
+const COMBO_TINT: Record<string, number> = {
+  shock: 0xfff060,
+  explode: 0xff8030,
+  shatter: 0xc8f0ff,
 };
 
 export class RunScene extends Phaser.Scene {
@@ -43,6 +48,11 @@ export class RunScene extends Phaser.Scene {
   /** 装備の詳細を見ているあいだ止める（一時停止の幕は出さない） */
   private inspecting = false;
   private speed = 1;
+  /** ヒットストップ・スローモーション（実時間 ms） */
+  private hitStopUntil = 0;
+  private slowUntil = 0;
+  private chainText!: Phaser.GameObjects.Text;
+  private totalText!: Phaser.GameObjects.Text;
   private ending = false;
   private seed = 0;
   private regionId = '';
@@ -89,6 +99,8 @@ export class RunScene extends Phaser.Scene {
     this.paused = false;
     this.inspecting = false;
     this.speed = gameSpeed();
+    this.hitStopUntil = 0;
+    this.slowUntil = 0;
     this.ending = false;
     this.cameras.main.setBackgroundColor(COLORS.bg);
 
@@ -110,6 +122,17 @@ export class RunScene extends Phaser.Scene {
     this.buildHud();
     this.buildConsumables();
     this.setupBackpackTap();
+    // 連鎖カウンター（勇者の上）と連鎖の合計ダメージ
+    this.chainText = this.add
+      .text(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY - 210, '', textStyle(44))
+      .setOrigin(0.5)
+      .setDepth(65)
+      .setAlpha(0);
+    this.totalText = this.add
+      .text(W / 2 + 80, 360, '', textStyle(52))
+      .setOrigin(0.5)
+      .setDepth(66)
+      .setAlpha(0);
 
     this.unsubscribe = onAppStateChange((active) => {
       if (!active) this.setPaused(true);
@@ -305,10 +328,13 @@ export class RunScene extends Phaser.Scene {
   override update(_time: number, delta: number): void {
     const now = this.time.now;
     const halted = this.paused || this.inspecting;
+    // ヒットストップ中は止め、ボス撃破のあとはしばらくスロー
+    const juice = now < this.hitStopUntil ? 0 : now < this.slowUntil ? JUICE.bossSlowRate : 1;
+    const rate = this.speed * juice;
     if (!halted && !this.ending) {
       // ゲームスピード: 1フレームで進める固定ステップの数を倍にする（ルールの秒数は変えない）
       const maxSteps = Math.ceil(MAX_STEPS_PER_FRAME * this.speed);
-      this.acc += Math.min((delta / 1000) * this.speed, SIM.fixedStep * maxSteps);
+      this.acc += Math.min((delta / 1000) * rate, SIM.fixedStep * maxSteps);
       let n = 0;
       while (this.acc >= SIM.fixedStep && n < maxSteps && !this.combat.ended) {
         this.combat.step();
@@ -317,14 +343,14 @@ export class RunScene extends Phaser.Scene {
         this.handleEvents(this.combat.drainEvents());
       }
     }
-    const dt = halted ? 0 : (delta / 1000) * this.speed;
+    const dt = halted ? 0 : (delta / 1000) * this.speed * Math.max(juice, JUICE.bossSlowRate);
     // 止めているあいだも UI（詳細カードなど）の動きは通常の速さで動かす
     this.tweens.timeScale = halted ? 1 : this.speed;
     if (this.stress) {
       this.effects.burst(400 + Math.random() * 200, 300 + Math.random() * 150, 0xffffff, 12, 260);
       this.numbers.show(300 + Math.random() * 350, 280 + Math.random() * 180, Math.random() * 3000);
     }
-    this.field.update(this.combat, now, halted ? 0 : this.speed);
+    this.field.update(this.combat, now, halted ? 0 : rate);
     this.view.tick(now);
     this.numbers.update(dt);
     this.effects.update(dt);
@@ -362,6 +388,48 @@ export class RunScene extends Phaser.Scene {
         `FPS ${this.game.loop.actualFps.toFixed(0)}  敵 ${this.field.visibleEnemies}  粒 ${this.effects.activeCount()}  数字 ${this.numbers.activeCount()}  seed ${this.seed}`,
       );
     }
+  }
+
+  /** ヒットストップ（実時間 ms。重なったら長い方） */
+  private hitStop(ms: number): void {
+    this.hitStopUntil = Math.max(this.hitStopUntil, this.time.now + ms);
+  }
+
+  /** 連鎖カウンター: 段数が進むほど大きく、色も白→金→赤→桃 */
+  private showChainCount(step: number): void {
+    const t = this.chainText;
+    const colors = JUICE.chainColors;
+    const color = colors[Math.min(colors.length - 1, Math.floor((step - 2) / 2))]!;
+    this.tweens.killTweensOf(t);
+    t.setText(`${step} CHAIN`)
+      .setColor(color)
+      .setFontSize(Math.min(72, 40 + step * 3))
+      .setAlpha(1)
+      .setScale(1.5)
+      .setAngle(-4 + Math.random() * 8);
+    this.tweens.add({ targets: t, scale: 1, angle: 0, duration: 160, ease: 'Back.easeOut' });
+  }
+
+  /** 連鎖の終わり: カウンターを消し、合計ダメージを大きく出す */
+  private endChainCount(total: number): void {
+    this.tweens.killTweensOf(this.chainText);
+    this.tweens.add({
+      targets: this.chainText,
+      alpha: 0,
+      y: { from: RUN_LAYOUT.groundY - 210, to: RUN_LAYOUT.groundY - 240 },
+      duration: 300,
+      onComplete: () => this.chainText.setY(RUN_LAYOUT.groundY - 210),
+    });
+    if (total < JUICE.bigHit) return;
+    const t = this.totalText;
+    this.tweens.killTweensOf(t);
+    t.setText(`TOTAL ${Math.round(total).toLocaleString('en-US')}`)
+      .setColor(damageColor(total))
+      .setAlpha(1)
+      .setScale(0.4)
+      .setY(360);
+    this.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: t, alpha: 0, y: 330, delay: 700, duration: 350 });
   }
 
   /** 時間が延びた: タイマーの横に「+8.0」が浮かび、タイマーが金色に光る */
@@ -403,7 +471,7 @@ export class RunScene extends Phaser.Scene {
 
   private enemyPos(id: number): { x: number; y: number } | null {
     const e = this.combat.enemies.find((x) => x.id === id);
-    return e ? this.field.enemyScreenPos(this.combat, e) : null;
+    return e ? this.field.enemyScreenPos(this.combat, e) : (this.field.lastSeen.get(id) ?? null);
   }
 
   private handleEvents(events: CombatEvent[]): void {
@@ -427,22 +495,36 @@ export class RunScene extends Phaser.Scene {
           if (ev.fromCell !== null) this.view.flashLine(ev.fromCell, ev.cell, COLORS.chainLine);
           if (ev.step !== null) {
             if (ev.whiff) sfx('whiff');
-            else sfxChainStep(ev.step);
+            else {
+              sfxChainStep(ev.step);
+              if (ev.step >= 2) this.showChainCount(ev.step);
+            }
           }
           break;
         case 'hit': {
           const p = this.enemyPos(ev.enemyId);
           if (!p) break;
-          this.field.flashEnemy(ev.enemyId, now);
-          if (ev.nullified) this.numbers.showText(p.x, p.y, '無効', 26, '#a0a0b0');
-          else
-            this.numbers.show(
-              p.x,
-              p.y,
-              ev.damage,
-              ev.combo ? (COMBO_COLOR[ev.combo] ?? '#ffffff') : '#ffffff',
-            );
-          this.effects.burst(p.x, p.y, 0xffffff, 3, 160);
+          const strength = Math.min(1, ev.damage / JUICE.hugeHit);
+          this.field.flashEnemy(ev.enemyId, now, strength);
+          if (ev.nullified) {
+            this.numbers.showText(p.x, p.y, '無効', 26, '#a0a0b0');
+            this.effects.flash(p.x, p.y, 0x8a8a9a, 1.2);
+            sfx('hit');
+            break;
+          }
+          this.numbers.show(p.x, p.y, ev.damage, ev.combo ? COMBO_COLOR[ev.combo] : undefined);
+          const tint = ev.combo
+            ? (COMBO_TINT[ev.combo] ?? 0xffffff)
+            : ev.damage >= JUICE.bigHit
+              ? 0xffd25a
+              : 0xffffff;
+          this.effects.slash(p.x, p.y, tint, 0.8 + strength * 0.8);
+          this.effects.burst(p.x, p.y, tint, 3 + Math.round(strength * 8), 160 + strength * 200);
+          if (ev.damage >= JUICE.bigHit) {
+            this.effects.flash(p.x, p.y, tint, 1.5 + strength * 2);
+            this.hitStop(ev.damage >= JUICE.hugeHit ? JUICE.hitStopMs.huge : JUICE.hitStopMs.big);
+            if (this.shake) this.cameras.main.shake(90 + strength * 90, 0.003 + strength * 0.007);
+          }
           sfx('hit');
           break;
         }
@@ -459,6 +541,8 @@ export class RunScene extends Phaser.Scene {
             );
           sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');
           hapticMedium();
+          this.hitStop(JUICE.hitStopMs.combo);
+          if (p) this.effects.flash(p.x, p.y, COMBO_TINT[ev.name] ?? 0xffffff, 4, 0.3);
           if (this.shake) {
             this.cameras.main.shake(120, 0.006);
             this.cameras.main.flash(80, 255, 255, 255, false);
@@ -475,6 +559,12 @@ export class RunScene extends Phaser.Scene {
               ev.boss ? 40 : 10,
               ev.boss ? 400 : 220,
             );
+          if (p && !ev.fled) {
+            this.effects.flash(p.x, p.y, 0xffffff, ev.boss ? 6 : 2, ev.boss ? 0.45 : 0.2);
+            // コインが戦利品の表示へ飛んでいく
+            this.effects.coins(p.x, p.y, W - 96, 44, ev.boss ? 12 : 3);
+            this.hitStop(ev.boss ? JUICE.hitStopMs.boss : JUICE.hitStopMs.kill);
+          }
           if (!ev.fled) sfx('enemyDown');
           break;
         }
@@ -507,6 +597,7 @@ export class RunScene extends Phaser.Scene {
           break;
         case 'chainEnd':
           this.field.aimId = null;
+          this.endChainCount(ev.totalDamage);
           if (ev.defenseGain > 0) {
             // 通過した防御装備から光の粒が飛んで防御値バーへ
             for (const cell of ev.defenseCells) {
@@ -529,6 +620,8 @@ export class RunScene extends Phaser.Scene {
           break;
         case 'bossDefeated':
           this.showBanner('ボス撃破！', COLORS.gold);
+          this.slowUntil = now + JUICE.bossSlowMs;
+          if (this.shake) this.cameras.main.flash(220, 255, 240, 200);
           sfx('bossDown');
           hapticSuccess();
           break;

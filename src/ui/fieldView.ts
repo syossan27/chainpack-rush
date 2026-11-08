@@ -22,6 +22,8 @@ interface EnemySlot {
   status: Phaser.GameObjects.Graphics;
   aim: Phaser.GameObjects.Text;
   flashUntil: number;
+  knock: number; // のけぞりの量（px、時間で戻る）
+  knockAt: number;
 }
 
 export class FieldView {
@@ -36,6 +38,8 @@ export class FieldView {
   /** 勇者の本素材（待機）が読み込まれているか */
   private readonly heroHasSprites: boolean;
   aimId: number | null = null;
+  /** 最後に描いた敵の位置（倒れた直後の演出用） */
+  readonly lastSeen = new Map<number, { x: number; y: number }>();
   visibleEnemies = 0;
 
   constructor(scene: Phaser.Scene, regionId: string) {
@@ -99,7 +103,17 @@ export class FieldView {
         .text(0, 0, '▼', textStyle(26, '#ffef60'))
         .setOrigin(0.5, 1)
         .setVisible(false);
-      this.slots.push({ id: -1, sprite, hpBack, hp, status, aim, flashUntil: 0 });
+      this.slots.push({
+        id: -1,
+        sprite,
+        hpBack,
+        hp,
+        status,
+        aim,
+        flashUntil: 0,
+        knock: 0,
+        knockAt: 0,
+      });
     }
   }
 
@@ -117,9 +131,13 @@ export class FieldView {
     };
   }
 
-  flashEnemy(id: number, now: number): void {
+  /** 被弾: 白く光ってのけぞる（strength はダメージの大きさに応じて 0〜1） */
+  flashEnemy(id: number, now: number, strength = 0.3): void {
     const s = this.byId.get(id);
-    if (s) s.flashUntil = now + 90;
+    if (!s) return;
+    s.flashUntil = now + 70 + strength * 60;
+    s.knock = Math.max(s.knock, 6 + strength * 18);
+    s.knockAt = now;
   }
 
   heroHurt(now: number): void {
@@ -192,8 +210,14 @@ export class FieldView {
       const footY = RUN_LAYOUT.groundY - e.row * RUN_LAYOUT.rowOffsetY;
       const hgt = def.frameHeight * def.displayScale;
       const wob = Math.sin(now / 160 + e.id) * 2;
-      s.sprite.setPosition(sx, footY + wob).setDepth(10 - e.row + (e.def.boss ? -1 : 0));
-      s.sprite.setTint(now < s.flashUntil ? 0xff6060 : c.timeStopped ? 0x8090ff : 0xffffff);
+      this.lastSeen.set(e.id, { x: sx, y: footY - hgt * 0.6 });
+      // のけぞり: 0.15秒かけて元の位置へ戻る（描画だけ。core の x は変えない）
+      const kt = Math.min(1, (now - s.knockAt) / 150);
+      const knock = s.knock * (1 - kt);
+      if (kt >= 1) s.knock = 0;
+      s.sprite.setPosition(sx + knock, footY + wob).setDepth(10 - e.row + (e.def.boss ? -1 : 0));
+      if (now < s.flashUntil) s.sprite.setTintFill(0xffffff);
+      else s.sprite.setTint(c.timeStopped ? 0x8090ff : 0xffffff);
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
       const topY = footY - hgt * 0.85;
       s.hpBack
