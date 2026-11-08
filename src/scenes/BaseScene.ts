@@ -22,6 +22,7 @@ import type { Dir, ItemInstance } from '../core/types';
 import { DIRS } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
+import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
@@ -162,10 +163,11 @@ export class BaseScene extends Phaser.Scene {
       .setScale(5, 3)
       .setAlpha(0.35)
       .setBlendMode(Phaser.BlendModes.ADD);
+    const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
     const hero = this.add
       .image(W / 2, groundY, 'hero')
       .setScale(3)
-      .setOrigin(0.5, 1);
+      .setOrigin(heroOrigin.originX, heroOrigin.originY);
     this.root.add([glow, hero]);
     this.tweens.add({
       targets: hero,

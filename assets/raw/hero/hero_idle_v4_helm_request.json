@@ -1,0 +1,12 @@
+{
+  "endpoint": "/v2/edit-image-pixen",
+  "image": {
+    "type": "base64",
+    "base64": "[image omitted; source hero_idle_v2_64.png]"
+  },
+  "width": 64,
+  "height": 64,
+  "no_background": true,
+  "seed": 8263,
+  "description": "Change ONLY head into a bold rounded CHIBI FANTASY helmet: silver shell, thick GOLD trim, TWO upward-curving GOLD HORNS on sides, RED plume crest on top, small red GEM centered on gold brow. Face opening a solid BLACK VOID, no face, eyes, skin, mouth or hair. Playful chunky stylized heroic silhouette, NOT realistic medieval great helm. Preserve original body armor colors, burgundy cape, sword, shield, proportions, pose, right-facing direction and pixel style. Keep all helmet inside canvas."
+}

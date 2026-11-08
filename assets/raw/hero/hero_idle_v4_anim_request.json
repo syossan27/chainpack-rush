@@ -1,0 +1,22 @@
+{
+  "character_id": "3856518c-6f4d-4ff7-95bb-1212c1e38e3a",
+  "animation_name": "Gentle breathing idle east loop",
+  "mode": "pixminimax",
+  "directions": [
+    "east"
+  ],
+  "custom_start_frame": {
+    "type": "base64",
+    "base64": "[omitted; hero_idle_v4_helm.png]"
+  },
+  "end_frame": {
+    "type": "base64",
+    "base64": "[omitted; hero_idle_v4_helm.png]"
+  },
+  "frame_count": 8,
+  "keep_first_frame": true,
+  "subject_description": "a cute chibi silver and gold armored knight with two golden helmet horns, red plume, gold brow gem, completely black face opening, burgundy cape and steel greatsword",
+  "initial_pose": "Standing still in right-facing upright sword guard, both feet firmly planted on a fixed baseline.",
+  "action_description": "A SEAMLESS CYCLIC quiet breathing idle animation. Stay in the EXACT SAME right-facing upright guard and location throughout. Feet are locked to the floor at the same pixel baseline, NO steps. Very subtle chest and shoulders rise and fall only ONE or TWO pixels during one slow breath. Sword held steady upright in front, no swinging. Burgundy cape and small red helmet plume gently sway a little in a soft breeze then settle to their starting shapes. Both gold horns and helmet remain rigid and recognizable. Face opening stays solid BLACK, NO eyes, face, skin or mouth. Preserve original cute proportions and all silver/gold armor details. End EXACTLY at initial pose, position and motion phase for seamless looping. No attack, jump, dramatic gesture, camera motion, zoom, recentering or scale change. Entire sprite and sword remain inside canvas with clear margins.",
+  "seed": 14762
+}

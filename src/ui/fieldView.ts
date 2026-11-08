@@ -5,7 +5,7 @@ import { FIELD, HERO, UI } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
-import { UNIT_SPRITES, animKey } from '../data/sprites';
+import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
@@ -59,16 +59,17 @@ export class FieldView {
     });
 
     const heroDef = UNIT_SPRITES.hero!;
+    const origin = stillOrigin(heroDef);
     this.heroGlow = scene.add
       .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
-      .setOrigin(heroDef.originX, heroDef.originY)
+      .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale * 1.08)
       .setTintFill(COLORS.unguarded)
       .setAlpha(0)
       .setDepth(19);
     this.hero = scene.add
       .sprite(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY, heroDef.key)
-      .setOrigin(heroDef.originX, heroDef.originY)
+      .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale)
       .setDepth(20);
     // 勇者の足元の ATB メーター
@@ -145,9 +146,9 @@ export class FieldView {
     this.heroGlow.y = this.hero.y + 4;
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
-    this.playHeroAnim(
-      now < this.heroHurtUntil ? 'hit' : c.unguarded ? 'attack' : c.running ? 'run' : 'idle',
-    );
+    // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、連鎖中は攻撃を続ける）
+    const state: UnitAnimName = c.unguarded ? 'attack' : c.running ? 'run' : 'idle';
+    this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);
     this.atbBar.width = 110 * c.atbRatio;
     this.atbBar.setFillStyle(c.atbRatio >= 1 ? 0xfff8b0 : COLORS.atb);
 
@@ -213,10 +214,19 @@ export class FieldView {
     this.visibleEnemies = visible;
   }
 
-  private playHeroAnim(name: 'idle' | 'run' | 'attack' | 'hit'): void {
-    const key = animKey('hero', name);
-    if (this.scene.anims.exists(key)) {
-      if (this.hero.anims.currentAnim?.key !== key) this.hero.play(key);
+  private playHeroAnim(candidates: readonly UnitAnimName[]): void {
+    const def = UNIT_SPRITES.hero!;
+    // 未登録の動作は次の候補へ。攻撃は1回再生で、状態が変わるまでやり直さない
+    const chosen =
+      candidates.find((n) => def.anims?.[n] && this.scene.anims.exists(animKey('hero', n))) ?? null;
+    if (!chosen) return;
+    const anim = def.anims![chosen]!;
+    const key = animKey('hero', chosen);
+    const { originX, originY } = animOrigin(def, anim);
+    // 原点だけ切り替え、displayScale（×2・最近傍）はそのまま。140px の攻撃コマを 64px に縮めない
+    for (const sprite of [this.hero, this.heroGlow]) {
+      sprite.setOrigin(originX, originY);
+      if (sprite.anims.currentAnim?.key !== key) sprite.play(key);
     }
   }
 

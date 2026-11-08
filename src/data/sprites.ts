@@ -1,5 +1,6 @@
 // スプライトの定義。仮素材（コードで描くドット絵）と本素材（assets/sprites の PNG）をここで切り替える。
-// 本素材がないものは仮素材で動き続ける。本素材は横一列の PNG（1コマは同じサイズ）。
+// 本素材がないものは仮素材で動き続ける。本素材は横一列の PNG（1枚の中のコマは同じサイズ）。
+// コマ寸法と原点はキャラ共通が基本で、アニメごとに上書きできる。
 
 /** assets/palette.hex と同じ色（31色＋透明） */
 export const PALETTE: Record<string, number> = {
@@ -42,6 +43,12 @@ export interface SpriteAnim {
   frames: number;
   fps: number;
   loop: boolean;
+  /** 省略した軸は SpriteDef のコマ寸法。攻撃などシートサイズが違うときだけ書く */
+  frameWidth?: number;
+  frameHeight?: number;
+  /** 省略した軸は SpriteDef の原点（0〜1）。足元を世界座標へ合わせ、コマごとに寄せない */
+  originX?: number;
+  originY?: number;
 }
 
 export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death';
@@ -74,10 +81,10 @@ export const ICON_SIZE = 16;
 export const ICON_SCALE = 4;
 
 /**
- * 絵柄の参照: 採用済み assets/raw/hero_idle_v2_64.png（64×64、同名 .json に指示とパラメータ）。
- * 本素材は人が出来を確認してから assets/sprites/ へ置き、下の anims に登録する。
+ * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃）。
+ * 待機と攻撃は anims に登録済み。走り・被弾は未登録なので待機（なければ仮素材）で代用する。
  */
-export const HERO_REFERENCE = 'assets/raw/hero_idle_v2_64.png';
+export const HERO_REFERENCE = 'assets/raw/hero/hero_idle_v4_helm.png';
 
 // 仮素材の勇者: 長い金髪、金縁の銀の全身鎧、赤いマント、大剣（右向き）。バックパックは描かない
 const HERO = [
@@ -234,14 +241,35 @@ const unit = (
 });
 
 export const UNIT_SPRITES: Record<string, SpriteDef> = {
-  // 本素材を足すときは anims に書く（ファイルは assets/sprites/ からの相対パス）。例:
-  //   anims: {
-  //     idle:   { file: 'hero/hero_idle.png',   frames: 4, fps: 6,  loop: true },
-  //     run:    { file: 'hero/hero_run.png',    frames: 6, fps: 12, loop: true },
-  //     attack: { file: 'hero/hero_attack.png', frames: 4, fps: 12, loop: true },
-  //     hit:    { file: 'hero/hero_hit.png',    frames: 2, fps: 10, loop: false },
-  //   },
-  hero: { ...unit('hero', HERO, 64), avatarCrop: { x: 12, y: 0, size: 32 } },
+  // 本素材は anims に書く（file は assets/sprites/ からの相対パス）。
+  // コマ寸法・原点がキャラ共通と違うアニメだけ frameWidth/frameHeight/originX/originY を書く。
+  hero: {
+    ...unit('hero', HERO, 64),
+    // v4 の兜（両角と面）。仮素材向けの (12, 0, 32) は面の右半分を切っていた
+    avatarCrop: { x: 16, y: 4, size: 32 },
+    anims: {
+      idle: {
+        file: 'hero/hero_idle.png',
+        frames: 9,
+        fps: 6.67,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'hero/hero_attack.png',
+        frames: 9,
+        fps: 12,
+        loop: false,
+        frameWidth: 140,
+        frameHeight: 96,
+        originX: 53 / 140,
+        originY: 80 / 96,
+      },
+    },
+  },
   slime: unit('slime', SLIME, 48),
   bat: unit('bat', BAT, 48),
   goblin: unit('goblin', GOBLIN, 48),
@@ -256,6 +284,31 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
 /** 本素材のアニメーションキー（Phaser の anims に登録する名前） */
 export function animKey(unitKey: string, anim: UnitAnimName): string {
   return `${unitKey}_${anim}`;
+}
+
+/** アニメのコマ寸法。省略した軸はキャラ共通の寸法 */
+export function animFrameSize(
+  def: SpriteDef,
+  anim: SpriteAnim,
+): { frameWidth: number; frameHeight: number } {
+  return {
+    frameWidth: anim.frameWidth ?? def.frameWidth,
+    frameHeight: anim.frameHeight ?? def.frameHeight,
+  };
+}
+
+/** アニメの足元原点。省略した軸はキャラ共通の原点。表示倍率は変えない */
+export function animOrigin(def: SpriteDef, anim: SpriteAnim): { originX: number; originY: number } {
+  return {
+    originX: anim.originX ?? def.originX,
+    originY: anim.originY ?? def.originY,
+  };
+}
+
+/** 静止画（待機、なければ移動・走りの1コマ目）に合わせる原点 */
+export function stillOrigin(def: SpriteDef): { originX: number; originY: number } {
+  const anim = def.anims?.idle ?? def.anims?.move ?? def.anims?.run;
+  return anim ? animOrigin(def, anim) : { originX: def.originX, originY: def.originY };
 }
 
 // ---- アイテムアイコン（16×16 の中央に 12×12 で描く）。A=主色、S=副色、L=明るい色 を アイテムごとに塗り替える ----
