@@ -1,9 +1,11 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
+import { estimateRoute } from '../core/estimate';
 import {
   consumableSlots,
   equippedUids,
+  heroStats,
   itemMap,
   overflowSellPlan,
   sellItems,
@@ -122,14 +124,12 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
-    const t0 = performance.now();
     const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
     if (save.settings.showRoutes) this.view.showPreview(preview, this.focus);
     else this.view.showPlain(preview);
-    const ms = performance.now() - t0;
     this.buildRouteBar(preview);
-    this.info.setText(`タップで能力・ドラッグで移動（計算 ${ms.toFixed(1)}ms）`);
+    this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
     this.resetBtn.setDisabled(
       save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
     );
@@ -223,16 +223,26 @@ export class LoadoutScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
     x += 82;
+    // 推定ダメージ（ふつうの敵1体に撃ったときの期待値。コンボ・追加効果・会心込み）
+    const save = getSave();
+    const items = itemMap(save);
+    const u = heroStats(save).attackMult;
+    const est = preview.plans.map((p) => estimateRoute(p, items, u));
+    const fmt = (n: number) => Math.round(n).toLocaleString('ja-JP');
     const summary = (() => {
       if (!shown) return { text: '番号を選ぶと表示に戻す', color: COLORS.textDim };
       if (preview.plans.length === 0)
         return { text: '起点を置いてください', color: COLORS.textWarn };
       if (this.focus === null)
-        return { text: '番号を選ぶとそのルートを強調', color: COLORS.textDim };
+        return {
+          text: `合計 約${fmt(est.reduce((sum, e) => sum + e.total, 0))}`,
+          color: '#ffe27a',
+        };
       const p = preview.plans[this.focus]!;
-      const def = p.defenseGain > 0 ? `・防御+${p.defenseGain}` : '';
+      const e = est[this.focus]!;
+      const combo = e.combos > 0 ? `・コンボ${e.combos}` : '';
       return {
-        text: `${p.maxStep}段・${p.duration.toFixed(1)}秒${def}`,
+        text: `約${fmt(e.total)}・${p.maxStep}段${combo}`,
         color: routeCss(this.focus),
       };
     })();

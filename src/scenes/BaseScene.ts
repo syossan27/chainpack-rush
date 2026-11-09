@@ -41,9 +41,9 @@ import {
   type Choice,
 } from '../ui/kit/widgets';
 import { generateBackgroundTextures } from '../ui/textures';
-import { COLORS, H, W, rarityCss, textStyle } from '../ui/theme';
+import { COLORS, H, W, inkStyle, rarityCss, textStyle } from '../ui/theme';
 
-type Page = 'home' | 'storage' | 'smith' | 'upgrade' | 'settings';
+type Page = 'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -62,6 +62,62 @@ const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
 
 /** 拠点の勇者を地面の帯へ沈める量（論理px。勇者は×3表示なので 4ドット分） */
 const HOME_HERO_SINK = 12;
+
+/** ヘルプの中身（数値は balance.ts と合わせる） */
+const HELP_SECTIONS: { title: string; lines: string[] }[] = [
+  {
+    title: '基本',
+    lines: [
+      '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。ATBがたまると起点が順に発火し、つながった装備が順番に攻撃します。',
+      '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。',
+      '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます（上限60秒）。',
+    ],
+  },
+  {
+    title: 'ダメージの決まり方',
+    lines: [
+      '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）',
+      '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4',
+      '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）',
+      '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2',
+      '・強化：拠点の「攻撃倍率」',
+      '・会心：8%でダメージ×2（聖剣・会心の追加効果・幸運の硬貨で上がる）',
+    ],
+  },
+  {
+    title: 'ダメージを伸ばすコツ',
+    lines: [
+      '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。',
+      '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。',
+      '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。',
+      '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。',
+      '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。',
+    ],
+  },
+  {
+    title: '短い連鎖と長い連鎖',
+    lines: [
+      '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。',
+      '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。',
+      '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。',
+    ],
+  },
+  {
+    title: '地域と敵',
+    lines: [
+      '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。',
+      '・群れとボスは出撃ごとに変わります。精鋭（硬い・速い・金ぴか）が混ざることも。金ぴかは必ずレア以上を2個落とします。',
+      '・アーティファクトはごくまれに出る特別な装備です。',
+    ],
+  },
+  {
+    title: '倉庫と鍛冶屋',
+    lines: [
+      '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
+      '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
+    ],
+  },
+];
 
 const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -140,9 +196,12 @@ export class BaseScene extends Phaser.Scene {
       case 'settings':
         this.renderSettings();
         break;
+      case 'help':
+        this.renderHelp();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
-    const tab: TabId = this.page === 'settings' ? 'home' : this.page;
+    const tab: TabId = this.page === 'settings' || this.page === 'help' ? 'home' : this.page;
     this.root.add(
       new TabBar(this, tab, (id) => {
         sfx('click');
@@ -215,6 +274,7 @@ export class BaseScene extends Phaser.Scene {
       new RoundButton(this, 70, 340, 96, scare, 'カカシ', () => this.scene.start('Dummy')),
     );
     this.root.add(new RoundButton(this, 70, 480, 96, 'gear', '設定', () => this.go('settings')));
+    this.root.add(new RoundButton(this, 70, 620, 96, 'book', 'ヘルプ', () => this.go('help')));
     const block = storageCount(save) > storageCapacity(save);
     this.root.add(
       new RoundButton(this, W - 70, 340, 96, 'chest', '倉庫', () => this.go('storage')).setBadge(
@@ -722,6 +782,15 @@ export class BaseScene extends Phaser.Scene {
       },
     );
     this.root.add(ink(this, 70, 760, '検証用。×2 なら30秒のランが15秒で終わります', 18, '#7a5a30'));
+    this.root.add(
+      new Button(this, W / 2, 960, '遊び方・強くなるコツ', () => this.go('help'), {
+        width: 460,
+        height: 84,
+        fontSize: 26,
+        skin: 'blue',
+        icon: 'book',
+      }),
+    );
     row(430, '振動', st.haptics ? 'ON' : 'OFF', null, () => {
       st.haptics = !st.haptics;
       changed();
@@ -729,6 +798,63 @@ export class BaseScene extends Phaser.Scene {
     row(560, '画面揺れ・光', st.shake ? 'ON' : 'OFF', null, () => {
       st.shake = !st.shake;
       changed();
+    });
+  }
+
+  // ---- ヘルプ（遊び方・強くなるコツ） ----
+  private renderHelp(): void {
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '遊び方・強くなるコツ', 420));
+    const top = CONTENT_TOP + 90;
+    const bottom = CONTENT_BOTTOM - 10;
+    this.root.add(panel(this, W / 2, (top + bottom) / 2, W - 30, bottom - top + 10, 'paper'));
+    // 中身（縦に流す。はみ出した分はドラッグでスクロール）
+    const content = this.add.container(0, top);
+    let y = 24;
+    const left = 44;
+    const width = W - 88;
+    for (const sec of HELP_SECTIONS) {
+      const h = ink(this, left, y, sec.title, 28, '#8a3a20');
+      content.add(h);
+      y += h.height + 10;
+      for (const line of sec.lines) {
+        const bullet = line.startsWith('・') || line.startsWith('　');
+        const t = this.add.text(left + (bullet ? 8 : 0), y, line, {
+          ...inkStyle(20),
+          wordWrap: { width: width - (bullet ? 8 : 0), useAdvancedWrap: true },
+          lineSpacing: 4,
+        });
+        content.add(t);
+        y += t.height + 8;
+      }
+      y += 22;
+    }
+    const contentH = y;
+    const viewH = bottom - top;
+    const mask = this.make.graphics({}, false);
+    mask.fillRect(0, top, W, viewH);
+    content.setMask(mask.createGeometryMask());
+    this.root.add(content);
+    // ドラッグでスクロール
+    const zone = this.add.zone(W / 2, (top + bottom) / 2, W - 30, viewH).setInteractive();
+    this.root.add(zone);
+    let startY = 0;
+    let startScroll = 0;
+    let scroll = 0;
+    const clamp = (v: number) => Phaser.Math.Clamp(v, 0, Math.max(0, contentH - viewH));
+    zone.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      startY = p.y;
+      startScroll = scroll;
+    });
+    zone.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!p.isDown) return;
+      scroll = clamp(startScroll - (p.y - startY));
+      content.y = top - scroll;
+    });
+    // ホイール（PC）
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+      if (this.page !== 'help') return;
+      scroll = clamp(scroll + dy);
+      content.y = top - scroll;
     });
   }
 }
