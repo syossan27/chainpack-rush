@@ -155,7 +155,7 @@ export class DummyScene extends Phaser.Scene {
       } else if (ev.type === 'technique') {
         const t = getTechnique(ev.id);
         const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
-        this.field.heroSpecial(0xffe060);
+        const impact = this.field.heroSpecial(0xffe060, t?.id);
         const save = getSave();
         if (t && !save.discoveredTechs.includes(t.id)) {
           save.discoveredTechs.push(t.id);
@@ -164,8 +164,10 @@ export class DummyScene extends Phaser.Scene {
         }
         if (e) {
           const p = this.field.enemyScreenPos(this.combat, e);
-          this.elementFx.special(p.x, p.y, t?.element);
-          this.effects.flash(p.x, p.y, 0xffffff, 4);
+          this.time.delayedCall(impact / Math.max(0.1, gameSpeed()), () => {
+            this.elementFx.special(p.x, p.y, t?.element);
+            this.effects.flash(p.x, p.y, 0xffffff, 4);
+          });
         }
         sfx('explode');
       } else if (ev.type === 'combo') {

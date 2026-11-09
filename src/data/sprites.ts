@@ -49,10 +49,16 @@ export interface SpriteAnim {
   /** 省略した軸は SpriteDef の原点（0〜1）。足元を世界座標へ合わせ、コマごとに寄せない */
   originX?: number;
   originY?: number;
+  /** 必殺モーション: 斬りつけるコマ（0始まり）。大きな演出をこのコマに合わせる */
+  impactFrame?: number;
 }
 
-/** special: 必殺技のモーション（勇者。未登録なら通常の攻撃＋踏み込みで代用） */
-export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special';
+/**
+ * special_<技のid>: その必殺技のモーション、special: 全技共通の必殺モーション（勇者）。
+ * どちらも未登録なら通常の攻撃＋踏み込み・残像で代用
+ */
+export type UnitAnimName =
+  'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special' | `special_${string}`;
 
 export interface SpriteDef {
   key: string;
@@ -332,9 +338,20 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originX: 41 / 96,
         originY: 71 / 80,
       },
-      // 必殺技のモーション（未登録なら通常の攻撃＋踏み込み・残像で代用）。用意したら下を有効にする:
-      // special: { file: 'hero/hero_special.png', frames: 10, fps: 14, loop: false,
-      //   frameWidth: 160, frameHeight: 112, originX: 60 / 160, originY: 96 / 112 },
+      // 必殺技のモーション: special_<技のid>（data/techniques.ts）。未登録の技は special、それも無ければ
+      // 通常の攻撃＋踏み込み・残像で代用。原点は開始コマの足元に固定し、コマごとの横ずれには寄せない。
+      // クリムゾン・バースト: 184×132・9コマ（PR #4）。テンポを崩さないよう 14fps（約0.64秒）
+      special_crimson: {
+        file: 'hero/hero_special_crimson_burst.png',
+        frames: 9,
+        fps: 14,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 132,
+        originX: 62.5 / 184,
+        originY: 98 / 132,
+        impactFrame: 4,
+      },
       attack: {
         file: 'hero/hero_attack.png',
         frames: 9,

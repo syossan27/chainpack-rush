@@ -600,7 +600,8 @@ export class RunScene extends Phaser.Scene {
           const t = getTechnique(ev.id);
           const p = this.enemyPos(ev.enemyId);
           const color = t ? (TECH_COLOR[t.element] ?? 0xffffff) : 0xffffff;
-          this.field.heroSpecial(color);
+          // 必殺モーションがあれば、大きな演出は斬りつけのコマに合わせる（ダメージ数字はそのまま）
+          const impact = this.field.heroSpecial(color, t?.id);
           // 初めて出した技は図鑑に登録して、テロップで知らせる
           const save = getSave();
           if (t && !save.discoveredTechs.includes(t.id)) {
@@ -608,12 +609,16 @@ export class RunScene extends Phaser.Scene {
             persist();
             showDiscovery(this, t.name, 330);
           }
-          if (p) {
-            this.elementFx.special(p.x, p.y, t?.element);
-            this.effects.slash(p.x, p.y, color, 3);
-            this.effects.flash(p.x, p.y, color, 4);
-          }
-          if (this.shake) this.cameras.main.shake(140, 0.009);
+          const burst = () => {
+            if (p) {
+              this.elementFx.special(p.x, p.y, t?.element);
+              this.effects.slash(p.x, p.y, color, 3);
+              this.effects.flash(p.x, p.y, color, 4);
+            }
+            if (this.shake) this.cameras.main.shake(140, 0.009);
+          };
+          if (impact > 0) this.time.delayedCall(impact / Math.max(0.1, this.speed), burst);
+          else burst();
           this.hitStop(JUICE.hitStopMs.big);
           sfx('explode');
           break;

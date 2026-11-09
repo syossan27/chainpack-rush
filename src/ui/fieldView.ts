@@ -49,6 +49,7 @@ export class FieldView {
   private aura: HeroAura | null = null;
   /** 必殺モーションを続ける時刻 */
   private specialUntil = 0;
+  private specialName: UnitAnimName = 'special';
   private lastNow = 0;
   /** 直前のフレームの連鎖（新しい連鎖の始まりを見分ける） */
   private lastChain: Combat['chain'] = null;
@@ -185,15 +186,18 @@ export class FieldView {
   }
 
   /** 必殺技: 勇者が前へ踏み込み、残像を引いて大きく構える（止めない。0.3秒ほど） */
-  heroSpecial(color: number): void {
+  /** 戻り値: 必殺モーションの斬りつけまでのミリ秒（モーションがなければ 0） */
+  heroSpecial(color: number, techId?: string): number {
     const h = this.hero;
-    // 専用の必殺モーションがあれば、振り切るまでそれを使う（update で上書きしない）
+    // 専用の必殺モーションがあれば、振り切るまでそれを使う（update で上書きしない）。技ごと → 共通の順
     const def = UNIT_SPRITES.hero!;
-    const sp = def.anims?.special;
-    const hasSpecial = !!sp && this.scene.anims.exists(animKey('hero', 'special'));
-    if (sp && hasSpecial) {
+    const names: UnitAnimName[] = techId ? [`special_${techId}`, 'special'] : ['special'];
+    const name = names.find((n) => def.anims?.[n] && this.scene.anims.exists(animKey('hero', n)));
+    const sp = name ? def.anims![name]! : undefined;
+    if (sp && name) {
+      this.specialName = name;
       this.specialUntil = this.scene.time.now + (sp.frames / sp.fps) * 1000;
-      this.playHeroAnim(['special'], true);
+      this.playHeroAnim([name], true);
     }
     const baseX = RUN_LAYOUT.heroScreenX;
     this.scene.tweens.killTweensOf(h);
@@ -219,7 +223,7 @@ export class FieldView {
       });
     }
     // 専用モーションがあるときは、踏み込みと拡大はモーションに任せる（残像だけ重ねる）
-    if (hasSpecial) return;
+    if (sp) return ((sp.impactFrame ?? 0) / sp.fps) * 1000;
     // 踏み込み → 戻る、一瞬大きく
     this.scene.tweens.add({
       targets: h,
@@ -238,6 +242,7 @@ export class FieldView {
       yoyo: true,
       hold: 120,
     });
+    return 0;
   }
 
   /** 勇者のオーラ（置いている装備の強さで決まる） */
@@ -273,9 +278,13 @@ export class FieldView {
     this.lastChain = c.chain;
     const attackKey = animKey('hero', 'attack');
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
+    // 必殺モーションは最後のコマまで再生しきるまで続ける
+    const specialPlaying =
+      (this.hero.anims.currentAnim?.key ?? '').startsWith('hero_special') &&
+      this.hero.anims.isPlaying;
     const state: UnitAnimName =
-      now < this.specialUntil
-        ? 'special'
+      now < this.specialUntil || specialPlaying
+        ? this.specialName
         : c.chain !== null || swinging
           ? 'attack'
           : c.running
@@ -400,7 +409,7 @@ export class FieldView {
       sprite.setOrigin(originX, originY);
       if (
         sprite.anims.currentAnim?.key !== key ||
-        (restart && (chosen === 'attack' || chosen === 'special'))
+        (restart && (chosen === 'attack' || chosen.startsWith('special')))
       )
         sprite.play(key);
     }
