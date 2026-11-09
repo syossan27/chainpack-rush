@@ -8,6 +8,7 @@ import {
   consumableSlots,
   equippedUids,
   heroStats,
+  itemMap,
   rerollCost,
   rerollItem,
   sellItems,
@@ -32,6 +33,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
+import { HeroAura, auraTier } from '../ui/aura';
 import { otherPresetUse, presetMark } from '../core/presets';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
@@ -141,6 +143,8 @@ export class BaseScene extends Phaser.Scene {
   private smithMode: 'reorient' | 'synth' = 'reorient';
   /** 一括売却で、追加効果（✦）つきの装備を残すか */
   private keepAffixes = true;
+  /** 拠点のオーラを毎フレーム動かす（描き直すたびに付け替える） */
+  private auraTick: ((t: number, dt: number) => void) | null = null;
   private toast: Phaser.GameObjects.Text | null = null;
 
   constructor() {
@@ -262,7 +266,14 @@ export class BaseScene extends Phaser.Scene {
       .sprite(W / 2, footY, 'hero')
       .setScale(3)
       .setOrigin(heroOrigin.originX, heroOrigin.originY);
-    this.root.add([glow, shadow, hero]);
+    // 置いている装備の強さで、勇者にオーラ
+    const aura = new HeroAura(this, W / 2, footY, auraTier(save.loadout, itemMap(save)), 170);
+    this.root.add([glow, shadow, aura, hero]);
+    if (this.auraTick) this.events.off('update', this.auraTick);
+    this.auraTick = (_t: number, dt: number) => {
+      if (aura.active) aura.tick(dt / 1000);
+    };
+    this.events.on('update', this.auraTick);
     // 本素材があれば地面に立ったまま待機モーション。仮素材のときだけ上下に揺らす
     const idleKey = animKey('hero', 'idle');
     if (this.anims.exists(idleKey)) {

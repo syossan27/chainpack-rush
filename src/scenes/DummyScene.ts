@@ -15,6 +15,9 @@ import { BackpackView, originLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
+import { getItemDef } from '../data/items';
+import { ElementFx } from '../ui/elementFx';
+import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 export class DummyScene extends Phaser.Scene {
@@ -24,6 +27,7 @@ export class DummyScene extends Phaser.Scene {
   private view!: BackpackView;
   private numbers!: DamageNumbers;
   private effects!: Effects;
+  private elementFx!: ElementFx;
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
@@ -45,8 +49,10 @@ export class DummyScene extends Phaser.Scene {
       mode: 'dummy',
     });
     this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id);
+    this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
+    this.elementFx = new ElementFx(this, 56, 40, RUN_LAYOUT.footY - 4);
     this.add
       .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
@@ -133,6 +139,16 @@ export class DummyScene extends Phaser.Scene {
         this.field.flashEnemy(e.id, now);
         this.numbers.show(p.x, p.y, ev.damage, ev.combo ? '#fff060' : undefined, ev.crit, ev.step);
         this.effects.burst(p.x, p.y, 0xffffff, 3, 160);
+        {
+          const src = this.items.get(ev.itemUid);
+          this.elementFx.hit(
+            p.x,
+            p.y,
+            src ? getItemDef(src.defId).element : 'fire',
+            Math.min(1, ev.damage / 200),
+            ev.combo,
+          );
+        }
         sfx('hit');
       } else if (ev.type === 'combo') {
         this.comboLabel.push(ev.label);

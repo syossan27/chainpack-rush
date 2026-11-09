@@ -7,6 +7,7 @@ import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
 import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
+import { HeroAura, type AuraTier } from './aura';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
 /** 被弾モーションを見せる長さ（ms） */
@@ -45,6 +46,8 @@ export class FieldView {
   private readonly slots: EnemySlot[] = [];
   private readonly byId = new Map<number, EnemySlot>();
   private heroHurtUntil = 0;
+  private aura: HeroAura | null = null;
+  private lastNow = 0;
   /** 直前のフレームの連鎖（新しい連鎖の始まりを見分ける） */
   private lastChain: Combat['chain'] = null;
   /** 勇者の本素材（待機）が読み込まれているか */
@@ -179,8 +182,19 @@ export class FieldView {
     s.aim.setVisible(false);
   }
 
+  /** 勇者のオーラ（置いている装備の強さで決まる） */
+  setAura(tier: AuraTier): void {
+    this.aura?.destroy();
+    this.aura = new HeroAura(this.scene, this.hero.x, this.hero.y, tier, 110).setDepth(18.6);
+  }
+
   /** speed: モーションの再生速度（ゲームスピード。止めているときは 0） */
   update(c: Combat, now: number, speed = 1): void {
+    if (this.aura) {
+      this.aura.setPosition(this.hero.x, RUN_LAYOUT.footY);
+      this.aura.tick(Math.max(0, now - this.lastNow) / 1000);
+    }
+    this.lastNow = now;
     // 背景の多重スクロール
     const speeds = [0.1, 0.3, 0.6];
     this.bgLayers.forEach((l, i) => (l.tilePositionX = Math.floor((c.heroX * speeds[i]!) / 2)));

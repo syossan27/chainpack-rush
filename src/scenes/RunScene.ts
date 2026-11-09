@@ -22,6 +22,8 @@ import { Bar, Button, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
+import { ElementFx } from '../ui/elementFx';
+import { auraTier } from '../ui/aura';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 const MAX_STEPS_PER_FRAME = 5;
@@ -45,6 +47,7 @@ const STEP_SPARK: Record<number, number> = { 2: 0xffc84a, 3: 0xff6a3a, 4: 0xffff
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
   private items!: Map<string, ItemInstance>;
+  private elementFx!: ElementFx;
   private field!: FieldView;
   private view!: BackpackView;
   private numbers!: DamageNumbers;
@@ -111,8 +114,11 @@ export class RunScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.bg);
 
     this.field = new FieldView(this, this.regionId);
+
+    this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
+    this.elementFx = new ElementFx(this, 56, 40, RUN_LAYOUT.footY - 4);
 
     // 中段・下部の背景（石の額縁）
     this.add
@@ -565,6 +571,12 @@ export class RunScene extends Phaser.Scene {
               ? 0xffd25a
               : 0xffffff;
           this.effects.slash(p.x, p.y, tint, 0.8 + strength * 0.8);
+          // 属性ごとの演出（爆弾は炎の爆発）
+          {
+            const src = this.items.get(ev.itemUid);
+            const element = src ? getItemDef(src.defId).element : 'fire';
+            this.elementFx.hit(p.x, p.y, element, strength, src ? ev.combo : 'explode');
+          }
           this.effects.burst(p.x, p.y, tint, 3 + Math.round(strength * 8), 160 + strength * 200);
           if (ev.damage >= JUICE.bigHit) {
             this.effects.flash(p.x, p.y, tint, 1.5 + strength * 2);
