@@ -13,7 +13,7 @@ import { debugFps, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
 import { session } from '../platform/session';
-import { gameSpeed, getSave } from '../platform/store';
+import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
@@ -24,6 +24,7 @@ import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
 import { ElementFx } from '../ui/elementFx';
 import { getTechnique } from '../data/techniques';
+import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -600,6 +601,13 @@ export class RunScene extends Phaser.Scene {
           const p = this.enemyPos(ev.enemyId);
           const color = t ? (TECH_COLOR[t.element] ?? 0xffffff) : 0xffffff;
           this.field.heroSpecial(color);
+          // 初めて出した技は図鑑に登録して、テロップで知らせる
+          const save = getSave();
+          if (t && !save.discoveredTechs.includes(t.id)) {
+            save.discoveredTechs.push(t.id);
+            persist();
+            showDiscovery(this, t.name, 330);
+          }
           if (p) {
             this.elementFx.special(p.x, p.y, t?.element);
             this.effects.slash(p.x, p.y, color, 3);

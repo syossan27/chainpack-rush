@@ -27,7 +27,7 @@ import type { Dir, ItemInstance, Rarity } from '../core/types';
 import { DIRS } from '../core/types';
 import { RARITY_NAMES, getItemDef } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
-import { UNIT_SPRITES, animKey, stillOrigin } from '../data/sprites';
+import { UNIT_SPRITES, animKey, iconKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
@@ -52,7 +52,7 @@ import {
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, inkStyle, rarityCss, textStyle } from '../ui/theme';
 
-type Page = 'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help';
+type Page = 'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help' | 'techs';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -107,7 +107,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     title: '必殺技',
     lines: [
       '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。',
-      ...TECHNIQUES.map((t) => `・${t.name}：${t.hint}`),
+      `・必殺技は全部で${TECHNIQUES.length}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。`,
     ],
   },
   {
@@ -137,6 +137,14 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     ],
   },
 ];
+
+/** 必殺技図鑑の名前の色（属性） */
+const TECH_CSS: Partial<Record<string, string>> = {
+  fire: '#c84a10',
+  thunder: '#b08a00',
+  ice: '#2a7aa8',
+  physical: '#5a3a20',
+};
 
 const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -222,9 +230,15 @@ export class BaseScene extends Phaser.Scene {
       case 'help':
         this.renderHelp();
         break;
+      case 'techs':
+        this.renderTechs();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
-    const tab: TabId = this.page === 'settings' || this.page === 'help' ? 'home' : this.page;
+    const tab: TabId =
+      this.page === 'settings' || this.page === 'help' || this.page === 'techs'
+        ? 'home'
+        : this.page;
     this.root.add(
       new TabBar(this, tab, (id) => {
         sfx('click');
@@ -314,6 +328,7 @@ export class BaseScene extends Phaser.Scene {
     this.root.add(
       new RoundButton(this, W - 70, 480, 96, 'anvil', '鍛冶屋', () => this.go('smith')),
     );
+    this.root.add(new RoundButton(this, W - 70, 620, 96, 'crown', '図鑑', () => this.go('techs')));
 
     // 出撃
     const sortie = new Button(this, W / 2, 760, '出撃', () => this.scene.start('StageSelect'), {
@@ -1206,6 +1221,52 @@ export class BaseScene extends Phaser.Scene {
       if (this.page !== 'help') return;
       scroll = clamp(scroll + dy);
       content.y = top - scroll;
+    });
+  }
+
+  // ---- 必殺技図鑑 ----
+  private renderTechs(): void {
+    const save = getSave();
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '必殺技図鑑', 360));
+    const found = TECHNIQUES.filter((t) => save.discoveredTechs.includes(t.id)).length;
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          CONTENT_TOP + 92,
+          `見つけた必殺技 ${found} / ${TECHNIQUES.length}`,
+          textStyle(24, '#ffe27a'),
+        )
+        .setOrigin(0.5),
+    );
+    const top = CONTENT_TOP + 130;
+    const rowH = 176;
+    TECHNIQUES.forEach((t, i) => {
+      const y = top + i * (rowH + 10) + rowH / 2;
+      const known = save.discoveredTechs.includes(t.id);
+      this.root.add(panel(this, W / 2, y, W - 40, rowH, known ? 'paper' : 'inset'));
+      const color = TECH_CSS[t.element] ?? '#5a3a20';
+      if (known) {
+        this.root.add(ink(this, 50, y - 64, t.name, 34, color));
+        this.root.add(ink(this, 50, y - 14, `発動：${t.hint}`, 20, '#5a3a20'));
+        this.root.add(
+          ink(this, 50, y + 22, '3つ目の一撃がダメージ×2.5、勇者が大きく踏み込む', 18, '#7a5a30'),
+        );
+        // 並びのアイコン（それぞれの段の最初の装備）
+        t.seq.forEach((opts, k) => {
+          const x = W - 230 + k * 76;
+          this.root.add(this.add.image(x, y + 50, iconKey(opts[0]!)).setScale(3));
+          if (k < 2)
+            this.root.add(
+              this.add.text(x + 38, y + 50, '›', textStyle(28, '#7a5a30')).setOrigin(0.5),
+            );
+        });
+      } else {
+        this.root.add(this.add.text(50, y - 64, '？？？', textStyle(34, COLORS.textDim)));
+        this.root.add(
+          this.add.text(50, y - 10, `ヒント：${t.teaser}`, textStyle(22, COLORS.textDim)),
+        );
+      }
     });
   }
 }

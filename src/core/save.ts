@@ -27,6 +27,8 @@ export interface SaveData {
   /** 編成（並べ方の記録）。今の並べ方は loadout で、presets[activePreset] は切り替えたときに更新する */
   presets: Preset[];
   activePreset: number;
+  /** 見つけた必殺技（図鑑） */
+  discoveredTechs: string[];
   settings: {
     volume: number;
     haptics: boolean;
@@ -107,6 +109,7 @@ export function createInitialSave(): SaveData {
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
     presets: defaultPresets(),
     activePreset: 0,
+    discoveredTechs: [],
     settings: {
       volume: 0.7,
       haptics: true,
@@ -219,6 +222,9 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...(isObj(data.stats) ? (data.stats as Partial<SaveData['stats']>) : {}),
       },
       presets: readPresets(data.presets),
+      discoveredTechs: Array.isArray(data.discoveredTechs)
+        ? data.discoveredTechs.filter((t): t is string => typeof t === 'string')
+        : [],
       activePreset:
         isNum(data.activePreset) && data.activePreset >= 0 && data.activePreset < PRESET_COUNT
           ? Math.floor(data.activePreset)

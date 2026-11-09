@@ -69,3 +69,22 @@ describe('必殺技', () => {
     expect(without.some((e) => e.type === 'technique')).toBe(false);
   });
 });
+
+describe('必殺技図鑑', () => {
+  it('見つけた技はセーブに残る。古いセーブ・壊れた値は空から', async () => {
+    const { createInitialSave, serializeSave, deserializeSave } = await import('../src/core/save');
+    const s = createInitialSave();
+    expect(s.discoveredTechs).toEqual([]);
+    s.discoveredTechs.push('crimson');
+    expect(deserializeSave(serializeSave(s)).discoveredTechs).toEqual(['crimson']);
+    const old = JSON.parse(serializeSave(s));
+    delete old.discoveredTechs;
+    expect(deserializeSave(JSON.stringify(old)).discoveredTechs).toEqual([]);
+    old.discoveredTechs = ['frost', 3, null];
+    expect(deserializeSave(JSON.stringify(old)).discoveredTechs).toEqual(['frost']);
+  });
+
+  it('すべての技に、見つける前のヒントがある', () => {
+    for (const t of TECHNIQUES) expect(t.teaser.length).toBeGreaterThan(0);
+  });
+});

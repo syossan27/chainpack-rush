@@ -9,7 +9,7 @@ import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep } from '../audio/sfx';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
-import { gameSpeed, getSave } from '../platform/store';
+import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
@@ -18,6 +18,7 @@ import { DamageNumbers, Effects } from '../ui/pools';
 import { getItemDef } from '../data/items';
 import { ElementFx } from '../ui/elementFx';
 import { getTechnique } from '../data/techniques';
+import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -155,6 +156,12 @@ export class DummyScene extends Phaser.Scene {
         const t = getTechnique(ev.id);
         const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
         this.field.heroSpecial(0xffe060);
+        const save = getSave();
+        if (t && !save.discoveredTechs.includes(t.id)) {
+          save.discoveredTechs.push(t.id);
+          persist();
+          showDiscovery(this, t.name, 330);
+        }
         if (e) {
           const p = this.field.enemyScreenPos(this.combat, e);
           this.elementFx.special(p.x, p.y, t?.element);
