@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
+import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
 import {
   consumableSlots,
   equippedUids,
@@ -26,7 +27,7 @@ import { BackpackView } from '../ui/backpackView';
 import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
 import { SKIN, SLICE } from '../ui/kit/skin';
-import { Button, RoundButton, confirmDialog, panel, ribbon, bindTap } from '../ui/kit/widgets';
+import { Button, RoundButton, confirmDialog, panel, bindTap } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
@@ -53,6 +54,9 @@ export class LoadoutScene extends Phaser.Scene {
   private focus: number | null = null;
   private routeBar!: Phaser.GameObjects.Container;
   private routeText!: Phaser.GameObjects.Text;
+  private presetBar!: Phaser.GameObjects.Container;
+  /** ほかの編成で使っている装備 */
+  private presetUses = new Map<string, number[]>();
   private resetBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
@@ -68,7 +72,9 @@ export class LoadoutScene extends Phaser.Scene {
     this.drag = null;
     this.selected = null;
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
-    this.add.existing(ribbon(this, W / 2, LOADOUT_LAYOUT.backpackTop - 34, 'バックパック', 320));
+    // 編成の切り替え（並べ方の記録。装備は倉庫に置いたまま）
+    this.presetBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
+    this.buildPresetBar();
     // 全部外す（確認してから）
     this.resetBtn = new Button(
       this,
@@ -94,11 +100,17 @@ export class LoadoutScene extends Phaser.Scene {
     bindTap(this.warn, () => {
       if (sortieBlock(getSave()) === 'storageFull') sellOverflow(this);
     });
-    this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
-      onTap: (it) => this.onListTap(it),
-      onLongPress: (it) => this.openDetail(it, 'list'),
-      onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
-    });
+    this.list = new ItemList(
+      this,
+      LOADOUT_LAYOUT.listTop,
+      LOADOUT_LAYOUT.listBottom,
+      {
+        onTap: (it) => this.onListTap(it),
+        onLongPress: (it) => this.openDetail(it, 'list'),
+        onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
+      },
+      (it) => presetMark(getSave(), this.presetUses, it.uid),
+    );
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, 'カカシ', () =>
       this.scene.start('Dummy'),
@@ -122,6 +134,7 @@ export class LoadoutScene extends Phaser.Scene {
 
   private refresh(): void {
     const save = getSave();
+    this.presetUses = otherPresetUse(save);
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
     const preview = simulateChain(save.loadout, items);
@@ -250,6 +263,94 @@ export class LoadoutScene extends Phaser.Scene {
       .text(W - 40, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
     bar.add(this.routeText);
+  }
+
+  /** 編成のタブ: 1〜5。今の編成をもう一度押すと名前を変えられる */
+  private buildPresetBar(): void {
+    const save = getSave();
+    const bar = this.presetBar;
+    bar.removeAll(true);
+    const w = 62;
+    save.presets.forEach((p, i) => {
+      const x = 24 + i * (w + 6);
+      const on = i === save.activePreset;
+      const bg = this.add
+        .nineslice(
+          x + w / 2,
+          0,
+          on ? SKIN.tabOn : SKIN.tab,
+          undefined,
+          w,
+          52,
+          SLICE.tab,
+          SLICE.tab,
+          14,
+          14,
+        )
+        .setInteractive({ useHandCursor: true });
+      bindTap(bg, () => {
+        sfx('click');
+        if (on) this.renamePreset(i);
+        else this.changePreset(i);
+      });
+      bar.add(bg);
+      bar.add(
+        this.add
+          .text(
+            x + w / 2,
+            -2,
+            `${i + 1}`,
+            textStyle(24, on ? '#fff6d0' : p.loadout ? COLORS.text : COLORS.textDim),
+          )
+          .setOrigin(0.5),
+      );
+    });
+    const name = save.presets[save.activePreset]!.name;
+    bar.add(
+      this.add
+        .text(24 + 5 * (w + 6) + 4, -2, `${name} ✎`, textStyle(22, '#ffe27a'))
+        .setOrigin(0, 0.5),
+    );
+  }
+
+  private changePreset(i: number): void {
+    const save = getSave();
+    if (!switchPreset(save, i)) return;
+    persist();
+    this.focus = null;
+    this.selected = null;
+    this.buildPresetBar();
+    this.refresh();
+    this.showToastLine(`${save.presets[i]!.name} に切り替えました`);
+  }
+
+  private renamePreset(i: number): void {
+    const save = getSave();
+    const now = save.presets[i]!.name;
+    const v = typeof window !== 'undefined' ? window.prompt('編成の名前（8文字まで）', now) : null;
+    if (v === null) return;
+    const name = v.trim().slice(0, 8);
+    if (!name) return;
+    save.presets[i]!.name = name;
+    persist();
+    this.buildPresetBar();
+    this.refresh();
+  }
+
+  /** 画面下の一時的なお知らせ */
+  private showToastLine(msg: string): void {
+    const t = this.add
+      .text(W / 2, LOADOUT_LAYOUT.backpackTop + 10, msg, textStyle(24, '#ffe27a'))
+      .setOrigin(0.5)
+      .setDepth(3000);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      y: t.y - 20,
+      delay: 900,
+      duration: 400,
+      onComplete: () => t.destroy(),
+    });
   }
 
   private setFocus(i: number | null): void {

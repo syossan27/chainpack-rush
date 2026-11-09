@@ -24,6 +24,9 @@ export interface SaveData {
   upgrades: Record<UpgradeId, number>;
   progress: { unlocked: string[]; best: Record<string, number> };
   stats: { runs: number; maxStep: number; maxDamage: number };
+  /** 編成（並べ方の記録）。今の並べ方は loadout で、presets[activePreset] は切り替えたときに更新する */
+  presets: Preset[];
+  activePreset: number;
   settings: {
     volume: number;
     haptics: boolean;
@@ -32,6 +35,19 @@ export interface SaveData {
     /** 配置画面でルートの線・段数を出すか */
     showRoutes: boolean;
   };
+}
+
+export const PRESET_COUNT = 5;
+
+/** 編成: 装備そのものは持たず、どの装備をどこに置くか（と消耗品の枠）だけを覚える */
+export interface Preset {
+  name: string;
+  /** null はまだ一度も使っていない編成 */
+  loadout: Loadout | null;
+}
+
+export function defaultPresets(): Preset[] {
+  return Array.from({ length: PRESET_COUNT }, (_, i) => ({ name: `編成${i + 1}`, loadout: null }));
 }
 
 export function emptyLoadout(
@@ -85,8 +101,37 @@ export function createInitialSave(): SaveData {
     },
     progress: { unlocked: [REGIONS[0]!.id], best: {} },
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
+    presets: defaultPresets(),
+    activePreset: 0,
     settings: { volume: 0.7, haptics: true, shake: true, gameSpeed: 1, showRoutes: true },
   };
+}
+
+function validLoadout(v: unknown): v is Loadout {
+  if (!isObj(v) || !isNum(v.width) || !isNum(v.height) || !Array.isArray(v.cells)) return false;
+  if (v.cells.length !== v.width * v.height) return false;
+  return Array.isArray(v.originOrder) && Array.isArray(v.consumables);
+}
+
+/** 編成の読み込み。壊れた分は空の編成にする */
+function readPresets(v: unknown): Preset[] {
+  const base = defaultPresets();
+  if (!Array.isArray(v)) return base;
+  return base.map((b, i) => {
+    const p: unknown = v[i];
+    if (!isObj(p)) return b;
+    const name = typeof p.name === 'string' && p.name.length > 0 ? p.name.slice(0, 12) : b.name;
+    const lo = validLoadout(p.loadout)
+      ? {
+          width: p.loadout.width,
+          height: p.loadout.height,
+          cells: p.loadout.cells.map((c) => (typeof c === 'string' ? c : null)),
+          originOrder: p.loadout.originOrder.filter((u): u is string => typeof u === 'string'),
+          consumables: p.loadout.consumables.filter((u): u is string => typeof u === 'string'),
+        }
+      : null;
+    return { name, loadout: lo };
+  });
 }
 
 export function serializeSave(save: SaveData): string {
@@ -161,6 +206,11 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...base.stats,
         ...(isObj(data.stats) ? (data.stats as Partial<SaveData['stats']>) : {}),
       },
+      presets: readPresets(data.presets),
+      activePreset:
+        isNum(data.activePreset) && data.activePreset >= 0 && data.activePreset < PRESET_COUNT
+          ? Math.floor(data.activePreset)
+          : 0,
       settings: {
         ...base.settings,
         ...(isObj(data.settings) ? (data.settings as Partial<SaveData['settings']>) : {}),

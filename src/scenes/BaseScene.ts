@@ -31,6 +31,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
+import { otherPresetUse, presetMark } from '../core/presets';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
@@ -117,6 +118,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
   {
     title: '倉庫・鍛冶屋・合成',
     lines: [
+      '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。',
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
       '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。',
@@ -383,8 +385,18 @@ export class BaseScene extends Phaser.Scene {
                 this.render();
                 this.showToast(`+${g}G`);
               };
+              // ほかの編成で使っている装備は、編成から外れることを確認する
+              const usedIn = otherPresetUse(save).get(it.uid);
+              if (usedIn && usedIn.length > 0)
+                confirmDialog(
+                  this,
+                  '編成で使っている装備',
+                  `${usedIn.map((i) => save.presets[i]!.name).join('・')}で使っています。\n売ると、その編成のマスは空きになります`,
+                  '売る',
+                  sell,
+                );
               // アーティファクトは誤って売らないよう確認する
-              if (getItemDef(it.defId).artifact)
+              else if (getItemDef(it.defId).artifact)
                 confirmDialog(
                   this,
                   'アーティファクトを売る',
@@ -400,6 +412,7 @@ export class BaseScene extends Phaser.Scene {
     };
     // まとめて売る: 選ぶモードではタップで選択／解除し、最後にまとめて売る
     const pick = this.sellPick;
+    const presetUses = otherPresetUse(save);
     const stored = () => getSave().inventory.filter((i) => !eq.has(i.uid));
     const list = new ItemList(
       this,
@@ -413,6 +426,11 @@ export class BaseScene extends Phaser.Scene {
             this.showToast('ロック中の装備は売れません', true);
             return;
           }
+          if (presetUses.has(it.uid)) {
+            sfx('error');
+            this.showToast('ほかの編成で使っている装備です（詳細から売れます）', true);
+            return;
+          }
           if (pick.has(it.uid)) pick.delete(it.uid);
           else pick.add(it.uid);
           sfx('click');
@@ -421,7 +439,7 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: openDetail,
       },
-      (it) => (pick?.has(it.uid) ? '売る' : null),
+      (it) => (pick?.has(it.uid) ? '売る' : presetMark(save, presetUses, it.uid)),
     );
     list.setItems(stored());
     this.root.add(list);
@@ -502,7 +520,8 @@ export class BaseScene extends Phaser.Scene {
       const below = (max: Rarity) =>
         stored().filter((i) => {
           const d = getItemDef(i.defId);
-          if (d.kind === 'consumable' || d.artifact || i.locked) return false;
+          if (d.kind === 'consumable' || d.artifact || i.locked || presetUses.has(i.uid))
+            return false;
           if (this.keepAffixes && (i.affixes?.length ?? 0) > 0) return false;
           return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
         });
@@ -532,7 +551,7 @@ export class BaseScene extends Phaser.Scene {
           this,
           '一括売却',
           choices,
-          '装備中・ロック中・消耗品・アーティファクトは売りません',
+          '装備中・ロック中・ほかの編成で使用中・消耗品・アーティファクトは売りません',
         );
       };
       this.root.add(
@@ -583,6 +602,7 @@ export class BaseScene extends Phaser.Scene {
     }
     const save = getSave();
     const eq = equippedUids(save);
+    const presetUses = otherPresetUse(save);
     const list = new ItemList(
       this,
       CONTENT_TOP + 84,
@@ -600,7 +620,7 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: (it) => showItemDetail(this, it),
       },
-      (it) => (eq.has(it.uid) ? '装備中' : null),
+      (it) => (eq.has(it.uid) ? '装備中' : presetMark(save, presetUses, it.uid)),
     );
     list.setItems(save.inventory.filter((i) => getItemDef(i.defId).kind !== 'consumable'));
     list.setSelected(this.selected);
@@ -897,7 +917,8 @@ export class BaseScene extends Phaser.Scene {
   private renderSynth(): void {
     const save = getSave();
     const eq = equippedUids(save);
-    const usable = (i: ItemInstance) => !eq.has(i.uid) && !i.locked;
+    const presetUses = otherPresetUse(save);
+    const usable = (i: ItemInstance) => !eq.has(i.uid) && !i.locked && !presetUses.has(i.uid);
     const groupCount = (i: ItemInstance) =>
       save.inventory.filter((o) => o.defId === i.defId && o.rarity === i.rarity && usable(o))
         .length;
@@ -920,7 +941,7 @@ export class BaseScene extends Phaser.Scene {
         if (eq.has(it.uid)) return '装備中';
         if (it.locked) return 'ロック';
         const n = groupCount(it);
-        return n >= 3 ? `${n}つ` : null;
+        return n >= 3 ? `${n}つ` : presetMark(save, presetUses, it.uid);
       },
     );
     list.setItems(candidates);
@@ -981,7 +1002,7 @@ export class BaseScene extends Phaser.Scene {
         this,
         190,
         py + 128,
-        `使える数: ${groupCount(it)}つ（装備中・ロック中は使えない）`,
+        `使える数: ${groupCount(it)}つ（装備中・ロック中・ほかの編成で使用中は除く）`,
         18,
         '#7a5a30',
       ),

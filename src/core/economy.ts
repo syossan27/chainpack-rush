@@ -95,6 +95,21 @@ export function equippedUids(save: SaveData): Set<string> {
   return s;
 }
 
+/** ほかの編成（今の編成以外）で使っている装備 → 使っている編成の番号（0始まり） */
+export function otherPresetUse(save: SaveData): Map<string, number[]> {
+  const out = new Map<string, number[]>();
+  save.presets.forEach((p, i) => {
+    if (i === save.activePreset || !p.loadout) return;
+    for (const u of [...p.loadout.cells, ...p.loadout.consumables]) {
+      if (!u) continue;
+      const list = out.get(u) ?? [];
+      if (!list.includes(i)) list.push(i);
+      out.set(u, list);
+    }
+  });
+  return out;
+}
+
 /** 倉庫に入っている数（装備中は数えない） */
 export function storageCount(save: SaveData): number {
   const eq = equippedUids(save);
@@ -126,8 +141,9 @@ export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number
   const over = storageCount(save) - storageCapacity(save);
   if (over <= 0) return { uids: [], gold: 0 };
   const eq = equippedUids(save);
+  const inPresets = otherPresetUse(save);
   const picks = save.inventory
-    .filter((i) => !eq.has(i.uid) && !i.locked)
+    .filter((i) => !eq.has(i.uid) && !i.locked && !inPresets.has(i.uid))
     .map((i) => ({ i, consumable: getItemDef(i.defId).kind === 'consumable' ? 1 : 0 }))
     .sort((a, b) => a.consumable - b.consumable || sellPrice(a.i) - sellPrice(b.i))
     .slice(0, over)
@@ -221,6 +237,7 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
       cost,
       reason: eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
     };
+  const inPresets = otherPresetUse(save);
   const mates = save.inventory
     .filter(
       (i) =>
@@ -228,7 +245,8 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
         i.defId === it.defId &&
         i.rarity === it.rarity &&
         !i.locked &&
-        !eq.has(i.uid),
+        !eq.has(i.uid) &&
+        !inPresets.has(i.uid),
     )
     .sort(
       (a, b) =>
