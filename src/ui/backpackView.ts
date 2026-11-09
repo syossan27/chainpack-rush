@@ -176,12 +176,18 @@ export class BackpackView extends Phaser.GameObjects.Container {
    * 配置画面のプレビュー: 連鎖の通り道を線で、各マスの段数と倍率、届かない装備はグレー。
    * focus を指定すると、その起点のルートだけを太く描き、通るマスを縁取り、ほかの装備は薄くする
    */
-  showPreview(p: ChainPreview, focus: number | null = null): void {
+  showPreview(
+    p: ChainPreview,
+    focus: number | null = null,
+    /** 見つけた必殺技（見つける前はマスに「必殺」と出さない＝ネタバレしない） */
+    discovered: ReadonlySet<string> = new Set(),
+  ): void {
     this.lineG.clear();
     this.flowEdges = [];
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
     const focused = focus !== null ? p.plans[focus] : undefined;
+    const known = (t: string | undefined) => !!t && discovered.has(t);
     const onRoute = new Set(focused?.steps.map((s) => s.cell) ?? []);
     for (const [cell, icon] of this.icons) {
       icon.setDimmed(p.unreachable.has(cell));
@@ -225,8 +231,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
-            s.tech ? `必殺 ${s.step}段` : `${s.step}段 ×${s.mult.toFixed(2)}`,
-            textStyle(focused ? 15 : 13, s.tech ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0'),
+            known(s.tech) ? `必殺 ${s.step}段` : `${s.step}段 ×${s.mult.toFixed(2)}`,
+            textStyle(
+              focused ? 15 : 13,
+              known(s.tech) ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0',
+            ),
           )
           .setOrigin(1, 1);
         this.labelLayer.add(t);

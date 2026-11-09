@@ -140,7 +140,8 @@ export class LoadoutScene extends Phaser.Scene {
     this.view.setLoadout(save.loadout, items);
     const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
-    if (save.settings.showRoutes) this.view.showPreview(preview, this.focus);
+    if (save.settings.showRoutes)
+      this.view.showPreview(preview, this.focus, new Set(save.discoveredTechs));
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
     this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
@@ -254,12 +255,13 @@ export class LoadoutScene extends Phaser.Scene {
         };
       const p = preview.plans[this.focus]!;
       const e = est[this.focus]!;
-      const combo =
-        e.techs.length > 0
-          ? `・${getTechnique(e.techs[0]!)?.name ?? '必殺技'}`
-          : e.combos > 0
-            ? `・コンボ${e.combos}`
-            : '';
+      // 必殺技の名前は、見つけたあとだけ出す（ネタバレしない）
+      const knownTech = e.techs.find((t) => save.discoveredTechs.includes(t));
+      const combo = knownTech
+        ? `・${getTechnique(knownTech)?.name ?? '必殺技'}`
+        : e.combos > 0
+          ? `・コンボ${e.combos}`
+          : '';
       return {
         text: `約${fmt(e.total)}・${p.maxStep}段${combo}`,
         color: routeCss(this.focus),

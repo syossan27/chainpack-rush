@@ -160,7 +160,7 @@ export class DummyScene extends Phaser.Scene {
         if (t && !save.discoveredTechs.includes(t.id)) {
           save.discoveredTechs.push(t.id);
           persist();
-          showDiscovery(this, t.name, 330);
+          showDiscovery(this, t.name, 190);
         }
         if (e) {
           const p = this.field.enemyScreenPos(this.combat, e);
