@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
+import { getTechnique } from '../data/techniques';
 import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
 import {
   consumableSlots,
@@ -253,7 +254,12 @@ export class LoadoutScene extends Phaser.Scene {
         };
       const p = preview.plans[this.focus]!;
       const e = est[this.focus]!;
-      const combo = e.combos > 0 ? `・コンボ${e.combos}` : '';
+      const combo =
+        e.techs.length > 0
+          ? `・${getTechnique(e.techs[0]!)?.name ?? '必殺技'}`
+          : e.combos > 0
+            ? `・コンボ${e.combos}`
+            : '';
       return {
         text: `約${fmt(e.total)}・${p.maxStep}段${combo}`,
         color: routeCss(this.focus),

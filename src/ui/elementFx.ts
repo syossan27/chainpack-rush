@@ -63,6 +63,29 @@ export class ElementFx {
     }
   }
 
+  /** 必殺技の一撃: 属性の演出を特大で（予算に関係なく出す） */
+  special(x: number, y: number, element: Element | undefined): void {
+    switch (element) {
+      case 'fire':
+        this.explode(x, y);
+        this.flames(x, y, 30);
+        break;
+      case 'thunder':
+        this.shock(x, y);
+        this.bolt(x, y, 2.4);
+        break;
+      case 'ice':
+        this.shatter(x, y);
+        this.shards(x, y, 18, 0x9adfff);
+        break;
+      default:
+        this.shockwave(x, 2.4);
+        this.ring(x, y, 0xffffff, 8, 360);
+        this.ring(x, y, 0xffe060, 5, 280);
+        break;
+    }
+  }
+
   // ---- 部品 ----
 
   /** 空から落ちる稲妻（折れ線）。太さ w */

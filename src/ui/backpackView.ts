@@ -225,8 +225,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
-            `${s.step}段 ×${s.mult.toFixed(2)}`,
-            textStyle(focused ? 15 : 13, focused ? routeCss(pi) : '#fff4a0'),
+            s.tech ? `必殺 ${s.step}段` : `${s.step}段 ×${s.mult.toFixed(2)}`,
+            textStyle(focused ? 15 : 13, s.tech ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0'),
           )
           .setOrigin(1, 1);
         this.labelLayer.add(t);

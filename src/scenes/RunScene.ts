@@ -23,6 +23,7 @@ import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
 import { ElementFx } from '../ui/elementFx';
+import { getTechnique } from '../data/techniques';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -43,6 +44,14 @@ const TIME_BONUS_Y = 188;
 
 /** 段数の段階ごとの火花の色（5段・7段・10段） */
 const STEP_SPARK: Record<number, number> = { 2: 0xffc84a, 3: 0xff6a3a, 4: 0xffffff };
+
+/** 必殺技の色（属性ごと） */
+const TECH_COLOR: Partial<Record<string, number>> = {
+  fire: 0xff7a30,
+  thunder: 0xffe060,
+  ice: 0x9adfff,
+  physical: 0xffffff,
+};
 
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
@@ -584,6 +593,21 @@ export class RunScene extends Phaser.Scene {
             if (this.shake) this.cameras.main.shake(90 + strength * 90, 0.003 + strength * 0.007);
           }
           sfx('hit');
+          break;
+        }
+        case 'technique': {
+          const t = getTechnique(ev.id);
+          const p = this.enemyPos(ev.enemyId);
+          const color = t ? (TECH_COLOR[t.element] ?? 0xffffff) : 0xffffff;
+          this.field.heroSpecial(color);
+          if (p) {
+            this.elementFx.special(p.x, p.y, t?.element);
+            this.effects.slash(p.x, p.y, color, 3);
+            this.effects.flash(p.x, p.y, color, 4);
+          }
+          if (this.shake) this.cameras.main.shake(140, 0.009);
+          this.hitStop(JUICE.hitStopMs.big);
+          sfx('explode');
           break;
         }
         case 'enrage':

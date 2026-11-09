@@ -1,5 +1,6 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
 import { affixValue } from './affixes';
+import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, RARITY } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type { ChainPlan, ChainStep, Dir, ItemInstance, Loadout } from './types';
@@ -132,6 +133,17 @@ export function planChain(
       parentIndex: p.parentIndex,
       cell: p.cell,
     });
+    // 必殺技: 親をたどった直前の2つと自分が、決まった並びになっていれば
+    if (def.kind === 'attack') {
+      const me = steps[steps.length - 1]!;
+      const p1 = steps[me.parentIndex];
+      const p2 = p1 ? steps[p1.parentIndex] : undefined;
+      if (p1 && p2 && p1.parentIndex >= 0 && p2.parentIndex >= 0) {
+        const ids = [p2, p1, me].map((x) => items.get(x.uid)!.defId);
+        const t = TECHNIQUES.find((tq) => tq.seq.every((opts, k) => opts.includes(ids[k]!)));
+        if (t) me.tech = t.id;
+      }
+    }
     stepCounts.push(count);
     if (p.tMs > lastMs) lastMs = p.tMs;
     expand(steps.length - 1, p.tMs);

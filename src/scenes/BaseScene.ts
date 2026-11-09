@@ -33,6 +33,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
+import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
 import { otherPresetUse, presetMark } from '../core/presets';
 import { ItemList } from '../ui/itemList';
@@ -100,6 +101,13 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
       '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。',
       '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。',
       '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。',
+    ],
+  },
+  {
+    title: '必殺技',
+    lines: [
+      '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。',
+      ...TECHNIQUES.map((t) => `・${t.name}：${t.hint}`),
     ],
   },
   {

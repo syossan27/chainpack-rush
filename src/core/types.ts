@@ -68,6 +68,8 @@ export interface ChainStep {
   from: string | null; // どのアイテムから伝わったか（起点は null）
   parentIndex: number; // steps 内の親の添字（起点は -1）
   cell: number; // マス番号（行優先）
+  /** この一撃が必殺技になる（data/techniques.ts の id） */
+  tech?: string;
 }
 
 export interface ChainPlan {

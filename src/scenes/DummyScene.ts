@@ -17,6 +17,7 @@ import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
 import { getItemDef } from '../data/items';
 import { ElementFx } from '../ui/elementFx';
+import { getTechnique } from '../data/techniques';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -150,6 +151,16 @@ export class DummyScene extends Phaser.Scene {
           );
         }
         sfx('hit');
+      } else if (ev.type === 'technique') {
+        const t = getTechnique(ev.id);
+        const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
+        this.field.heroSpecial(0xffe060);
+        if (e) {
+          const p = this.field.enemyScreenPos(this.combat, e);
+          this.elementFx.special(p.x, p.y, t?.element);
+          this.effects.flash(p.x, p.y, 0xffffff, 4);
+        }
+        sfx('explode');
       } else if (ev.type === 'combo') {
         this.comboLabel.push(ev.label);
         sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');

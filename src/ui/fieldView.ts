@@ -182,6 +182,50 @@ export class FieldView {
     s.aim.setVisible(false);
   }
 
+  /** 必殺技: 勇者が前へ踏み込み、残像を引いて大きく構える（止めない。0.3秒ほど） */
+  heroSpecial(color: number): void {
+    const h = this.hero;
+    const baseX = RUN_LAYOUT.heroScreenX;
+    this.scene.tweens.killTweensOf(h);
+    h.x = baseX;
+    // 残像
+    for (let i = 0; i < 4; i++) {
+      const g = this.scene.add
+        .sprite(baseX + i * 12, h.y, h.texture.key, h.frame.name)
+        .setOrigin(h.originX, h.originY)
+        .setScale(h.scaleX * 1.05)
+        .setTintFill(color)
+        .setAlpha(0.55 - i * 0.1)
+        .setDepth(19.5);
+      this.scene.tweens.add({
+        targets: g,
+        x: g.x - 30,
+        alpha: 0,
+        delay: i * 40,
+        duration: 260,
+        onComplete: () => g.destroy(),
+      });
+    }
+    // 踏み込み → 戻る、一瞬大きく
+    this.scene.tweens.add({
+      targets: h,
+      x: baseX + 44,
+      duration: 90,
+      yoyo: true,
+      hold: 120,
+      ease: 'Quad.easeOut',
+    });
+    const sx = h.scaleX;
+    this.scene.tweens.add({
+      targets: h,
+      scaleX: sx * 1.18,
+      scaleY: sx * 1.18,
+      duration: 90,
+      yoyo: true,
+      hold: 120,
+    });
+  }
+
   /** 勇者のオーラ（置いている装備の強さで決まる） */
   setAura(tier: AuraTier): void {
     this.aura?.destroy();

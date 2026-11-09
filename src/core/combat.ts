@@ -21,6 +21,7 @@ import {
 } from '../config/balance';
 import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
+import { TECHNIQUE_MULT } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
 import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, planChain } from './chain';
@@ -104,6 +105,8 @@ export type CombatEvent =
       elite: EliteId | null;
     }
   | { type: 'enrage'; tick: number; enemyId: number }
+  /** 必殺技の一撃（演出用。ダメージは続く hit に入っている） */
+  | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
   | {
       type: 'chainStart';
       tick: number;
@@ -889,8 +892,12 @@ export class Combat {
       (def.critBonus ?? 0) +
       affixValue(inst, 'keen') / 100 +
       (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
+    // 必殺技: 決まった並びの3つ目。止めずに、この一撃だけ強くする
+    const techMult = s.tech ? TECHNIQUE_MULT : 1;
+    if (s.tech)
+      this.emit({ type: 'technique', tick: this.tick, id: s.tech, enemyId: aim.id, uid: s.uid });
     for (let h = 0; h < (def.hits ?? 1); h++)
-      this.strike(c, s.uid, inst, def, eff, aim, critChance);
+      this.strike(c, s.uid, inst, def, eff, aim, critChance, techMult);
   }
 
   /** 1回の攻撃（双剣は1段で2回呼ぶ）。1回目で狙いが倒れたら手前の敵へ */
@@ -902,6 +909,7 @@ export class Combat {
     eff: number,
     aim: EnemyState,
     critChance: number,
+    techMult = 1,
   ): void {
     if (!aim.alive) {
       const next = this.targetOrder()[0];
@@ -941,6 +949,7 @@ export class Combat {
           base *
             roll *
             (crit ? this.luck.critMult : 1) *
+            techMult *
             this.affixMult(c, inst, eff, t, statused) *
             100,
         ) / 100;

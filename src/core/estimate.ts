@@ -3,6 +3,7 @@
 // 狙いの切り替え（敵が倒れて段数が戻る）、範囲攻撃で巻き込む分、ボス特効は含めない。
 import { LUCK, STATUS } from '../config/balance';
 import { getItemDef } from '../data/items';
+import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
 import { computeDamage, findCombo } from './damage';
 import type { ChainPlan, ItemInstance, Status } from './types';
@@ -14,6 +15,8 @@ export interface RouteEstimate {
   fromCombos: number;
   /** コンボが起きる回数 */
   combos: number;
+  /** 成立している必殺技（id） */
+  techs: string[];
 }
 
 export function estimateRoute(
@@ -27,6 +30,7 @@ export function estimateRoute(
   let total = 0;
   let fromCombos = 0;
   let combos = 0;
+  const techs: string[] = [];
   for (const s of plan.steps) {
     if (s.step === null) continue;
     const inst = items.get(s.uid);
@@ -57,11 +61,12 @@ export function estimateRoute(
       LUCK.critChance + (def.critBonus ?? 0) + affixValue(inst, 'keen') / 100,
     );
     const critAvg = 1 + critChance * (LUCK.critMult - 1);
-    const hit = base * m * critAvg * (def.hits ?? 1);
+    const hit = base * m * critAvg * (def.hits ?? 1) * (s.tech ? TECHNIQUE_MULT : 1);
     total += hit;
     if (combo) fromCombos += hit - hit / combo.mult;
+    if (s.tech) techs.push(s.tech);
     if (def.applies) statuses.add(def.applies);
     if (def.appliesAll) for (const st of ['wet', 'oil', 'frozen'] as const) statuses.add(st);
   }
-  return { total, fromCombos, combos };
+  return { total, fromCombos, combos, techs };
 }
