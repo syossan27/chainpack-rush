@@ -11,7 +11,17 @@ interface NumberSlot {
   vy: number;
   punch: number; // 出た瞬間の拡大率（ポンと跳ねる）
   rainbow: boolean; // 10段以上: 色が虹色に巡る
+  /** 'arc': 弧を描いて飛び、地面で弾む（ダメージ）。'float': ふわっと上へ（文字） */
+  mode: 'arc' | 'float';
+  vx: number;
+  floor: number;
+  bounces: number;
+  spin: number;
+  squash: number; // 着地のつぶれ（時間で戻る）
 }
+
+/** ダメージ数字の重力（px/秒²） */
+const NUMBER_GRAVITY = 1500;
 
 /** 連鎖の段数ごとの数字の飾り（0: 1〜2段、1: 3〜4段、2: 5〜6段、3: 7〜9段、4: 10段以上） */
 const STEP_TIERS: {
@@ -43,6 +53,8 @@ export function damageColor(value: number): string {
 export class DamageNumbers {
   private readonly slots: NumberSlot[] = [];
   private next = 0;
+  /** 次に飛ばす向き（左右交互） */
+  private side = 1;
 
   constructor(scene: Phaser.Scene, depth: number) {
     for (let i = 0; i < UI.maxDamageNumbers; i++) {
@@ -51,12 +63,37 @@ export class DamageNumbers {
         .setOrigin(0.5)
         .setDepth(depth)
         .setVisible(false);
-      this.slots.push({ text, life: 0, age: 0, vy: 0, punch: 0, rainbow: false });
+      this.slots.push({
+        text,
+        life: 0,
+        age: 0,
+        vy: 0,
+        punch: 0,
+        rainbow: false,
+        mode: 'float',
+        vx: 0,
+        floor: 0,
+        bounces: 0,
+        spin: 0,
+        squash: 0,
+      });
     }
   }
 
-  /** ダメージが大きいほど文字を大きく、色も白→金→朱へ。出た瞬間にポンと跳ねる */
-  show(x: number, y: number, value: number, color?: string, crit = false, step = 0): void {
+  /**
+   * ダメージ数字: 出た瞬間に弾けるように大きくなり、左右へ弧を描いて飛び出し、地面で弾んで消える。
+   * 大きいほど・段が深いほど高く遠くへ飛び、回転する。左右は交互にして積み重ならないようにする。
+   * floorY: 弾む地面の高さ（省略時は出た位置の少し下）
+   */
+  show(
+    x: number,
+    y: number,
+    value: number,
+    color?: string,
+    crit = false,
+    step = 0,
+    floorY?: number,
+  ): void {
     const s = this.slots[this.next]!;
     this.next = (this.next + 1) % this.slots.length;
     // 連鎖の段数が深いほど、数字が大きく・色も豪華に（3段・5段・7段・10段で段階）
@@ -76,14 +113,22 @@ export class DamageNumbers {
       .setStroke(st.stroke, st.strokeWidth)
       .setShadow(0, 0, st.glow ?? '#000000', st.glow ? 12 : 0, true, true)
       .setColor(color ?? (crit ? '#ff7ad0' : (st.color ?? damageColor(value))))
-      .setPosition(x + (Math.random() - 0.5) * 36, y - (big ? 20 : 0))
-      .setAngle(big ? (Math.random() - 0.5) * 16 : 0)
+      .setPosition(x + (Math.random() - 0.5) * 20, y)
+      .setAngle(0)
       .setAlpha(1)
       .setVisible(true);
-    s.life = big ? 1.0 : 0.8;
+    this.side = -this.side;
+    const power = (big ? 1.25 : 1) + tier * 0.12 + (crit ? 0.25 : 0);
+    s.mode = 'arc';
+    s.vx = this.side * (70 + Math.random() * 90) * power;
+    s.vy = -(330 + Math.random() * 90) * power;
+    s.floor = floorY ?? y + 90;
+    s.bounces = 0;
+    s.spin = big ? this.side * (30 + Math.random() * 40) : 0;
+    s.squash = 0;
+    s.life = big ? 1.25 : 1.0;
     s.age = 0;
-    s.vy = big ? -50 : -80;
-    s.punch = crit || value >= JUICE.hugeHit ? 1.0 : big ? 0.7 : 0.35;
+    s.punch = crit || value >= JUICE.hugeHit ? 1.2 : big ? 0.9 : 0.55;
     s.punch += st.punch;
   }
 
@@ -91,8 +136,12 @@ export class DamageNumbers {
     const s = this.slots[this.next]!;
     this.next = (this.next + 1) % this.slots.length;
     s.rainbow = false;
+    s.mode = 'float';
+    s.spin = 0;
+    s.squash = 0;
     s.text
       .setStroke('#1a1424', 6)
+      .setAngle(0)
       .setShadow(0, 0, '#000000', 0)
       .setText(label)
       .setFontSize(size)
@@ -111,8 +160,36 @@ export class DamageNumbers {
       if (s.life <= 0) continue;
       s.life -= dt;
       s.age += dt;
-      s.text.y += s.vy * dt;
-      s.text.setScale(1 + s.punch * Math.max(0, 1 - s.age / 0.14));
+      if (s.mode === 'arc') {
+        // 放物線。地面で2回まで弾む（弾むたびに弱く）
+        s.vy += NUMBER_GRAVITY * dt;
+        s.text.x += s.vx * dt;
+        s.text.y += s.vy * dt;
+        if (s.text.y > s.floor && s.vy > 0) {
+          s.text.y = s.floor;
+          if (s.bounces < 2) {
+            s.vy = -s.vy * 0.42;
+            s.vx *= 0.6;
+            s.spin *= 0.4;
+            s.squash = 1;
+            s.bounces++;
+          } else {
+            s.vy = 0;
+            s.vx = 0;
+            s.spin = 0;
+          }
+        }
+        s.text.angle += s.spin * dt;
+        // 弾んだら傾きを戻して、読みやすい向きに落ち着かせる
+        if (s.bounces >= 1) s.text.angle *= 0.8;
+        s.squash = Math.max(0, s.squash - dt * 8);
+        // 出た瞬間: 大きく弾けて、ぷるんと揺れながら戻る
+        const pop = 1 + s.punch * Math.exp(-s.age * 9) * Math.cos(s.age * 26);
+        s.text.setScale(pop * (1 + s.squash * 0.25), pop * (1 - s.squash * 0.3));
+      } else {
+        s.text.y += s.vy * dt;
+        s.text.setScale(1 + s.punch * Math.max(0, 1 - s.age / 0.14));
+      }
       s.text.setAlpha(Math.min(1, s.life / 0.3));
       if (s.rainbow) {
         const c = Phaser.Display.Color.HSVToRGB((s.age * 1.5) % 1, 0.55, 1) as Phaser.Display.Color;

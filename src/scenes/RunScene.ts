@@ -551,6 +551,7 @@ export class RunScene extends Phaser.Scene {
             ev.combo ? COMBO_COLOR[ev.combo] : undefined,
             ev.crit,
             ev.step,
+            RUN_LAYOUT.footY - 8,
           );
           if (ev.crit) this.effects.flash(p.x, p.y, 0xff7ad0, 2.2);
           // 深い段ほど、数字のまわりに火花と光

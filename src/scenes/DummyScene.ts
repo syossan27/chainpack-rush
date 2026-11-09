@@ -131,7 +131,15 @@ export class DummyScene extends Phaser.Scene {
         if (!e) continue;
         const p = this.field.enemyScreenPos(this.combat, e);
         this.field.flashEnemy(e.id, now);
-        this.numbers.show(p.x, p.y, ev.damage, ev.combo ? '#fff060' : undefined, ev.crit, ev.step);
+        this.numbers.show(
+          p.x,
+          p.y,
+          ev.damage,
+          ev.combo ? '#fff060' : undefined,
+          ev.crit,
+          ev.step,
+          RUN_LAYOUT.footY - 8,
+        );
         this.effects.burst(p.x, p.y, 0xffffff, 3, 160);
         sfx('hit');
       } else if (ev.type === 'combo') {

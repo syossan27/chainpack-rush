@@ -340,7 +340,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '時の砂',
     kind: 'consumable',
     effect: 'addTime',
-    description: '出撃時間を5秒のばす（上限60秒）。',
+    description: '出撃時間を5秒のばす。',
   },
   {
     id: 'bomb',

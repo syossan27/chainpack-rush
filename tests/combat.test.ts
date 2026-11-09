@@ -332,7 +332,7 @@ describe('時間の延長', () => {
     expect(c.maxTicks).toBe(Math.round((SIM.runDuration + gained) * SIM.ticksPerSecond));
   });
 
-  it('延長は上限60秒で止まる', () => {
+  it('延長に上限はない（60秒を超えて積み上がる）', () => {
     const { loadout, items } = strong();
     const c = new Combat({
       seed: 1,
@@ -342,7 +342,9 @@ describe('時間の延長', () => {
       hero: { ...hero, runTime: 58 },
     });
     while (!c.ended && c.bossesDefeated < 1) c.step();
-    expect(c.maxTicks).toBe(TIME_BONUS.maxRunTime * SIM.ticksPerSecond);
+    expect(Number.isFinite(TIME_BONUS.maxRunTime)).toBe(false);
+    expect(c.maxTicks).toBeGreaterThan(60 * SIM.ticksPerSecond);
+    expect(c.maxTicks).toBe((58 + c.stats.timeGained) * SIM.ticksPerSecond);
   });
 
   it('使った消耗品はラン結果に残り、確定時に倉庫と枠から消える', () => {

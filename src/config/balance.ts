@@ -189,7 +189,8 @@ export const BOSS = {
 export const TIME_BONUS = {
   boss: 8, // ボス撃破
   sweep: 1.5, // 1回の連鎖で群れを丸ごと倒した（一網打尽）
-  maxRunTime: 60, // 強化・延長をすべて込みにした出撃時間の上限（秒）
+  /** 強化・延長をすべて込みにした出撃時間の上限（秒）。上限なし（以前は60秒） */
+  maxRunTime: Number.POSITIVE_INFINITY,
 } as const;
 
 export const CONSUMABLE = {
