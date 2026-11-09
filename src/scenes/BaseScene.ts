@@ -293,13 +293,18 @@ export class BaseScene extends Phaser.Scene {
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '倉庫'));
     const eq = equippedUids(save);
     // タップで能力の詳細。売却はカードから
-    const openDetail = (it: ItemInstance) =>
+    const openDetail = (it: ItemInstance): void => {
       showItemDetail(this, it, {
+        onLockChange: () => {
+          this.render();
+          openDetail(it);
+        },
         actions: [
           {
-            label: `売る ${sellPrice(it)}G`,
+            label: it.locked ? 'ロック中' : `売る ${sellPrice(it)}G`,
             skin: 'gold',
             icon: 'coin',
+            disabled: !!it.locked,
             onTap: () => {
               const sell = () => {
                 const g = sellItems(save, [it.uid]);
@@ -322,6 +327,7 @@ export class BaseScene extends Phaser.Scene {
           },
         ],
       });
+    };
     // まとめて売る: 選ぶモードではタップで選択／解除し、最後にまとめて売る
     const pick = this.sellPick;
     const stored = () => getSave().inventory.filter((i) => !eq.has(i.uid));
@@ -332,6 +338,11 @@ export class BaseScene extends Phaser.Scene {
       {
         onTap: (it) => {
           if (!pick) return openDetail(it);
+          if (it.locked) {
+            sfx('error');
+            this.showToast('ロック中の装備は売れません', true);
+            return;
+          }
           if (pick.has(it.uid)) pick.delete(it.uid);
           else pick.add(it.uid);
           sfx('click');
@@ -421,7 +432,7 @@ export class BaseScene extends Phaser.Scene {
       const below = (max: Rarity) =>
         stored().filter((i) => {
           const d = getItemDef(i.defId);
-          if (d.kind === 'consumable' || d.artifact) return false;
+          if (d.kind === 'consumable' || d.artifact || i.locked) return false;
           if (this.keepAffixes && (i.affixes?.length ?? 0) > 0) return false;
           return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
         });
@@ -447,7 +458,12 @@ export class BaseScene extends Phaser.Scene {
             openBulk();
           },
         });
-        choiceDialog(this, '一括売却', choices, '装備中・消耗品・アーティファクトは売りません');
+        choiceDialog(
+          this,
+          '一括売却',
+          choices,
+          '装備中・ロック中・消耗品・アーティファクトは売りません',
+        );
       };
       this.root.add(
         new Button(this, W / 2 + 166, 1060, '一括売却', openBulk, {

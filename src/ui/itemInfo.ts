@@ -4,9 +4,9 @@ import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
 import { simulateChain } from '../core/chain';
 import { computeDamage } from '../core/damage';
-import { heroStats, sellPrice } from '../core/economy';
+import { heroStats, sellPrice, toggleLock } from '../core/economy';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
-import { getSave } from '../platform/store';
+import { getSave, persist } from '../platform/store';
 import { originLabel } from './backpackView';
 import type { IconName } from './kit/icons';
 import type { ButtonSkin } from './kit/skin';
@@ -100,6 +100,8 @@ export interface DetailOptions {
   /** バックパックに置かれているとき: 連鎖の中の位置。undefined なら配置外、null なら届かない */
   context?: ChainContext | null;
   onClose?: () => void;
+  /** ロックを切り替えたあと（一覧や売るボタンを描き直す） */
+  onLockChange?: () => void;
 }
 
 const CARD_W = W - 48;
@@ -289,6 +291,30 @@ export function showItemDetail(
   const meta = [`売却 ${sellPrice(it)}G`];
   if (it.rerollCount > 0) meta.push(`付け直し ${it.rerollCount}回`);
   card.add(scene.add.text(left, y, meta.join('　'), textStyle(18, COLORS.textDim)));
+  // ロック（間違って売らないように）。消耗品にはない
+  if (def.kind !== 'consumable') {
+    const lockLabel = () => (isLocked() ? 'ロック中' : 'ロックする');
+    const isLocked = () => !!save.inventory.find((i) => i.uid === it.uid)?.locked;
+    const lockBtn = new Button(
+      scene,
+      W / 2 + CARD_W / 2 - PAD - 100,
+      y + 10,
+      lockLabel(),
+      () => {
+        if (!toggleLock(save, it.uid)) return;
+        it.locked = isLocked() || undefined;
+        if (!it.locked) delete it.locked;
+        persist();
+        lockBtn.setText(lockLabel());
+        if (opts.onLockChange) {
+          close();
+          opts.onLockChange();
+        }
+      },
+      { width: 200, height: 52, fontSize: 20, skin: 'blue', icon: 'lock' },
+    );
+    card.add(lockBtn);
+  }
   y += 44;
 
   // 操作

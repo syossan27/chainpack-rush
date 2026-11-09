@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
+import { iconTex } from './kit/icons';
 import { SKIN, SLICE, tileKey } from './kit/skin';
 
 const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
@@ -65,6 +66,13 @@ export class ItemIcon extends Phaser.GameObjects.Container {
       });
       this.once('destroy', () => ev.remove());
       this.addAt(ring, 1);
+    }
+    // ロック中は右上に鍵
+    if (item.locked) {
+      const lock = scene.add
+        .image(size / 2 - 12, -size / 2 + 12, iconTex('lock'))
+        .setScale(Math.max(1.5, size / 60));
+      this.add(lock);
     }
     // 追加効果の数を左下に小さな星で
     const n = item.affixes?.length ?? 0;

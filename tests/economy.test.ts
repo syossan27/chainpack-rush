@@ -13,6 +13,7 @@ import {
   specifyExits,
   storageCapacity,
   storageCount,
+  toggleLock,
   upgradeCost,
 } from '../src/core/economy';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
@@ -232,5 +233,44 @@ describe('loadout', () => {
     expect(s.loadout.originOrder).toEqual([]);
     expect(s.loadout.consumables).toEqual([]);
     expect(s.inventory).toHaveLength(n);
+  });
+});
+
+describe('ロック', () => {
+  it('ロック中は売れない（まとめて渡しても飛ばす）。あふれた分の売却候補にも入らない。消耗品はロックできない', () => {
+    const s = createInitialSave();
+    const sword = s.inventory.find((i) => i.defId === 'sword')!;
+    const axe = s.inventory.find((i) => i.defId === 'axe')!;
+    const potion = s.inventory.find((i) => i.defId === 'potion')!;
+    expect(toggleLock(s, sword.uid)).toBe(true);
+    expect(sword.locked).toBe(true);
+    expect(toggleLock(s, potion.uid)).toBe(false);
+    const gold = sellItems(s, [sword.uid, axe.uid]);
+    expect(gold).toBe(5);
+    expect(s.inventory.some((i) => i.uid === sword.uid)).toBe(true);
+    expect(s.inventory.some((i) => i.uid === axe.uid)).toBe(false);
+    // 読み込み後も残る
+    expect(
+      deserializeSave(serializeSave(s)).inventory.find((i) => i.uid === sword.uid)!.locked,
+    ).toBe(true);
+    // 解除すると売れる
+    toggleLock(s, sword.uid);
+    expect(sword.locked).toBeUndefined();
+    expect(sellItems(s, [sword.uid])).toBe(5);
+  });
+
+  it('あふれた分の売却はロック中を避ける', () => {
+    const s = createInitialSave();
+    const drops = Array.from({ length: 45 }, (_, i) => ({
+      uid: `d${i}`,
+      defId: 'sword',
+      rarity: 'common' as const,
+      exits: [],
+      rerollCount: 0,
+      ...(i < 10 ? { locked: true } : {}),
+    }));
+    acceptLoot(s, drops);
+    const plan = overflowSellPlan(s);
+    expect(plan.uids.some((u) => ['d0', 'd1', 'd9'].includes(u))).toBe(false);
   });
 });

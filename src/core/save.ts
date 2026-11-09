@@ -96,6 +96,7 @@ function validItem(v: unknown): v is ItemInstance {
   if (!RARITIES.includes(v.rarity as Rarity)) return false;
   if (!Array.isArray(v.exits) || !v.exits.every((d) => DIRS.includes(d as Dir))) return false;
   if (!isNum(v.rerollCount)) return false;
+  if (v.locked !== undefined && typeof v.locked !== 'boolean') return false;
   if (v.affixes !== undefined && (!Array.isArray(v.affixes) || !v.affixes.every(isAffix)))
     return false;
   try {

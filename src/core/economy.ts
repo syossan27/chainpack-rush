@@ -70,6 +70,15 @@ export function buyUpgrade(save: SaveData, id: UpgradeId): boolean {
   return true;
 }
 
+/** ロックの切り替え。消耗品はロックしない */
+export function toggleLock(save: SaveData, uid: string): boolean {
+  const it = save.inventory.find((i) => i.uid === uid);
+  if (!it || getItemDef(it.defId).kind === 'consumable') return false;
+  if (it.locked) delete it.locked;
+  else it.locked = true;
+  return true;
+}
+
 export function sellPrice(item: ItemInstance): number {
   const def = getItemDef(item.defId);
   if (def.kind === 'consumable') return LOOT.consumableSell;
@@ -91,8 +100,10 @@ export function storageCount(save: SaveData): number {
   return save.inventory.filter((i) => !eq.has(i.uid)).length;
 }
 
+/** 売る。ロック中のものは渡されても売らない */
 export function sellItems(save: SaveData, uids: readonly string[]): number {
-  const set = new Set(uids);
+  const locked = new Set(save.inventory.filter((i) => i.locked).map((i) => i.uid));
+  const set = new Set(uids.filter((u) => !locked.has(u)));
   let total = 0;
   save.inventory = save.inventory.filter((it) => {
     if (!set.has(it.uid)) return true;
@@ -115,7 +126,7 @@ export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number
   if (over <= 0) return { uids: [], gold: 0 };
   const eq = equippedUids(save);
   const picks = save.inventory
-    .filter((i) => !eq.has(i.uid))
+    .filter((i) => !eq.has(i.uid) && !i.locked)
     .map((i) => ({ i, consumable: getItemDef(i.defId).kind === 'consumable' ? 1 : 0 }))
     .sort((a, b) => a.consumable - b.consumable || sellPrice(a.i) - sellPrice(b.i))
     .slice(0, over)
