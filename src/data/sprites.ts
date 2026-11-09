@@ -51,7 +51,8 @@ export interface SpriteAnim {
   originY?: number;
 }
 
-export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death';
+/** special: 必殺技のモーション（勇者。未登録なら通常の攻撃＋踏み込みで代用） */
+export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special';
 
 export interface SpriteDef {
   key: string;
@@ -331,6 +332,9 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originX: 41 / 96,
         originY: 71 / 80,
       },
+      // 必殺技のモーション（未登録なら通常の攻撃＋踏み込み・残像で代用）。用意したら下を有効にする:
+      // special: { file: 'hero/hero_special.png', frames: 10, fps: 14, loop: false,
+      //   frameWidth: 160, frameHeight: 112, originX: 60 / 160, originY: 96 / 112 },
       attack: {
         file: 'hero/hero_attack.png',
         frames: 9,

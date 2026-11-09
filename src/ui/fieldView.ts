@@ -47,6 +47,8 @@ export class FieldView {
   private readonly byId = new Map<number, EnemySlot>();
   private heroHurtUntil = 0;
   private aura: HeroAura | null = null;
+  /** 必殺モーションを続ける時刻 */
+  private specialUntil = 0;
   private lastNow = 0;
   /** 直前のフレームの連鎖（新しい連鎖の始まりを見分ける） */
   private lastChain: Combat['chain'] = null;
@@ -185,9 +187,19 @@ export class FieldView {
   /** 必殺技: 勇者が前へ踏み込み、残像を引いて大きく構える（止めない。0.3秒ほど） */
   heroSpecial(color: number): void {
     const h = this.hero;
+    // 専用の必殺モーションがあれば、振り切るまでそれを使う（update で上書きしない）
+    const def = UNIT_SPRITES.hero!;
+    const sp = def.anims?.special;
+    const hasSpecial = !!sp && this.scene.anims.exists(animKey('hero', 'special'));
+    if (sp && hasSpecial) {
+      this.specialUntil = this.scene.time.now + (sp.frames / sp.fps) * 1000;
+      this.playHeroAnim(['special'], true);
+    }
     const baseX = RUN_LAYOUT.heroScreenX;
     this.scene.tweens.killTweensOf(h);
     h.x = baseX;
+    // 続けて発動しても大きさがずれないよう、元の大きさに戻してから
+    h.setScale(def.displayScale);
     // 残像
     for (let i = 0; i < 4; i++) {
       const g = this.scene.add
@@ -206,6 +218,8 @@ export class FieldView {
         onComplete: () => g.destroy(),
       });
     }
+    // 専用モーションがあるときは、踏み込みと拡大はモーションに任せる（残像だけ重ねる）
+    if (hasSpecial) return;
     // 踏み込み → 戻る、一瞬大きく
     this.scene.tweens.add({
       targets: h,
@@ -260,7 +274,13 @@ export class FieldView {
     const attackKey = animKey('hero', 'attack');
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
     const state: UnitAnimName =
-      c.chain !== null || swinging ? 'attack' : c.running ? 'run' : 'idle';
+      now < this.specialUntil
+        ? 'special'
+        : c.chain !== null || swinging
+          ? 'attack'
+          : c.running
+            ? 'run'
+            : 'idle';
     // 連鎖が続いている間は、振り終わるたびに次の一振りを始める（長い連鎖でも止まらない）
     const swingEnded =
       c.chain !== null &&
@@ -378,7 +398,10 @@ export class FieldView {
     // 原点だけ切り替え、displayScale（×2・最近傍）はそのまま。140px の攻撃コマを 64px に縮めない
     for (const sprite of [this.hero, this.heroGlow]) {
       sprite.setOrigin(originX, originY);
-      if (sprite.anims.currentAnim?.key !== key || (restart && chosen === 'attack'))
+      if (
+        sprite.anims.currentAnim?.key !== key ||
+        (restart && (chosen === 'attack' || chosen === 'special'))
+      )
         sprite.play(key);
     }
     return chosen;

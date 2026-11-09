@@ -20,7 +20,7 @@ export const TECHNIQUE_MULT = 2.5;
 export const TECHNIQUES: readonly TechniqueDef[] = [
   {
     id: 'crimson',
-    name: '紅蓮爆砕',
+    name: 'クリムゾン・バースト',
     seq: [['oil_bottle'], ['torch', 'flame_staff'], ['flame_staff']],
     element: 'fire',
     hint: '油瓶 → 松明か炎の杖 → 炎の杖',
@@ -28,7 +28,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
   },
   {
     id: 'thunder',
-    name: '雷霆三連',
+    name: 'トライ・サンダー',
     seq: [
       ['canteen', 'raincloud_staff'],
       ['thunder_staff', 'thunder_spear', 'thunder_bell'],
@@ -40,7 +40,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
   },
   {
     id: 'frost',
-    name: '氷砕連撃',
+    name: 'フロスト・ブレイカー',
     seq: [
       ['ice_sword', 'frost_staff'],
       ['hammer', 'iron_ball'],
@@ -52,7 +52,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
   },
   {
     id: 'triple',
-    name: '三段斬り',
+    name: 'トリプル・スラッシュ',
     seq: [
       ['sword', 'dagger'],
       ['sword', 'dagger'],
@@ -64,7 +64,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
   },
   {
     id: 'whirl',
-    name: '旋風薙ぎ',
+    name: 'サイクロン・アックス',
     seq: [['axe'], ['axe', 'war_axe'], ['war_axe']],
     element: 'physical',
     hint: '斧 → 斧か大斧 → 大斧',
