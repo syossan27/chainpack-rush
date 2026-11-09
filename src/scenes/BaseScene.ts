@@ -118,7 +118,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     lines: [
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
-      '・同じ装備・同じレアリティを3つ集めると、詳細カードの「合成」で1つ上のレアリティにできます（コモン→レア20G、レア→エピック100G、エピック→レジェンダリー500G）。追加効果と出口の向きは新しく決まります。',
+      '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティにできます（コモン→レア20G、レア→エピック100G、エピック→レジェンダリー500G）。追加効果と出口の向きは新しく決まります。',
     ],
   },
 ];
@@ -132,6 +132,8 @@ export class BaseScene extends Phaser.Scene {
   private specify: Dir[] = [];
   /** 倉庫の「まとめて売る」で選んでいる uid（null = 選ぶモードではない） */
   private sellPick: Set<string> | null = null;
+  /** 鍛冶屋のモード */
+  private smithMode: 'reorient' | 'synth' = 'reorient';
   /** 一括売却で、追加効果（✦）つきの装備を残すか */
   private keepAffixes = true;
   private toast: Phaser.GameObjects.Text | null = null;
@@ -545,8 +547,40 @@ export class BaseScene extends Phaser.Scene {
 
   // ---- 鍛冶屋（向きの付け直し） ----
   private renderSmith(): void {
+    // 上の切り替え: 付け直し／合成
+    const modes: ['reorient' | 'synth', string][] = [
+      ['reorient', '向きの付け直し'],
+      ['synth', '合成'],
+    ];
+    modes.forEach(([m, label], i) => {
+      this.root.add(
+        new Button(
+          this,
+          W / 2 + (i === 0 ? -168 : 168),
+          CONTENT_TOP + 40,
+          label,
+          () => {
+            if (this.smithMode === m) return;
+            this.smithMode = m;
+            this.selected = null;
+            this.specify = [];
+            this.render();
+          },
+          {
+            width: 320,
+            height: 66,
+            fontSize: 24,
+            skin: this.smithMode === m ? 'gold' : 'gray',
+            icon: m === 'synth' ? 'up' : 'anvil',
+          },
+        ),
+      );
+    });
+    if (this.smithMode === 'synth') {
+      this.renderSynth();
+      return;
+    }
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '鍛冶屋'));
     const eq = equippedUids(save);
     const list = new ItemList(
       this,
@@ -821,29 +855,153 @@ export class BaseScene extends Phaser.Scene {
       icon: 'up',
       disabled: !ok,
       onTap: () => {
-        if (!ok || !plan.to) {
+        if (!ok) {
           if (plan.reason) this.showToast(plan.reason, true);
           reopen();
           return;
         }
-        const def = getItemDef(it.defId);
-        confirmDialog(
-          this,
-          '合成',
-          `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、\n${RARITY_NAMES[plan.to]}を1つ作ります（${plan.cost}G）。\n追加効果と出口の向きは新しく決まります`,
-          '合成する',
-          () => {
-            const save = getSave();
-            const made = synthesize(save, it.uid, new Rng(randomSeed()));
-            if (!made) return;
-            persist();
-            this.render();
-            this.showSynthResult(made);
-          },
-          'blue',
-        );
+        this.confirmSynth(it);
       },
     };
+  }
+
+  /** 合成の確認 → 合成 → 結果の演出 */
+  private confirmSynth(it: ItemInstance): void {
+    const plan = synthPlan(getSave(), it.uid);
+    if (plan.reason || !plan.to) {
+      if (plan.reason) this.showToast(plan.reason, true);
+      return;
+    }
+    const def = getItemDef(it.defId);
+    confirmDialog(
+      this,
+      '合成',
+      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、\n${RARITY_NAMES[plan.to]}を1つ作ります（${plan.cost}G）。\n追加効果と出口の向きは新しく決まります`,
+      '合成する',
+      () => {
+        const save = getSave();
+        const made = synthesize(save, it.uid, new Rng(randomSeed()));
+        if (!made) return;
+        persist();
+        // 鍛冶屋では、できた装備を選んだままにして続けて合成できるように
+        if (this.page === 'smith') this.selected = made.uid;
+        this.render();
+        this.showSynthResult(made);
+      },
+      'blue',
+    );
+  }
+
+  /** 鍛冶屋の合成モード: 同じ装備・同じレアリティが揃っているものに数を出す */
+  private renderSynth(): void {
+    const save = getSave();
+    const eq = equippedUids(save);
+    const usable = (i: ItemInstance) => !eq.has(i.uid) && !i.locked;
+    const groupCount = (i: ItemInstance) =>
+      save.inventory.filter((o) => o.defId === i.defId && o.rarity === i.rarity && usable(o))
+        .length;
+    const candidates = save.inventory.filter((i) => {
+      const d = getItemDef(i.defId);
+      return d.kind !== 'consumable' && !d.artifact && i.rarity !== 'legendary';
+    });
+    const list = new ItemList(
+      this,
+      CONTENT_TOP + 84,
+      610,
+      {
+        onTap: (it) => {
+          this.selected = it.uid;
+          this.render();
+        },
+        onLongPress: (it) => showItemDetail(this, it),
+      },
+      (it) => {
+        if (eq.has(it.uid)) return '装備中';
+        if (it.locked) return 'ロック';
+        const n = groupCount(it);
+        return n >= 3 ? `${n}つ` : null;
+      },
+    );
+    list.setItems(candidates);
+    list.setSelected(this.selected);
+    this.root.add(list);
+
+    const py = 640;
+    this.root.add(panel(this, W / 2, py + 220, W - 30, 450, 'paper'));
+    const it = save.inventory.find((i) => i.uid === this.selected);
+    if (!it || !candidates.includes(it)) {
+      this.root.add(
+        this.add
+          .image(W / 2, py + 150, 'ic_up')
+          .setScale(7)
+          .setAlpha(0.5),
+      );
+      this.root.add(ink(this, W / 2, py + 250, '合成する装備を選んでください', 26).setOrigin(0.5));
+      this.root.add(
+        ink(
+          this,
+          W / 2,
+          py + 292,
+          '同じ装備・同じレアリティを3つで、1つ上のレアリティに',
+          20,
+          '#7a5a30',
+        ).setOrigin(0.5),
+      );
+      this.root.add(
+        ink(
+          this,
+          W / 2,
+          py + 326,
+          '「○つ」の印は、3つ以上揃っている装備です',
+          18,
+          '#7a5a30',
+        ).setOrigin(0.5),
+      );
+      return;
+    }
+    const def = getItemDef(it.defId);
+    const plan = synthPlan(save, it.uid);
+    this.root.add(new ItemIcon(this, 110, py + 90, it, 120));
+    this.root.add(this.add.text(190, py + 40, def.name, textStyle(34, rarityCss(it.rarity))));
+    this.root.add(
+      ink(
+        this,
+        190,
+        py + 92,
+        plan.to
+          ? `${RARITY_NAMES[it.rarity]} ×3 → ${RARITY_NAMES[plan.to]} ×1`
+          : 'これ以上のレアリティはありません',
+        24,
+        '#5a3a20',
+      ),
+    );
+    this.root.add(
+      ink(
+        this,
+        190,
+        py + 128,
+        `使える数: ${groupCount(it)}つ（装備中・ロック中は使えない）`,
+        18,
+        '#7a5a30',
+      ),
+    );
+    if (plan.to) {
+      this.root.add(
+        ink(this, 50, py + 190, '追加効果と出口の向きは新しく決まります', 20, '#7a5a30'),
+      );
+    }
+    this.root.add(
+      new Button(
+        this,
+        W / 2,
+        py + 290,
+        plan.to ? `合成する ${plan.cost}G` : '合成できません',
+        () => this.confirmSynth(it),
+        { width: 420, height: 88, fontSize: 30, skin: 'blue', icon: 'up', disabled: !!plan.reason },
+      ),
+    );
+    if (plan.reason)
+      this.root.add(ink(this, W / 2, py + 360, plan.reason, 22, '#a03020').setOrigin(0.5));
   }
 
   /** 合成の結果: 宝箱から出てくる演出。開いたあとタップで閉じる */

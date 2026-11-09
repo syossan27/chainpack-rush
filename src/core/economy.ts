@@ -212,7 +212,15 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
   if (def.kind === 'consumable') return none('消耗品は合成できません');
   if (def.artifact || !to) return none('これ以上のレアリティはありません');
   const eq = equippedUids(save);
-  if (eq.has(uid) || it.locked) return none('装備中・ロック中は合成に使えません');
+  const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
+  if (eq.has(uid) || it.locked)
+    return {
+      uids: [],
+      have: 0,
+      to,
+      cost,
+      reason: eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
+    };
   const mates = save.inventory
     .filter(
       (i) =>
@@ -227,7 +235,6 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
         (a.affixes?.length ?? 0) - (b.affixes?.length ?? 0) || a.rerollCount - b.rerollCount,
     );
   const uids = [uid, ...mates.slice(0, SYNTH.count - 1).map((i) => i.uid)];
-  const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
   const reason =
     uids.length < SYNTH.count
       ? `同じ装備があと${SYNTH.count - uids.length}つ必要`
