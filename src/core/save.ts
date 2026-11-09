@@ -24,7 +24,14 @@ export interface SaveData {
   upgrades: Record<UpgradeId, number>;
   progress: { unlocked: string[]; best: Record<string, number> };
   stats: { runs: number; maxStep: number; maxDamage: number };
-  settings: { volume: number; haptics: boolean; shake: boolean; gameSpeed: number };
+  settings: {
+    volume: number;
+    haptics: boolean;
+    shake: boolean;
+    gameSpeed: number;
+    /** 配置画面でルートの線・段数を出すか */
+    showRoutes: boolean;
+  };
 }
 
 export function emptyLoadout(
@@ -78,7 +85,7 @@ export function createInitialSave(): SaveData {
     },
     progress: { unlocked: [REGIONS[0]!.id], best: {} },
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
-    settings: { volume: 0.7, haptics: true, shake: true, gameSpeed: 1 },
+    settings: { volume: 0.7, haptics: true, shake: true, gameSpeed: 1, showRoutes: true },
   };
 }
 
@@ -159,6 +166,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...(isObj(data.settings) ? (data.settings as Partial<SaveData['settings']>) : {}),
       },
     };
+    if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

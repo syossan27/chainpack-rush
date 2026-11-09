@@ -125,7 +125,8 @@ export class LoadoutScene extends Phaser.Scene {
     const t0 = performance.now();
     const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
-    this.view.showPreview(preview, this.focus);
+    if (save.settings.showRoutes) this.view.showPreview(preview, this.focus);
+    else this.view.showPlain(preview);
     const ms = performance.now() - t0;
     this.buildRouteBar(preview);
     this.info.setText(`タップで能力・ドラッグで移動（計算 ${ms.toFixed(1)}ms）`);
@@ -176,16 +177,24 @@ export class LoadoutScene extends Phaser.Scene {
       bar.add(bg);
       return bg;
     };
+    const shown = getSave().settings.showRoutes;
     let x = 30;
-    chip(x, 72, this.focus === null, () => this.setFocus(null));
+    chip(x, 72, shown && this.focus === null, () => this.setFocus(null));
     bar.add(
       this.add
-        .text(x + 36, -2, '全部', textStyle(18, this.focus === null ? '#fff6d0' : COLORS.text))
+        .text(
+          x + 36,
+          -2,
+          '全部',
+          textStyle(18, shown && this.focus === null ? '#fff6d0' : COLORS.text),
+        )
         .setOrigin(0.5),
     );
     x += 78;
     preview.plans.forEach((_, i) => {
-      chip(x, 50, this.focus === i, () => this.setFocus(this.focus === i ? null : i));
+      chip(x, 50, shown && this.focus === i, () =>
+        this.setFocus(shown && this.focus === i ? null : i),
+      );
       bar.add(this.add.circle(x + 25, -1, 14, routeColor(i)).setStrokeStyle(3, 0x0c0a12));
       bar.add(
         this.add
@@ -196,7 +205,26 @@ export class LoadoutScene extends Phaser.Scene {
       );
       x += 54;
     });
+    // ルートの線・段数を消す／出す
+    chip(x, 76, !shown, () => {
+      const save = getSave();
+      save.settings.showRoutes = !save.settings.showRoutes;
+      persist();
+      this.refresh();
+    });
+    bar.add(
+      this.add
+        .text(
+          x + 38,
+          -2,
+          shown ? '線を消す' : '線なし',
+          textStyle(15, !shown ? '#fff6d0' : COLORS.text),
+        )
+        .setOrigin(0.5),
+    );
+    x += 82;
     const summary = (() => {
+      if (!shown) return { text: '番号を選ぶと表示に戻す', color: COLORS.textDim };
       if (preview.plans.length === 0)
         return { text: '起点を置いてください', color: COLORS.textWarn };
       if (this.focus === null)
@@ -215,6 +243,12 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   private setFocus(i: number | null): void {
+    // 線を消していたら、番号・全部を選んだときに表示へ戻す
+    const save = getSave();
+    if (!save.settings.showRoutes) {
+      save.settings.showRoutes = true;
+      persist();
+    }
     this.focus = i;
     this.refresh();
   }

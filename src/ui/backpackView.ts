@@ -238,6 +238,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
     });
   }
 
+  /** ルートの線・段数を出さない表示（届かない装備のグレーと、起点の番号だけ） */
+  showPlain(p: ChainPreview): void {
+    this.clearPreview();
+    for (const [cell, icon] of this.icons) icon.setDimmed(p.unreachable.has(cell));
+  }
+
   clearPreview(): void {
     this.lineG.clear();
     this.flowEdges = [];
