@@ -203,9 +203,14 @@ export class FieldView {
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
     const state: UnitAnimName =
       c.chain !== null || swinging ? 'attack' : c.running ? 'run' : 'idle';
+    // 連鎖が続いている間は、振り終わるたびに次の一振りを始める（長い連鎖でも止まらない）
+    const swingEnded =
+      c.chain !== null &&
+      this.hero.anims.currentAnim?.key === attackKey &&
+      !this.hero.anims.isPlaying;
     this.playHeroAnim(
       now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle'],
-      newChain,
+      newChain || swingEnded,
     );
     // 足元（原点）は地面の線に固定。仮素材で走っているときだけ上下に揺らす
     const bob = placeholder && c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
