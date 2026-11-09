@@ -53,8 +53,6 @@ export function damageColor(value: number): string {
 export class DamageNumbers {
   private readonly slots: NumberSlot[] = [];
   private next = 0;
-  /** 次に飛ばす向き（左右交互） */
-  private side = 1;
 
   constructor(scene: Phaser.Scene, depth: number) {
     for (let i = 0; i < UI.maxDamageNumbers; i++) {
@@ -81,9 +79,9 @@ export class DamageNumbers {
   }
 
   /**
-   * ダメージ数字: 出た瞬間に弾けるように大きくなり、左右へ弧を描いて飛び出し、地面で弾んで消える。
-   * 大きいほど・段が深いほど高く遠くへ飛び、回転する。左右は交互にして積み重ならないようにする。
-   * floorY: 弾む地面の高さ（省略時は出た位置の少し下）
+   * ダメージ数字: 敵の頭の上あたりで弾けるように大きくなり、左か右（ランダム）へ跳ね上がって、
+   * 宙にいる間に消える（残らない）。大きいほど・段が深いほど・会心ほど高く遠くへ跳ねる。
+   * floorY を渡したときだけ、その高さで弾む（今は使っていない）
    */
   show(
     x: number,
@@ -113,20 +111,21 @@ export class DamageNumbers {
       .setStroke(st.stroke, st.strokeWidth)
       .setShadow(0, 0, st.glow ?? '#000000', st.glow ? 12 : 0, true, true)
       .setColor(color ?? (crit ? '#ff7ad0' : (st.color ?? damageColor(value))))
-      .setPosition(x + (Math.random() - 0.5) * 20, y)
+      .setPosition(x + (Math.random() - 0.5) * 24, y - 36)
       .setAngle(0)
       .setAlpha(1)
       .setVisible(true);
-    this.side = -this.side;
-    const power = (big ? 1.25 : 1) + tier * 0.12 + (crit ? 0.25 : 0);
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const power = (big ? 1.2 : 1) + tier * 0.1 + (crit ? 0.2 : 0);
     s.mode = 'arc';
-    s.vx = this.side * (70 + Math.random() * 90) * power;
-    s.vy = -(330 + Math.random() * 90) * power;
-    s.floor = floorY ?? y + 90;
+    s.vx = side * (90 + Math.random() * 80) * power;
+    s.vy = -(380 + Math.random() * 80) * power;
+    s.floor = floorY ?? Number.POSITIVE_INFINITY;
     s.bounces = 0;
-    s.spin = big ? this.side * (30 + Math.random() * 40) : 0;
+    s.spin = big ? side * (20 + Math.random() * 30) : 0;
     s.squash = 0;
-    s.life = big ? 1.25 : 1.0;
+    // 跳ね上がって落ち始めるころに消える（空中で消え、残らない）
+    s.life = big ? 0.8 : 0.65;
     s.age = 0;
     s.punch = crit || value >= JUICE.hugeHit ? 1.2 : big ? 0.9 : 0.55;
     s.punch += st.punch;
@@ -190,7 +189,7 @@ export class DamageNumbers {
         s.text.y += s.vy * dt;
         s.text.setScale(1 + s.punch * Math.max(0, 1 - s.age / 0.14));
       }
-      s.text.setAlpha(Math.min(1, s.life / 0.3));
+      s.text.setAlpha(Math.min(1, s.life / (s.mode === 'arc' ? 0.35 : 0.3)));
       if (s.rainbow) {
         const c = Phaser.Display.Color.HSVToRGB((s.age * 1.5) % 1, 0.55, 1) as Phaser.Display.Color;
         s.text.setColor(`#${c.color.toString(16).padStart(6, '0')}`);
