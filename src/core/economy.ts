@@ -1,5 +1,6 @@
 // 売却、付け直し、永続強化、戦利品の受け取り（仕様書 第7章）
 import {
+  SYNTH,
   BACKPACK,
   CONSUMABLE,
   ECONOMY,
@@ -17,10 +18,10 @@ import { getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { rerollExits } from './loot';
+import { createItem, rerollExits } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
-import type { Dir, ItemInstance } from './types';
+import type { Dir, ItemInstance, Rarity } from './types';
 
 export function heroStats(save: SaveData): HeroStats {
   const u = save.upgrades;
@@ -181,6 +182,74 @@ export function consumeItems(save: SaveData, uids: readonly string[]): void {
 }
 
 /** 戦利品を倉庫へ（容量を超えても全部受け取る）。正式な uid を振り直す */
+const NEXT_RARITY: Partial<Record<Rarity, Rarity>> = {
+  common: 'rare',
+  rare: 'epic',
+  epic: 'legendary',
+};
+
+export interface SynthPlan {
+  /** 使う3つ（選んだ装備を含む） */
+  uids: string[];
+  /** 揃っている数（選んだ装備を含む） */
+  have: number;
+  to: Rarity | null;
+  cost: number;
+  /** 合成できないとき、その理由 */
+  reason: string | null;
+}
+
+/**
+ * 合成の計画: 選んだ装備と、同じ装備・同じレアリティで装備中でもロック中でもないものを3つ使う。
+ * 一緒に使う2つは、追加効果が少なく付け直し回数の少ないものから選ぶ。
+ */
+export function synthPlan(save: SaveData, uid: string): SynthPlan {
+  const it = save.inventory.find((i) => i.uid === uid);
+  const none = (reason: string): SynthPlan => ({ uids: [], have: 0, to: null, cost: 0, reason });
+  if (!it) return none('見つかりません');
+  const def = getItemDef(it.defId);
+  const to = NEXT_RARITY[it.rarity] ?? null;
+  if (def.kind === 'consumable') return none('消耗品は合成できません');
+  if (def.artifact || !to) return none('これ以上のレアリティはありません');
+  const eq = equippedUids(save);
+  if (eq.has(uid) || it.locked) return none('装備中・ロック中は合成に使えません');
+  const mates = save.inventory
+    .filter(
+      (i) =>
+        i.uid !== uid &&
+        i.defId === it.defId &&
+        i.rarity === it.rarity &&
+        !i.locked &&
+        !eq.has(i.uid),
+    )
+    .sort(
+      (a, b) =>
+        (a.affixes?.length ?? 0) - (b.affixes?.length ?? 0) || a.rerollCount - b.rerollCount,
+    );
+  const uids = [uid, ...mates.slice(0, SYNTH.count - 1).map((i) => i.uid)];
+  const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
+  const reason =
+    uids.length < SYNTH.count
+      ? `同じ装備があと${SYNTH.count - uids.length}つ必要`
+      : save.gold < cost
+        ? `${cost}G 必要`
+        : null;
+  return { uids, have: uids.length, to, cost, reason };
+}
+
+/** 合成する。できたら新しい装備を返す */
+export function synthesize(save: SaveData, uid: string, rng: Rng): ItemInstance | null {
+  const plan = synthPlan(save, uid);
+  if (plan.reason || !plan.to) return null;
+  const base = save.inventory.find((i) => i.uid === uid)!;
+  const used = new Set(plan.uids);
+  save.inventory = save.inventory.filter((i) => !used.has(i.uid));
+  save.gold -= plan.cost;
+  const made = createItem(rng, base.defId, plan.to, `i${save.nextUid++}`);
+  save.inventory.push(made);
+  return made;
+}
+
 export function acceptLoot(save: SaveData, drops: readonly ItemInstance[]): ItemInstance[] {
   const added = drops.map((d) => ({ ...d, exits: d.exits.slice(), uid: `i${save.nextUid++}` }));
   save.inventory.push(...added);

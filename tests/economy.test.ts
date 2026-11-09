@@ -13,6 +13,8 @@ import {
   specifyExits,
   storageCapacity,
   storageCount,
+  synthPlan,
+  synthesize,
   toggleLock,
   upgradeCost,
 } from '../src/core/economy';
@@ -20,6 +22,8 @@ import { createInitialSave, deserializeSave, serializeSave } from '../src/core/s
 import { clearLoadout, placeItem, cycleOriginOrder, removeItem } from '../src/core/loadout';
 import { itemMap } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
+import { SYNTH } from '../src/config/balance';
+import type { ItemInstance } from '../src/core/types';
 import type { RunResult } from '../src/core/combat';
 
 describe('save', () => {
@@ -272,5 +276,71 @@ describe('ロック', () => {
     acceptLoot(s, drops);
     const plan = overflowSellPlan(s);
     expect(plan.uids.some((u) => ['d0', 'd1', 'd9'].includes(u))).toBe(false);
+  });
+});
+
+describe('合成', () => {
+  const add = (
+    s: ReturnType<typeof createInitialSave>,
+    uid: string,
+    extra: Partial<ItemInstance> = {},
+  ) =>
+    s.inventory.push({
+      uid,
+      defId: 'spear',
+      rarity: 'common',
+      exits: ['right'],
+      rerollCount: 0,
+      ...extra,
+    });
+
+  it('同じ装備・同じレアリティ3つで1つ上のレアリティになる。費用を払い、3つは消える', () => {
+    const s = createInitialSave();
+    s.gold = 100;
+    add(s, 'a');
+    add(s, 'b', { affixes: [{ id: 'sharp', value: 10 }] });
+    add(s, 'c');
+    add(s, 'd');
+    const plan = synthPlan(s, 'a');
+    expect(plan.reason).toBeNull();
+    expect(plan.to).toBe('rare');
+    // 一緒に使うのは追加効果のないものから
+    expect(plan.uids.sort()).toEqual(['a', 'c', 'd']);
+    const made = synthesize(s, 'a', new Rng(1))!;
+    expect(made.rarity).toBe('rare');
+    expect(made.defId).toBe('spear');
+    expect(s.gold).toBe(100 - SYNTH.cost.common);
+    expect(s.inventory.some((i) => ['a', 'c', 'd'].includes(i.uid))).toBe(false);
+    expect(s.inventory.some((i) => i.uid === 'b')).toBe(true);
+    expect(s.inventory.some((i) => i.uid === made.uid)).toBe(true);
+  });
+
+  it('足りない・ロック中・装備中・お金不足・消耗品・レジェンダリー・アーティファクトはできない', () => {
+    const s = createInitialSave();
+    s.gold = 0;
+    add(s, 'a');
+    add(s, 'b');
+    expect(synthPlan(s, 'a').reason).toContain('あと1つ');
+    add(s, 'c', { locked: true });
+    expect(synthPlan(s, 'a').have).toBe(2);
+    add(s, 'd');
+    expect(synthPlan(s, 'a').reason).toContain('G 必要');
+    s.gold = 1e6;
+    expect(synthPlan(s, 'a').reason).toBeNull();
+    const potion = s.inventory.find((i) => i.defId === 'potion')!;
+    expect(synthPlan(s, potion.uid).to).toBeNull();
+    add(s, 'L', { rarity: 'legendary' });
+    expect(synthPlan(s, 'L').to).toBeNull();
+    s.inventory.push({
+      uid: 'art',
+      defId: 'dragon_fang',
+      rarity: 'legendary',
+      exits: ['right'],
+      rerollCount: 0,
+    });
+    expect(synthPlan(s, 'art').to).toBeNull();
+    const equipped = s.loadout.cells.find((c) => c)!;
+    expect(synthPlan(s, equipped).reason).not.toBeNull();
+    expect(synthesize(s, 'L', new Rng(1))).toBeNull();
   });
 });

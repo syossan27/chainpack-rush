@@ -132,6 +132,8 @@ export type CombatEvent =
       combo: string | null;
       nullified: boolean;
       crit: boolean;
+      /** 連鎖の何段目の攻撃か（爆弾などは 0） */
+      step: number;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
@@ -453,6 +455,7 @@ export class Combat {
             combo: null,
             nullified,
             crit: false,
+            step: 0,
           });
           if (nullified) continue;
           e.hp -= dmg;
@@ -953,6 +956,7 @@ export class Combat {
           combo: combo?.name ?? null,
           nullified,
           crit,
+          step: eff,
         });
         if (dmg > 0) {
           t.hp -= dmg;

@@ -14,6 +14,8 @@ import {
   sellPrice,
   specifyExits,
   storageCapacity,
+  synthPlan,
+  synthesize,
   storageCount,
   upgradeCost,
 } from '../core/economy';
@@ -26,7 +28,8 @@ import { UNIT_SPRITES, animKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
-import { describeItem, showItemDetail } from '../ui/itemInfo';
+import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
+import { ChestReveal } from '../ui/chestReveal';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
@@ -111,10 +114,11 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     ],
   },
   {
-    title: '倉庫と鍛冶屋',
+    title: '倉庫・鍛冶屋・合成',
     lines: [
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
+      '・同じ装備・同じレアリティを3つ集めると、詳細カードの「合成」で1つ上のレアリティにできます（コモン→レア20G、レア→エピック100G、エピック→レジェンダリー500G）。追加効果と出口の向きは新しく決まります。',
     ],
   },
 ];
@@ -360,6 +364,9 @@ export class BaseScene extends Phaser.Scene {
           openDetail(it);
         },
         actions: [
+          ...(getItemDef(it.defId).kind === 'consumable' || getItemDef(it.defId).artifact
+            ? []
+            : [this.synthAction(it, () => openDetail(it))]),
           {
             label: it.locked ? 'ロック中' : `売る ${sellPrice(it)}G`,
             skin: 'gold',
@@ -798,6 +805,70 @@ export class BaseScene extends Phaser.Scene {
     row(560, '画面揺れ・光', st.shake ? 'ON' : 'OFF', null, () => {
       st.shake = !st.shake;
       changed();
+    });
+  }
+
+  // ---- 合成 ----
+  /** 詳細カードの「合成」ボタン。揃っていなければ数を出して押せない */
+  private synthAction(it: ItemInstance, reopen: () => void): DetailAction {
+    const plan = synthPlan(getSave(), it.uid);
+    const ok = plan.reason === null && plan.to !== null;
+    return {
+      label: plan.to === null ? '合成' : ok ? `合成 ${plan.cost}G` : `合成 ${plan.have}/3`,
+      skin: 'blue',
+      icon: 'up',
+      disabled: !ok,
+      onTap: () => {
+        if (!ok || !plan.to) {
+          if (plan.reason) this.showToast(plan.reason, true);
+          reopen();
+          return;
+        }
+        const def = getItemDef(it.defId);
+        confirmDialog(
+          this,
+          '合成',
+          `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、\n${RARITY_NAMES[plan.to]}を1つ作ります（${plan.cost}G）。\n追加効果と出口の向きは新しく決まります`,
+          '合成する',
+          () => {
+            const save = getSave();
+            const made = synthesize(save, it.uid, new Rng(randomSeed()));
+            if (!made) return;
+            persist();
+            this.render();
+            this.showSynthResult(made);
+          },
+          'blue',
+        );
+      },
+    };
+  }
+
+  /** 合成の結果: 宝箱から出てくる演出。開いたあとタップで閉じる */
+  private showSynthResult(made: ItemInstance): void {
+    const root = this.add.container(0, 0).setDepth(2700);
+    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
+    root.add(shade);
+    root.add(this.add.text(W / 2, H / 2 - 220, '合成！', textStyle(56, '#ffe27a')).setOrigin(0.5));
+    const hint = this.add
+      .text(W / 2, H / 2 + 200, '', textStyle(22, COLORS.textDim))
+      .setOrigin(0.5);
+    root.add(hint);
+    const reveal = new ChestReveal(this, [made], {
+      position: () => ({ x: W / 2, y: H / 2 }),
+      iconSize: 160,
+      shake: getSave().settings.shake,
+      onDone: () => hint.setText('タップで閉じる'),
+    });
+    reveal.root.setDepth(2701);
+    reveal.start();
+    shade.on('pointerup', () => {
+      if (!reveal.finished) {
+        reveal.fastForward();
+        return;
+      }
+      reveal.root.destroy();
+      root.destroy();
     });
   }
 

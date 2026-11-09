@@ -10,6 +10,27 @@ interface NumberSlot {
   age: number;
   vy: number;
   punch: number; // 出た瞬間の拡大率（ポンと跳ねる）
+  rainbow: boolean; // 10段以上: 色が虹色に巡る
+}
+
+/** 連鎖の段数ごとの数字の飾り（0: 1〜2段、1: 3〜4段、2: 5〜6段、3: 7〜9段、4: 10段以上） */
+const STEP_TIERS: {
+  scale: number;
+  stroke: string;
+  strokeWidth: number;
+  color?: string;
+  glow?: string;
+  punch: number;
+}[] = [
+  { scale: 1, stroke: '#1a1424', strokeWidth: 6, punch: 0 },
+  { scale: 1.1, stroke: '#3a2410', strokeWidth: 7, color: '#fff2a0', punch: 0.1 },
+  { scale: 1.25, stroke: '#5a2a00', strokeWidth: 8, color: '#ffc84a', glow: '#ff9a20', punch: 0.2 },
+  { scale: 1.4, stroke: '#4a0a10', strokeWidth: 9, color: '#ff7a3a', glow: '#ff3a3a', punch: 0.3 },
+  { scale: 1.6, stroke: '#2a0a3a', strokeWidth: 10, glow: '#ffffff', punch: 0.45 },
+];
+
+export function stepTier(step: number): number {
+  return step >= 10 ? 4 : step >= 7 ? 3 : step >= 5 ? 2 : step >= 3 ? 1 : 0;
 }
 
 /** ダメージ量に応じた色 */
@@ -30,22 +51,31 @@ export class DamageNumbers {
         .setOrigin(0.5)
         .setDepth(depth)
         .setVisible(false);
-      this.slots.push({ text, life: 0, age: 0, vy: 0, punch: 0 });
+      this.slots.push({ text, life: 0, age: 0, vy: 0, punch: 0, rainbow: false });
     }
   }
 
   /** ダメージが大きいほど文字を大きく、色も白→金→朱へ。出た瞬間にポンと跳ねる */
-  show(x: number, y: number, value: number, color?: string, crit = false): void {
+  show(x: number, y: number, value: number, color?: string, crit = false, step = 0): void {
     const s = this.slots[this.next]!;
     this.next = (this.next + 1) % this.slots.length;
+    // 連鎖の段数が深いほど、数字が大きく・色も豪華に（3段・5段・7段・10段で段階）
+    const tier = stepTier(step);
     const size = Math.round(
-      Math.min(84, (22 + Math.log10(Math.max(1, value)) * 15) * (crit ? 1.25 : 1)),
+      Math.min(
+        100,
+        (22 + Math.log10(Math.max(1, value)) * 15) * (crit ? 1.25 : 1) * STEP_TIERS[tier]!.scale,
+      ),
     );
-    const big = crit || value >= JUICE.bigHit;
+    const big = crit || value >= JUICE.bigHit || tier >= 2;
+    const st = STEP_TIERS[tier]!;
+    s.rainbow = tier === STEP_TIERS.length - 1 && !color;
     s.text
       .setText(crit ? `会心 ${Math.round(value)}` : `${Math.round(value)}`)
       .setFontSize(size)
-      .setColor(color ?? (crit ? '#ff7ad0' : damageColor(value)))
+      .setStroke(st.stroke, st.strokeWidth)
+      .setShadow(0, 0, st.glow ?? '#000000', st.glow ? 12 : 0, true, true)
+      .setColor(color ?? (crit ? '#ff7ad0' : (st.color ?? damageColor(value))))
       .setPosition(x + (Math.random() - 0.5) * 36, y - (big ? 20 : 0))
       .setAngle(big ? (Math.random() - 0.5) * 16 : 0)
       .setAlpha(1)
@@ -54,12 +84,16 @@ export class DamageNumbers {
     s.age = 0;
     s.vy = big ? -50 : -80;
     s.punch = crit || value >= JUICE.hugeHit ? 1.0 : big ? 0.7 : 0.35;
+    s.punch += st.punch;
   }
 
   showText(x: number, y: number, label: string, size: number, color: string): void {
     const s = this.slots[this.next]!;
     this.next = (this.next + 1) % this.slots.length;
+    s.rainbow = false;
     s.text
+      .setStroke('#1a1424', 6)
+      .setShadow(0, 0, '#000000', 0)
       .setText(label)
       .setFontSize(size)
       .setColor(color)
@@ -80,6 +114,10 @@ export class DamageNumbers {
       s.text.y += s.vy * dt;
       s.text.setScale(1 + s.punch * Math.max(0, 1 - s.age / 0.14));
       s.text.setAlpha(Math.min(1, s.life / 0.3));
+      if (s.rainbow) {
+        const c = Phaser.Display.Color.HSVToRGB((s.age * 1.5) % 1, 0.55, 1) as Phaser.Display.Color;
+        s.text.setColor(`#${c.color.toString(16).padStart(6, '0')}`);
+      }
       if (s.life <= 0) s.text.setVisible(false);
     }
   }

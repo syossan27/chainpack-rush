@@ -21,7 +21,7 @@ import { avatar } from '../ui/kit/chrome';
 import { Bar, Button, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
-import { DamageNumbers, Effects, damageColor } from '../ui/pools';
+import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 const MAX_STEPS_PER_FRAME = 5;
@@ -38,6 +38,9 @@ const COMBO_TINT: Record<string, number> = {
 
 /** 時間延長の表示位置（周回ゲージ y=140 の下、帯 y=250 の上） */
 const TIME_BONUS_Y = 188;
+
+/** 段数の段階ごとの火花の色（5段・7段・10段） */
+const STEP_SPARK: Record<number, number> = { 2: 0xffc84a, 3: 0xff6a3a, 4: 0xffffff };
 
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
@@ -547,8 +550,15 @@ export class RunScene extends Phaser.Scene {
             ev.damage,
             ev.combo ? COMBO_COLOR[ev.combo] : undefined,
             ev.crit,
+            ev.step,
           );
           if (ev.crit) this.effects.flash(p.x, p.y, 0xff7ad0, 2.2);
+          // 深い段ほど、数字のまわりに火花と光
+          const tier = stepTier(ev.step);
+          if (tier >= 2)
+            this.effects.burst(p.x, p.y - 30, STEP_SPARK[tier]!, 6 + tier * 5, 180 + tier * 60);
+          if (tier >= 3) this.effects.flash(p.x, p.y, STEP_SPARK[tier]!, 1.6 + tier * 0.4);
+          if (tier >= 4 && this.shake) this.cameras.main.shake(60, 0.004);
           const tint = ev.combo
             ? (COMBO_TINT[ev.combo] ?? 0xffffff)
             : ev.damage >= JUICE.bigHit

@@ -1,28 +1,20 @@
-// リザルト: 終了理由、到達周回、戦利品の開封演出（レアリティの低い順、エピック以上は光の柱）、最大連鎖段数、最大ダメージ
+// リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
 import Phaser from 'phaser';
 import { acceptLoot, consumeItems, recordRun, sortieBlock } from '../core/economy';
-import type { ItemInstance, Rarity } from '../core/types';
-import { getItemDef } from '../data/items';
+import type { Rarity } from '../core/types';
 import { getRegion } from '../data/regions';
-import { sfx } from '../audio/sfx';
-import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
-import { Button, ink, panel, ribbon, bindTap } from '../ui/kit/widgets';
-import { ItemIcon } from '../ui/itemIcon';
+import { Button, ink, panel, ribbon } from '../ui/kit/widgets';
+import { ChestReveal } from '../ui/chestReveal';
 import { showItemDetail } from '../ui/itemInfo';
-import { COLORS, H, W, rarityColor, rarityCss, textStyle } from '../ui/theme';
+import { COLORS, H, W, textStyle } from '../ui/theme';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
-const OPEN_INTERVAL_MS = 450;
 const ICON = 100;
 const COLS = 6;
 
 export class ResultScene extends Phaser.Scene {
-  private queue: ItemInstance[] = [];
-  private opened = 0;
-  private timer: Phaser.Time.TimerEvent | null = null;
-  private grid!: Phaser.GameObjects.Container;
   private shake = true;
 
   constructor() {
@@ -86,18 +78,25 @@ export class ResultScene extends Phaser.Scene {
     ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
     panel(this, W / 2, 850, W - 30, 420, 'inset');
 
-    this.grid = this.add.container(0, 0);
-    this.queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
-    this.opened = 0;
-    if (this.queue.length > 0) {
-      this.timer = this.time.addEvent({
-        delay: OPEN_INTERVAL_MS,
-        loop: true,
-        callback: () => this.openNext(),
+    // 宝箱で受け取る: レアリティの低い順に開ける（タップで早送り）
+    const queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
+    if (queue.length > 0) {
+      const reveal = new ChestReveal(this, queue, {
+        position: (i) => ({
+          x: (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2,
+          y: 700 + Math.floor(i / COLS) * (ICON + 34),
+        }),
+        iconSize: ICON,
+        shake: this.shake,
+        onTapItem: (it) => showItemDetail(this, it),
       });
-      this.add.text(W / 2, H - 200, 'タップで早送り', textStyle(22, COLORS.textDim)).setOrigin(0.5);
+      reveal.start();
+      const hint = this.add
+        .text(W / 2, H - 200, 'タップで早送り', textStyle(22, COLORS.textDim))
+        .setOrigin(0.5);
       this.input.on('pointerup', () => {
-        while (this.opened < this.queue.length) this.openNext(true);
+        if (!reveal.finished) reveal.fastForward();
+        else hint.setText('タップで能力を確認');
       });
     } else {
       this.add.text(W / 2, 760, '戦利品なし', textStyle(28, COLORS.textDim)).setOrigin(0.5);
@@ -129,69 +128,5 @@ export class ResultScene extends Phaser.Scene {
           textStyle(18, COLORS.textWarn),
         )
         .setOrigin(0.5);
-  }
-
-  private openNext(fast = false): void {
-    const it = this.queue[this.opened];
-    if (!it) {
-      this.timer?.remove();
-      return;
-    }
-    const i = this.opened++;
-    const x = (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2;
-    const y = 700 + Math.floor(i / COLS) * (ICON + 34);
-    const epic = ORDER[it.rarity] >= ORDER.epic;
-    if (epic) {
-      // 後光（残る）
-      const halo = this.add
-        .image(x, y, 'sk_glow')
-        .setScale(3)
-        .setTint(rarityColor(it.rarity))
-        .setBlendMode(Phaser.BlendModes.ADD);
-      this.grid.add(halo);
-      this.tweens.add({
-        targets: halo,
-        angle: 360,
-        scale: 3.4,
-        yoyo: true,
-        repeat: -1,
-        duration: 1400,
-      });
-    }
-    if (epic && !fast) {
-      // 光の柱
-      const pillar = this.add
-        .rectangle(x, y - 200, ICON * 0.8, 520, rarityColor(it.rarity), 0.5)
-        .setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({
-        targets: pillar,
-        alpha: 0,
-        scaleX: 1.6,
-        duration: 900,
-        onComplete: () => pillar.destroy(),
-      });
-      if (this.shake) this.cameras.main.flash(120, 255, 240, 200);
-      sfx(it.rarity === 'legendary' ? 'openLegend' : 'openEpic');
-      hapticMedium();
-    } else if (!fast) {
-      sfx(it.rarity === 'rare' ? 'openRare' : 'open');
-    }
-    const icon = new ItemIcon(this, x, y, it, ICON);
-    this.grid.add(icon);
-    // 開封がすべて終わったら、タップで能力の詳細
-    icon.setInteractive({ useHandCursor: true });
-    bindTap(icon, () => {
-      if (this.opened >= this.queue.length) showItemDetail(this, it);
-    });
-    this.grid.add(
-      this.add
-        .text(x, y + ICON / 2 + 2, getItemDef(it.defId).name, textStyle(16, rarityCss(it.rarity)))
-        .setOrigin(0.5, 0),
-    );
-    if (!fast) {
-      icon.setScale(0.2);
-      this.tweens.add({ targets: icon, scale: 1, duration: 220, ease: 'Back.easeOut' });
-    }
-    if (this.opened >= this.queue.length) this.timer?.remove();
   }
 }

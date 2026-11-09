@@ -277,6 +277,12 @@ export const LOOT = {
   originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
 } as const;
 
+/** 合成: 同じ装備・同じレアリティを3つで、1つ上のレアリティに（追加効果・出口は振り直し） */
+export const SYNTH = {
+  count: 3,
+  cost: { common: 20, rare: 100, epic: 500 } as Record<'common' | 'rare' | 'epic', number>,
+} as const;
+
 export const ECONOMY = {
   specifyCostMult: 5,
   rerollCostGrowth: 1.5,
