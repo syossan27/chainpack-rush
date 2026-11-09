@@ -1,6 +1,6 @@
 // リザルト: 終了理由、到達周回、戦利品の開封演出（レアリティの低い順、エピック以上は光の柱）、最大連鎖段数、最大ダメージ
 import Phaser from 'phaser';
-import { acceptLoot, consumeItems, recordRun } from '../core/economy';
+import { acceptLoot, consumeItems, recordRun, sortieBlock } from '../core/economy';
 import type { ItemInstance, Rarity } from '../core/types';
 import { getItemDef } from '../data/items';
 import { getRegion } from '../data/regions';
@@ -100,15 +100,35 @@ export class ResultScene extends Phaser.Scene {
         while (this.opened < this.queue.length) this.openNext(true);
       });
     } else {
-      this.add.text(W / 2, 500, '戦利品なし', textStyle(28, COLORS.textDim)).setOrigin(0.5);
+      this.add.text(W / 2, 760, '戦利品なし', textStyle(28, COLORS.textDim)).setOrigin(0.5);
     }
-    new Button(this, W / 2, H - 110, '拠点へ', () => this.scene.start('Base'), {
-      width: 380,
+    new Button(this, W / 2 - 170, H - 110, '拠点へ', () => this.scene.start('Base'), {
+      width: 300,
       height: 100,
-      fontSize: 38,
-      skin: 'gold',
+      fontSize: 34,
+      skin: 'blue',
       icon: 'home',
     });
+    // 同じ地域へもう一度。倉庫があふれている・起点がないときは配置画面へ
+    session.regionId = regionId;
+    const block = sortieBlock(save);
+    new Button(
+      this,
+      W / 2 + 170,
+      H - 110,
+      block ? '配置へ' : 'もう一度',
+      () => this.scene.start(block ? 'Loadout' : 'Run'),
+      { width: 300, height: 100, fontSize: 34, skin: 'gold', icon: block ? 'bag' : 'swords' },
+    );
+    if (block)
+      this.add
+        .text(
+          W / 2 + 170,
+          H - 178,
+          block === 'storageFull' ? '倉庫があふれています' : '起点がありません',
+          textStyle(18, COLORS.textWarn),
+        )
+        .setOrigin(0.5);
   }
 
   private openNext(fast = false): void {
