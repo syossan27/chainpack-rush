@@ -45,6 +45,8 @@ export class FieldView {
   private readonly slots: EnemySlot[] = [];
   private readonly byId = new Map<number, EnemySlot>();
   private heroHurtUntil = 0;
+  /** 直前のフレームの連鎖（新しい連鎖の始まりを見分ける） */
+  private lastChain: Combat['chain'] = null;
   /** 勇者の本素材（待機）が読み込まれているか */
   private readonly heroHasSprites: boolean;
   aimId: number | null = null;
@@ -187,14 +189,24 @@ export class FieldView {
     // 仮素材のときだけ、上下の揺れ（走り）と傾け（連鎖中）で動きを出す。本素材は地面に接地したままモーションに任せる
     const placeholder = !this.heroHasSprites;
     this.hero.setTint(now < this.heroHurtUntil ? 0xff8080 : 0xffffff);
-    this.hero.setAngle(placeholder && c.unguarded ? Math.sin(now / 40) * 4 : 0);
+    this.hero.setAngle(placeholder && c.chain !== null ? Math.sin(now / 40) * 4 : 0);
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
     this.hero.anims.timeScale = speed;
     this.heroGlow.anims.timeScale = speed;
     // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、走り中は走りを、連鎖中は攻撃を続ける）
-    const state: UnitAnimName = c.unguarded ? 'attack' : c.running ? 'run' : 'idle';
-    this.playHeroAnim(now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle']);
+    // 攻撃: 連鎖中はずっと（3段目までの守られている間も）。短い連鎖で先に終わっても、振り切るまで続ける。
+    // 新しい連鎖が始まったら頭から再生し直す
+    const newChain = c.chain !== null && c.chain !== this.lastChain;
+    this.lastChain = c.chain;
+    const attackKey = animKey('hero', 'attack');
+    const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
+    const state: UnitAnimName =
+      c.chain !== null || swinging ? 'attack' : c.running ? 'run' : 'idle';
+    this.playHeroAnim(
+      now < this.heroHurtUntil ? ['hit', state, 'idle'] : [state, 'idle'],
+      newChain,
+    );
     // 足元（原点）は地面の線に固定。仮素材で走っているときだけ上下に揺らす
     const bob = placeholder && c.running ? Math.abs(Math.sin(now / 70)) * 6 : 0;
     this.hero.y = RUN_LAYOUT.footY - bob;
@@ -291,7 +303,7 @@ export class FieldView {
     this.visibleEnemies = visible;
   }
 
-  private playHeroAnim(candidates: readonly UnitAnimName[]): UnitAnimName | null {
+  private playHeroAnim(candidates: readonly UnitAnimName[], restart = false): UnitAnimName | null {
     const def = UNIT_SPRITES.hero!;
     // 未登録の動作は次の候補へ。攻撃は1回再生で、状態が変わるまでやり直さない
     const chosen =
@@ -303,7 +315,8 @@ export class FieldView {
     // 原点だけ切り替え、displayScale（×2・最近傍）はそのまま。140px の攻撃コマを 64px に縮めない
     for (const sprite of [this.hero, this.heroGlow]) {
       sprite.setOrigin(originX, originY);
-      if (sprite.anims.currentAnim?.key !== key) sprite.play(key);
+      if (sprite.anims.currentAnim?.key !== key || (restart && chosen === 'attack'))
+        sprite.play(key);
     }
     return chosen;
   }
