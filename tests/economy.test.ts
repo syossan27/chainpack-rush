@@ -24,6 +24,7 @@ import { itemMap } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
 import { SYNTH } from '../src/config/balance';
 import type { ItemInstance } from '../src/core/types';
+import { getItemDef } from '../src/data/items';
 import type { RunResult } from '../src/core/combat';
 
 describe('save', () => {
@@ -306,13 +307,44 @@ describe('合成', () => {
     expect(plan.to).toBe('rare');
     // 一緒に使うのは追加効果のないものから
     expect(plan.uids.sort()).toEqual(['a', 'c', 'd']);
-    const made = synthesize(s, 'a', new Rng(1))!;
-    expect(made.rarity).toBe('rare');
-    expect(made.defId).toBe('spear');
+    const res = synthesize(s, 'a', new Rng(1))!;
+    // 成功なら同じ装備の1つ上、失敗なら同じレアリティのランダムな装備（消耗品・アーティファクト以外）
+    if (res.success) {
+      expect(res.item.rarity).toBe('rare');
+      expect(res.item.defId).toBe('spear');
+    } else {
+      expect(res.item.rarity).toBe('common');
+    }
     expect(s.gold).toBe(100 - SYNTH.cost.common);
     expect(s.inventory.some((i) => ['a', 'c', 'd'].includes(i.uid))).toBe(false);
     expect(s.inventory.some((i) => i.uid === 'b')).toBe(true);
-    expect(s.inventory.some((i) => i.uid === made.uid)).toBe(true);
+    expect(s.inventory.some((i) => i.uid === res.item.uid)).toBe(true);
+  });
+
+  it('上のレアリティほど成功しにくい。失敗したら材料と同じレアリティのランダムな装備', () => {
+    for (const r of ['common', 'rare', 'epic'] as const) {
+      let ok = 0;
+      const n = 2000;
+      const rng = new Rng(7);
+      for (let k = 0; k < n; k++) {
+        const s = createInitialSave();
+        s.gold = 1e6;
+        for (const u of ['x', 'y', 'z']) add(s, u, { rarity: r });
+        const res = synthesize(s, 'x', rng)!;
+        if (res.success) {
+          ok++;
+          expect(res.item.defId).toBe('spear');
+        } else {
+          expect(res.item.rarity).toBe(r);
+          const d = getItemDef(res.item.defId);
+          expect(d.kind).not.toBe('consumable');
+          expect(d.artifact).toBeUndefined();
+        }
+      }
+      expect(ok / n).toBeCloseTo(SYNTH.successRate[r], 1);
+    }
+    expect(SYNTH.successRate.common).toBeGreaterThan(SYNTH.successRate.rare);
+    expect(SYNTH.successRate.rare).toBeGreaterThan(SYNTH.successRate.epic);
   });
 
   it('足りない・ロック中・装備中・お金不足・消耗品・レジェンダリー・アーティファクトはできない', () => {

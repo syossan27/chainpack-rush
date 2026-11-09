@@ -278,10 +278,14 @@ export const LOOT = {
   originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
 } as const;
 
-/** 合成: 同じ装備・同じレアリティを3つで、1つ上のレアリティに（追加効果・出口は振り直し） */
+/**
+ * 合成: 同じ装備・同じレアリティを3つで、1つ上のレアリティに（追加効果・出口は振り直し）。
+ * 上のレアリティほど成功しにくい。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入る
+ */
 export const SYNTH = {
   count: 3,
   cost: { common: 20, rare: 100, epic: 500 } as Record<'common' | 'rare' | 'epic', number>,
+  successRate: { common: 0.8, rare: 0.5, epic: 0.25 } as Record<'common' | 'rare' | 'epic', number>,
 } as const;
 
 export const ECONOMY = {

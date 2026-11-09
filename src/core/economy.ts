@@ -14,7 +14,7 @@ import {
   UPGRADES,
   type UpgradeId,
 } from '../config/balance';
-import { getItemDef } from '../data/items';
+import { ITEM_DEFS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
@@ -244,17 +244,38 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
   return { uids, have: uids.length, to, cost, reason };
 }
 
-/** 合成する。できたら新しい装備を返す */
-export function synthesize(save: SaveData, uid: string, rng: Rng): ItemInstance | null {
+/** 合成の成功率（そのレアリティから1つ上へ） */
+export function synthRate(rarity: Rarity): number {
+  return rarity === 'legendary' ? 0 : SYNTH.successRate[rarity];
+}
+
+export interface SynthResult {
+  item: ItemInstance;
+  success: boolean;
+}
+
+/**
+ * 合成する。成功なら同じ装備の1つ上のレアリティ、失敗なら材料と同じレアリティのランダムな装備。
+ * どちらでも材料3つと費用は使う
+ */
+export function synthesize(save: SaveData, uid: string, rng: Rng): SynthResult | null {
   const plan = synthPlan(save, uid);
   if (plan.reason || !plan.to) return null;
   const base = save.inventory.find((i) => i.uid === uid)!;
+  const from = base.rarity as 'common' | 'rare' | 'epic';
   const used = new Set(plan.uids);
   save.inventory = save.inventory.filter((i) => !used.has(i.uid));
   save.gold -= plan.cost;
-  const made = createItem(rng, base.defId, plan.to, `i${save.nextUid++}`);
-  save.inventory.push(made);
-  return made;
+  const success = rng.next() < SYNTH.successRate[from];
+  const newUid = `i${save.nextUid++}`;
+  let item: ItemInstance;
+  if (success) item = createItem(rng, base.defId, plan.to, newUid);
+  else {
+    const pool = ITEM_DEFS.filter((d) => d.kind !== 'consumable' && !d.artifact);
+    item = createItem(rng, rng.pick(pool).id, from, newUid);
+  }
+  save.inventory.push(item);
+  return { item, success };
 }
 
 export function acceptLoot(save: SaveData, drops: readonly ItemInstance[]): ItemInstance[] {

@@ -15,6 +15,7 @@ import {
   specifyExits,
   storageCapacity,
   synthPlan,
+  synthRate,
   synthesize,
   storageCount,
   upgradeCost,
@@ -118,7 +119,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     lines: [
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
-      '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティにできます（コモン→レア20G、レア→エピック100G、エピック→レジェンダリー500G）。追加効果と出口の向きは新しく決まります。',
+      '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。',
     ],
   },
 ];
@@ -876,17 +877,17 @@ export class BaseScene extends Phaser.Scene {
     confirmDialog(
       this,
       '合成',
-      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、\n${RARITY_NAMES[plan.to]}を1つ作ります（${plan.cost}G）。\n追加効果と出口の向きは新しく決まります`,
+      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、${RARITY_NAMES[plan.to]}を狙います（${plan.cost}G）。\n成功率は${Math.round(synthRate(it.rarity) * 100)}%。失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ手に入ります`,
       '合成する',
       () => {
         const save = getSave();
-        const made = synthesize(save, it.uid, new Rng(randomSeed()));
-        if (!made) return;
+        const res = synthesize(save, it.uid, new Rng(randomSeed()));
+        if (!res) return;
         persist();
-        // 鍛冶屋では、できた装備を選んだままにして続けて合成できるように
-        if (this.page === 'smith') this.selected = made.uid;
+        // 鍛冶屋では、成功したらできた装備を選んだままにして続けて合成できるように
+        if (this.page === 'smith') this.selected = res.success ? res.item.uid : null;
         this.render();
-        this.showSynthResult(made);
+        this.showSynthResult(res.item, res.success);
       },
       'blue',
     );
@@ -987,7 +988,17 @@ export class BaseScene extends Phaser.Scene {
     );
     if (plan.to) {
       this.root.add(
-        ink(this, 50, py + 190, '追加効果と出口の向きは新しく決まります', 20, '#7a5a30'),
+        ink(this, 50, py + 176, `成功率 ${Math.round(synthRate(it.rarity) * 100)}%`, 28, '#2a6a30'),
+      );
+      this.root.add(
+        ink(
+          this,
+          50,
+          py + 214,
+          `失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ（追加効果・向きは新しく）`,
+          18,
+          '#7a5a30',
+        ),
       );
     }
     this.root.add(
@@ -1004,12 +1015,15 @@ export class BaseScene extends Phaser.Scene {
       this.root.add(ink(this, W / 2, py + 360, plan.reason, 22, '#a03020').setOrigin(0.5));
   }
 
-  /** 合成の結果: 宝箱から出てくる演出。開いたあとタップで閉じる */
-  private showSynthResult(made: ItemInstance): void {
+  /** 合成の結果: 宝箱から出てくる演出。成否は開いたあとに出す。開いたあとタップで閉じる */
+  private showSynthResult(made: ItemInstance, success: boolean): void {
     const root = this.add.container(0, 0).setDepth(2700);
     const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
     root.add(shade);
-    root.add(this.add.text(W / 2, H / 2 - 220, '合成！', textStyle(56, '#ffe27a')).setOrigin(0.5));
+    const title = this.add
+      .text(W / 2, H / 2 - 220, '合成中…', textStyle(56, '#ffe27a'))
+      .setOrigin(0.5);
+    root.add(title);
     const hint = this.add
       .text(W / 2, H / 2 + 200, '', textStyle(22, COLORS.textDim))
       .setOrigin(0.5);
@@ -1018,7 +1032,17 @@ export class BaseScene extends Phaser.Scene {
       position: () => ({ x: W / 2, y: H / 2 }),
       iconSize: 160,
       shake: getSave().settings.shake,
-      onDone: () => hint.setText('タップで閉じる'),
+      onDone: () => {
+        hint.setText('タップで閉じる');
+        title.setText(success ? '合成成功！' : '失敗…').setColor(success ? '#ffe27a' : '#a0a0b8');
+        this.tweens.add({
+          targets: title,
+          scale: { from: 1.4, to: 1 },
+          duration: 260,
+          ease: 'Back.easeOut',
+        });
+        if (!success) sfx('error');
+      },
     });
     reveal.root.setDepth(2701);
     reveal.start();
