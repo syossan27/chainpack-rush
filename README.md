@@ -65,12 +65,12 @@ v1 はコードで描く仮素材で完結している。仮素材は本素材�
 本素材への差し替え:
 
 1. 横一列の PNG を `assets/sprites/<キャラ>/` に置く（例: `assets/sprites/hero/hero_run.png`）。背景は透過。コマ寸法の基本は勇者64×64・雑魚48×48・ボス96×96。アニメごとに違うときは、そのアニメの `frameWidth` / `frameHeight` を書く（攻撃シートを 64×64 として切らない）。
-2. `src/data/sprites.ts` の該当キャラに `anims` を書く（`file` は `assets/sprites/` からの相対パス、`frames`、`fps`、`loop`。足元が共通原点と違うときは `originX` / `originY`）。勇者の動作名は `idle` / `run` / `attack`（連鎖中）/ `hit`（被弾）。未登録の動作は待機、それも無ければ仮素材。
+2. `src/data/sprites.ts` の該当キャラに `anims` を書く（`file` は `assets/sprites/` からの相対パス、`frames`、`fps`、`loop`。足元が共通原点と違うときは `originX` / `originY`）。勇者の動作名は `idle` / `run` / `attack`（連鎖中）/ `hit`（被弾）/ `special_crimson_burst`（必殺。再生箇所は未接続）。未登録の動作は待機、それも無ければ仮素材。
 3. `npm run dev` で確認。置いた PNG はビルド時に自動で同梱される（`import.meta.glob`）。見つからないファイルは警告を出して仮素材のまま動く。
 
 待機（なければ run）の1コマ目は、拠点・地域選択・顔アイコンの静止画にも使う。顔アイコンの切り出し範囲は `avatarCrop`、足元の位置はアニメの `originY`（無ければ `SpriteDef`。コマ下端に余白があるときに調整）で合わせる。表示は常に `displayScale`（×2）の最近傍で、コマのピクセル数は変えない。`assets/sprites/` へ置くのは人が出来を確認してから。
 
-勇者の待機・走り・攻撃は登録済み（`assets/sprites/hero/`）。絵柄の参照は `assets/raw/hero/`（採用 v4 の兜・待機・踏み込み攻撃）。走りは 96×80 の8コマで、原点は地面 y=71、体の位置 x=41 に固定する。生成ルール・制作順・無料枠の扱いは仕様書 第10章（生成前に必ず承認を取る、1回の承認で1種類まで、並列投入しない）。
+勇者の待機・走り・攻撃・必殺（クリムゾンバースト）は登録済み（`assets/sprites/hero/`）。絵柄の参照は `assets/raw/hero/`（採用 v4 の兜・待機・踏み込み攻撃）。走りは 96×80 の8コマで、原点は地面 y=71、体の位置 x=41 に固定する。クリムゾンバーストは 184×132 の9コマ・10fps・ループなしで、原点は開始コマの足元 (62.5, 98)。コマごとの横ずれには寄せない。必殺を再生するフックはまだない。生成ルール・制作順・無料枠の扱いは仕様書 第10章（生成前に必ず承認を取る、1回の承認で1種類まで、並列投入しない）。
 
 ```bash
 claude mcp add --transport http pixellab https://api.pixellab.ai/mcp \

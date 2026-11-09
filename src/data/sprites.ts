@@ -51,7 +51,8 @@ export interface SpriteAnim {
   originY?: number;
 }
 
-export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death';
+export type UnitAnimName =
+  'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special_crimson_burst';
 
 export interface SpriteDef {
   key: string;
@@ -81,8 +82,9 @@ export const ICON_SIZE = 16;
 export const ICON_SCALE = 4;
 
 /**
- * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃・走り）。
- * 待機・走り・攻撃は anims に登録済み。被弾は未登録なので、そのときの動作（なければ待機）で代用する。
+ * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃・走り）と必殺クリムゾンバースト。
+ * 待機・走り・攻撃・必殺（special_crimson_burst）は anims に登録済み。
+ * 必殺を再生するフックはまだないので、戦闘では再生しない。被弾は未登録で、そのときの動作（なければ待機）で代用する。
  */
 export const HERO_REFERENCE = 'assets/raw/hero/hero_idle_v4_helm.png';
 
@@ -278,6 +280,18 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         frameHeight: 96,
         originX: 53 / 140,
         originY: 80 / 96,
+      },
+      // クリムゾンバースト。開始コマの足元 (62.5, 98) を全コマ共通の原点にする。
+      // コマごとの横ずれ（最大 +20 / -31.5）には寄せない。再生箇所は未接続。
+      special_crimson_burst: {
+        file: 'hero/hero_special_crimson_burst.png',
+        frames: 9,
+        fps: 10,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 132,
+        originX: 62.5 / 184,
+        originY: 98 / 132,
       },
     },
   },
