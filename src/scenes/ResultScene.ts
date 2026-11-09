@@ -1,6 +1,6 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
 import Phaser from 'phaser';
-import { acceptLoot, consumeItems, recordRun, sortieBlock } from '../core/economy';
+import { acceptLoot, autoSellDrops, consumeItems, recordRun, sortieBlock } from '../core/economy';
 import type { Rarity } from '../core/types';
 import { getRegion } from '../data/regions';
 import { session } from '../platform/session';
@@ -34,6 +34,8 @@ export class ResultScene extends Phaser.Scene {
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存
     consumeItems(save, result.usedConsumables);
     const added = acceptLoot(save, result.drops);
+    // 自動売却（倉庫で設定したレアリティ以下）
+    const auto = autoSellDrops(save, added);
     const { unlocked } = recordRun(save, regionId, result);
     persist();
     session.lastResult = null;
@@ -76,12 +78,22 @@ export class ResultScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
     ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
+    if (auto.uids.length > 0)
+      this.add
+        .text(
+          W / 2,
+          624,
+          `自動売却 ${auto.uids.length}個 +${auto.gold}G`,
+          textStyle(18, COLORS.gold),
+        )
+        .setOrigin(0.5);
     panel(this, W / 2, 850, W - 30, 420, 'inset');
 
     // 宝箱で受け取る: レアリティの低い順に開ける（タップで早送り）
     const queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
     if (queue.length > 0) {
       const reveal = new ChestReveal(this, queue, {
+        sold: new Set(auto.uids),
         position: (i) => ({
           x: (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2,
           y: 700 + Math.floor(i / COLS) * (ICON + 34),

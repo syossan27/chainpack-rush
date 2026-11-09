@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   acceptLoot,
+  autoSellDrops,
   backpackSize,
   buyUpgrade,
   heroStats,
@@ -374,5 +375,55 @@ describe('合成', () => {
     const equipped = s.loadout.cells.find((c) => c)!;
     expect(synthPlan(s, equipped).reason).not.toBeNull();
     expect(synthesize(s, 'L', new Rng(1))).toBeNull();
+  });
+});
+
+describe('自動売却', () => {
+  const drop = (
+    uid: string,
+    rarity: 'common' | 'rare' | 'epic' | 'legendary',
+    extra: Partial<ItemInstance> = {},
+  ): ItemInstance => ({
+    uid,
+    defId: 'sword',
+    rarity,
+    exits: ['right'],
+    rerollCount: 0,
+    ...extra,
+  });
+
+  it('設定したレアリティ以下の装備だけを売る。消耗品・アーティファクト・✦つき（設定次第）は残す', () => {
+    const s = createInitialSave();
+    expect(s.settings.autoSell).toBe('off');
+    const added = acceptLoot(s, [
+      drop('a', 'common'),
+      drop('b', 'rare'),
+      drop('c', 'epic'),
+      drop('d', 'common', { affixes: [{ id: 'sharp', value: 5 }] }),
+      drop('e', 'common', { defId: 'potion', exits: [] }),
+      drop('f', 'legendary', { defId: 'dragon_fang' }),
+    ]);
+    expect(autoSellDrops(s, added).uids).toEqual([]);
+    s.settings.autoSell = 'rare';
+    const r = autoSellDrops(s, added);
+    const names = (u: string) =>
+      added.find((i) => i.uid === u)!.rarity + ':' + added.find((i) => i.uid === u)!.defId;
+    expect(r.uids.map(names).sort()).toEqual(['common:sword', 'rare:sword']);
+    expect(r.gold).toBe(5 + 20);
+    // ✦つきも売る設定
+    const s2 = createInitialSave();
+    s2.settings.autoSell = 'common';
+    s2.settings.autoSellKeepAffix = false;
+    const added2 = acceptLoot(s2, [drop('x', 'common', { affixes: [{ id: 'sharp', value: 5 }] })]);
+    expect(autoSellDrops(s2, added2).uids).toHaveLength(1);
+  });
+
+  it('設定は保存され、壊れた値はオフに戻す', () => {
+    const s = createInitialSave();
+    s.settings.autoSell = 'epic';
+    expect(deserializeSave(serializeSave(s)).settings.autoSell).toBe('epic');
+    const bad = JSON.parse(serializeSave(s));
+    bad.settings.autoSell = 'everything';
+    expect(deserializeSave(JSON.stringify(bad)).settings.autoSell).toBe('off');
   });
 });

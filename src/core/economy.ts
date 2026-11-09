@@ -296,6 +296,30 @@ export function synthesize(save: SaveData, uid: string, rng: Rng): SynthResult |
   return { item, success };
 }
 
+const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
+
+/**
+ * 自動売却: 受け取ったばかりの戦利品のうち、設定したレアリティ以下の装備を売る。
+ * 消耗品・アーティファクトは売らない。設定で追加効果（✦）つきは残せる
+ */
+export function autoSellDrops(
+  save: SaveData,
+  added: readonly ItemInstance[],
+): { uids: string[]; gold: number } {
+  const max = save.settings.autoSell;
+  if (max === 'off') return { uids: [], gold: 0 };
+  const uids = added
+    .filter((i) => {
+      const d = getItemDef(i.defId);
+      if (d.kind === 'consumable' || d.artifact || i.locked) return false;
+      if (save.settings.autoSellKeepAffix && (i.affixes?.length ?? 0) > 0) return false;
+      return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
+    })
+    .map((i) => i.uid);
+  const gold = sellItems(save, uids);
+  return { uids, gold };
+}
+
 export function acceptLoot(save: SaveData, drops: readonly ItemInstance[]): ItemInstance[] {
   const added = drops.map((d) => ({ ...d, exits: d.exits.slice(), uid: `i${save.nextUid++}` }));
   save.inventory.push(...added);

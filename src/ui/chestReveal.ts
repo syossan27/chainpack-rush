@@ -39,6 +39,8 @@ export interface ChestRevealOptions {
   onDone?: () => void;
   /** 次の宝箱までの間（ミリ秒） */
   gap?: number;
+  /** 自動売却した装備（開けたあと暗くして「売却」と出す） */
+  sold?: ReadonlySet<string>;
 }
 
 export class ChestReveal {
@@ -242,6 +244,14 @@ export class ChestReveal {
     bindTap(icon, () => {
       if (this.done) this.opts.onTapItem?.(it);
     });
+    if (this.opts.sold?.has(it.uid)) {
+      icon.setDimmed(true);
+      const tag = scene.add
+        .text(x, y, '売却', textStyle(22, '#ffe27a'))
+        .setOrigin(0.5)
+        .setAngle(-12);
+      this.root.add(tag);
+    }
     const name = scene.add
       .text(
         x,

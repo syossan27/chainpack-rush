@@ -21,6 +21,7 @@ import {
   upgradeCost,
 } from '../core/economy';
 import { Rng, randomSeed } from '../core/rng';
+import type { SaveData } from '../core/save';
 import type { Dir, ItemInstance, Rarity } from '../core/types';
 import { DIRS } from '../core/types';
 import { RARITY_NAMES, getItemDef } from '../data/items';
@@ -119,6 +120,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
     title: '倉庫・鍛冶屋・合成',
     lines: [
       '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。',
+      '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。',
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
       '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。',
@@ -443,17 +445,34 @@ export class BaseScene extends Phaser.Scene {
     );
     list.setItems(stored());
     this.root.add(list);
-    const hint = this.add
-      .text(
-        W / 2,
-        950,
-        pick
-          ? '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）'
-          : 'タップで能力を確認・売却。装備中のものは一覧に出ません',
-        textStyle(20, pick ? COLORS.gold : COLORS.textDim),
-      )
-      .setOrigin(0.5);
-    this.root.add(hint);
+    if (pick) {
+      this.root.add(
+        this.add
+          .text(
+            W / 2,
+            950,
+            '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）',
+            textStyle(20, COLORS.gold),
+          )
+          .setOrigin(0.5),
+      );
+    } else {
+      // 自動売却の設定（ラン後の結果画面で、設定したレアリティ以下の戦利品を売る）
+      const st = save.settings;
+      const label =
+        st.autoSell === 'off'
+          ? '自動売却：オフ'
+          : `自動売却：${RARITY_NAMES[st.autoSell]}${st.autoSell === 'common' ? '' : '以下'}${st.autoSellKeepAffix ? '（✦は残す）' : ''}`;
+      this.root.add(
+        new Button(this, W / 2, 952, label, () => this.openAutoSell(), {
+          width: W - 120,
+          height: 64,
+          fontSize: 22,
+          skin: st.autoSell === 'off' ? 'gray' : 'green',
+          icon: 'coin',
+        }),
+      );
+    }
 
     const sellWithConfirm = (uids: string[], title: string) => {
       const items = save.inventory.filter((i) => uids.includes(i.uid));
@@ -863,6 +882,43 @@ export class BaseScene extends Phaser.Scene {
       st.shake = !st.shake;
       changed();
     });
+  }
+
+  /** 自動売却の設定 */
+  private openAutoSell(): void {
+    const save = getSave();
+    const st = save.settings;
+    const opts: [SaveData['settings']['autoSell'], string][] = [
+      ['off', 'オフ（売らない）'],
+      ['common', 'コモンを売る'],
+      ['rare', 'レア以下を売る'],
+      ['epic', 'エピック以下を売る'],
+    ];
+    const choices: Choice[] = opts.map(([v, label]) => ({
+      label: st.autoSell === v ? `● ${label}` : label,
+      skin: st.autoSell === v ? 'gold' : 'blue',
+      onPick: () => {
+        st.autoSell = v;
+        persist();
+        this.render();
+      },
+    }));
+    choices.push({
+      label: st.autoSellKeepAffix ? '✦付きは残す：オン' : '✦付きは残す：オフ',
+      skin: 'gray',
+      onPick: () => {
+        st.autoSellKeepAffix = !st.autoSellKeepAffix;
+        persist();
+        this.render();
+        this.openAutoSell();
+      },
+    });
+    choiceDialog(
+      this,
+      '自動売却',
+      choices,
+      'ラン後に戦利品から売ります。消耗品・アーティファクトは売りません',
+    );
   }
 
   // ---- 合成 ----

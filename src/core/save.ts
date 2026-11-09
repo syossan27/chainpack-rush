@@ -34,6 +34,10 @@ export interface SaveData {
     gameSpeed: number;
     /** 配置画面でルートの線・段数を出すか */
     showRoutes: boolean;
+    /** ラン後に自動で売る戦利品のレアリティ（これ以下）。off は売らない */
+    autoSell: 'off' | 'common' | 'rare' | 'epic';
+    /** 自動売却で、追加効果（✦）つきは残すか */
+    autoSellKeepAffix: boolean;
   };
 }
 
@@ -103,7 +107,15 @@ export function createInitialSave(): SaveData {
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
     presets: defaultPresets(),
     activePreset: 0,
-    settings: { volume: 0.7, haptics: true, shake: true, gameSpeed: 1, showRoutes: true },
+    settings: {
+      volume: 0.7,
+      haptics: true,
+      shake: true,
+      gameSpeed: 1,
+      showRoutes: true,
+      autoSell: 'off',
+      autoSellKeepAffix: true,
+    },
   };
 }
 
@@ -217,6 +229,10 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       },
     };
     if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
+    if (!['off', 'common', 'rare', 'epic'].includes(save.settings.autoSell))
+      save.settings.autoSell = 'off';
+    if (typeof save.settings.autoSellKeepAffix !== 'boolean')
+      save.settings.autoSellKeepAffix = true;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;
