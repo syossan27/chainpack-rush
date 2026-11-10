@@ -3,7 +3,7 @@ import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
-import { Combat, type CombatEvent } from '../core/combat';
+import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { consumableSlots, heroStats, itemMap, refillConsumables } from '../core/economy';
 import { randomSeed } from '../core/rng';
 import type { ItemInstance, Loadout } from '../core/types';
@@ -13,7 +13,7 @@ import { setAudioSuspended, sfx, sfxChainStep } from '../audio/sfx';
 import { debugFps, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
-import { session } from '../platform/session';
+import { session, type ChallengeSortie } from '../platform/session';
 import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
@@ -71,6 +71,8 @@ export class RunScene extends Phaser.Scene {
   private inspecting = false;
   /** 最初の出撃の体験ラン（伝説の装備を借りる） */
   private demo = false;
+  /** 挑戦の出撃（なければ null） */
+  private challenge: ChallengeSortie | null = null;
   /** 警報を出したボス（敵の id） */
   private warned = new Set<number>();
   /** このランで記録の更新を知らせたもの */
@@ -114,7 +116,10 @@ export class RunScene extends Phaser.Scene {
 
   create(): void {
     const save = getSave();
-    this.demo = demoPending();
+    // 挑戦: 地域と乱数の種は全員同じ。強化と★は使わず、装備とゴールドは出ない
+    this.challenge = session.challenge;
+    session.challenge = null;
+    this.demo = !this.challenge && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
     if (!this.demo && refillConsumables(save).length > 0) persist();
     this.warned = new Set();
@@ -123,8 +128,12 @@ export class RunScene extends Phaser.Scene {
       this.demo || save.stats.runs === 0
         ? null
         : { step: save.stats.maxStep, damage: save.stats.maxDamage };
-    this.regionId = this.demo ? DEMO_REGION : (session.regionId ?? save.progress.unlocked[0]!);
-    this.seed = debugSeed() ?? randomSeed();
+    this.regionId = this.challenge
+      ? this.challenge.regionId
+      : this.demo
+        ? DEMO_REGION
+        : (session.regionId ?? save.progress.unlocked[0]!);
+    this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
     const demo = this.demo ? demoLoadout() : null;
     const loadout = demo ? demo.loadout : save.loadout;
@@ -136,7 +145,8 @@ export class RunScene extends Phaser.Scene {
       regionId: this.regionId,
       loadout,
       items: this.items,
-      hero: demo ? DEMO_HERO : heroStats(save),
+      hero: demo ? DEMO_HERO : this.challenge ? BASE_HERO_STATS : heroStats(save),
+      noLoot: !!this.challenge,
       consumableSlots: demo ? 0 : consumableSlots(save),
       demo: this.demo,
     });
@@ -911,7 +921,14 @@ export class RunScene extends Phaser.Scene {
           break;
         case 'runEnd':
           // 力尽きたら、1ランに1回だけ「広告を見て再開」を選べる
-          if (ev.reason === 'dead' && !this.demo && !this.combat.revived && !this.ending)
+          // 挑戦は全員同じ条件で競うので、再開はなし
+          if (
+            ev.reason === 'dead' &&
+            !this.demo &&
+            !this.challenge &&
+            !this.combat.revived &&
+            !this.ending
+          )
             this.askRevive();
           else this.finish();
           break;
@@ -966,7 +983,13 @@ export class RunScene extends Phaser.Scene {
     this.ending = true;
     sfx('runEnd');
     const r = this.combat.result();
-    session.lastResult = { regionId: this.regionId, result: r, seed: this.seed, demo: this.demo };
+    session.lastResult = {
+      regionId: this.regionId,
+      result: r,
+      seed: this.seed,
+      demo: this.demo,
+      ...(this.challenge ? { challenge: this.challenge } : {}),
+    };
     this.showBanner(
       this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！',
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,

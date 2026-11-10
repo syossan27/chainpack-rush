@@ -93,6 +93,8 @@ export class ResultScene extends Phaser.Scene {
     }
     const { result, regionId } = last;
     const demo = last.demo === true;
+    const challenge = last.challenge ?? null;
+    let challengeBest = false;
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存。
     // 体験ラン（借りた伝説の装備）は、倉庫にも記録にも残さない
     let added: ItemInstance[] = [];
@@ -116,8 +118,19 @@ export class ResultScene extends Phaser.Scene {
       refilled = refillConsumables(save).length;
       // 自動売却（倉庫で設定したレアリティ以下）
       auto = autoSellDrops(save, added);
-      unlocked = recordRun(save, regionId, result).unlocked;
-      achieved = checkAchievements(save, result);
+      if (challenge) {
+        // 挑戦: 地域の記録・ゴールド・★には数えない。今の期間の自己ベスト（合計ダメージ）だけ
+        const score = Math.round(result.stats.totalDamage);
+        if (save.challenge.period !== challenge.period)
+          save.challenge = { period: challenge.period, best: 0, bestLoop: 0 };
+        challengeBest = score > save.challenge.best;
+        if (challengeBest)
+          save.challenge = { period: challenge.period, best: score, bestLoop: result.reachedLoop };
+        save.stats.runs++;
+      } else {
+        unlocked = recordRun(save, regionId, result).unlocked;
+        achieved = checkAchievements(save, result);
+      }
     }
     persist();
     session.lastResult = null;
@@ -134,10 +147,24 @@ export class ResultScene extends Phaser.Scene {
     title.setScale(0.3).setAngle(-8);
     this.tweens.add({ targets: title, scale: 1, angle: 0, duration: 380, ease: 'Back.easeOut' });
     this.add
-      .text(W / 2, 190, `${getRegion(regionId).name}`, textStyle(28, COLORS.textDim))
+      .text(
+        W / 2,
+        190,
+        challenge
+          ? `挑戦「${challenge.name}」・${getRegion(regionId).name}`
+          : getRegion(regionId).name,
+        textStyle(28, COLORS.textDim),
+      )
       .setOrigin(0.5);
     this.add
-      .text(W / 2, 246, `到達 ${result.reachedLoop}周目`, textStyle(56, '#ffe27a'))
+      .text(
+        W / 2,
+        246,
+        challenge
+          ? `スコア ${Math.round(result.stats.totalDamage).toLocaleString('ja-JP')}`
+          : `到達 ${result.reachedLoop}周目`,
+        textStyle(56, '#ffe27a'),
+      )
       .setOrigin(0.5);
     // 記録（羊皮紙）
     panel(this, W / 2, 408, W - 60, 206, 'paper');
@@ -151,7 +178,7 @@ export class ResultScene extends Phaser.Scene {
     ];
     // 自己ベストを更新した記録（初めてのランは、比べるものがないので出さない）
     const newRecord = new Set<string>();
-    if (!demo && !prev.first) {
+    if (!demo && !challenge && !prev.first) {
       if (result.stats.maxStep > prev.step) newRecord.add('最大連鎖');
       if (Math.round(result.stats.maxDamage) > prev.damage) newRecord.add('最大ダメージ');
     }
@@ -165,10 +192,10 @@ export class ResultScene extends Phaser.Scene {
         this.stamp(x + k.length * 22 + 30, y + 2, 'NEW!', 500 + i * 120, 15);
       }
     });
-    if (!demo && !prev.first && result.reachedLoop > prev.loop)
+    if (challenge ? challengeBest : !demo && !prev.first && result.reachedLoop > prev.loop)
       this.stamp(W / 2 + 200, 220, '自己ベスト！', 400);
     // 地域の★（3・6・10周目のボス撃破）。★ごとに攻撃+3%・最大HP+5
-    const gained = demo ? 0 : regionStars(save, regionId) - prev.stars;
+    const gained = demo || challenge ? 0 : regionStars(save, regionId) - prev.stars;
     if (gained > 0) {
       this.stamp(W / 2 - 200, 220, `★${gained > 1 ? `×${gained}` : ''}獲得！`, 700);
       this.add
@@ -231,9 +258,11 @@ export class ResultScene extends Phaser.Scene {
         items.length === 0
           ? demo
             ? '借りた伝説の装備は、お返ししたよ\n（体験なので戦利品はなし）'
-            : regionId === 'endless'
-              ? `エンドレスは装備が出ません\n自己ベスト ${save.endless.bestLoop}周目・ダメージ ${save.endless.bestDamage.toLocaleString('ja-JP')}`
-              : '戦利品なし'
+            : challenge
+              ? `挑戦「${challenge.name}」\nスコア（合計ダメージ） ${Math.round(result.stats.totalDamage).toLocaleString('ja-JP')}\n自己ベスト ${save.challenge.best.toLocaleString('ja-JP')}${challengeBest ? '（更新！）' : ''}`
+              : regionId === 'endless'
+                ? `エンドレスは装備が出ません\n自己ベスト ${save.endless.bestLoop}周目・ダメージ ${save.endless.bestDamage.toLocaleString('ja-JP')}`
+                : '戦利品なし'
           : '',
       );
       if (items.length === 0) return;
@@ -317,14 +346,19 @@ export class ResultScene extends Phaser.Scene {
       icon: 'home',
     });
     // 同じ地域へもう一度。倉庫があふれている・起点がないときは配置画面へ
-    session.regionId = regionId;
-    const block = sortieBlock(save);
+    // 挑戦は地域を覚えない（開放していない地域のこともある）。「もう一度」は同じ挑戦
+    if (!challenge) session.regionId = regionId;
+    // 挑戦は装備が出ないので、倉庫があふれていても同じ挑戦はできる
+    const block = challenge ? null : sortieBlock(save);
     new Button(
       this,
       W / 2 + 170,
       H - 110,
       block ? '配置へ' : demo ? '自分で出撃' : 'もう一度',
-      () => this.scene.start(block ? 'Loadout' : 'Run'),
+      () => {
+        if (!block && challenge) session.challenge = challenge;
+        this.scene.start(block ? 'Loadout' : 'Run');
+      },
       { width: 300, height: 100, fontSize: 34, skin: 'gold', icon: block ? 'bag' : 'swords' },
     );
     if (block)

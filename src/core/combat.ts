@@ -69,6 +69,8 @@ export interface RunConfig {
   luck?: Partial<LuckRules>;
   /** 体験ラン: 時間はのびない・戦利品は落ちない */
   demo?: boolean;
+  /** 装備とゴールドを落とさない（挑戦。エンドレスは地域で決まる） */
+  noLoot?: boolean;
 }
 
 export interface EnemyState {
@@ -252,6 +254,11 @@ const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 export class Combat {
   readonly region: RegionDef;
   readonly mode: 'run' | 'dummy';
+  /** 装備とゴールドを落とさない（挑戦・エンドレス） */
+  private get noLoot(): boolean {
+    return !!this.cfg.noLoot || this.region.id === 'endless';
+  }
+
   /** 終了する tick。時間延長で増える（上限 TIME_BONUS.maxRunTime） */
   maxTicks: number;
   /** 出撃時間の時計（交戦中・連鎖中だけ進む。走っているあいだは止まる） */
@@ -1115,11 +1122,11 @@ export class Combat {
       fled: false,
     });
     // ゴールド: 地域ごとの1体あたり（ボスは多め）。お供からは出ない
-    if (!e.escort && this.mode === 'run' && !this.cfg.demo && this.region.id !== 'endless')
+    if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot)
       this.stats.gold =
         (this.stats.gold ?? 0) + this.region.goldPerKill * (e.def.boss ? PROGRESS.bossGold : 1);
     // エンドレスは装備を落とさない
-    if (!e.escort && this.mode === 'run' && !this.cfg.demo && this.region.id !== 'endless') {
+    if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot) {
       const roll = this.rng.next();
       if (roll < e.def.dropRate || e.elite === 'golden') {
         const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;

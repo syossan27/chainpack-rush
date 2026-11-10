@@ -50,7 +50,15 @@ import {
 } from '../platform/monetization';
 import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
-import { otherPresetUse, presetMark } from '../core/presets';
+import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
+import {
+  challengeStart,
+  checkRules,
+  currentChallenge,
+  firstChallenge,
+  rulesText,
+} from '../core/challenge';
+import { session } from '../platform/session';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
@@ -69,7 +77,15 @@ import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, inkStyle, rarityCss, textStyle } from '../ui/theme';
 
 type Page =
-  'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help' | 'techs' | 'achievements';
+  | 'home'
+  | 'storage'
+  | 'smith'
+  | 'upgrade'
+  | 'settings'
+  | 'help'
+  | 'techs'
+  | 'achievements'
+  | 'challenge';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -268,13 +284,17 @@ export class BaseScene extends Phaser.Scene {
       case 'achievements':
         this.renderAchievements();
         break;
+      case 'challenge':
+        this.renderChallenge();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
     const tab: TabId =
       this.page === 'settings' ||
       this.page === 'help' ||
       this.page === 'techs' ||
-      this.page === 'achievements'
+      this.page === 'achievements' ||
+      this.page === 'challenge'
         ? 'home'
         : this.page;
     this.root.add(
@@ -358,6 +378,13 @@ export class BaseScene extends Phaser.Scene {
     );
     this.root.add(new RoundButton(this, 70, 480, 96, 'gear', '設定', () => this.go('settings')));
     this.root.add(new RoundButton(this, 70, 620, 96, 'book', 'ヘルプ', () => this.go('help')));
+    // 2週替わりの挑戦（始まるまでは予告）。開いていて今回まだ遊んでいなければ印を付ける
+    const ch = currentChallenge(Date.now(), challengeStart(devChallengeOpen()));
+    this.root.add(
+      new RoundButton(this, W - 70, 760, 96, 'clock', '挑戦', () => this.go('challenge')).setBadge(
+        !!ch && save.challenge.period !== ch.period,
+      ),
+    );
     const block = storageCount(save) > storageCapacity(save);
     this.root.add(
       new RoundButton(this, W - 70, 340, 96, 'chest', '倉庫', () => this.go('storage')).setBadge(
@@ -1414,6 +1441,159 @@ export class BaseScene extends Phaser.Scene {
   }
 
   // ---- 実績 ----
+  // ---- 2週替わりの挑戦 ----
+  private renderChallenge(): void {
+    const save = getSave();
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '2週替わりの挑戦', 420));
+    const now = Date.now();
+    const start = challengeStart(devChallengeOpen());
+    const ch = currentChallenge(now, start);
+    const def = ch?.def ?? firstChallenge();
+    const region = getRegion(def.regionId);
+    let y = CONTENT_TOP + 100;
+    // 説明（羊皮紙）
+    const rules = rulesText(def.rules);
+    const boxH = 150 + rules.length * 34;
+    this.root.add(panel(this, W / 2, y + boxH / 2, W - 40, boxH, 'paper'));
+    this.root.add(ink(this, 44, y + 18, def.name, 34, '#8a3a20'));
+    this.root.add(ink(this, W - 44, y + 26, `舞台: ${region.name}`, 22, '#7a5a30').setOrigin(1, 0));
+    this.root.add(
+      this.add.text(44, y + 66, def.text, {
+        ...inkStyle(20),
+        wordWrap: { width: W - 88, useAdvancedWrap: true },
+      }),
+    );
+    rules.forEach((r, i) =>
+      this.root.add(ink(this, 52, y + 116 + i * 34, `・${r}`, 20, '#5a3a20')),
+    );
+    y += boxH + 24;
+
+    if (!ch) {
+      // まだ始まっていない: 予告だけ
+      const when =
+        start === null
+          ? 'リリースから2週間後に開放！'
+          : `開放まで あと${Math.ceil((start - now) / 86_400_000)}日`;
+      this.root.add(this.add.text(W / 2, y + 40, when, textStyle(36, '#ffe27a')).setOrigin(0.5));
+      const lines = [
+        '2週間ごとに、地域と制限が入れ替わります。',
+        '全員が同じ敵の並びに、自分の装備で挑み、合計ダメージを競います。',
+        '強化と★は使わず、勇者は最初の強さ。並べ方の腕が勝負です。',
+        '装備とゴールドは出ません。',
+      ];
+      lines.forEach((l, i) =>
+        this.root.add(
+          this.add.text(W / 2, y + 110 + i * 40, l, textStyle(20, COLORS.textDim)).setOrigin(0.5),
+        ),
+      );
+      return;
+    }
+
+    // 期間と自己ベスト
+    const left = ch.endsAt - now;
+    const days = Math.floor(left / 86_400_000);
+    const hours = Math.floor((left % 86_400_000) / 3_600_000);
+    const best = save.challenge.period === ch.period ? save.challenge.best : 0;
+    this.root.add(
+      this.add
+        .text(W / 2, y + 10, `残り ${days}日${hours}時間`, textStyle(24, COLORS.textDim))
+        .setOrigin(0.5),
+    );
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          y + 56,
+          best > 0 ? `自己ベスト ${best.toLocaleString('ja-JP')}` : 'まだ挑戦していません',
+          textStyle(32, '#ffe27a'),
+        )
+        .setOrigin(0.5),
+    );
+    y += 110;
+
+    // 使う編成
+    this.root.add(this.add.text(40, y, '使う編成', textStyle(24, COLORS.text)));
+    y += 70;
+    const n = save.presets.length;
+    const bw = Math.min(128, (W - 60) / n - 8);
+    save.presets.forEach((p, i) => {
+      const x = 30 + (bw + 8) * i + bw / 2;
+      this.root.add(
+        new Button(
+          this,
+          x,
+          y,
+          p.name,
+          () => {
+            if (switchPreset(save, i)) {
+              persist();
+              this.render();
+            }
+          },
+          { width: bw, height: 64, fontSize: 18, skin: i === save.activePreset ? 'gold' : 'gray' },
+        ),
+      );
+    });
+    y += 60;
+
+    // 制限に合っているか
+    const bad = checkRules(save.loadout, itemMap(save), def.rules);
+    if (bad.length === 0) {
+      this.root.add(
+        this.add
+          .text(W / 2, y + 10, 'この編成で挑戦できます', textStyle(22, '#7ad67a'))
+          .setOrigin(0.5, 0),
+      );
+    } else {
+      bad
+        .slice(0, 4)
+        .forEach((b, i) =>
+          this.root.add(
+            this.add
+              .text(W / 2, y + 10 + i * 30, b, textStyle(20, COLORS.textWarn))
+              .setOrigin(0.5, 0),
+          ),
+        );
+    }
+    const by = CONTENT_BOTTOM - 80;
+    this.root.add(
+      new Button(this, W / 2 - 150, by, '編成を変える', () => goTab(this, 'loadout'), {
+        width: 260,
+        height: 96,
+        fontSize: 26,
+        skin: 'blue',
+      }),
+    );
+    this.root.add(
+      new Button(
+        this,
+        W / 2 + 140,
+        by,
+        '挑戦する',
+        () => {
+          if (bad.length > 0) {
+            this.showToast('編成が制限に合っていません', true);
+            return;
+          }
+          session.challenge = {
+            period: ch.period,
+            seed: ch.seed,
+            regionId: def.regionId,
+            name: def.name,
+          };
+          this.scene.start('Run');
+        },
+        {
+          width: 280,
+          height: 96,
+          fontSize: 30,
+          skin: bad.length > 0 ? 'gray' : 'gold',
+          icon: 'swords',
+        },
+      ),
+    );
+  }
+
   private renderAchievements(): void {
     const save = getSave();
     this.addBookTabs();
@@ -1549,4 +1729,13 @@ export class BaseScene extends Phaser.Scene {
     });
     this.root.add(bar);
   }
+}
+
+/** 開発用: URL に ?challenge=open を付けると、今日から挑戦が始まったことにする */
+function devChallengeOpen(): number | undefined {
+  if (typeof location === 'undefined') return undefined;
+  if (new URLSearchParams(location.search).get('challenge') !== 'open') return undefined;
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
 }
