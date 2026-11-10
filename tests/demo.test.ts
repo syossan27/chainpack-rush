@@ -25,7 +25,9 @@ describe('体験ラン（最初の出撃で伝説の装備を借りる）', () =
       expect(r.drops).toHaveLength(0);
       expect(r.stats.timeGained).toBe(0);
       expect(r.stats.maxStep).toBeGreaterThanOrEqual(12);
-      expect(techs.size).toBeGreaterThanOrEqual(TECHNIQUES.length - 1);
+      // 体験の配置は最初の5つの必殺技の並びを含む（ヴェノム・クロスは入っていない）
+      expect(techs.size).toBeGreaterThanOrEqual(4);
+      expect(TECHNIQUES.length).toBeGreaterThanOrEqual(5);
     }
   });
 });
