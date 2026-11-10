@@ -98,6 +98,7 @@ export function createInitialSave(): SaveData {
   loadout.cells[w + 2] = byDef('wood_shield');
   loadout.originOrder = [byDef('origin_stone', 0), byDef('origin_stone', 1)];
   loadout.consumables = [byDef('potion')];
+  loadout.consumableAuto = ['potion'];
   return {
     version: SAVE_VERSION,
     gold: 0,
@@ -155,10 +156,18 @@ function readPresets(v: unknown): Preset[] {
           cells: p.loadout.cells.map((c) => (typeof c === 'string' ? c : null)),
           originOrder: p.loadout.originOrder.filter((u): u is string => typeof u === 'string'),
           consumables: p.loadout.consumables.filter((u): u is string => typeof u === 'string'),
+          ...autoOf(p.loadout),
         }
       : null;
     return { name, loadout: lo };
   });
+}
+
+/** 消耗品の自動補充の記録（古いセーブにはない） */
+function autoOf(l: { consumableAuto?: unknown }): { consumableAuto?: string[] } {
+  return Array.isArray(l.consumableAuto)
+    ? { consumableAuto: l.consumableAuto.filter((u): u is string => typeof u === 'string') }
+    : {};
 }
 
 export function serializeSave(save: SaveData): string {
@@ -223,6 +232,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         cells: lo.cells.map((c) => (typeof c === 'string' ? c : null)),
         originOrder: lo.originOrder.filter((u): u is string => typeof u === 'string'),
         consumables: lo.consumables.filter((u): u is string => typeof u === 'string'),
+        ...autoOf(lo),
       },
       upgrades: {
         ...base.upgrades,
@@ -302,6 +312,13 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     save.loadout.consumables = save.loadout.consumables
       .filter((u) => owned.has(u))
       .slice(0, CONSUMABLE.baseSlots + 2);
+    // 消耗品枠の自動補充: 記録がない古いセーブは、今の枠の中身を覚える
+    if (!save.loadout.consumableAuto) {
+      const byUid = new Map(save.inventory.map((i) => [i.uid, i.defId]));
+      save.loadout.consumableAuto = save.loadout.consumables
+        .map((u) => byUid.get(u))
+        .filter((d): d is string => !!d);
+    }
     if (!Array.isArray(save.progress.unlocked) || !isObj(save.progress.best))
       save.progress = base.progress;
     return save;

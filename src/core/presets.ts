@@ -19,6 +19,7 @@ function structuredCloneLoadout(l: Loadout): Loadout {
     cells: l.cells.slice(),
     originOrder: l.originOrder.slice(),
     consumables: l.consumables.slice(),
+    ...(l.consumableAuto ? { consumableAuto: l.consumableAuto.slice() } : {}),
   };
 }
 

@@ -234,6 +234,43 @@ export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[])
 }
 
 /** ラン中に使った消耗品を倉庫と消耗品枠から取り除く */
+/** 今の消耗品枠の中身を「入れておきたいもの」として覚える（配置画面で枠を変えたとき） */
+export function rememberConsumables(save: SaveData): void {
+  const items = itemMap(save);
+  save.loadout.consumableAuto = save.loadout.consumables
+    .map((u) => items.get(u)?.defId)
+    .filter((d): d is string => !!d);
+}
+
+/**
+ * 消耗品枠の自動補充: 覚えている消耗品のうち、枠に足りないものを倉庫から入れ直す（使い切ったポーションなど）。
+ * 入れたものの uid を返す
+ */
+export function refillConsumables(save: SaveData): string[] {
+  const want = save.loadout.consumableAuto;
+  if (!want || want.length === 0) return [];
+  const items = itemMap(save);
+  const slots = consumableSlots(save);
+  const have = save.loadout.consumables.map((u) => items.get(u)?.defId);
+  const missing = want.slice();
+  for (const d of have) {
+    const k = missing.indexOf(d ?? '');
+    if (k >= 0) missing.splice(k, 1);
+  }
+  const used = equippedUids(save);
+  const added: string[] = [];
+  for (const defId of missing) {
+    if (save.loadout.consumables.length >= slots) break;
+    const it = save.inventory.find(
+      (i) => i.defId === defId && !used.has(i.uid) && !added.includes(i.uid),
+    );
+    if (!it) continue;
+    save.loadout.consumables.push(it.uid);
+    added.push(it.uid);
+  }
+  return added;
+}
+
 export function consumeItems(save: SaveData, uids: readonly string[]): void {
   const set = new Set(uids);
   save.inventory = save.inventory.filter((it) => !set.has(it.uid));

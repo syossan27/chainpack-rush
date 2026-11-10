@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
 import { Combat, type CombatEvent } from '../core/combat';
-import { consumableSlots, heroStats, itemMap } from '../core/economy';
+import { consumableSlots, heroStats, itemMap, refillConsumables } from '../core/economy';
 import { randomSeed } from '../core/rng';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
@@ -115,6 +115,8 @@ export class RunScene extends Phaser.Scene {
   create(): void {
     const save = getSave();
     this.demo = demoPending();
+    // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
+    if (!this.demo && refillConsumables(save).length > 0) persist();
     this.warned = new Set();
     this.recordShown = new Set();
     this.bestBefore =

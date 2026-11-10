@@ -61,6 +61,8 @@ export interface Loadout {
   cells: (string | null)[]; // ItemInstance.uid、行優先
   originOrder: string[]; // 起点の uid を発火順に
   consumables: string[];
+  /** 消耗品枠に入れておきたい消耗品（defId）。使い切ったら、倉庫から同じものを自動で入れ直す */
+  consumableAuto?: string[];
 }
 
 export interface ChainStep {

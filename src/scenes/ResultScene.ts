@@ -7,6 +7,7 @@ import type { AchievementDef } from '../data/achievements';
 import Phaser from 'phaser';
 import {
   acceptLoot,
+  refillConsumables,
   adRemaining,
   autoSellDrops,
   consumeItems,
@@ -95,6 +96,7 @@ export class ResultScene extends Phaser.Scene {
     let added: ItemInstance[] = [];
     let auto: { uids: string[]; gold: number } = { uids: [], gold: 0 };
     let unlocked: string | null = null;
+    let refilled = 0;
     // 記録の更新（このランの前の記録と比べる）
     const prev = {
       step: save.stats.maxStep,
@@ -107,6 +109,8 @@ export class ResultScene extends Phaser.Scene {
     else {
       consumeItems(save, result.usedConsumables);
       added = acceptLoot(save, result.drops);
+      // 使い切った消耗品の枠へ、倉庫（今回の戦利品も含む）から同じものを入れ直す
+      refilled = refillConsumables(save).length;
       // 自動売却（倉庫で設定したレアリティ以下）
       auto = autoSellDrops(save, added);
       unlocked = recordRun(save, regionId, result).unlocked;
@@ -177,7 +181,12 @@ export class ResultScene extends Phaser.Scene {
       .text(
         W / 2,
         624,
-        auto.uids.length > 0 ? `自動売却 ${auto.uids.length}個 +${auto.gold}G` : '',
+        [
+          auto.uids.length > 0 ? `自動売却 ${auto.uids.length}個 +${auto.gold}G` : '',
+          refilled > 0 ? `消耗品を${refilled}個 補充` : '',
+        ]
+          .filter(Boolean)
+          .join('・'),
         textStyle(18, COLORS.gold),
       )
       .setOrigin(0.5);

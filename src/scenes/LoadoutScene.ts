@@ -12,6 +12,7 @@ import {
   heroStats,
   itemMap,
   overflowSellPlan,
+  rememberConsumables,
   sellItems,
   sortieBlock,
 } from '../core/economy';
@@ -66,6 +67,8 @@ export class LoadoutScene extends Phaser.Scene {
   private resetBtn!: Button;
   /** 戻す: 変える前の並べ方（新しいものが後ろ）。編成を切り替えたら空にする */
   private undoStack: string[] = [];
+  /** 消耗品枠の中身（変わったら「入れておきたいもの」として覚え直す） */
+  private lastCons = '';
   private lastSnapshot = '';
   private undoBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
@@ -88,6 +91,7 @@ export class LoadoutScene extends Phaser.Scene {
     // 戻す（ひとつ前の並べ方へ）
     this.undoStack = [];
     this.lastSnapshot = JSON.stringify(save.loadout);
+    this.lastCons = JSON.stringify(save.loadout.consumables);
     this.undoBtn = new Button(
       this,
       W - 206,
@@ -189,6 +193,13 @@ export class LoadoutScene extends Phaser.Scene {
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
     this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
+    // 消耗品枠を手で変えたら、その中身を覚える（使い切ったら倉庫から自動で入れ直す）
+    const cons = JSON.stringify(save.loadout.consumables);
+    if (cons !== this.lastCons) {
+      this.lastCons = cons;
+      rememberConsumables(save);
+      persist();
+    }
     // 並べ方が変わっていたら、変える前を「戻す」に積む
     const snap = JSON.stringify(save.loadout);
     if (snap !== this.lastSnapshot) {
@@ -581,6 +592,12 @@ export class LoadoutScene extends Phaser.Scene {
     this.slots.add(
       this.add.text(30, -18, '消耗品', textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
     );
+    // 覚えている消耗品のうち、いま枠に入っていないもの（空いた枠にうすく出す）
+    const ghosts = (save.loadout.consumableAuto ?? []).slice();
+    for (const u of save.loadout.consumables) {
+      const k = ghosts.indexOf(items.get(u)?.defId ?? '');
+      if (k >= 0) ghosts.splice(k, 1);
+    }
     for (let i = 0; i < n; i++) {
       const x = this.slotX(i);
       const frame = this.add.image(x, 44, SKIN.round).setDisplaySize(SLOT_SIZE, SLOT_SIZE);
@@ -588,7 +605,21 @@ export class LoadoutScene extends Phaser.Scene {
       const uid = save.loadout.consumables[i];
       const it = uid ? items.get(uid) : undefined;
       if (it) this.slots.add(this.add.image(x, 44, iconKey(it.defId)).setScale(4));
-      else this.slots.add(this.add.text(x, 44, '+', textStyle(30, COLORS.textDim)).setOrigin(0.5));
+      else if (ghosts[i - save.loadout.consumables.length]) {
+        // 覚えている消耗品が倉庫にない: うすく出して、手に入ったら自動で入ることを知らせる
+        this.slots.add(
+          this.add
+            .image(x, 44, iconKey(ghosts[i - save.loadout.consumables.length]!))
+            .setScale(4)
+            .setAlpha(0.3),
+        );
+        this.slots.add(
+          this.add
+            .text(x, 44 + SLOT_SIZE / 2 - 4, '自動', textStyle(14, COLORS.textDim))
+            .setOrigin(0.5),
+        );
+      } else
+        this.slots.add(this.add.text(x, 44, '+', textStyle(30, COLORS.textDim)).setOrigin(0.5));
       frame.setInteractive();
       frame.on('pointerdown', (p: Phaser.Input.Pointer) => {
         if (it) this.pressGrid(it, -2, i, p);
