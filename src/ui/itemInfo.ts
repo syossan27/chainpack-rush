@@ -235,28 +235,39 @@ export function showItemDetail(
       ]);
   }
   if (rows.length) {
+    // 値と右の補足が重なるときは、補足を値の下の行へ回す（その行だけ高くする）
     const rh = 54;
+    const subRight = W / 2 + CARD_W / 2 - PAD - 12;
+    const valueX = left + 170;
+    const laid = rows.map(([k, v, sub]) => {
+      const vt = scene.add.text(valueX, 0, v, textStyle(26));
+      // 値だけで枠からはみ出すときは縮める
+      const maxV = subRight - valueX;
+      if (vt.width > maxV) vt.setScale(maxV / vt.width);
+      const st = sub
+        ? scene.add.text(subRight, 0, sub, textStyle(18, COLORS.gold)).setOrigin(1, 0)
+        : null;
+      const wrap = !!st && valueX + vt.displayWidth + 16 > subRight - st.width;
+      return { k, vt, st, wrap, h: wrap ? rh + 26 : rh };
+    });
+    const total = laid.reduce((t, r) => t + r.h, 0);
     const box = panel(
       scene,
       W / 2,
-      y + (rows.length * rh + 20) / 2,
+      y + (total + 20) / 2,
       CARD_W - PAD * 2 + 12,
-      rows.length * rh + 20,
+      total + 20,
       'inset',
     );
     card.add(box);
-    rows.forEach(([k, v, sub], i) => {
-      const ry = y + 12 + i * rh;
-      card.add(scene.add.text(left + 14, ry + 12, k, textStyle(20, COLORS.textDim)));
-      card.add(scene.add.text(left + 170, ry + 6, v, textStyle(26)));
-      if (sub)
-        card.add(
-          scene.add
-            .text(W / 2 + CARD_W / 2 - PAD - 12, ry + 12, sub, textStyle(18, COLORS.gold))
-            .setOrigin(1, 0),
-        );
-    });
-    y += rows.length * rh + 36;
+    let ry = y + 12;
+    for (const r of laid) {
+      card.add(scene.add.text(left + 14, ry + 12, r.k, textStyle(20, COLORS.textDim)));
+      card.add(r.vt.setY(ry + 6));
+      if (r.st) card.add(r.st.setY(r.wrap ? ry + 40 : ry + 12));
+      ry += r.h;
+    }
+    y += total + 36;
   }
 
   // 状態とコンボ
