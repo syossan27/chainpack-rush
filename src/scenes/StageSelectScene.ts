@@ -1,4 +1,5 @@
 // 地域の一覧と敵情報（雑魚の傾向、ボスの出現順と特徴）
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { sortieBlock } from '../core/economy';
 import { sellOverflow } from './LoadoutScene';
@@ -76,6 +77,16 @@ export class StageSelectScene extends Phaser.Scene {
         skin: 'red',
       });
     }
+    runTutorial(this, 'stage', [
+      {
+        rect: { x: W / 2, y: CARD_TOP + CARD_H / 2, w: W - 26, h: CARD_H + 6 },
+        text: '出撃する地域を選ぶよ。最初は「草原」。\n奥の地域ほど敵は強いけど、\nいい装備が出やすいよ',
+      },
+      {
+        rect: { x: W - 140, y: H - 80, w: 256, h: 112 },
+        text: '準備ができたら「出撃！」',
+      },
+    ]);
   }
 
   private renderCards(): void {

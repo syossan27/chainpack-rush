@@ -35,6 +35,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
+import { resetTutorials, runTutorial } from '../ui/tutorial';
 import {
   PREMIUM_PRICE,
   buyPremium,
@@ -263,6 +264,7 @@ export class BaseScene extends Phaser.Scene {
         else this.go(id);
       }),
     );
+    this.maybeTutorial();
   }
 
   // ---- ホーム ----
@@ -982,13 +984,27 @@ export class BaseScene extends Phaser.Scene {
       ),
     );
     this.root.add(
-      new Button(this, W / 2, 960, '遊び方・強くなるコツ', () => this.go('help'), {
-        width: 460,
+      new Button(this, W / 2 - 110, 960, '遊び方・強くなるコツ', () => this.go('help'), {
+        width: 400,
         height: 84,
-        fontSize: 26,
+        fontSize: 24,
         skin: 'blue',
         icon: 'book',
       }),
+    );
+    // 案内をもう一度（各画面を開いたときに、また1回ずつ出る）
+    this.root.add(
+      new Button(
+        this,
+        W / 2 + 214,
+        960,
+        '案内をもう一度',
+        () => {
+          resetTutorials();
+          this.showToast('各画面で、案内がもう一度出ます');
+        },
+        { width: 200, height: 84, fontSize: 20, skin: 'blue' },
+      ),
     );
     row(430, '振動', st.haptics ? 'ON' : 'OFF', null, () => {
       st.haptics = !st.haptics;
@@ -1035,6 +1051,24 @@ export class BaseScene extends Phaser.Scene {
       choices,
       'ラン後に戦利品から売ります。消耗品・アーティファクトは売りません',
     );
+  }
+
+  /** 初めての人向けの案内（拠点・鍛冶屋） */
+  private maybeTutorial(): void {
+    if (this.page === 'home')
+      runTutorial(this, 'home', [
+        {
+          rect: { x: W / 2, y: 760, w: 476, h: 132 },
+          text: 'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」してみよう！',
+        },
+      ]);
+    if (this.page === 'smith')
+      runTutorial(this, 'smith', [
+        {
+          rect: { x: W / 2, y: CONTENT_TOP + 40, w: W - 20, h: 80 },
+          text: '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ',
+        },
+      ]);
   }
 
   // ---- 合成 ----

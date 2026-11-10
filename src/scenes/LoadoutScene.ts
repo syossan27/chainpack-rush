@@ -1,4 +1,5 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
@@ -127,6 +128,30 @@ export class LoadoutScene extends Phaser.Scene {
 
     this.setupGridInput();
     this.refresh();
+    runTutorial(this, 'loadout', [
+      {
+        rect: {
+          x: W / 2,
+          y: (LOADOUT_LAYOUT.listTop + LOADOUT_LAYOUT.listBottom) / 2,
+          w: W - 12,
+          h: LOADOUT_LAYOUT.listBottom - LOADOUT_LAYOUT.listTop + 10,
+        },
+        text: '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう',
+      },
+      {
+        rect: {
+          x: W / 2,
+          y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
+          w: W - 120,
+          h: this.view.gridHeight + 16,
+        },
+        text: '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！',
+      },
+      {
+        rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
+        text: '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！',
+      },
+    ]);
   }
 
   override update(): void {

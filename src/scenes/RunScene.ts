@@ -1,4 +1,5 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
@@ -165,6 +166,47 @@ export class RunScene extends Phaser.Scene {
       setAudioSuspended(false);
     });
     this.handleEvents(this.combat.drainEvents());
+    // 初めての出撃: 止めて、しくみを案内する
+    runTutorial(
+      this,
+      'run',
+      [
+        {
+          rect: {
+            x: W / 2,
+            y: RUN_LAYOUT.backpackTop + this.view.gridHeight / 2,
+            w: W - 40,
+            h: this.view.gridHeight + 20,
+          },
+          text: 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
+        },
+        {
+          rect: {
+            x: W / 2,
+            y: RUN_LAYOUT.fieldHeight / 2 + 40,
+            w: W,
+            h: RUN_LAYOUT.fieldHeight - 90,
+          },
+          text: '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！',
+        },
+        {
+          rect: { x: W / 2 + 74, y: 70, w: 210, h: 130 },
+          text: '残り時間。0になるか、HPがなくなると終わり。\n拾った装備は持ち帰れるよ',
+        },
+        {
+          rect: { x: W - 50, y: RUN_LAYOUT.middleTop + 86, w: 92, h: 92 },
+          text: '止めたいときはここ。撤退もできるよ',
+        },
+      ],
+      {
+        onStart: () => {
+          this.inspecting = true;
+        },
+        onDone: () => {
+          this.inspecting = false;
+        },
+      },
+    );
   }
 
   private buildHud(): void {

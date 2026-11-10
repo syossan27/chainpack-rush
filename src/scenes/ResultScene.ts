@@ -1,4 +1,5 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import {
   acceptLoot,
@@ -218,5 +219,15 @@ export class ResultScene extends Phaser.Scene {
           textStyle(18, COLORS.textWarn),
         )
         .setOrigin(0.5);
+    runTutorial(this, 'result', [
+      {
+        rect: { x: W / 2, y: 850, w: W - 26, h: 424 },
+        text: '宝箱から装備をゲット！\n開いたあとにタップすると、能力が見られるよ',
+      },
+      {
+        rect: { x: W / 2 - 170, y: H - 110, w: 312, h: 112 },
+        text: '拠点の「配置」で、拾った装備を\nバックパックに置くと強くなるよ',
+      },
+    ]);
   }
 }
