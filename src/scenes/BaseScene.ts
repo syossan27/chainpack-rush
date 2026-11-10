@@ -51,6 +51,7 @@ import type { IconName } from '../ui/kit/icons';
 import {
   Button,
   RoundButton,
+  bindTap,
   choiceDialog,
   confirmDialog,
   ink,
@@ -368,7 +369,7 @@ export class BaseScene extends Phaser.Scene {
         this.add
           .text(
             W / 2,
-            836,
+            830,
             '倉庫があふれています。売却するまで出撃できません',
             textStyle(20, COLORS.textWarn),
           )
@@ -376,9 +377,12 @@ export class BaseScene extends Phaser.Scene {
       );
     }
 
+    // プレミアムの案内（出撃ボタンの下、軽く）
+    this.addPremiumBar(878);
+
     // 記録（羊皮紙）
     const st = save.stats;
-    const py = 990;
+    const py = 1032;
     this.root.add(panel(this, W / 2, py, W - 60, 220, 'paper'));
     this.root.add(ink(this, 70, py - 92, '冒険の記録', 26, '#7a3c10'));
     const rows: [string, string][] = [
@@ -1346,5 +1350,53 @@ export class BaseScene extends Phaser.Scene {
         );
       }
     });
+  }
+
+  /** 拠点のプレミアムの案内: タップで中身を説明して、購入へ */
+  private addPremiumBar(y: number): void {
+    const prem = isPremium();
+    const w = W - 60;
+    const bar = this.add.container(W / 2, y);
+    const bg = panel(this, 0, 0, w, 62, 'plate').setInteractive({ useHandCursor: true });
+    const crown = this.add.image(-w / 2 + 34, 0, 'ic_crown').setScale(2.5);
+    const text = this.add
+      .text(
+        -w / 2 + 64,
+        0,
+        prem
+          ? 'プレミアム：広告なしでご褒美を受け取れます'
+          : `プレミアム ${PREMIUM_PRICE}｜広告なしでご褒美がもらえる`,
+        textStyle(20, prem ? COLORS.textDim : '#ffe27a'),
+      )
+      .setOrigin(0, 0.5);
+    bar.add([bg, crown, text]);
+    if (!prem)
+      bar.add(
+        this.add.text(w / 2 - 18, 0, '詳しく ›', textStyle(18, COLORS.text)).setOrigin(1, 0.5),
+      );
+    bindTap(bg, () => {
+      sfx('click');
+      if (prem) {
+        this.showToast('広告なしでご褒美を受け取れます');
+        return;
+      }
+      confirmDialog(
+        this,
+        `プレミアム ${PREMIUM_PRICE}（買い切り）`,
+        '広告を見なくても、ご褒美をすぐ受け取れます。\n・結果画面「戦利品をもう1回」\n・鍛冶屋「無料で再抽選」\n・力尽きたときの「再開」\n（回数はそのまま。強さは変わりません）',
+        '購入する',
+        () => {
+          void buyPremium(this).then((ok) => {
+            if (ok) {
+              sfx('openLegend');
+              this.showToast('プレミアムになりました！');
+            }
+            this.render();
+          });
+        },
+        'gold',
+      );
+    });
+    this.root.add(bar);
   }
 }
