@@ -329,7 +329,7 @@ export class FieldView {
     // 仮素材のときだけ、上下の揺れ（走り）と傾け（連鎖中）で動きを出す。本素材は地面に接地したままモーションに任せる
     const placeholder = !this.heroHasSprites;
     this.hero.setTint(now < this.heroHurtUntil ? 0xff8080 : 0xffffff);
-    this.hero.setAngle(placeholder && c.chain !== null ? Math.sin(now / 40) * 4 : 0);
+    this.hero.setAngle(placeholder && !c.ended && c.chain !== null ? Math.sin(now / 40) * 4 : 0);
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
     this.hero.anims.timeScale = speed;
@@ -337,8 +337,10 @@ export class FieldView {
     // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、走り中は走りを、連鎖中は攻撃を続ける）
     // 攻撃: 連鎖中はずっと（3段目までの守られている間も）。短い連鎖で先に終わっても、振り切るまで続ける。
     // 新しい連鎖が始まったら頭から再生し直す
-    const newChain = c.chain !== null && c.chain !== this.lastChain;
-    this.lastChain = c.chain;
+    // 撤退・時間切れ・力尽きたあとは、連鎖の途中でも連鎖していない扱い（攻撃を振り続けない）
+    const chain = c.ended ? null : c.chain;
+    const newChain = chain !== null && chain !== this.lastChain;
+    this.lastChain = chain;
     const attackKey = animKey('hero', 'attack');
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
     // 必殺モーションは最後のコマまで再生しきるまで続ける
@@ -348,14 +350,14 @@ export class FieldView {
     const state: UnitAnimName =
       now < this.specialUntil || specialPlaying
         ? this.specialName
-        : c.chain !== null || swinging
+        : chain !== null || swinging
           ? 'attack'
           : c.running
             ? 'run'
             : 'idle';
     // 連鎖が続いている間は、振り終わるたびに次の一振りを始める（長い連鎖でも止まらない）
     const swingEnded =
-      c.chain !== null &&
+      chain !== null &&
       this.hero.anims.currentAnim?.key === attackKey &&
       !this.hero.anims.isPlaying;
     this.playHeroAnim(
