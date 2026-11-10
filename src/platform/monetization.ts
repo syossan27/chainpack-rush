@@ -1,8 +1,7 @@
 // 報酬つき広告と買い切り（プレミアム）の入口。いまはテスト用のモック（広告の代わりに3秒の「テスト広告」画面、
-// 購入は保護者の確認のあと購入できたことにする）。本物（AdMob・ストアの課金）は provider を差し替えるだけにする。
+// 購入はすぐ購入できたことにする）。本物（AdMob・ストアの課金）は provider を差し替えるだけにする。
 import Phaser from 'phaser';
 import { MONETIZE } from '../config/balance';
-import { choiceDialog } from '../ui/kit/widgets';
 import { COLORS, textStyle } from '../ui/theme';
 import { getSave, persist } from './store';
 
@@ -76,31 +75,9 @@ export async function earnReward(scene: Phaser.Scene): Promise<boolean> {
   return provider.showRewarded(scene);
 }
 
-/** 保護者の確認（かんたんな足し算）。正しければ true */
-export function parentalGate(scene: Phaser.Scene): Promise<boolean> {
-  return new Promise((resolve) => {
-    const a = 11 + Math.floor(Math.random() * 8);
-    const b = 6 + Math.floor(Math.random() * 7);
-    const answer = a + b;
-    const options = [answer - 3, answer, answer + 4].sort(() => Math.random() - 0.5);
-    choiceDialog(
-      scene,
-      `保護者の方へ：${a} + ${b} は？`,
-      options.map((v) => ({
-        label: `${v}`,
-        skin: 'blue',
-        onPick: () => resolve(v === answer),
-      })),
-      '購入の前に、保護者の方の確認をお願いします',
-      () => resolve(false),
-    );
-  });
-}
-
-/** プレミアムを買う（保護者の確認 → 購入）。買えたら true */
+/** プレミアムを買う。買えたら true */
 export async function buyPremium(scene: Phaser.Scene): Promise<boolean> {
   if (isPremium()) return true;
-  if (!(await parentalGate(scene))) return false;
   const ok = await provider.purchasePremium(scene);
   if (ok) {
     getSave().premium = true;

@@ -359,8 +359,5 @@ export const MONETIZE = {
   dailyCaps: { extraLoot: 3, smithReroll: 3 } as Record<'extraLoot' | 'smithReroll', number>,
   /** 力尽きたときの再開: 1ランに1回、HP全回復＋この秒数 */
   reviveSeconds: 10,
-  /** 「戦利品をもう1回」で開ける数（今回の戦利品の数、この範囲） */
-  extraLootMin: 1,
-  extraLootMax: 6,
   premiumPrice: '480円',
 } as const;

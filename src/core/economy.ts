@@ -19,7 +19,7 @@ import { ITEM_DEFS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { createItem, rerollExits, rollLoot } from './loot';
+import { createItem, rerollExits } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
@@ -202,20 +202,19 @@ export function recordAd(save: SaveData, p: AdPlacement, now = new Date()): void
   save.adLog.counts[p] = (save.adLog.counts[p] ?? 0) + 1;
 }
 
-/** 「戦利品をもう1回」: 今回の戦利品と同じくらいの数を、同じ地域・周回で抽選し直して受け取る */
-export function rollExtraLoot(
+/**
+ * 「戦利品2倍」: 今回の戦利品と同じ装備（同じレアリティ）をもう1セット受け取る。
+ * 追加効果と出口の向きは新しく決まる。アーティファクトは増やさない
+ */
+export function doubleLoot(
   save: SaveData,
-  regionId: string,
-  loop: number,
-  count: number,
+  drops: readonly ItemInstance[],
   rng: Rng,
 ): ItemInstance[] {
-  const region = REGIONS.find((r) => r.id === regionId) ?? REGIONS[0]!;
-  const n = Math.min(MONETIZE.extraLootMax, Math.max(MONETIZE.extraLootMin, count));
-  const drops = Array.from({ length: n }, (_, i) =>
-    rollLoot(rng, Math.max(1, loop), `extra-${i}`, false, region.loot),
-  );
-  return acceptLoot(save, drops);
+  const copies = drops
+    .filter((d) => !getItemDef(d.defId).artifact)
+    .map((d, i) => createItem(rng, d.defId, d.rarity, `double-${i}`));
+  return acceptLoot(save, copies);
 }
 
 export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[]): boolean {

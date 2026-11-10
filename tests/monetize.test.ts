@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MONETIZE } from '../src/config/balance';
 import { BASE_HERO_STATS, Combat } from '../src/core/combat';
-import { adRemaining, itemMap, recordAd, rerollItem, rollExtraLoot } from '../src/core/economy';
+import { adRemaining, doubleLoot, itemMap, recordAd, rerollItem } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
 
@@ -29,13 +29,30 @@ describe('報酬つき広告の回数', () => {
     expect(rerollItem(s, sword.uid, new Rng(1))).toBe(false); // 有料はお金が要る
   });
 
-  it('戦利品をもう1回: 今回と同じくらいの数（範囲内）を倉庫に受け取る', () => {
+  it('戦利品2倍: 今回と同じ装備・同じレアリティをもう1セット。アーティファクトは増やさない', () => {
     const s = createInitialSave();
     const n = s.inventory.length;
-    expect(rollExtraLoot(s, 'cave', 2, 0, new Rng(3))).toHaveLength(MONETIZE.extraLootMin);
-    expect(rollExtraLoot(s, 'cave', 2, 4, new Rng(3))).toHaveLength(4);
-    expect(rollExtraLoot(s, 'cave', 2, 99, new Rng(3))).toHaveLength(MONETIZE.extraLootMax);
-    expect(s.inventory.length).toBe(n + MONETIZE.extraLootMin + 4 + MONETIZE.extraLootMax);
+    const drops = [
+      {
+        uid: 'a',
+        defId: 'sword',
+        rarity: 'rare' as const,
+        exits: ['right' as const],
+        rerollCount: 0,
+      },
+      { uid: 'b', defId: 'flame_staff', rarity: 'epic' as const, exits: [], rerollCount: 0 },
+      {
+        uid: 'c',
+        defId: 'dragon_fang',
+        rarity: 'legendary' as const,
+        exits: ['right' as const],
+        rerollCount: 0,
+      },
+    ];
+    const more = doubleLoot(s, drops, new Rng(3));
+    expect(more.map((i) => `${i.defId}:${i.rarity}`)).toEqual(['sword:rare', 'flame_staff:epic']);
+    expect(new Set(more.map((i) => i.uid)).size).toBe(2);
+    expect(s.inventory.length).toBe(n + 2);
   });
 });
 

@@ -5,14 +5,15 @@ import {
   adRemaining,
   autoSellDrops,
   consumeItems,
+  doubleLoot,
   recordAd,
   recordRun,
-  rollExtraLoot,
   sortieBlock,
 } from '../core/economy';
 import { Rng, randomSeed } from '../core/rng';
 import { earnReward, isPremium } from '../platform/monetization';
 import type { ItemInstance, Rarity } from '../core/types';
+import { getItemDef } from '../data/items';
 import { getRegion } from '../data/regions';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
@@ -88,7 +89,7 @@ export class ResultScene extends Phaser.Scene {
         )
         .setOrigin(0.5);
     }
-    ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
+    let lootRibbon = ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
     // 戦利品の帯の下の一言（自動売却・もう1回の結果）
     const lootNote = this.add
       .text(
@@ -132,7 +133,9 @@ export class ResultScene extends Phaser.Scene {
     });
     showLoot(added, auto.uids);
 
-    // 報酬つき広告: 戦利品をもう1回（1日の回数まで。プレミアムは広告なし）
+    // 報酬つき広告: 戦利品2倍（このリザルトで1回・1日の回数まで。プレミアムは広告なし）
+    const doubleable = added.filter((i) => !getItemDef(i.defId).artifact);
+    let doubled = false;
     const extraBtn = new Button(this, W / 2, 1086, '', () => void takeExtra(), {
       width: W - 80,
       height: 58,
@@ -141,28 +144,33 @@ export class ResultScene extends Phaser.Scene {
     });
     const refreshExtra = () => {
       const left = adRemaining(save, 'extraLoot');
-      extraBtn.setText(`${isPremium() ? '' : '▶ 広告を見て'}戦利品をもう1回（今日あと${left}回）`);
-      extraBtn.setVisible(left > 0);
+      extraBtn.setText(
+        `${isPremium() ? '' : '▶ 広告を見て'}戦利品を2倍にする（今日あと${left}回）`,
+      );
+      extraBtn.setVisible(left > 0 && !doubled && doubleable.length > 0);
     };
     let busy = false;
     const takeExtra = async () => {
-      if (busy || adRemaining(save, 'extraLoot') <= 0) return;
+      if (busy || doubled || adRemaining(save, 'extraLoot') <= 0) return;
       busy = true;
       const ok = await earnReward(this);
       busy = false;
       if (!ok) return;
       recordAd(save, 'extraLoot');
-      const more = rollExtraLoot(
-        save,
-        regionId,
-        result.reachedLoop,
-        added.length,
-        new Rng(randomSeed()),
-      );
+      doubled = true;
+      const more = doubleLoot(save, doubleable, new Rng(randomSeed()));
       const sold = autoSellDrops(save, more);
       persist();
+      lootRibbon.destroy();
+      lootRibbon = ribbon(
+        this,
+        W / 2,
+        590,
+        `戦利品 ${added.length + more.length}（×2）`,
+        360,
+      ).setScale(0.8);
       lootNote.setText(
-        `もう1回の戦利品 ${more.length}個${sold.uids.length > 0 ? `（自動売却 ${sold.uids.length}個 +${sold.gold}G）` : ''}`,
+        sold.uids.length > 0 ? `2倍の分 自動売却 ${sold.uids.length}個 +${sold.gold}G` : '',
       );
       showLoot(more, sold.uids);
       refreshExtra();
