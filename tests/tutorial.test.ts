@@ -17,6 +17,7 @@ describe('初心者向けの案内', () => {
     delete played.tutorialSeen;
     played.stats.runs = 3;
     expect(deserializeSave(JSON.stringify(played)).tutorialSeen).toContain('run');
+    expect(deserializeSave(JSON.stringify(played)).tutorialSeen).toContain('demo');
     const fresh = JSON.parse(serializeSave(createInitialSave()));
     delete fresh.tutorialSeen;
     expect(deserializeSave(JSON.stringify(fresh)).tutorialSeen).toEqual([]);

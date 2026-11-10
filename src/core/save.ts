@@ -236,7 +236,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       tutorialSeen: Array.isArray(data.tutorialSeen)
         ? data.tutorialSeen.filter((t): t is string => typeof t === 'string')
         : isObj(data.stats) && isNum(data.stats.runs) && data.stats.runs > 0
-          ? ['home', 'stage', 'run', 'result', 'loadout', 'smith']
+          ? ['home', 'stage', 'run', 'demoEnd', 'result', 'loadout', 'smith', 'demo']
           : [],
       adLog:
         isObj(data.adLog) && typeof data.adLog.date === 'string' && isObj(data.adLog.counts)

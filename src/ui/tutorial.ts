@@ -7,7 +7,26 @@ import { COLORS, inkStyle, textStyle } from './theme';
 import { panel } from './kit/widgets';
 
 /** 案内の種類（各画面で1回） */
-export const TUTORIAL_KEYS = ['home', 'stage', 'run', 'result', 'loadout', 'smith'] as const;
+export const TUTORIAL_KEYS = [
+  'home',
+  'stage',
+  'run',
+  'demoEnd',
+  'result',
+  'loadout',
+  'smith',
+] as const;
+
+/** 最初の出撃の体験ラン（伝説の装備を借りて遊ぶ）。済んだら tutorialSeen に入る。スキップでは飛ばさない */
+export const DEMO_KEY = 'demo';
+
+export function demoPending(): boolean {
+  return !getSave().tutorialSeen.includes(DEMO_KEY);
+}
+
+export function markDemoDone(): void {
+  markSeen([DEMO_KEY]);
+}
 export type TutorialKey = (typeof TUTORIAL_KEYS)[number];
 
 export interface CoachStep {

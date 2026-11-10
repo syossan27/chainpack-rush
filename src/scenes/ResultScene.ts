@@ -1,5 +1,5 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
-import { runTutorial } from '../ui/tutorial';
+import { markDemoDone, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import {
   acceptLoot,
@@ -43,18 +43,32 @@ export class ResultScene extends Phaser.Scene {
       return;
     }
     const { result, regionId } = last;
-    // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存
-    consumeItems(save, result.usedConsumables);
-    const added = acceptLoot(save, result.drops);
-    // 自動売却（倉庫で設定したレアリティ以下）
-    const auto = autoSellDrops(save, added);
-    const { unlocked } = recordRun(save, regionId, result);
+    const demo = last.demo === true;
+    // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存。
+    // 体験ラン（借りた伝説の装備）は、倉庫にも記録にも残さない
+    let added: ItemInstance[] = [];
+    let auto: { uids: string[]; gold: number } = { uids: [], gold: 0 };
+    let unlocked: string | null = null;
+    if (demo) markDemoDone();
+    else {
+      consumeItems(save, result.usedConsumables);
+      added = acceptLoot(save, result.drops);
+      // 自動売却（倉庫で設定したレアリティ以下）
+      auto = autoSellDrops(save, added);
+      unlocked = recordRun(save, regionId, result).unlocked;
+    }
     persist();
     session.lastResult = null;
 
     const dead = result.reason === 'dead';
     // 見出し（傾いて出てくるリボン）
-    const title = ribbon(this, W / 2, 110, dead ? '力尽きた…' : '撤退！', 420);
+    const title = ribbon(
+      this,
+      W / 2,
+      110,
+      demo ? '体験おわり！' : dead ? '力尽きた…' : '撤退！',
+      420,
+    );
     title.setScale(0.3).setAngle(-8);
     this.tweens.add({ targets: title, scale: 1, angle: 0, duration: 380, ease: 'Back.easeOut' });
     this.add
@@ -120,7 +134,13 @@ export class ResultScene extends Phaser.Scene {
       reveal?.root.destroy();
       reveal = null;
       const items = [...byRarity(first), ...byRarity(bonus)];
-      emptyText.setText(items.length === 0 ? '戦利品なし' : '');
+      emptyText.setText(
+        items.length === 0
+          ? demo
+            ? '借りた伝説の装備は、お返ししたよ\n（体験なので戦利品はなし）'
+            : '戦利品なし'
+          : '',
+      );
       if (items.length === 0) return;
       const queue = items;
       reveal = new ChestReveal(this, queue, {
@@ -206,7 +226,7 @@ export class ResultScene extends Phaser.Scene {
       this,
       W / 2 + 170,
       H - 110,
-      block ? '配置へ' : 'もう一度',
+      block ? '配置へ' : demo ? '自分で出撃' : 'もう一度',
       () => this.scene.start(block ? 'Loadout' : 'Run'),
       { width: 300, height: 100, fontSize: 34, skin: 'gold', icon: block ? 'bag' : 'swords' },
     );
@@ -219,6 +239,19 @@ export class ResultScene extends Phaser.Scene {
           textStyle(18, COLORS.textWarn),
         )
         .setOrigin(0.5);
+    if (demo) {
+      runTutorial(this, 'demoEnd', [
+        {
+          rect: { x: W / 2, y: 408, w: W - 50, h: 216 },
+          text: `これが伝説の装備の力！\n最大${result.stats.maxStep}段の連鎖、${Math.round(result.stats.maxDamage)}ダメージ！`,
+        },
+        {
+          rect: { x: W / 2 + 170, y: H - 110, w: 312, h: 112 },
+          text: 'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！',
+        },
+      ]);
+      return;
+    }
     runTutorial(this, 'result', [
       {
         rect: { x: W / 2, y: 850, w: W - 26, h: 424 },

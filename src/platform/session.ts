@@ -3,7 +3,7 @@ import type { RunResult } from '../core/combat';
 
 export const session: {
   regionId: string | null;
-  lastResult: { regionId: string; result: RunResult; seed: number } | null;
+  lastResult: { regionId: string; result: RunResult; seed: number; demo?: boolean } | null;
 } = {
   regionId: null,
   lastResult: null,

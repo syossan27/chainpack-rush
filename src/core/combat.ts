@@ -65,6 +65,8 @@ export interface RunConfig {
   rules?: Partial<ChainRules>;
   /** 会心・ダメージの揺れ・精鋭（省略時は LUCK） */
   luck?: Partial<LuckRules>;
+  /** 体験ラン: 時間はのびない・戦利品は落ちない */
+  demo?: boolean;
 }
 
 export interface EnemyState {
@@ -1055,7 +1057,7 @@ export class Combat {
       boss: e.def.boss,
       fled: false,
     });
-    if (!e.escort && this.mode === 'run') {
+    if (!e.escort && this.mode === 'run' && !this.cfg.demo) {
       const roll = this.rng.next();
       if (roll < e.def.dropRate || e.elite === 'golden') {
         const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
@@ -1109,7 +1111,7 @@ export class Combat {
 
   /** 出撃時間をのばす（上限 TIME_BONUS.maxRunTime）。実際に増えた分をイベントで出す */
   private addTime(seconds: number, reason: TimeBonusReason): void {
-    if (this.mode !== 'run' || this.ended) return;
+    if (this.mode !== 'run' || this.ended || this.cfg.demo) return;
     const cap = secToTicks(TIME_BONUS.maxRunTime);
     const before = this.maxTicks;
     this.maxTicks = Math.min(cap, this.maxTicks + secToTicks(seconds));

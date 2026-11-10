@@ -1,12 +1,12 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
-import { runTutorial } from '../ui/tutorial';
+import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
 import { Combat, type CombatEvent } from '../core/combat';
 import { consumableSlots, heroStats, itemMap } from '../core/economy';
 import { randomSeed } from '../core/rng';
-import type { ItemInstance } from '../core/types';
+import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
 import { setAudioSuspended, sfx, sfxChainStep } from '../audio/sfx';
@@ -28,6 +28,7 @@ import { getTechnique } from '../data/techniques';
 import { earnReward, isPremium } from '../platform/monetization';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
+import { DEMO_HERO, DEMO_REGION, demoLoadout } from '../data/demoLoadout';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 const MAX_STEPS_PER_FRAME = 5;
@@ -68,6 +69,9 @@ export class RunScene extends Phaser.Scene {
   private paused = false;
   /** 装備の詳細を見ているあいだ止める（一時停止の幕は出さない） */
   private inspecting = false;
+  /** 最初の出撃の体験ラン（伝説の装備を借りる） */
+  private demo = false;
+  private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
   private hitStopUntil = 0;
@@ -104,17 +108,23 @@ export class RunScene extends Phaser.Scene {
 
   create(): void {
     const save = getSave();
-    this.regionId = session.regionId ?? save.progress.unlocked[0]!;
+    this.demo = demoPending();
+    this.regionId = this.demo ? DEMO_REGION : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = debugSeed() ?? randomSeed();
-    this.items = itemMap(save);
+    // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
+    const demo = this.demo ? demoLoadout() : null;
+    const loadout = demo ? demo.loadout : save.loadout;
+    this.loadout = loadout;
+    this.items = demo ? demo.items : itemMap(save);
     this.shake = save.settings.shake;
     this.combat = new Combat({
       seed: this.seed,
       regionId: this.regionId,
-      loadout: save.loadout,
+      loadout,
       items: this.items,
-      hero: heroStats(save),
-      consumableSlots: consumableSlots(save),
+      hero: demo ? DEMO_HERO : heroStats(save),
+      consumableSlots: demo ? 0 : consumableSlots(save),
+      demo: this.demo,
     });
     this.acc = 0;
     this.paused = false;
@@ -127,7 +137,7 @@ export class RunScene extends Phaser.Scene {
 
     this.field = new FieldView(this, this.regionId);
 
-    this.field.setAura(auraTier(save.loadout, this.items));
+    this.field.setAura(auraTier(loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
     this.elementFx = new ElementFx(this, 56, 40, RUN_LAYOUT.footY - 4);
@@ -140,9 +150,7 @@ export class RunScene extends Phaser.Scene {
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
     this.consumableButtons = [];
     this.trackKey = '';
-    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, save.loadout, this.items).setDepth(
-      41,
-    );
+    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
     this.buildHud();
     this.buildConsumables();
     this.setupBackpackTap();
@@ -166,7 +174,7 @@ export class RunScene extends Phaser.Scene {
       setAudioSuspended(false);
     });
     this.handleEvents(this.combat.drainEvents());
-    // 初めての出撃: 止めて、しくみを案内する
+    // 初めての出撃（体験ラン）: 止めて、しくみを案内する
     runTutorial(
       this,
       'run',
@@ -178,8 +186,23 @@ export class RunScene extends Phaser.Scene {
             w: W - 40,
             h: this.view.gridHeight + 20,
           },
-          text: 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
+          text: this.demo
+            ? '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！'
+            : 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
         },
+        ...(this.demo
+          ? [
+              {
+                rect: {
+                  x: W / 2,
+                  y: RUN_LAYOUT.backpackTop + this.view.gridHeight / 2,
+                  w: W - 40,
+                  h: this.view.gridHeight + 20,
+                },
+                text: '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる',
+              },
+            ]
+          : []),
         {
           rect: {
             x: W / 2,
@@ -191,11 +214,15 @@ export class RunScene extends Phaser.Scene {
         },
         {
           rect: { x: W / 2 + 74, y: 70, w: 210, h: 130 },
-          text: '残り時間。0になるか、HPがなくなると終わり。\n拾った装備は持ち帰れるよ',
+          text: this.demo
+            ? '残り時間。ふだんは0になるか、\nHPがなくなると終わり'
+            : '残り時間。0になるか、HPがなくなると終わり。\n拾った装備は持ち帰れるよ',
         },
         {
           rect: { x: W - 50, y: RUN_LAYOUT.middleTop + 86, w: 92, h: 92 },
-          text: '止めたいときはここ。撤退もできるよ',
+          text: this.demo
+            ? '止めたいときはここ。撤退もできるよ。\nさあ、伝説の力を見てみよう！'
+            : '止めたいときはここ。撤退もできるよ',
         },
       ],
       {
@@ -371,7 +398,7 @@ export class RunScene extends Phaser.Scene {
 
   /** バックパックの装備をタップ: 止めて能力の詳細を出し、閉じたら再開 */
   private setupBackpackTap(): void {
-    const loadout = getSave().loadout;
+    const loadout = this.loadout;
     const zone = this.add
       .zone(0, RUN_LAYOUT.backpackTop, W, this.view.gridHeight)
       .setOrigin(0, 0)
@@ -463,7 +490,7 @@ export class RunScene extends Phaser.Scene {
     this.hud.defText.setText(`防御 ${Math.round(c.defense)}`);
     const nextUid = c.nextOriginUid;
     if (nextUid) {
-      const plan = planChain(getSave().loadout, this.items, nextUid);
+      const plan = planChain(this.loadout, this.items, nextUid);
       const idx = c.originOrder.indexOf(nextUid);
       this.hud.nextBadge.setText(originLabel(idx));
       this.hud.next.setText(
@@ -647,7 +674,7 @@ export class RunScene extends Phaser.Scene {
           const impact = this.field.heroSpecial(color, t?.id);
           // 初めて出した技は図鑑に登録して、テロップで知らせる
           const save = getSave();
-          if (t && !save.discoveredTechs.includes(t.id)) {
+          if (t && !this.demo && !save.discoveredTechs.includes(t.id)) {
             save.discoveredTechs.push(t.id);
             persist();
             showDiscovery(this, t.name);
@@ -785,7 +812,8 @@ export class RunScene extends Phaser.Scene {
           break;
         case 'runEnd':
           // 力尽きたら、1ランに1回だけ「広告を見て再開」を選べる
-          if (ev.reason === 'dead' && !this.combat.revived && !this.ending) this.askRevive();
+          if (ev.reason === 'dead' && !this.demo && !this.combat.revived && !this.ending)
+            this.askRevive();
           else this.finish();
           break;
         case 'revive':
@@ -838,9 +866,9 @@ export class RunScene extends Phaser.Scene {
     this.ending = true;
     sfx('runEnd');
     const r = this.combat.result();
-    session.lastResult = { regionId: this.regionId, result: r, seed: this.seed };
+    session.lastResult = { regionId: this.regionId, result: r, seed: this.seed, demo: this.demo };
     this.showBanner(
-      r.reason === 'dead' ? '力尽きた…' : '撤退！',
+      this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！',
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,
     );
     this.time.delayedCall(1300, () => this.scene.start('Result'));
