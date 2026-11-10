@@ -143,11 +143,16 @@ export class ItemList extends Phaser.GameObjects.Container {
       .filter((it) => {
         const def = getItemDef(it.defId);
         if (this.kind !== 'all' && def.kind !== this.kind) return false;
-        if (this.rarity !== 'all' && it.rarity !== this.rarity) return false;
+        // 消耗品はレアリティを持たない（★の絞り込みには出さない）
+        if (this.rarity !== 'all' && (it.rarity !== this.rarity || def.kind === 'consumable'))
+          return false;
         return true;
       })
       .sort(
         (a, b) =>
+          // 消耗品は装備のあと（別枠）
+          Number(getItemDef(a.defId).kind === 'consumable') -
+            Number(getItemDef(b.defId).kind === 'consumable') ||
           RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] ||
           a.defId.localeCompare(b.defId) ||
           a.uid.localeCompare(b.uid),

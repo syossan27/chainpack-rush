@@ -9,6 +9,7 @@ import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { ItemIcon } from './itemIcon';
 import { iconTex } from './kit/icons';
 import { bindTap } from './kit/widgets';
+import { CONSUMABLE_CSS } from './kit/skin';
 import { rarityColor, rarityCss, textStyle } from './theme';
 
 type Tier = Rarity | 'artifact';
@@ -295,7 +296,14 @@ export class ChestReveal {
         x,
         y + this.opts.iconSize / 2 + 2,
         getItemDef(it.defId).name,
-        textStyle(16, tier === 'artifact' ? '#ff8ce8' : rarityCss(it.rarity)),
+        textStyle(
+          16,
+          tier === 'artifact'
+            ? '#ff8ce8'
+            : getItemDef(it.defId).kind === 'consumable'
+              ? CONSUMABLE_CSS
+              : rarityCss(it.rarity),
+        ),
       )
       .setOrigin(0.5, 0);
     this.root.add(name);

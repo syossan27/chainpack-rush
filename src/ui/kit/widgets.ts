@@ -372,6 +372,8 @@ export function choiceDialog(
   note?: string,
   /** 外側や「やめる」で閉じたとき */
   onCancel?: () => void,
+  /** 必ずどれかを選ばせる（「やめる」を出さず、外側を押しても閉じない） */
+  mustChoose = false,
 ): Phaser.GameObjects.Container {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -382,10 +384,10 @@ export function choiceDialog(
     onCancel?.();
   };
   const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
-  shade.on('pointerup', cancel);
+  if (!mustChoose) shade.on('pointerup', cancel);
   const cw = W - 80;
   const rowH = 92;
-  const ch = 120 + choices.length * rowH + (note ? 40 : 0) + 110;
+  const ch = 120 + choices.length * rowH + (note ? 40 : 0) + (mustChoose ? 20 : 110);
   const top = H / 2 - ch / 2;
   const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
   const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
@@ -412,8 +414,9 @@ export function choiceDialog(
     );
     y += 40;
   }
-  root.add(
-    new Button(scene, W / 2, y + 20, 'やめる', cancel, { width: 230, height: 72, skin: 'gray' }),
-  );
+  if (!mustChoose)
+    root.add(
+      new Button(scene, W / 2, y + 20, 'やめる', cancel, { width: 230, height: 72, skin: 'gray' }),
+    );
   return root;
 }

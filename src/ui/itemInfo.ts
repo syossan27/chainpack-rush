@@ -11,6 +11,7 @@ import { originLabel } from './backpackView';
 import type { IconName } from './kit/icons';
 import type { ButtonSkin } from './kit/skin';
 import { Button, panel } from './kit/widgets';
+import { CONSUMABLE_CSS } from './kit/skin';
 import { AREA_NAMES, ELEMENT_NAMES, RARITY_NAMES, STATUS_NAMES, getItemDef } from '../data/items';
 import { ItemIcon } from './itemIcon';
 import { COLORS, W, rarityCss, textStyle } from './theme';
@@ -27,7 +28,9 @@ export function describeItem(it: ItemInstance): string[] {
   lines.push(
     def.artifact
       ? `アーティファクト（能力 ×${r}・出口の数は固定）`
-      : `${RARITY_NAMES[it.rarity]}（能力 ×${r}）`,
+      : def.kind === 'consumable'
+        ? '消耗品'
+        : `${RARITY_NAMES[it.rarity]}（能力 ×${r}）`,
   );
   if (def.kind !== 'consumable') {
     lines.push(
@@ -165,10 +168,19 @@ export function showItemDetail(
       left + 140,
       y + 4,
       def.name,
-      textStyle(40, def.artifact ? ARTIFACT_CSS : rarityCss(it.rarity)),
+      textStyle(
+        40,
+        def.artifact
+          ? ARTIFACT_CSS
+          : def.kind === 'consumable'
+            ? CONSUMABLE_CSS
+            : rarityCss(it.rarity),
+      ),
     ),
   );
-  const tags = [def.artifact ? 'アーティファクト' : RARITY_NAMES[it.rarity]!];
+  // 消耗品はレアリティを持たない（別枠）
+  const tags: string[] =
+    def.kind === 'consumable' ? [] : [def.artifact ? 'アーティファクト' : RARITY_NAMES[it.rarity]!];
   if (def.kind === 'attack')
     tags.push(ELEMENT_NAMES[def.element ?? 'physical']!, AREA_NAMES[def.area ?? 'single']!);
   else tags.push({ origin: '起点', defense: '防御', consumable: '消耗品', attack: '' }[def.kind]);

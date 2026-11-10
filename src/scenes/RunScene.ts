@@ -944,7 +944,8 @@ export class RunScene extends Phaser.Scene {
         { label: 'あきらめる', skin: 'gray', onPick: () => this.giveUp() },
       ],
       '1回のランで1回だけ再開できます',
-      () => this.giveUp(),
+      undefined,
+      true,
     );
   }
 

@@ -630,6 +630,21 @@ export class BaseScene extends Phaser.Scene {
               ),
           };
         });
+        // 消耗品（装備とは別枠。消耗品枠に入れているもの・ロック中は売らない）
+        const consumables = stored().filter(
+          (i) => getItemDef(i.defId).kind === 'consumable' && !i.locked && !presetUses.has(i.uid),
+        );
+        const cGold = consumables.reduce((sum, i) => sum + sellPrice(i), 0);
+        choices.push({
+          label: `消耗品  ${consumables.length}個 +${cGold}G`,
+          disabled: consumables.length === 0,
+          skin: 'green',
+          onPick: () =>
+            sellWithConfirm(
+              consumables.map((i) => i.uid),
+              '消耗品を一括売却',
+            ),
+        });
         choices.push({
           label: this.keepAffixes ? '✦付きは残す：オン' : '✦付きは残す：オフ',
           skin: 'blue',
@@ -642,7 +657,7 @@ export class BaseScene extends Phaser.Scene {
           this,
           '一括売却',
           choices,
-          '装備中・ロック中・ほかの編成で使用中・消耗品・アーティファクトは売りません',
+          '装備中・ロック中・編成で使用中・アーティファクトは売りません',
         );
       };
       this.root.add(
