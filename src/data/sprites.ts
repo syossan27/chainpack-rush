@@ -700,8 +700,55 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
     },
   },
   scarecrow: unit('scarecrow', SCARECROW, 48),
-  // ---- 火山・氷河・魔王城（火のトカゲだけ仮素材。今の敵の色違い） ----
-  fire_lizard: unit('fire_lizard', recolor(WOLF, { G: 'o', g: 'y', D: 'R' }), 48),
+  // ---- 火山・氷河・魔王城（PixelLab） ----
+  // 火のトカゲ（PixelLab）。黒曜石の体に溶岩の筋。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
+  fire_lizard: {
+    ...unit('fire_lizard', recolor(WOLF, { G: 'o', g: 'y', D: 'R' }), 48),
+    bodyHeight: 35,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/fire_lizard/fire_lizard_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      move: {
+        file: 'enemies/fire_lizard/fire_lizard_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'enemies/fire_lizard/fire_lizard_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      death: {
+        file: 'enemies/fire_lizard/fire_lizard_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   // マグマスライム（PixelLab）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
   magma_slime: {
     ...unit('magma_slime', recolor(SLIME, { e: 'o', E: 'R', W: 'y' }), 48),
