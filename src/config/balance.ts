@@ -85,6 +85,13 @@ export const AREA = {
   allMult: 0.4,
 } as const;
 
+/** 毒: 付けた一撃のダメージの dpsRatio 倍を、毎秒 STATUS.duration 秒のあいだ与える（重ねがけは強い方） */
+export const POISON = {
+  dpsRatio: 0.3,
+  /** ダメージを表示する間隔（秒） */
+  tickEvery: 0.5,
+} as const;
+
 export const STATUS = {
   duration: 5,
   /** 状態がついた相手へのコンボ以外の攻撃は ×1.2（状態付与の装備にも単体で役目を持たせる） */

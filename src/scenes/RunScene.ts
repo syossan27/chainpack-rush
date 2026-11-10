@@ -713,6 +713,11 @@ export class RunScene extends Phaser.Scene {
             this.showRecord('damage');
           const p = this.enemyPos(ev.enemyId);
           if (!p) break;
+          // 毒のじわじわダメージ: 緑の小さな数字だけ（演出は出さない）
+          if (ev.dot) {
+            this.numbers.show(p.x, p.y, ev.damage, '#8ae04a', false, 0);
+            break;
+          }
           const strength = Math.min(1, ev.damage / JUICE.hugeHit);
           this.field.flashEnemy(ev.enemyId, now, strength);
           if (ev.nullified) {

@@ -16,6 +16,7 @@ import {
   RARITY,
   SIM,
   STATUS,
+  POISON,
   TIME_BONUS,
   type ChainRules,
 } from '../config/balance';
@@ -90,6 +91,10 @@ export interface EnemyState {
   killedBy: number; // 倒した連鎖の番号（-1 は生存中・連鎖以外）
   elite: EliteId | null;
   enraged: boolean;
+  /** 毒の毎秒ダメージ（毒が切れたら 0） */
+  poisonDps: number;
+  /** まだ表示していない毒のダメージ */
+  poisonAcc: number;
 }
 
 /** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
@@ -140,6 +145,8 @@ export type CombatEvent =
       crit: boolean;
       /** 連鎖の何段目の攻撃か（爆弾などは 0） */
       step: number;
+      /** 毒など、時間でじわじわ与えたダメージ */
+      dot?: boolean;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
@@ -501,9 +508,11 @@ export class Combat {
       if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.inContact()) this.fire();
     }
 
-    // 3. 状態の失効
+    // 3. 状態の失効と、毒のダメージ
     for (const e of this.enemies) {
       for (const [s, until] of e.statuses) if (this.tick >= until) e.statuses.delete(s);
+      if (!e.statuses.has('poison')) e.poisonDps = 0;
+      else if (e.alive && e.poisonDps > 0) this.tickPoison(e, dt);
     }
 
     // 4. 敵の行動
@@ -657,6 +666,8 @@ export class Combat {
       killedBy: -1,
       elite,
       enraged: false,
+      poisonDps: 0,
+      poisonAcc: 0,
     };
     this.enemies.push(e);
     this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort, elite });
@@ -898,7 +909,8 @@ export class Combat {
     }
     const aimId = aim.id;
     const eff = parent && parent.aim === aimId ? parent.eff + 1 : 1;
-    c.exec[index] = { eff, aim: aimId };
+    // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
+    c.exec[index] = { eff: eff + (def.stepBoost ?? 0), aim: aimId };
     const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
     this.emit({
@@ -1002,6 +1014,10 @@ export class Combat {
           c.totalDamage += dmg;
           this.stats.totalDamage += dmg;
           if (dmg > this.stats.maxDamage) this.stats.maxDamage = dmg;
+          // 吸血: 与えた分の一部を回復
+          if (def.lifesteal) this.hp = Math.min(this.maxHp, this.hp + dmg * def.lifesteal);
+          // 毒: この一撃の一部を、毎秒のダメージにする（強い方を残す）
+          if (def.applies === 'poison') t.poisonDps = Math.max(t.poisonDps, dmg * POISON.dpsRatio);
         }
       }
       if (def.applies && t.hp > 0) this.applyStatus(t, def.applies);
@@ -1050,6 +1066,31 @@ export class Combat {
       case 'all':
         return this.onScreen().sort(byFront);
     }
+  }
+
+  /** 毒: 毎秒ダメージを少しずつ与え、一定の間隔でまとめて表示する */
+  private tickPoison(e: EnemyState, dt: number): void {
+    const d = e.poisonDps * dt;
+    e.hp -= d;
+    e.poisonAcc += d;
+    this.stats.totalDamage += d;
+    const show = e.poisonAcc >= e.poisonDps * POISON.tickEvery || e.hp <= 0;
+    if (show) {
+      this.emit({
+        type: 'hit',
+        tick: this.tick,
+        enemyId: e.id,
+        itemUid: '',
+        damage: Math.round(e.poisonAcc * 100) / 100,
+        combo: null,
+        nullified: false,
+        crit: false,
+        step: 0,
+        dot: true,
+      });
+      e.poisonAcc = 0;
+    }
+    if (e.hp <= 0) this.killEnemy(e);
   }
 
   private applyStatus(e: EnemyState, status: Status): void {

@@ -1,7 +1,7 @@
 // 配置画面の見積もり: ルート1本を「ふつうの敵1体」に撃ったときの合計ダメージ（期待値）
 // 連鎖倍率・レアリティ・強化・コンボ（同じルート内で付けた状態を、後ろの装備が使う）・追加効果・会心の期待値を含む。
 // 狙いの切り替え（敵が倒れて段数が戻る）、範囲攻撃で巻き込む分、ボス特効は含めない。
-import { LUCK, STATUS } from '../config/balance';
+import { LUCK, POISON, STATUS } from '../config/balance';
 import { getItemDef } from '../data/items';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
@@ -63,6 +63,8 @@ export function estimateRoute(
     const critAvg = 1 + critChance * (LUCK.critMult - 1);
     const hit = base * m * critAvg * (def.hits ?? 1) * (s.tech ? TECHNIQUE_MULT : 1);
     total += hit;
+    // 毒: 時間でじわじわ与える分（敵が先に倒れることもあるので半分に見積もる）
+    if (def.applies === 'poison') total += hit * POISON.dpsRatio * STATUS.duration * 0.5;
     if (combo) fromCombos += hit - hit / combo.mult;
     if (s.tech) techs.push(s.tech);
     if (def.applies) statuses.add(def.applies);

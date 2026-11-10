@@ -207,6 +207,10 @@ export function showItemDetail(
     if (def.multCap)
       rows.push(['連鎖倍率の上限', `×${def.multCap.toFixed(1)}`, 'この環を通る連鎖すべて']);
     if (def.bossMult) rows.push(['ボス特効', `×${def.bossMult}`]);
+    if (def.lifesteal)
+      rows.push(['吸血', `与えたダメージの${Math.round(def.lifesteal * 100)}%を回復`]);
+    if (def.stepBoost) rows.push(['疾風', `このあとの装備は段数+${def.stepBoost}`]);
+    if (def.applies === 'poison') rows.push(['毒', '5秒間、一撃の30%を毎秒']);
     if (def.appliesAll) rows.push(['付与', '濡れ・油・凍結をまとめて']);
     rows.push(['次への伝達', `${def.relayDelay ?? CHAIN.relayDelay}秒`]);
   } else if (def.kind === 'defense') {

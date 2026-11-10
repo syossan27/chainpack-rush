@@ -5,7 +5,7 @@ export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 export type ItemKind = 'origin' | 'attack' | 'defense' | 'consumable';
 export type Element = 'physical' | 'blunt' | 'fire' | 'thunder' | 'ice' | 'water' | 'oil';
 export type Area = 'single' | 'sweep' | 'splash' | 'all';
-export type Status = 'wet' | 'oil' | 'frozen';
+export type Status = 'wet' | 'oil' | 'frozen' | 'poison';
 export type ConsumableEffect =
   'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal' | 'addTime' | 'bombAll' | 'critUp';
 
@@ -36,6 +36,10 @@ export interface ItemDef {
   /** 当てた敵に濡れ・油・凍結をまとめて付ける（賢者の石） */
   appliesAll?: boolean;
   effect?: ConsumableEffect;
+  /** 与えたダメージのこの割合だけ勇者のHPが回復する（吸血の剣） */
+  lifesteal?: number;
+  /** この装備のあとに続く装備は、段数がこの分だけ多く数えられる（疾風の羽） */
+  stepBoost?: number;
   /** 出るレアリティの幅（下限・上限）。省略時はすべて。上限を超える合成は next の装備になる */
   rarities?: [Rarity, Rarity];
   /** 系統の次の装備（合成で上限を超えたとき） */

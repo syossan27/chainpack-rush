@@ -13,7 +13,12 @@ import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 /** 被弾モーションを見せる長さ（ms） */
 const HERO_HIT_MS = 250;
 
-const STATUS_COLOR: Record<Status, number> = { wet: 0x5aa0e8, oil: 0x6a5030, frozen: 0xc8f0ff };
+const STATUS_COLOR: Record<Status, number> = {
+  wet: 0x5aa0e8,
+  oil: 0x6a5030,
+  frozen: 0xc8f0ff,
+  poison: 0x8ae04a,
+};
 
 interface EnemySlot {
   id: number; // -1 なら空き

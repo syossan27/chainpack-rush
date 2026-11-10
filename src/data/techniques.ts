@@ -70,6 +70,14 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
     hint: '斧 → 斧か大斧 → 大斧',
     teaser: '斧が三つ重なる…',
   },
+  {
+    id: 'venom',
+    name: 'ヴェノム・クロス',
+    seq: [['poison_dagger'], ['dagger', 'poison_dagger'], ['vampire_sword']],
+    element: 'physical',
+    hint: '毒の短剣 → 短剣か毒の短剣 → 吸血の剣',
+    teaser: '毒と血の気配がする…',
+  },
 ];
 
 export function getTechnique(id: string): TechniqueDef | undefined {

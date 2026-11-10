@@ -144,7 +144,8 @@ export function planChain(
         if (t) me.tech = t.id;
       }
     }
-    stepCounts.push(count);
+    // 疾風の羽: このあとに続く装備の段数を多く数える
+    stepCounts.push(count + (def.kind === 'attack' ? (def.stepBoost ?? 0) : 0));
     if (p.tMs > lastMs) lastMs = p.tMs;
     expand(steps.length - 1, p.tMs);
   }
