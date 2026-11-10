@@ -21,7 +21,7 @@ import {
   removeItem,
   setConsumable,
 } from '../core/loadout';
-import type { ItemInstance } from '../core/types';
+import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
@@ -47,6 +47,9 @@ interface DragState {
   ghost: ItemIcon;
 }
 
+/** 戻せる回数 */
+const UNDO_LIMIT = 30;
+
 export class LoadoutScene extends Phaser.Scene {
   private view!: BackpackView;
   private list!: ItemList;
@@ -60,6 +63,10 @@ export class LoadoutScene extends Phaser.Scene {
   /** ほかの編成で使っている装備 */
   private presetUses = new Map<string, number[]>();
   private resetBtn!: Button;
+  /** 戻す: 変える前の並べ方（新しいものが後ろ）。編成を切り替えたら空にする */
+  private undoStack: string[] = [];
+  private lastSnapshot = '';
+  private undoBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
@@ -77,15 +84,26 @@ export class LoadoutScene extends Phaser.Scene {
     // 編成の切り替え（並べ方の記録。装備は倉庫に置いたまま）
     this.presetBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
     this.buildPresetBar();
+    // 戻す（ひとつ前の並べ方へ）
+    this.undoStack = [];
+    this.lastSnapshot = JSON.stringify(save.loadout);
+    this.undoBtn = new Button(
+      this,
+      W - 206,
+      LOADOUT_LAYOUT.backpackTop - 38,
+      '↶ 戻す',
+      () => this.undo(),
+      { width: 106, height: 56, fontSize: 20, skin: 'blue' },
+    );
     // 全部外す（確認してから）
     this.resetBtn = new Button(
       this,
-      W - 88,
+      W - 80,
       LOADOUT_LAYOUT.backpackTop - 38,
       '全部外す',
       () => this.confirmReset(),
       {
-        width: 140,
+        width: 132,
         height: 56,
         fontSize: 20,
         skin: 'red',
@@ -170,6 +188,14 @@ export class LoadoutScene extends Phaser.Scene {
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
     this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
+    // 並べ方が変わっていたら、変える前を「戻す」に積む
+    const snap = JSON.stringify(save.loadout);
+    if (snap !== this.lastSnapshot) {
+      this.undoStack.push(this.lastSnapshot);
+      if (this.undoStack.length > UNDO_LIMIT) this.undoStack.shift();
+      this.lastSnapshot = snap;
+    }
+    this.undoBtn.setDisabled(this.undoStack.length === 0);
     this.resetBtn.setDisabled(
       save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
     );
@@ -303,7 +329,7 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const bar = this.presetBar;
     bar.removeAll(true);
-    const w = 62;
+    const w = 54;
     save.presets.forEach((p, i) => {
       const x = 24 + i * (w + 6);
       const on = i === save.activePreset;
@@ -339,17 +365,21 @@ export class LoadoutScene extends Phaser.Scene {
       );
     });
     const name = save.presets[save.activePreset]!.name;
-    bar.add(
-      this.add
-        .text(24 + 5 * (w + 6) + 4, -2, `${name} ✎`, textStyle(22, '#ffe27a'))
-        .setOrigin(0, 0.5),
-    );
+    // 名前は「戻す」ボタンの手前まで（長い名前は縮める）
+    const nameX = 24 + 5 * (w + 6) + 4;
+    const label = this.add.text(nameX, -2, `${name} ✎`, textStyle(22, '#ffe27a')).setOrigin(0, 0.5);
+    const maxW = W - 206 - 53 - 8 - nameX;
+    if (label.width > maxW) label.setScale(maxW / label.width);
+    bar.add(label);
   }
 
   private changePreset(i: number): void {
     const save = getSave();
     if (!switchPreset(save, i)) return;
     persist();
+    // 別の編成の並べ方には戻さない
+    this.undoStack = [];
+    this.lastSnapshot = JSON.stringify(save.loadout);
     this.focus = null;
     this.selected = null;
     this.buildPresetBar();
@@ -435,6 +465,25 @@ export class LoadoutScene extends Phaser.Scene {
     if (Math.abs(ly) > SLOT_SIZE / 2) return -1;
     for (let i = 0; i < n; i++) if (Math.abs(x - this.slotX(i)) <= SLOT_SIZE / 2) return i;
     return -1;
+  }
+
+  /** ひとつ前の並べ方に戻す（そのあと売った装備は外したままにする） */
+  private undo(): void {
+    const prev = this.undoStack.pop();
+    if (prev === undefined) return;
+    const save = getSave();
+    const have = new Set(save.inventory.map((i) => i.uid));
+    const l = JSON.parse(prev) as Loadout;
+    l.cells = l.cells.map((u) => (u && have.has(u) ? u : null));
+    l.originOrder = l.originOrder.filter((u) => have.has(u));
+    l.consumables = l.consumables.filter((u) => have.has(u));
+    save.loadout = l;
+    this.lastSnapshot = JSON.stringify(save.loadout);
+    this.selected = null;
+    persist();
+    sfx('click');
+    this.refresh();
+    this.showToastLine('ひとつ前の並べ方に戻しました');
   }
 
   private commit(): void {
