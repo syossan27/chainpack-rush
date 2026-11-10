@@ -1,0 +1,16 @@
+{
+  "file": "goblin_attack.png",
+  "frameWidth": 96,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.6666666666666666,
+  "originY": 0.875,
+  "originPx": [
+    64,
+    56
+  ],
+  "fps": 12,
+  "loop": false,
+  "groundY": 55,
+  "note": "Club swing from the left shoulder down toward the left/hero. 96x64 canvas with origin (64,56), same convention as slime_attack. Do not recenter frames."
+}
