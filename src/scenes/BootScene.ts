@@ -1,6 +1,7 @@
 // ロード、セーブ読み込み → 拠点
 import Phaser from 'phaser';
-import { UNIT_SPRITES, animFrameSize, animKey, type UnitAnimName } from '../data/sprites';
+import { UNIT_SPRITES, animFrameSize, animKey, iconKey, type UnitAnimName } from '../data/sprites';
+import { ITEM_DEFS } from '../data/items';
 import { loadSave } from '../platform/storage';
 import { setSave } from '../platform/store';
 import { GLYPHS } from '../ui/kit/glyphs.generated';
@@ -44,6 +45,11 @@ export class BootScene extends Phaser.Scene {
           frameHeight,
         });
       }
+    }
+    // 装備アイコンの本素材（assets/sprites/icons/<装備のid>.png、16×16）。ないものは仮素材を描く
+    for (const def of ITEM_DEFS) {
+      const url = spriteUrl(`icons/${def.id}.png`);
+      if (url) this.load.image(iconKey(def.id), url);
     }
   }
 
