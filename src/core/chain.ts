@@ -1,4 +1,6 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
+import { affixValue } from './affixes';
+import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, RARITY } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type { ChainPlan, ChainStep, Dir, ItemInstance, Loadout } from './types';
@@ -14,8 +16,8 @@ const DIR_DELTA: Record<Dir, readonly [number, number]> = {
 /** 時間は整数ミリ秒で扱い、浮動小数の誤差で同時判定がぶれないようにする */
 const MS = 1000;
 
-export function chainMultiplier(step: number): number {
-  return Math.min(CHAIN.multCap, Math.pow(CHAIN.multBase, step - 1));
+export function chainMultiplier(step: number, cap: number = CHAIN.multCap): number {
+  return Math.min(cap, Math.pow(CHAIN.multBase, step - 1));
 }
 
 export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number | null {
@@ -50,7 +52,7 @@ export function planChain(
   const originCell = loadout.cells.indexOf(originUid);
   const steps: ChainStep[] = [];
   if (originCell < 0) {
-    return { originUid, steps, duration: 0, defenseGain: 0, maxStep: 0 };
+    return { originUid, steps, duration: 0, defenseGain: 0, maxStep: 0, multCap: CHAIN.multCap };
   }
 
   const visited = new Set<number>([originCell]);
@@ -117,7 +119,8 @@ export function planChain(
       step = count;
       if (count > maxStep) maxStep = count;
     } else if (def.kind === 'defense') {
-      defenseGain += (def.defense ?? 0) * RARITY[inst.rarity].mult;
+      defenseGain +=
+        (def.defense ?? 0) * RARITY[inst.rarity].mult * (1 + affixValue(inst, 'sturdy') / 100);
     }
     // 起点同士がつながっている場合、後ろの起点は「通すだけ」のマスとして扱う
     steps.push({
@@ -130,17 +133,36 @@ export function planChain(
       parentIndex: p.parentIndex,
       cell: p.cell,
     });
+    // 必殺技: 親をたどった直前の2つと自分が、決まった並びになっていれば
+    if (def.kind === 'attack') {
+      const me = steps[steps.length - 1]!;
+      const p1 = steps[me.parentIndex];
+      const p2 = p1 ? steps[p1.parentIndex] : undefined;
+      if (p1 && p2 && p1.parentIndex >= 0 && p2.parentIndex >= 0) {
+        const ids = [p2, p1, me].map((x) => items.get(x.uid)!.defId);
+        const t = TECHNIQUES.find((tq) => tq.seq.every((opts, k) => opts.includes(ids[k]!)));
+        if (t) me.tech = t.id;
+      }
+    }
     stepCounts.push(count);
     if (p.tMs > lastMs) lastMs = p.tMs;
     expand(steps.length - 1, p.tMs);
   }
 
+  // 循環の環を通る連鎖は、連鎖倍率の上限が上がる
+  const multCap = Math.max(
+    CHAIN.multCap,
+    ...steps.map((s) => getItemDef(items.get(s.uid)!.defId).multCap ?? 0),
+  );
+  if (multCap !== CHAIN.multCap)
+    for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, multCap);
   return {
     originUid,
     steps,
     duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
     defenseGain,
     maxStep,
+    multCap,
   };
 }
 

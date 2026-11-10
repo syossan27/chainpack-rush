@@ -51,6 +51,28 @@ export interface ButtonOptions {
   textColor?: string;
 }
 
+/**
+ * タップ: そのオブジェクトの上で押して、上で離したときだけ反応する。
+ * 別の場所から指を滑らせてきて離した（ドラッグの終わりなど）ときは反応しない。
+ */
+export function bindTap(
+  obj: Phaser.GameObjects.GameObject,
+  fn: (p: Phaser.Input.Pointer) => void,
+): void {
+  let pressed = false;
+  obj.on('pointerdown', () => {
+    pressed = true;
+  });
+  obj.on('pointerout', () => {
+    pressed = false;
+  });
+  obj.on('pointerup', (p: Phaser.Input.Pointer) => {
+    if (!pressed) return;
+    pressed = false;
+    fn(p);
+  });
+}
+
 export class Button extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.NineSlice;
   readonly label: Phaser.GameObjects.Text;
@@ -92,7 +114,7 @@ export class Button extends Phaser.GameObjects.Container {
       if (!this.disabledState) this.setScale(0.95);
     });
     this.bg.on('pointerout', () => this.setScale(1));
-    this.bg.on('pointerup', () => {
+    bindTap(this.bg, () => {
       unlockAudio();
       this.setScale(1);
       if (this.disabledState) {
@@ -155,7 +177,7 @@ export class RoundButton extends Phaser.GameObjects.Container {
     this.frame.setInteractive({ useHandCursor: true });
     this.frame.on('pointerdown', () => this.setScale(0.93));
     this.frame.on('pointerout', () => this.setScale(1));
-    this.frame.on('pointerup', () => {
+    bindTap(this.frame, () => {
       unlockAudio();
       this.setScale(1);
       onTap();
@@ -284,4 +306,114 @@ export class Bar extends Phaser.GameObjects.Container {
   get barHeight(): number {
     return this.barH;
   }
+}
+
+/** ゲーム内の確認ダイアログ（ブラウザの confirm() はスマホ版のページで出ないため） */
+export function confirmDialog(
+  scene: Phaser.Scene,
+  title: string,
+  message: string,
+  okLabel: string,
+  onOk: () => void,
+  okSkin: ButtonSkin = 'red',
+): Phaser.GameObjects.Container {
+  const W = scene.scale.gameSize.width;
+  const H = scene.scale.gameSize.height;
+  const root = scene.add.container(0, 0).setDepth(2600);
+  const close = () => root.destroy();
+  const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+  shade.on('pointerup', close);
+  const cw = W - 80;
+  const msg = scene.add
+    .text(W / 2, 0, message, {
+      ...textStyle(24, COLORS.text, false),
+      align: 'center',
+      wordWrap: { width: cw - 80, useAdvancedWrap: true },
+    })
+    .setOrigin(0.5, 0);
+  const ch = 120 + msg.height + 150;
+  const top = H / 2 - ch / 2;
+  const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
+  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
+  msg.setY(top + 96);
+  const by = top + ch - 70;
+  const ok = new Button(
+    scene,
+    W / 2 - 130,
+    by,
+    okLabel,
+    () => {
+      close();
+      onOk();
+    },
+    { width: 230, height: 80, skin: okSkin },
+  );
+  const cancel = new Button(scene, W / 2 + 130, by, 'やめる', close, {
+    width: 230,
+    height: 80,
+    skin: 'gray',
+  });
+  root.add([shade, bg, t, msg, ok, cancel]);
+  return root;
+}
+
+export interface Choice {
+  label: string;
+  onPick: () => void;
+  disabled?: boolean;
+  skin?: ButtonSkin;
+}
+
+/** 縦に並んだ選択肢のダイアログ。外側か「やめる」で閉じる。note は一番下に小さく出す */
+export function choiceDialog(
+  scene: Phaser.Scene,
+  title: string,
+  choices: Choice[],
+  note?: string,
+  /** 外側や「やめる」で閉じたとき */
+  onCancel?: () => void,
+): Phaser.GameObjects.Container {
+  const W = scene.scale.gameSize.width;
+  const H = scene.scale.gameSize.height;
+  const root = scene.add.container(0, 0).setDepth(2600);
+  const close = () => root.destroy();
+  const cancel = () => {
+    close();
+    onCancel?.();
+  };
+  const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+  shade.on('pointerup', cancel);
+  const cw = W - 80;
+  const rowH = 92;
+  const ch = 120 + choices.length * rowH + (note ? 40 : 0) + 110;
+  const top = H / 2 - ch / 2;
+  const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
+  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
+  root.add([shade, bg, t]);
+  choices.forEach((c, i) => {
+    root.add(
+      new Button(
+        scene,
+        W / 2,
+        top + 130 + i * rowH,
+        c.label,
+        () => {
+          close();
+          c.onPick();
+        },
+        { width: cw - 80, height: 78, fontSize: 24, skin: c.skin ?? 'red', disabled: c.disabled },
+      ),
+    );
+  });
+  let y = top + 130 + choices.length * rowH;
+  if (note) {
+    root.add(
+      scene.add.text(W / 2, y - 20, note, textStyle(18, COLORS.textDim, false)).setOrigin(0.5, 0),
+    );
+    y += 40;
+  }
+  root.add(
+    new Button(scene, W / 2, y + 20, 'やめる', cancel, { width: 230, height: 72, skin: 'gray' }),
+  );
+  return root;
 }

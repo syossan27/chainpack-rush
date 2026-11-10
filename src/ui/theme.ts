@@ -1,6 +1,6 @@
 // 画面の配置・色・文字の定数（演出用。ゲームの数値は config/balance.ts と src/data）
 import Phaser from 'phaser';
-import { RARITY } from '../config/balance';
+import { FIELD, RARITY } from '../config/balance';
 import type { Rarity } from '../core/types';
 
 export const W = 720;
@@ -90,8 +90,9 @@ export const CELL_SIZE = 88;
 /** ラン画面のレイアウト（縦 720×1280） */
 export const RUN_LAYOUT = {
   fieldHeight: 576, // 上部 約45%
-  groundY: 540, // 足元の線
-  heroScreenX: 160, // 勇者の足元基準点の画面内位置（要確認）
+  groundY: 540, // 地面の帯の上端
+  footY: 548, // キャラクターの足元（地面の帯へ4ドット沈める。線ちょうどだと浮いて見える）
+  heroScreenX: FIELD.viewBehind, // 勇者の足元基準点の画面内位置（中央寄り。前方の見える範囲は FIELD.viewRange）
   rowOffsetY: 48, // 群れの後列の見た目の縦ずらし
   enemyDrawOffsetX: 40, // 敵の描画だけを右へずらす（勇者の剣・マントと顔が重ならないように。core の距離は変えない）
   middleTop: 576,
@@ -105,4 +106,22 @@ export const LOADOUT_LAYOUT = {
   slotsTop: 690,
   listTop: 806,
   listBottom: 1140,
+} as const;
+
+/** 戦闘演出（ヒットストップ・連鎖カウンター・ダメージ数字の段階） */
+export const JUICE = {
+  /** ダメージ数字の色の段階（この値以上で次の色） */
+  damageTiers: [
+    { min: 0, color: '#ffffff' },
+    { min: 60, color: '#fff6a0' },
+    { min: 150, color: '#ffd25a' },
+    { min: 400, color: '#ff7a3a' },
+  ],
+  bigHit: 150, // これ以上で閃光・画面揺れ・短いヒットストップ
+  hugeHit: 400, // これ以上で強めの演出
+  hitStopMs: { big: 45, huge: 80, combo: 70, kill: 30, boss: 160 },
+  bossSlowMs: 900, // ボス撃破のスローモーション
+  bossSlowRate: 0.25,
+  chainColors: ['#ffffff', '#fff6a0', '#ffd25a', '#ff9a3a', '#ff5a5a', '#ff6ad5'], // 2段〜、2段ごとに次の色
+  maxFlashes: 32,
 } as const;

@@ -2,6 +2,8 @@
 import type { SaveData } from '../core/save';
 import { setMasterVolume } from '../audio/sfx';
 import { setHapticsEnabled } from './haptics';
+import { SIM } from '../config/balance';
+import { debugSpeed } from './debug';
 import { writeSave } from './storage';
 
 let current: SaveData | null = null;
@@ -24,4 +26,10 @@ export function applySettings(): void {
   if (!current) return;
   setHapticsEnabled(current.settings.haptics);
   setMasterVolume(current.settings.volume);
+}
+
+/** 今のゲームスピード（?speed= があればそれ、なければ設定） */
+export function gameSpeed(): number {
+  const v = debugSpeed() ?? current?.settings.gameSpeed ?? 1;
+  return Math.min(SIM.maxSpeed, Math.max(0.1, v));
 }

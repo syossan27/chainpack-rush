@@ -61,6 +61,13 @@ const TONES = {
     { wave: 'sawtooth', freq: 1318, dur: 0.6, gain: 0.18, delay: 0.3 },
     { wave: 'triangle', freq: 1568, dur: 0.6, gain: 0.2, delay: 0.3 },
   ],
+  // ボス接近の警報（2回うねる）
+  warning: [
+    { wave: 'sawtooth', freq: 440, to: 660, dur: 0.22, gain: 0.14 },
+    { wave: 'sawtooth', freq: 660, to: 440, dur: 0.22, gain: 0.14, delay: 0.22 },
+    { wave: 'sawtooth', freq: 440, to: 660, dur: 0.22, gain: 0.14, delay: 0.5 },
+    { wave: 'sawtooth', freq: 660, to: 440, dur: 0.22, gain: 0.14, delay: 0.72 },
+  ],
   runEnd: [
     { wave: 'triangle', freq: 392, dur: 0.15, gain: 0.2 },
     { wave: 'triangle', freq: 330, dur: 0.15, gain: 0.2, delay: 0.15 },

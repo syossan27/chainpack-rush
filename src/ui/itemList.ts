@@ -1,4 +1,5 @@
 // 倉庫の一覧（スクロール、種類・レアリティで絞り込み、タップ・長押し・ドラッグ）
+import { bindTap } from './kit/widgets';
 import Phaser from 'phaser';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
@@ -29,6 +30,7 @@ const KIND_LABEL: Record<KindFilter, string> = {
 
 const LONG_PRESS_MS = 450;
 const FILTER_H = 58;
+const HOLD_TO_DRAG_MS = 150; // これだけ押さえてから動かすとドラッグ（素早い払いはスクロール）
 const DRAG_THRESHOLD = 14;
 const RARITY_ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -109,7 +111,7 @@ export class ItemList extends Phaser.GameObjects.Container {
       const t = this.scene.add
         .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
         .setOrigin(0.5);
-      bg.on('pointerup', () => {
+      bindTap(bg, () => {
         sfx('click');
         onTap();
       });
@@ -230,7 +232,11 @@ export class ItemList extends Phaser.GameObjects.Container {
       const dy = p.y - start.y;
       if (mode === 'pending' && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
         timer?.remove();
-        const wantsDrag = pressed && this.handlers.onDragStart && Math.abs(dx) > Math.abs(dy);
+        // 少し押さえてから動かした、または横へ動かした → ドラッグ。素早く縦に払った → スクロール
+        // 押してからの時間は入力イベント自体の時刻で測る（フレームが遅くても判定がぶれない）
+        const held = p.moveTime - start.time >= HOLD_TO_DRAG_MS;
+        const wantsDrag =
+          pressed && this.handlers.onDragStart && (held || Math.abs(dx) > Math.abs(dy));
         mode = wantsDrag ? 'drag' : 'scroll';
         if (mode === 'drag' && pressed) {
           this.handlers.onDragStart?.(pressed, p);
@@ -241,6 +247,9 @@ export class ItemList extends Phaser.GameObjects.Container {
         // 一覧の上端より上へ指を出したら、押していたアイテムのドラッグに切り替える
         if (pressed && this.handlers.onDragStart && p.y < this.viewTop - 10) {
           mode = 'drag';
+          // ドラッグに切り替えたら、スクロールは押した時点の位置に戻す
+          this.scrollY = start.scroll;
+          this.clampScroll();
           this.handlers.onDragStart(pressed, p);
           return;
         }

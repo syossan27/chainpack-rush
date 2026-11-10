@@ -17,7 +17,8 @@
     "assets": "capacitor-assets generate --ios --android --iconBackgroundColor '#14121c' --iconBackgroundColorDark '#14121c' --splashBackgroundColor '#14121c' --splashBackgroundColorDark '#14121c'",
     "store-assets": "tsx tools/genStoreAssets.ts",
     "glyphs": "tsx tools/genGlyphs.ts",
-    "predev": "npm run glyphs"
+    "predev": "npm run glyphs",
+    "playtest": "tsx tools/playtest.ts"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",

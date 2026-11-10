@@ -5,6 +5,9 @@ export const SIM = {
   fixedStep: 1 / 60, // 固定ステップ（秒）
   ticksPerSecond: 60,
   runDuration: 30, // 秒
+  /** 検証用のゲームスピード（設定画面と ?speed= で選ぶ）。ルールの秒数は変えず、進む速さだけを倍にする */
+  speedOptions: [0.5, 1, 1.5, 2, 3],
+  maxSpeed: 4,
 } as const;
 
 export const HERO = {
@@ -19,14 +22,15 @@ export const HERO = {
 // 距離・速度はすべて 720×1280 の論理px。判定は足元基準点（キャラクターの足元の x）で行う。
 export const FIELD = {
   aggroRange: 300, // 群れの先頭がこの距離に入ると、群れごと勇者へ寄ってくる
-  viewRange: 560, // 画面内（勇者の前方。全体攻撃・油の大樽などの対象）
-  viewBehind: 160, // 勇者より後ろに見える幅（勇者の画面内位置）
+  viewRange: 440, // 画面内（勇者の前方。全体攻撃・油の大樽などの対象）= 720 − viewBehind
+  viewBehind: 280, // 勇者より後ろに見える幅 = 勇者の画面内位置（中央寄りで戦う）
   enemySpeed: 240, // 敵の接近速度 px/秒
   columnSpacing: 80, // 群れ内の横間隔（足元基準点）
   rowsPerColumn: 2, // 群れは前後2列。見た目の縦ずらしだけで core の距離は同じ
   frontStand: 56, // 1列目の立ち位置（勇者からの距離）。56 + 80×2 = 216 で3列まで交戦範囲に入る
   meleeReach: 96, // 近接の雑魚が攻撃できる距離（最前列だけが届く）
-  bossStand: 216, // ボスの立ち位置（取り巻き2列の後ろ）
+  bossStand: 216,
+  bossSoloStand: 120, // 取り巻きがいないボスは目の前まで出てくる // ボスの立ち位置（取り巻き2列の後ろ）
   minGroupGap: 240, // 前の群れの最後尾から次の群れの先頭までの最小距離
   loopGap: 240, // ボス撃破地点から次の区間の起点までの距離
   maxOnScreen: 8, // 同時表示の設計目標（固定配置で守る。間引かない）
@@ -40,6 +44,42 @@ export const CHAIN = {
   tailDelay: 0.2, // 最後の発動から連鎖終了まで
 } as const;
 
+/**
+ * 短い連鎖と長い連鎖の性格づけ（試作。RunConfig.rules で切り替えられる）
+ * B: 次の発火までの待ちは、直前の連鎖の段数に比例（短い連鎖は回転が速い）
+ * A: 連鎖中に一定以上のダメージを受けると、よろめいて残りの段が途切れる（長い連鎖はリスクが大きい）
+ */
+export interface ChainRules {
+  atbPerStep: boolean;
+  /** この段数でちょうど atbTime 待つ */
+  atbRefSteps: number;
+  /** 待ちの倍率の下限・上限（atbTime に掛ける） */
+  atbMinFactor: number;
+  atbMaxFactor: number;
+  stagger: boolean;
+  /** 1回の連鎖中に受けたダメージ（防御で吸った分は除く）が最大HPのこの割合に達するとよろめく */
+  staggerRatio: number;
+  /** 連鎖のこの段数までは無防備にならない（0 = 連鎖中はずっと無防備。短い連鎖を安全にする） */
+  guardSteps: number;
+}
+
+export const CHAIN_RULES: ChainRules = {
+  atbPerStep: true,
+  atbRefSteps: 6,
+  atbMinFactor: 0.25,
+  atbMaxFactor: 2,
+  stagger: true,
+  staggerRatio: 0.15,
+  guardSteps: 3,
+};
+
+export const CHAIN_RULES_OFF: ChainRules = {
+  ...CHAIN_RULES,
+  atbPerStep: false,
+  stagger: false,
+  guardSteps: 0,
+};
+
 export const AREA = {
   splashRadius: 80, // 群れ内の横間隔と対応させる
   allMult: 0.4,
@@ -47,6 +87,8 @@ export const AREA = {
 
 export const STATUS = {
   duration: 5,
+  /** 状態がついた相手へのコンボ以外の攻撃は ×1.2（状態付与の装備にも単体で役目を持たせる） */
+  exposedMult: 1.2,
 } as const;
 
 export interface ComboRule {
@@ -86,19 +128,78 @@ export const COMBOS: readonly ComboRule[] = [
 ];
 
 export const LOOP_SCALING = {
-  hp: 1.3,
+  hp: 1.4, // 装備の追加効果・新装備で強くなりやすくなったぶん 1.3 から上げた
   atk: 1.3,
 } as const;
 
+/**
+ * 乱数の振れ幅（会心・ダメージの揺れ・精鋭）。RunConfig.luck で上書きできる（テストでは NO_LUCK）
+ */
+export interface LuckRules {
+  /** 各段で会心になる確率 */
+  critChance: number;
+  critMult: number;
+  /** ダメージの揺れ（±割合） */
+  damageVariance: number;
+  /** 雑魚が精鋭になる確率（1周目）。周回ごとに perLoop 足し、max で止める */
+  eliteChance: number;
+  eliteChancePerLoop: number;
+  eliteChanceMax: number;
+}
+
+export const LUCK: LuckRules = {
+  critChance: 0.08,
+  critMult: 2,
+  damageVariance: 0.1,
+  eliteChance: 0.06,
+  eliteChancePerLoop: 0.02,
+  eliteChanceMax: 0.2,
+};
+
+export const NO_LUCK: LuckRules = {
+  ...LUCK,
+  critChance: 0,
+  damageVariance: 0,
+  eliteChance: 0,
+  eliteChancePerLoop: 0,
+};
+
+export type EliteId = 'tough' | 'swift' | 'golden';
+
+/** 精鋭の性質（1つの群れに1体まで。ボス・取り巻きはならない） */
+export const ELITES: Record<
+  EliteId,
+  { name: string; weight: number; hp: number; interval: number; atk: number; drops: number }
+> = {
+  tough: { name: '硬い', weight: 4, hp: 3, interval: 1, atk: 1, drops: 1 },
+  swift: { name: '速い', weight: 4, hp: 1.5, interval: 0.5, atk: 1, drops: 1 },
+  golden: { name: '金ぴか', weight: 2, hp: 2, interval: 1, atk: 1, drops: 2 }, // 必ず落とし、レア以上
+};
+
 export const BOSS = {
-  ironKnightThreshold: 200, // 一撃200未満のダメージを無効
-  goblinKingEscorts: 4,
-  goblinKingSummonInterval: 4.0, // 秒。取り巻きが4体未満なら1体ずつ呼ぶ（初回は4体まとめて）
+  ironKnightThreshold: 120, // 一撃120未満のダメージを無効（200だと特定の組み方しか通らなかった）
+  // 取り巻きの数と呼ぶ間隔は敵の定義（escortCount / summonInterval）。初回はまとめて呼ぶ
+  regenPerSec: 0.02, // 呪術王: 毎秒、最大HPの2%を回復
+  enrageAt: 0.5, // ゴーレム: HPがこの割合を切ると
+  enrageInterval: 0.5, // 攻撃間隔×0.5
+  enrageAtk: 1.3, // 攻撃力×1.3
+} as const;
+
+/** ラン中の時間延長（基本の出撃時間は SIM.runDuration） */
+export const TIME_BONUS = {
+  boss: 8, // ボス撃破
+  sweep: 1.5, // 1回の連鎖で群れを丸ごと倒した（一網打尽）
+  /** 強化・延長をすべて込みにした出撃時間の上限（秒）。上限なし（以前は60秒） */
+  maxRunTime: Number.POSITIVE_INFINITY,
 } as const;
 
 export const CONSUMABLE = {
   timeStopDuration: 3,
   healAmount: 40,
+  timeSandSeconds: 5, // 時の砂
+  bombDamage: 60, // 爆弾（攻撃倍率の強化が乗る）
+  critUpChance: 0.3, // 幸運の硬貨
+  critUpDuration: 8,
   baseSlots: 3,
 } as const;
 
@@ -167,14 +268,35 @@ export const LOOT = {
   kindWeights: { attack: 0.6, defense: 0.15, consumable: 0.15, origin: 0.1 },
   commonShiftPerLoop: 0.1, // 1周ごとにコモンから10%分をレア以上へ
   consumableSell: 3,
+  bossDrops: 2, // ボスは戦利品を2個落とす（序盤の伸びを早める）
+  /** アーティファクトが出る確率（1回のドロップごと。ボス・金ぴかの精鋭は rareOrBetter） */
+  artifactChance: 0.0005,
+  artifactChanceRare: 0.002,
+  artifactSell: 1000,
+  originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
+  /** 起点石はレアリティ＝出口の数（コモン1・レア2・エピック3・レジェンダリー4）。ATK を持たないので、違いを出口の数で出す */
+  originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
+} as const;
+
+/**
+ * 合成: 同じ装備・同じレアリティを3つで、1つ上のレアリティに（追加効果・出口は振り直し）。
+ * 上のレアリティほど成功しにくい。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入る
+ */
+export const SYNTH = {
+  count: 3,
+  cost: { common: 20, rare: 100, epic: 500 } as Record<'common' | 'rare' | 'epic', number>,
+  successRate: { common: 0.8, rare: 0.5, epic: 0.25 } as Record<'common' | 'rare' | 'epic', number>,
 } as const;
 
 export const ECONOMY = {
   specifyCostMult: 5,
   rerollCostGrowth: 1.5,
+  /** アーティファクトの付け直し（レジェンダリー250Gの上） */
+  artifactReroll: 1000,
 } as const;
 
-export type UpgradeId = 'maxHp' | 'atb' | 'attack' | 'backpack' | 'consumableSlots' | 'storage';
+export type UpgradeId =
+  'maxHp' | 'atb' | 'attack' | 'runTime' | 'backpack' | 'consumableSlots' | 'storage';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -189,6 +311,7 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.6, maxLevel: 10 },
   atb: { id: 'atb', name: 'ATB短縮', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
   attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.6, maxLevel: 20 },
+  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
   backpack: {
     id: 'backpack',
     name: 'バックパック拡張',
@@ -228,4 +351,13 @@ export const UI = {
   maxEffects: 200,
   maxEnemies: 24,
   previewBudgetMs: 100,
+} as const;
+
+/** 報酬つき広告（見たいときだけ）とプレミアム（買い切り） */
+export const MONETIZE = {
+  /** 1日に見られる回数（プレミアムは広告なしで同じ回数だけ受け取れる） */
+  dailyCaps: { extraLoot: 3, smithReroll: 3 } as Record<'extraLoot' | 'smithReroll', number>,
+  /** 力尽きたときの再開: 1ランに1回、HP全回復＋この秒数 */
+  reviveSeconds: 10,
+  premiumPrice: '480円',
 } as const;

@@ -9,11 +9,17 @@ import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep } from '../audio/sfx';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
-import { getSave } from '../platform/store';
+import { gameSpeed, getSave, persist } from '../platform/store';
+import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
+import { getItemDef } from '../data/items';
+import { ElementFx } from '../ui/elementFx';
+import { getTechnique } from '../data/techniques';
+import { showDiscovery } from '../ui/discovery';
+import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 
 export class DummyScene extends Phaser.Scene {
@@ -23,6 +29,7 @@ export class DummyScene extends Phaser.Scene {
   private view!: BackpackView;
   private numbers!: DamageNumbers;
   private effects!: Effects;
+  private elementFx!: ElementFx;
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
@@ -44,8 +51,10 @@ export class DummyScene extends Phaser.Scene {
       mode: 'dummy',
     });
     this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id);
+    this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
+    this.elementFx = new ElementFx(this, 56, 40, RUN_LAYOUT.footY - 4);
     this.add
       .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
@@ -78,21 +87,40 @@ export class DummyScene extends Phaser.Scene {
       skin: 'gray',
       icon: 'back',
     }).setDepth(70);
+    this.setupBackpackTap();
   }
 
   override update(_t: number, delta: number): void {
     const now = this.time.now;
-    this.acc += Math.min(delta / 1000, SIM.fixedStep * 5);
+    const speed = gameSpeed();
+    this.tweens.timeScale = speed;
+    this.acc += Math.min((delta / 1000) * speed, SIM.fixedStep * Math.ceil(5 * speed));
     while (this.acc >= SIM.fixedStep) {
       this.combat.step();
       this.acc -= SIM.fixedStep;
       this.handle(this.combat.drainEvents());
     }
-    this.field.update(this.combat, now);
+    this.field.update(this.combat, now, speed);
     this.view.setBlinkOrigin(this.combat.chain ? null : this.combat.nextOriginUid);
     this.view.tick(now);
-    this.numbers.update(delta / 1000);
-    this.effects.update(delta / 1000);
+    this.numbers.update((delta / 1000) * speed);
+    this.effects.update((delta / 1000) * speed);
+  }
+
+  /** バックパックの装備をタップ: 能力の詳細 */
+  private setupBackpackTap(): void {
+    const loadout = getSave().loadout;
+    const zone = this.add
+      .zone(0, RUN_LAYOUT.backpackTop, W, this.view.gridHeight)
+      .setOrigin(0, 0)
+      .setDepth(45)
+      .setInteractive();
+    zone.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      const uid = loadout.cells[this.view.cellAt(p.x, p.y)];
+      const it = uid ? this.items.get(uid) : undefined;
+      if (it) showItemDetail(this, it, { context: chainContext(loadout, this.items, it.uid) });
+    });
   }
 
   private handle(events: CombatEvent[]): void {
@@ -111,9 +139,37 @@ export class DummyScene extends Phaser.Scene {
         if (!e) continue;
         const p = this.field.enemyScreenPos(this.combat, e);
         this.field.flashEnemy(e.id, now);
-        this.numbers.show(p.x, p.y, ev.damage, ev.combo ? '#fff060' : '#ffffff');
+        this.numbers.show(p.x, p.y, ev.damage, ev.combo ? '#fff060' : undefined, ev.crit, ev.step);
         this.effects.burst(p.x, p.y, 0xffffff, 3, 160);
+        {
+          const src = this.items.get(ev.itemUid);
+          this.elementFx.hit(
+            p.x,
+            p.y,
+            src ? getItemDef(src.defId).element : 'fire',
+            Math.min(1, ev.damage / 200),
+            ev.combo,
+          );
+        }
         sfx('hit');
+      } else if (ev.type === 'technique') {
+        const t = getTechnique(ev.id);
+        const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
+        const impact = this.field.heroSpecial(0xffe060, t?.id);
+        const save = getSave();
+        if (t && !save.discoveredTechs.includes(t.id)) {
+          save.discoveredTechs.push(t.id);
+          persist();
+          showDiscovery(this, t.name, 190);
+        }
+        if (e) {
+          const p = this.field.enemyScreenPos(this.combat, e);
+          this.time.delayedCall(impact / Math.max(0.1, gameSpeed()), () => {
+            this.elementFx.special(p.x, p.y, t?.element);
+            this.effects.flash(p.x, p.y, 0xffffff, 4);
+          });
+        }
+        sfx('explode');
       } else if (ev.type === 'combo') {
         this.comboLabel.push(ev.label);
         sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');

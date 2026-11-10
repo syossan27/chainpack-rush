@@ -1,20 +1,38 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { simulateChain } from '../core/chain';
-import { consumableSlots, equippedUids, itemMap, sortieBlock } from '../core/economy';
-import { cycleOriginOrder, placeItem, removeItem, setConsumable } from '../core/loadout';
-import type { ItemInstance } from '../core/types';
+import { simulateChain, type ChainPreview } from '../core/chain';
+import { estimateRoute } from '../core/estimate';
+import { getTechnique } from '../data/techniques';
+import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
+import {
+  consumableSlots,
+  equippedUids,
+  heroStats,
+  itemMap,
+  overflowSellPlan,
+  sellItems,
+  sortieBlock,
+} from '../core/economy';
+import {
+  clearLoadout,
+  cycleOriginOrder,
+  placeItem,
+  removeItem,
+  setConsumable,
+} from '../core/loadout';
+import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
 import { BackpackView } from '../ui/backpackView';
-import { originLabel } from '../ui/backpackView';
+import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
-import { SKIN } from '../ui/kit/skin';
-import { Pill, RoundButton, ribbon } from '../ui/kit/widgets';
+import { SKIN, SLICE } from '../ui/kit/skin';
+import { Button, RoundButton, confirmDialog, panel, bindTap } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
-import { showItemDetail } from '../ui/itemInfo';
+import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { COLORS, LOADOUT_LAYOUT, W, textStyle } from '../ui/theme';
 
@@ -29,12 +47,26 @@ interface DragState {
   ghost: ItemIcon;
 }
 
+/** 戻せる回数 */
+const UNDO_LIMIT = 30;
+
 export class LoadoutScene extends Phaser.Scene {
   private view!: BackpackView;
   private list!: ItemList;
   private slots!: Phaser.GameObjects.Container;
   private info!: Phaser.GameObjects.Text;
-  private infoPill!: Pill;
+  /** ルートの選択（起点の発火順の添字。null は全部） */
+  private focus: number | null = null;
+  private routeBar!: Phaser.GameObjects.Container;
+  private routeText!: Phaser.GameObjects.Text;
+  private presetBar!: Phaser.GameObjects.Container;
+  /** ほかの編成で使っている装備 */
+  private presetUses = new Map<string, number[]>();
+  private resetBtn!: Button;
+  /** 戻す: 変える前の並べ方（新しいものが後ろ）。編成を切り替えたら空にする */
+  private undoStack: string[] = [];
+  private lastSnapshot = '';
+  private undoBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
@@ -49,27 +81,56 @@ export class LoadoutScene extends Phaser.Scene {
     this.drag = null;
     this.selected = null;
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
-    this.add.existing(ribbon(this, W / 2, LOADOUT_LAYOUT.backpackTop - 34, 'バックパック', 320));
-    this.infoPill = new Pill(
+    // 編成の切り替え（並べ方の記録。装備は倉庫に置いたまま）
+    this.presetBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
+    this.buildPresetBar();
+    // 戻す（ひとつ前の並べ方へ）
+    this.undoStack = [];
+    this.lastSnapshot = JSON.stringify(save.loadout);
+    this.undoBtn = new Button(
       this,
-      W / 2,
-      this.view.y + this.view.gridHeight + 26,
-      W - 120,
-      null,
-      '',
+      W - 206,
+      LOADOUT_LAYOUT.backpackTop - 38,
+      '↶ 戻す',
+      () => this.undo(),
+      { width: 106, height: 56, fontSize: 20, skin: 'blue' },
     );
-    this.info = this.add
-      .text(W / 2, this.infoPill.y + 40, '', textStyle(18, COLORS.textDim))
-      .setOrigin(0.5, 0);
+    // 全部外す（確認してから）
+    this.resetBtn = new Button(
+      this,
+      W - 80,
+      LOADOUT_LAYOUT.backpackTop - 38,
+      '全部外す',
+      () => this.confirmReset(),
+      {
+        width: 132,
+        height: 56,
+        fontSize: 20,
+        skin: 'red',
+      },
+    );
+    this.focus = null;
+    this.routeBar = this.add.container(0, this.view.y + this.view.gridHeight + 30);
+    this.info = this.add.text(W / 2, 0, '', textStyle(18, COLORS.textDim)).setOrigin(0.5, 0);
     this.slots = this.add.container(0, LOADOUT_LAYOUT.slotsTop);
     this.warn = this.add
       .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
-      .setOrigin(0.5);
-    this.list = new ItemList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
-      onTap: (it) => this.onListTap(it),
-      onLongPress: (it) => showItemDetail(this, it),
-      onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    bindTap(this.warn, () => {
+      if (sortieBlock(getSave()) === 'storageFull') sellOverflow(this);
     });
+    this.list = new ItemList(
+      this,
+      LOADOUT_LAYOUT.listTop,
+      LOADOUT_LAYOUT.listBottom,
+      {
+        onTap: (it) => this.onListTap(it),
+        onLongPress: (it) => this.openDetail(it, 'list'),
+        onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
+      },
+      (it) => presetMark(getSave(), this.presetUses, it.uid),
+    );
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, 'カカシ', () =>
       this.scene.start('Dummy'),
@@ -85,36 +146,285 @@ export class LoadoutScene extends Phaser.Scene {
 
     this.setupGridInput();
     this.refresh();
+    runTutorial(this, 'loadout', [
+      {
+        rect: {
+          x: W / 2,
+          y: (LOADOUT_LAYOUT.listTop + LOADOUT_LAYOUT.listBottom) / 2,
+          w: W - 12,
+          h: LOADOUT_LAYOUT.listBottom - LOADOUT_LAYOUT.listTop + 10,
+        },
+        text: '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう',
+      },
+      {
+        rect: {
+          x: W / 2,
+          y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
+          w: W - 120,
+          h: this.view.gridHeight + 16,
+        },
+        text: '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！',
+      },
+      {
+        rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
+        text: '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！',
+      },
+    ]);
+  }
+
+  override update(): void {
+    this.view.tick(this.time.now);
   }
 
   private refresh(): void {
     const save = getSave();
+    this.presetUses = otherPresetUse(save);
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
-    const t0 = performance.now();
     const preview = simulateChain(save.loadout, items);
-    this.view.showPreview(preview);
-    const ms = performance.now() - t0;
-    const durs = preview.plans
-      .map((p, i) => `${originLabel(i)} ${p.maxStep}段・${p.duration.toFixed(1)}秒`)
-      .join('　');
-    this.infoPill.setValue(durs || '起点を置いてください', durs ? COLORS.text : COLORS.textWarn);
-    this.info.setText(`長押しで詳細・起点タップで発火順（計算 ${ms.toFixed(1)}ms）`);
+    if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
+    if (save.settings.showRoutes)
+      this.view.showPreview(preview, this.focus, new Set(save.discoveredTechs));
+    else this.view.showPlain(preview);
+    this.buildRouteBar(preview);
+    this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
+    // 並べ方が変わっていたら、変える前を「戻す」に積む
+    const snap = JSON.stringify(save.loadout);
+    if (snap !== this.lastSnapshot) {
+      this.undoStack.push(this.lastSnapshot);
+      if (this.undoStack.length > UNDO_LIMIT) this.undoStack.shift();
+      this.lastSnapshot = snap;
+    }
+    this.undoBtn.setDisabled(this.undoStack.length === 0);
+    this.resetBtn.setDisabled(
+      save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
+    );
     this.info.setVisible(save.loadout.height < 5);
-    this.info.setY(this.infoPill.y + 34);
-    this.infoPill.setY(this.view.y + this.view.gridHeight + 26);
+    this.routeBar.setY(this.view.y + this.view.gridHeight + 30);
+    this.info.setY(this.routeBar.y + 32);
     const block = sortieBlock(save);
     this.warn.setText(
       block === 'noOrigin'
         ? '起点が0個です。出撃できません'
         : block === 'storageFull'
-          ? '倉庫があふれています'
+          ? '倉庫があふれています（タップで売却）'
           : '',
     );
     const eq = equippedUids(save);
     this.list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
     this.list.setSelected(this.selected?.uid ?? null);
     this.renderSlots();
+  }
+
+  /** ルートの選択: [全部] [①] [②]… と、選んだルートの要約 */
+  private buildRouteBar(preview: ChainPreview): void {
+    const bar = this.routeBar;
+    bar.removeAll(true);
+    bar.add(panel(this, W / 2, 0, W - 40, 56, 'plate'));
+    const chip = (x: number, w: number, on: boolean, onTap: () => void) => {
+      const bg = this.add
+        .nineslice(
+          x + w / 2,
+          0,
+          on ? SKIN.tabOn : SKIN.tab,
+          undefined,
+          w,
+          44,
+          SLICE.tab,
+          SLICE.tab,
+          14,
+          14,
+        )
+        .setInteractive({ useHandCursor: true });
+      bindTap(bg, () => {
+        sfx('click');
+        onTap();
+      });
+      bar.add(bg);
+      return bg;
+    };
+    const shown = getSave().settings.showRoutes;
+    let x = 30;
+    chip(x, 72, shown && this.focus === null, () => this.setFocus(null));
+    bar.add(
+      this.add
+        .text(
+          x + 36,
+          -2,
+          '全部',
+          textStyle(18, shown && this.focus === null ? '#fff6d0' : COLORS.text),
+        )
+        .setOrigin(0.5),
+    );
+    x += 78;
+    preview.plans.forEach((_, i) => {
+      chip(x, 50, shown && this.focus === i, () =>
+        this.setFocus(shown && this.focus === i ? null : i),
+      );
+      bar.add(this.add.circle(x + 25, -1, 14, routeColor(i)).setStrokeStyle(3, 0x0c0a12));
+      bar.add(
+        this.add
+          .text(x + 25, -2, `${i + 1}`, textStyle(16, '#1a1424'))
+          .setOrigin(0.5)
+          .setStroke('#fff6d0', 2)
+          .setShadow(0, 0, '#000', 0),
+      );
+      x += 54;
+    });
+    // ルートの線・段数を消す／出す
+    chip(x, 76, !shown, () => {
+      const save = getSave();
+      save.settings.showRoutes = !save.settings.showRoutes;
+      persist();
+      this.refresh();
+    });
+    bar.add(
+      this.add
+        .text(
+          x + 38,
+          -2,
+          shown ? '線を消す' : '線なし',
+          textStyle(15, !shown ? '#fff6d0' : COLORS.text),
+        )
+        .setOrigin(0.5),
+    );
+    x += 82;
+    // 推定ダメージ（ふつうの敵1体に撃ったときの期待値。コンボ・追加効果・会心込み）
+    const save = getSave();
+    const items = itemMap(save);
+    const u = heroStats(save).attackMult;
+    const est = preview.plans.map((p) => estimateRoute(p, items, u));
+    const fmt = (n: number) => Math.round(n).toLocaleString('ja-JP');
+    const summary = (() => {
+      if (!shown) return { text: '番号を選ぶと表示に戻す', color: COLORS.textDim };
+      if (preview.plans.length === 0)
+        return { text: '起点を置いてください', color: COLORS.textWarn };
+      if (this.focus === null)
+        return {
+          text: `合計 約${fmt(est.reduce((sum, e) => sum + e.total, 0))}`,
+          color: '#ffe27a',
+        };
+      const p = preview.plans[this.focus]!;
+      const e = est[this.focus]!;
+      // 必殺技の名前は、見つけたあとだけ出す（ネタバレしない）
+      const knownTech = e.techs.find((t) => save.discoveredTechs.includes(t));
+      const combo = knownTech
+        ? `・${getTechnique(knownTech)?.name ?? '必殺技'}`
+        : e.combos > 0
+          ? `・コンボ${e.combos}`
+          : '';
+      return {
+        text: `約${fmt(e.total)}・${p.maxStep}段${combo}`,
+        color: routeCss(this.focus),
+      };
+    })();
+    this.routeText = this.add
+      .text(W - 40, -2, summary.text, textStyle(18, summary.color))
+      .setOrigin(1, 0.5);
+    bar.add(this.routeText);
+  }
+
+  /** 編成のタブ: 1〜5。今の編成をもう一度押すと名前を変えられる */
+  private buildPresetBar(): void {
+    const save = getSave();
+    const bar = this.presetBar;
+    bar.removeAll(true);
+    const w = 54;
+    save.presets.forEach((p, i) => {
+      const x = 24 + i * (w + 6);
+      const on = i === save.activePreset;
+      const bg = this.add
+        .nineslice(
+          x + w / 2,
+          0,
+          on ? SKIN.tabOn : SKIN.tab,
+          undefined,
+          w,
+          52,
+          SLICE.tab,
+          SLICE.tab,
+          14,
+          14,
+        )
+        .setInteractive({ useHandCursor: true });
+      bindTap(bg, () => {
+        sfx('click');
+        if (on) this.renamePreset(i);
+        else this.changePreset(i);
+      });
+      bar.add(bg);
+      bar.add(
+        this.add
+          .text(
+            x + w / 2,
+            -2,
+            `${i + 1}`,
+            textStyle(24, on ? '#fff6d0' : p.loadout ? COLORS.text : COLORS.textDim),
+          )
+          .setOrigin(0.5),
+      );
+    });
+    const name = save.presets[save.activePreset]!.name;
+    // 名前は「戻す」ボタンの手前まで（長い名前は縮める）
+    const nameX = 24 + 5 * (w + 6) + 4;
+    const label = this.add.text(nameX, -2, `${name} ✎`, textStyle(22, '#ffe27a')).setOrigin(0, 0.5);
+    const maxW = W - 206 - 53 - 8 - nameX;
+    if (label.width > maxW) label.setScale(maxW / label.width);
+    bar.add(label);
+  }
+
+  private changePreset(i: number): void {
+    const save = getSave();
+    if (!switchPreset(save, i)) return;
+    persist();
+    // 別の編成の並べ方には戻さない
+    this.undoStack = [];
+    this.lastSnapshot = JSON.stringify(save.loadout);
+    this.focus = null;
+    this.selected = null;
+    this.buildPresetBar();
+    this.refresh();
+    this.showToastLine(`${save.presets[i]!.name} に切り替えました`);
+  }
+
+  private renamePreset(i: number): void {
+    const save = getSave();
+    const now = save.presets[i]!.name;
+    const v = typeof window !== 'undefined' ? window.prompt('編成の名前（8文字まで）', now) : null;
+    if (v === null) return;
+    const name = v.trim().slice(0, 8);
+    if (!name) return;
+    save.presets[i]!.name = name;
+    persist();
+    this.buildPresetBar();
+    this.refresh();
+  }
+
+  /** 画面下の一時的なお知らせ */
+  private showToastLine(msg: string): void {
+    const t = this.add
+      .text(W / 2, LOADOUT_LAYOUT.backpackTop + 10, msg, textStyle(24, '#ffe27a'))
+      .setOrigin(0.5)
+      .setDepth(3000);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      y: t.y - 20,
+      delay: 900,
+      duration: 400,
+      onComplete: () => t.destroy(),
+    });
+  }
+
+  private setFocus(i: number | null): void {
+    // 線を消していたら、番号・全部を選んだときに表示へ戻す
+    const save = getSave();
+    if (!save.settings.showRoutes) {
+      save.settings.showRoutes = true;
+      persist();
+    }
+    this.focus = i;
+    this.refresh();
   }
 
   private renderSlots(): void {
@@ -157,26 +467,119 @@ export class LoadoutScene extends Phaser.Scene {
     return -1;
   }
 
+  /** ひとつ前の並べ方に戻す（そのあと売った装備は外したままにする） */
+  private undo(): void {
+    const prev = this.undoStack.pop();
+    if (prev === undefined) return;
+    const save = getSave();
+    const have = new Set(save.inventory.map((i) => i.uid));
+    const l = JSON.parse(prev) as Loadout;
+    l.cells = l.cells.map((u) => (u && have.has(u) ? u : null));
+    l.originOrder = l.originOrder.filter((u) => have.has(u));
+    l.consumables = l.consumables.filter((u) => have.has(u));
+    save.loadout = l;
+    this.lastSnapshot = JSON.stringify(save.loadout);
+    this.selected = null;
+    persist();
+    sfx('click');
+    this.refresh();
+    this.showToastLine('ひとつ前の並べ方に戻しました');
+  }
+
   private commit(): void {
     persist();
     sfx('click');
     this.refresh();
   }
 
+  private confirmReset(): void {
+    const save = getSave();
+    const placed = save.loadout.cells.filter(Boolean).length + save.loadout.consumables.length;
+    if (placed === 0) return;
+    confirmDialog(
+      this,
+      '全部外す',
+      `バックパックと消耗品枠の ${placed}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。`,
+      '全部外す',
+      () => {
+        save.loadout = clearLoadout(save.loadout);
+        this.selected = null;
+        this.commit();
+      },
+    );
+  }
+
   private onListTap(it: ItemInstance): void {
-    this.selected = this.selected?.uid === it.uid ? null : it;
-    this.list.setSelected(this.selected?.uid ?? null);
-    if (this.selected) {
-      const kind = getItemDef(it.defId).kind;
-      this.infoPill.setValue(
-        kind === 'consumable' ? '空いている消耗品枠をタップ' : '置きたいマスをタップ',
-        COLORS.gold,
-      );
+    this.openDetail(it, 'list');
+  }
+
+  /** 選んで「置く」: 次にタップしたマスへ置く */
+  private selectForPlacing(it: ItemInstance): void {
+    this.selected = it;
+    this.list.setSelected(it.uid);
+    this.routeText.setText('置きたいマスをタップ').setColor(COLORS.gold);
+  }
+
+  /** 装備の詳細カード。置き場所に応じた操作をカードに並べる */
+  private openDetail(it: ItemInstance, where: 'grid' | 'slot' | 'list'): void {
+    const save = getSave();
+    const items = itemMap(save);
+    if (where === 'grid') {
+      // タップした装備が乗っているルートを強調する
+      const plans = simulateChain(save.loadout, items).plans;
+      const i = plans.findIndex((p) => p.steps.some((s) => s.uid === it.uid));
+      if (i >= 0 && i !== this.focus) this.setFocus(i);
     }
+    const kind = getItemDef(it.defId).kind;
+    const actions: DetailAction[] = [];
+    if (where === 'grid' || where === 'slot') {
+      actions.push({
+        label: '外す',
+        skin: 'red',
+        onTap: () => {
+          save.loadout = removeItem(save.loadout, items, it.uid);
+          this.commit();
+        },
+      });
+      const order = save.loadout.originOrder;
+      if (kind === 'origin' && order.length >= 2) {
+        actions.push({
+          label: '発火順を前へ',
+          skin: 'blue',
+          onTap: () => {
+            save.loadout = cycleOriginOrder(save.loadout, it.uid);
+            this.commit();
+          },
+        });
+      }
+    } else if (kind === 'consumable') {
+      const n = consumableSlots(save);
+      const free = save.loadout.consumables.length < n;
+      actions.push({
+        label: free ? '枠に入れる' : '枠がいっぱい',
+        skin: 'green',
+        disabled: !free,
+        onTap: () => {
+          save.loadout = setConsumable(save.loadout, save.loadout.consumables.length, it.uid, n);
+          this.commit();
+        },
+      });
+    } else {
+      actions.push({
+        label: '置く',
+        skin: 'green',
+        icon: 'bag',
+        onTap: () => this.selectForPlacing(it),
+      });
+    }
+    showItemDetail(this, it, {
+      actions,
+      context: where === 'grid' ? chainContext(save.loadout, items, it.uid) : undefined,
+    });
   }
 
   private setupGridInput(): void {
-    // バックパックのマス: タップ（起点の順番入れ替え／選択中を置く）、長押し（詳細）、ドラッグ（移動・外す）
+    // バックパックのマス: タップ（能力の詳細／選択中を置く）、ドラッグ（移動・外す）
     const zone = this.add
       .zone(0, LOADOUT_LAYOUT.backpackTop, W, this.view.gridHeight)
       .setOrigin(0, 0)
@@ -209,12 +612,15 @@ export class LoadoutScene extends Phaser.Scene {
     const sx = p.x;
     const sy = p.y;
     let moved = false;
+    const where = cell >= 0 ? 'grid' : 'slot';
     const long = this.time.delayedCall(LONG_PRESS_MS, () => {
       if (!moved && !this.drag) {
         cleanup();
-        showItemDetail(this, it);
+        done = true;
+        this.openDetail(it, where);
       }
     });
+    let done = false;
     const onMove = (q: Phaser.Input.Pointer) => {
       if (moved || Math.hypot(q.x - sx, q.y - sy) < DRAG_THRESHOLD) return;
       moved = true;
@@ -225,13 +631,9 @@ export class LoadoutScene extends Phaser.Scene {
     const onUp = () => {
       long.remove();
       cleanup();
-      if (moved) return;
-      // タップ: 起点なら発火順を入れ替える
-      if (cell >= 0 && getItemDef(it.defId).kind === 'origin') {
-        const save = getSave();
-        save.loadout = cycleOriginOrder(save.loadout, it.uid);
-        this.commit();
-      }
+      if (moved || done) return;
+      // タップ: 能力の詳細（外す・発火順の入れ替えはカードから）
+      this.openDetail(it, where);
     };
     const cleanup = () => {
       this.input.off('pointermove', onMove);
@@ -278,4 +680,23 @@ export class LoadoutScene extends Phaser.Scene {
     }
     this.commit();
   }
+}
+
+/** 倉庫からあふれた分を、安いものから売る（確認つき）。売ったらシーンを開き直す */
+export function sellOverflow(scene: Phaser.Scene): void {
+  const save = getSave();
+  const plan = overflowSellPlan(save);
+  if (plan.uids.length === 0) return;
+  confirmDialog(
+    scene,
+    'あふれた分を売る',
+    `安いものから${plan.uids.length}個を売って倉庫に収めます\n（+${plan.gold}G）`,
+    '売る',
+    () => {
+      sellItems(save, plan.uids);
+      persist();
+      sfx('drop');
+      scene.scene.restart();
+    },
+  );
 }

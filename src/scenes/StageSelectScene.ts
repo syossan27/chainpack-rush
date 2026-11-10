@@ -1,14 +1,16 @@
 // 地域の一覧と敵情報（雑魚の傾向、ボスの出現順と特徴）
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { sortieBlock } from '../core/economy';
+import { sellOverflow } from './LoadoutScene';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
-import { REGIONS, type RegionDef } from '../data/regions';
+import { REGIONS, regionBosses, type RegionDef } from '../data/regions';
 import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
 import { getSave } from '../platform/store';
 import { TopBar } from '../ui/kit/chrome';
-import { Button, Pill, icon, panel, ribbon } from '../ui/kit/widgets';
+import { Button, Pill, icon, panel, ribbon, bindTap } from '../ui/kit/widgets';
 import { SKIN } from '../ui/kit/skin';
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, textStyle } from '../ui/theme';
@@ -17,6 +19,8 @@ const CARD_H = 300;
 const CARD_TOP = 190;
 
 export class StageSelectScene extends Phaser.Scene {
+  /** 地域ごとに、特徴を表示しているボス */
+  private readonly traitOf = new Map<string, string>();
   private root!: Phaser.GameObjects.Container;
 
   constructor() {
@@ -58,18 +62,31 @@ export class StageSelectScene extends Phaser.Scene {
     });
     if (!block)
       this.tweens.add({ targets: go, scale: 1.05, yoyo: true, repeat: -1, duration: 650 });
-    if (block) {
+    if (block === 'noOrigin') {
       this.add
-        .text(
-          W / 2,
-          H - 156,
-          block === 'noOrigin'
-            ? '起点がバックパックにありません'
-            : '倉庫があふれています（売却してください）',
-          textStyle(22, COLORS.textWarn),
-        )
+        .text(W / 2, H - 156, '起点がバックパックにありません', textStyle(22, COLORS.textWarn))
         .setOrigin(0.5);
+    } else if (block === 'storageFull') {
+      this.add
+        .text(W / 2 - 90, H - 162, '倉庫があふれています', textStyle(22, COLORS.textWarn))
+        .setOrigin(0.5);
+      new Button(this, W / 2 + 150, H - 162, 'あふれた分を売る', () => sellOverflow(this), {
+        width: 230,
+        height: 56,
+        fontSize: 20,
+        skin: 'red',
+      });
     }
+    runTutorial(this, 'stage', [
+      {
+        rect: { x: W / 2, y: CARD_TOP + CARD_H / 2, w: W - 26, h: CARD_H + 6 },
+        text: '出撃する地域を選ぶよ。最初は「草原」。\n奥の地域ほど敵は強いけど、\nいい装備が出やすいよ',
+      },
+      {
+        rect: { x: W - 140, y: H - 80, w: 256, h: 112 },
+        text: '準備ができたら「出撃！」',
+      },
+    ]);
   }
 
   private renderCards(): void {
@@ -82,7 +99,7 @@ export class StageSelectScene extends Phaser.Scene {
       const card = panel(this, W / 2, y, W - 30, CARD_H, 'panel').setInteractive({
         useHandCursor: true,
       });
-      card.on('pointerup', () => {
+      bindTap(card, () => {
         if (!unlocked) {
           sfx('error');
           return;
@@ -98,6 +115,22 @@ export class StageSelectScene extends Phaser.Scene {
         this.tweens.add({ targets: glow, alpha: 0.4, yoyo: true, repeat: -1, duration: 600 });
       }
       this.thumbnail(r, 150, y - 40);
+      // 地域の強さと戦利品（小窓の左上に重ねる）
+      if (r.power.hp !== 1) {
+        const label = this.add
+          .text(
+            48,
+            y - 100,
+            `敵HP×${r.power.hp} 攻撃×${r.power.atk}\nレア以上 +${Math.round(r.loot.rarityShift * 100)}%`,
+            {
+              ...textStyle(15, COLORS.gold, false),
+              backgroundColor: '#0c0a12cc',
+              padding: { x: 6, y: 3 },
+            },
+          )
+          .setOrigin(0, 0);
+        this.root.add(label);
+      }
       this.root.add(
         this.add.text(
           270,
@@ -120,27 +153,55 @@ export class StageSelectScene extends Phaser.Scene {
       this.root.add(
         this.add.text(270, y - 66, `雑魚: ${r.mobTrend}`, textStyle(19, COLORS.textDim, false)),
       );
-      // ボスの出現順
-      r.bosses.forEach((b, k) => {
-        const bx = 300 + k * 140;
+      // 周回ごとのボス候補（出撃ごとに抽選）。アイコンをタップで特徴
+      r.bossPools.forEach((pool, k) => {
+        const cx = 330 + k * 140;
         const by = y + 20;
-        this.root.add(this.add.image(bx, by, SKIN.round).setDisplaySize(84, 84));
-        this.root.add(this.add.image(bx, by + 4, b).setScale(0.62));
-        this.root.add(this.add.text(bx - 34, by - 40, `${k + 1}`, textStyle(22, '#ffe27a')));
-        if (k < r.bosses.length - 1)
+        this.root.add(
+          this.add
+            .text(
+              cx,
+              by - 46,
+              `${k + 1}周目${k === r.bossPools.length - 1 ? '〜' : ''}`,
+              textStyle(17, '#ffe27a'),
+            )
+            .setOrigin(0.5),
+        );
+        const size = pool.length >= 3 ? 46 : 62;
+        pool.forEach((b, m) => {
+          const bx = cx + (m - (pool.length - 1) / 2) * (size + 4);
+          const frame = this.add.image(bx, by, SKIN.round).setDisplaySize(size, size);
+          frame.setInteractive({ useHandCursor: true });
+          bindTap(frame, () => {
+            if (!unlocked) return;
+            sfx('click');
+            this.traitOf.set(r.id, b);
+            this.renderCards();
+          });
+          this.root.add(frame);
+          const sel = this.traitOf.get(r.id) === b;
+          if (sel) this.root.add(this.add.circle(bx, by, size / 2 + 3).setStrokeStyle(3, 0xffd25a));
+          this.root.add(this.add.image(bx, by + 3, b).setScale((0.62 * size) / 84));
+        });
+        if (k < r.bossPools.length - 1)
           this.root.add(
-            this.add.text(bx + 62, by, '›', textStyle(36, COLORS.textDim)).setOrigin(0.5),
+            this.add.text(cx + 70, by, '›', textStyle(30, COLORS.textDim)).setOrigin(0.5),
           );
       });
-      const traits = [...new Set(r.bosses)].map(
-        (b) => `${getEnemyDef(b).name}: ${BOSS_TRAITS[b] ?? ''}`,
-      );
+      const picked = this.traitOf.get(r.id);
       this.root.add(
-        this.add.text(44, y + 76, traits.join('\n'), {
-          ...textStyle(16, COLORS.text, false),
-          wordWrap: { width: W - 90 },
-          lineSpacing: 2,
-        }),
+        this.add.text(
+          44,
+          y + 70,
+          picked
+            ? `${getEnemyDef(picked).name}: ${BOSS_TRAITS[picked] ?? ''}`
+            : `ボスは出撃ごとに候補から選ばれます（${regionBosses(r).length}種）。アイコンをタップで特徴`,
+          {
+            ...textStyle(17, picked ? COLORS.text : COLORS.textDim, false),
+            wordWrap: { width: W - 90 },
+            lineSpacing: 2,
+          },
+        ),
       );
       if (!unlocked) {
         this.root.add(this.add.rectangle(W / 2, y, W - 34, CARD_H - 8, 0x0c0a12, 0.78));
@@ -172,7 +233,7 @@ export class StageSelectScene extends Phaser.Scene {
         .setScale(scale);
       this.root.add(img);
     }
-    const boss = r.bosses[0]!;
+    const boss = r.bossPools[0]![0]!;
     this.root.add(
       this.add
         .image(cx + 50, top + h - 12, boss)

@@ -16,3 +16,11 @@ export function debugFps(): boolean {
 export function debugStress(): boolean {
   return params.get('stress') === '1';
 }
+
+/** ?speed=2: ゲームスピードを一時的に上書き（設定より優先） */
+export function debugSpeed(): number | null {
+  const s = params.get('speed');
+  if (s === null) return null;
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}

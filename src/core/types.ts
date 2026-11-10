@@ -6,7 +6,8 @@ export type ItemKind = 'origin' | 'attack' | 'defense' | 'consumable';
 export type Element = 'physical' | 'blunt' | 'fire' | 'thunder' | 'ice' | 'water' | 'oil';
 export type Area = 'single' | 'sweep' | 'splash' | 'all';
 export type Status = 'wet' | 'oil' | 'frozen';
-export type ConsumableEffect = 'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal';
+export type ConsumableEffect =
+  'rally' | 'timeStop' | 'oilAll' | 'wetAll' | 'heal' | 'addTime' | 'bombAll' | 'critUp';
 
 export const DIRS: readonly Dir[] = ['up', 'right', 'down', 'left'];
 export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
@@ -22,6 +23,18 @@ export interface ItemDef {
   applies?: Status;
   relayDelay?: number; // 既定 0.2 秒、大剣は 0.4 秒
   pierce?: number; // 狙いの後ろにも同ダメージを与える体数（槍）
+  hits?: number; // 1段で何回当てるか（双剣は2）
+  critBonus?: number; // この装備の会心率に足す（聖剣）
+  /** アーティファクト: 滅多に出ない。常にレジェンダリー、出口はこの形で出る（数は固定、向きは鍛冶屋で高額）、追加効果なし */
+  artifact?: { exits: Dir[] };
+  /** この装備を通る連鎖は、連鎖倍率の上限がこの値になる（循環の環） */
+  multCap?: number;
+  /** ボスへのダメージ倍率（竜牙の剣） */
+  bossMult?: number;
+  /** バックパックに置いてあれば、連鎖中も無防備にならず、よろめかない（不落の城門） */
+  guardAll?: boolean;
+  /** 当てた敵に濡れ・油・凍結をまとめて付ける（賢者の石） */
+  appliesAll?: boolean;
   effect?: ConsumableEffect;
   description: string;
 }
@@ -32,6 +45,10 @@ export interface ItemInstance {
   rarity: Rarity;
   exits: Dir[]; // 入手時に抽選。付け直しで方向だけ変わる
   rerollCount: number;
+  /** ロック中は売れない（間違って売らないように） */
+  locked?: boolean;
+  /** 追加効果（入手時に抽選。src/core/affixes.ts）。古いセーブにはない */
+  affixes?: { id: import('./affixes').AffixId; value: number }[];
 }
 
 export interface Loadout {
@@ -51,6 +68,8 @@ export interface ChainStep {
   from: string | null; // どのアイテムから伝わったか（起点は null）
   parentIndex: number; // steps 内の親の添字（起点は -1）
   cell: number; // マス番号（行優先）
+  /** この一撃が必殺技になる（data/techniques.ts の id） */
+  tech?: string;
 }
 
 export interface ChainPlan {
@@ -59,4 +78,6 @@ export interface ChainPlan {
   duration: number; // 無防備の長さ
   defenseGain: number;
   maxStep: number;
+  /** 連鎖倍率の上限（通常は CHAIN.multCap） */
+  multCap: number;
 }

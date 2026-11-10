@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
+import { iconTex } from './kit/icons';
 import { SKIN, SLICE, tileKey } from './kit/skin';
 
 const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
@@ -43,6 +44,50 @@ export class ItemIcon extends Phaser.GameObjects.Container {
     this.arrows = scene.add.graphics();
     this.drawArrows();
     this.add([this.frame, this.img, this.arrows]);
+    // アーティファクト: 虹色にゆらめく縁取り
+    if (def.artifact) {
+      const ring = scene.add.graphics();
+      const w = size - 4;
+      let hue = 0;
+      const draw = () => {
+        ring.clear();
+        const c = Phaser.Display.Color.HSVToRGB(hue, 0.6, 1) as Phaser.Display.Color;
+        ring.lineStyle(Math.max(3, size * 0.05), c.color, 1);
+        ring.strokeRoundedRect(-w / 2, -w / 2, w, w, 8);
+      };
+      draw();
+      const ev = scene.time.addEvent({
+        delay: 60,
+        loop: true,
+        callback: () => {
+          hue = (hue + 0.02) % 1;
+          if (ring.active) draw();
+        },
+      });
+      this.once('destroy', () => ev.remove());
+      this.addAt(ring, 1);
+    }
+    // ロック中は右上に鍵
+    if (item.locked) {
+      const lock = scene.add
+        .image(size / 2 - 12, -size / 2 + 12, iconTex('lock'))
+        .setScale(Math.max(1.5, size / 60));
+      this.add(lock);
+    }
+    // 追加効果の数を左下に小さな星で
+    const n = item.affixes?.length ?? 0;
+    if (n > 0) {
+      const star = scene.add
+        .text(-size / 2 + 8, size / 2 - 8, '✦'.repeat(n), {
+          fontFamily: 'sans-serif',
+          fontSize: `${Math.max(14, Math.round(size * 0.22))}px`,
+          color: '#ffe27a',
+          stroke: '#0c0a12',
+          strokeThickness: 4,
+        })
+        .setOrigin(0, 1);
+      this.add(star);
+    }
     this.setSize(size, size);
     scene.add.existing(this);
   }

@@ -49,9 +49,16 @@ export interface SpriteAnim {
   /** 省略した軸は SpriteDef の原点（0〜1）。足元を世界座標へ合わせ、コマごとに寄せない */
   originX?: number;
   originY?: number;
+  /** 必殺モーション: 斬りつけるコマ（0始まり）。大きな演出をこのコマに合わせる */
+  impactFrame?: number;
 }
 
-export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death';
+/**
+ * special_<技のid>: その必殺技のモーション、special: 全技共通の必殺モーション（勇者）。
+ * どちらも未登録なら通常の攻撃＋踏み込み・残像で代用
+ */
+export type UnitAnimName =
+  'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special' | `special_${string}`;
 
 export interface SpriteDef {
   key: string;
@@ -72,6 +79,10 @@ export interface SpriteDef {
   overlay?: { pixels: readonly string[]; x: number; y: number };
   /** 顔アイコンに使う範囲（コマ内の px。正方形） */
   avatarCrop?: { x: number; y: number; size: number };
+  /** 本素材の体の高さ（足元から頭のてっぺんまで、コマの px）。HPバーやダメージ数字の位置に使う。省略時はコマの高さ */
+  bodyHeight?: number;
+  /** 本素材が左向き（勇者の方）に描かれている。仮素材は右向きなので反転して出す */
+  facesLeft?: boolean;
 }
 
 /** キャラクターの表示倍率（勇者128×128、雑魚96×96、ボス192×192） */
@@ -220,6 +231,68 @@ const SCARECROW = [
   '....KKKKKKKK....',
 ];
 
+const WOLF = [
+  '................',
+  '................',
+  '................',
+  '................',
+  '..KK............',
+  '.KGGK.......KK..',
+  '.KGGGK.....KGGK.',
+  'KGWGGGKKKKKGGGK.',
+  'KGGGGGGGGGGGGK..',
+  '.KKGGGGGGGGGGK..',
+  '..KGGgGGGGGGGGK.',
+  '...KGGGGGGGGGGK.',
+  '...KGGKKKKKGGK..',
+  '...KGK.....KGK..',
+  '...KDK.....KDK..',
+  '...KKK.....KKK..',
+];
+
+const SKELETON = [
+  '................',
+  '.....KKKKK......',
+  '....KWWWWWK.....',
+  '...KWWWWWWWK....',
+  '...KWkWWWkWK....',
+  '...KWWWWWWWK....',
+  '....KWKWKWK.....',
+  '.....KKKKK......',
+  '...KKWKWKWKK....',
+  '..KW.KWWWK.WK...',
+  '..KW.KWKWK.WK...',
+  '.....KWWWK......',
+  '.....KWKWK......',
+  '.....KW.WK......',
+  '....KWK.KWK.....',
+  '....KKK.KKK.....',
+];
+
+const GOLEM = [
+  '.....KKKKKK.....',
+  '....KnnnnnnK....',
+  '...KnbnnnnbnK...',
+  '...KnnyKKynnK...',
+  '...KnnnnnnnnK...',
+  '.KKKbnnnnnnbKKK.',
+  'KnnnKnnbbnnKnnnK',
+  'KnbnKnnnnnnKnbnK',
+  'KnnnKnbnnbnKnnnK',
+  '.KKKKnnnnnnKKKK.',
+  '....KnnbbnnK....',
+  '...KnnnKKnnnK...',
+  '...KnnK..KnnK...',
+  '..KbnnK..KnnbK..',
+  '..KnnnK..KnnnK..',
+  '..KKKKK..KKKKK..',
+];
+
+/** 仮素材の色を置き換える（1文字=1ドットの色キーを差し替える） */
+function recolor(pixels: readonly string[], map: Record<string, string>): string[] {
+  return pixels.map((row) => row.replace(/./g, (ch) => map[ch] ?? ch));
+}
+
 const CROWN = ['K.KK.KK.K', 'KyKyyKyyK', 'KyyyyyyyK', 'KKKKKKKKK'];
 const HELM_PLUME = ['..KKK..', '.KrrrK.', 'KrrrrrK', '.KrrK..'];
 
@@ -269,6 +342,69 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originX: 41 / 96,
         originY: 71 / 80,
       },
+      // 必殺技のモーション: special_<技のid>（data/techniques.ts）。未登録の技は special、それも無ければ
+      // 通常の攻撃＋踏み込み・残像で代用。原点は開始コマの足元に固定し、コマごとの横ずれには寄せない。
+      // クリムゾン・バースト: 184×132・9コマ（PR #4）。テンポを崩さないよう 14fps（約0.64秒）
+      special_crimson: {
+        file: 'hero/hero_special_crimson_burst.png',
+        frames: 9,
+        fps: 14,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 132,
+        originX: 62.5 / 184,
+        originY: 98 / 132,
+        impactFrame: 4,
+      },
+      // 残りの4つ（PR #6）。原点は開始コマの足元（待機と揃う）。impactFrame は大きな演出を合わせるコマ
+      // トライ・サンダー: 160×112・6コマ。剣を掲げて雷を受け、3コマ目で振り下ろす
+      special_thunder: {
+        file: 'hero/hero_special_tri_thunder.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 3,
+      },
+      // フロスト・ブレイカー: 160×112・6コマ。2コマ目で氷の斬り下ろし。最後は低い構え（終わったら待機へ戻る）
+      special_frost: {
+        file: 'hero/hero_special_frost_breaker.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 2,
+      },
+      // トリプル・スラッシュ: 160×112・7コマ。3回振って、4コマ目の大振りが決め
+      special_triple: {
+        file: 'hero/hero_special_triple_slash.png',
+        frames: 7,
+        fps: 14,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 4,
+      },
+      // サイクロン・アックス: 184×112・6コマ。くるっと回って、4コマ目の回転斬りが決め
+      special_whirl: {
+        file: 'hero/hero_special_cyclone_axe.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 112,
+        originX: 0.3424,
+        originY: 0.7857,
+        impactFrame: 4,
+      },
       attack: {
         file: 'hero/hero_attack.png',
         frames: 9,
@@ -281,15 +417,131 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  slime: unit('slime', SLIME, 48),
+  // スライム（PR #8）。仮素材は雑魚の共通サイズ 48、本素材は 64px（攻撃だけ 96×64）。地面は全コマ y=55。
+  // 数値は assets/raw/enemies/slime/ の export どおり。コマの切り直し・中心の寄せはしない
+  slime: {
+    ...unit('slime', SLIME, 48),
+    bodyHeight: 26,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/slime/slime_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で跳ねる（左への移動はゲーム側）
+      move: {
+        file: 'enemies/slime/slime_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // 左へ体当たり。幅 96 なので原点 x=64
+      attack: {
+        file: 'enemies/slime/slime_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。最終コマはうすく残るので、再生後に消す
+      death: {
+        file: 'enemies/slime/slime_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   bat: unit('bat', BAT, 48),
-  goblin: unit('goblin', GOBLIN, 48),
+  // ゴブリン（PR #9）。本素材は 64px コマ（身長約42px、攻撃だけ 96×64）、地面 y=55。絵は左向き。
+  // 数値は assets/raw/enemies/goblin/ の export どおり。コマの切り直し・中心の寄せはしない
+  goblin: {
+    ...unit('goblin', GOBLIN, 48),
+    bodyHeight: 42,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/goblin/goblin_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で左へ歩く（移動そのものはゲーム側）
+      move: {
+        file: 'enemies/goblin/goblin_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // 肩のこん棒を左へ振り下ろす。幅 96 なので原点 x=64
+      attack: {
+        file: 'enemies/goblin/goblin_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。目が閉じて倒れ、最終コマはうすく残る（再生後に消す）
+      death: {
+        file: 'enemies/goblin/goblin_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   armor: unit('armor', ARMOR, 48),
   sorcerer: unit('sorcerer', SORCERER, 48),
   scarecrow: unit('scarecrow', SCARECROW, 48),
   big_slime: unit('big_slime', SLIME, 96),
   goblin_king: unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 }),
   iron_knight: unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 }),
+  wolf: unit('wolf', WOLF, 48),
+  skeleton: unit('skeleton', SKELETON, 48),
+  slime_mother: unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 2,
+  }),
+  bat_queen: unit('bat_queen', recolor(BAT, { V: 'R', r: 'y' }), 96, { pixels: CROWN, x: 4, y: 1 }),
+  lich: unit('lich', recolor(SORCERER, { V: 'U', m: 'c', s: 'g' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 0,
+  }),
+  golem: unit('golem', GOLEM, 96),
 };
 
 /** 本素材のアニメーションキー（Phaser の anims に登録する名前） */
@@ -619,6 +871,90 @@ const SHAPES: Record<string, readonly string[]> = {
     '...KKKKKK...',
     '............',
   ],
+  dagger: [
+    '............',
+    '..........KK',
+    '.........KLK',
+    '........KLAK',
+    '.......KLAK.',
+    '......KLAK..',
+    '...K.KLAK...',
+    '...KKySK....',
+    '....KyyK....',
+    '...KbKKyK...',
+    '..KbK..KK...',
+    '..KK........',
+  ],
+  twin: [
+    'KK........KK',
+    'KLK......KLK',
+    'KALK....KLAK',
+    '.KALK..KLAK.',
+    '..KALKKLAK..',
+    '...KALLAK...',
+    '...KyKKyK...',
+    '..KyK..KyK..',
+    '.KbK....KbK.',
+    'KbK......KbK',
+    'KK........KK',
+    '............',
+  ],
+  bow: [
+    '..KKK.......',
+    '.KbbbK....K.',
+    '.KbKKbK..KW.',
+    '..K..KbKKWK.',
+    '......KbWK..',
+    '.....KKWbK..',
+    '....KAWKKbK.',
+    '...KAWK..KbK',
+    '..KAWK...KbK',
+    '.KLAK....KbK',
+    '.KKK....KbK.',
+    '.......KKK..',
+  ],
+  bomb: [
+    '........KyK.',
+    '.......KoK..',
+    '......KbK...',
+    '....KKKbKK..',
+    '...KLAAAAAK.',
+    '..KLAAAAAAAK',
+    '..KAAAAAAAAK',
+    '..KAAAAAAASK',
+    '..KAAAAAASSK',
+    '...KSAAASSK.',
+    '....KKKKKK..',
+    '............',
+  ],
+  ring: [
+    '....KKKK....',
+    '..KKLLAAKK..',
+    '.KLAKKKKAAK.',
+    '.KAK....KAK.',
+    'KLK......KSK',
+    'KAK..yy..KSK',
+    'KAK..yy..KSK',
+    'KAK......KSK',
+    '.KAK....KSK.',
+    '.KSAKKKKSSK.',
+    '..KKSSSSKK..',
+    '....KKKK....',
+  ],
+  coin: [
+    '....KKKK....',
+    '..KKLLAAKK..',
+    '.KLLAAAAAAK.',
+    '.KLAASSSAAK.',
+    'KLAASAAAAASK',
+    'KAAASSSAAASK',
+    'KAAAAAASAASK',
+    'KAAASSSAAASK',
+    '.KAAAAAAASK.',
+    '.KSAAAAASSK.',
+    '..KKSSSSKK..',
+    '....KKKK....',
+  ],
 };
 
 interface IconSpec {
@@ -650,8 +986,25 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   rally: { shape: 'flag', A: 'r', S: 'R', L: 'p' },
   time_stop: { shape: 'hourglass', A: 'l', S: 'u', L: 'W' },
   oil_barrel: { shape: 'barrel', A: 'b', S: 'B', L: 'n' },
+  time_sand: { shape: 'hourglass', A: 'y', S: 'o', L: 'W' },
   rain_charm: { shape: 'charm', A: 'w', S: 'u', L: 'l' },
   potion: { shape: 'flask', A: 'r', S: 'R', L: 'p' },
+  dagger: { shape: 'dagger', A: 'h', S: 'H', L: 'W' },
+  twin_blades: { shape: 'twin', A: 'h', S: 'H', L: 'W' },
+  bow: { shape: 'bow', A: 'h', S: 'H', L: 'W' },
+  war_axe: { shape: 'axe', A: 'G', S: 'D', L: 'g' },
+  holy_sword: { shape: 'greatsword', A: 'y', S: 'o', L: 'W' },
+  thunder_spear: { shape: 'spear', A: 'y', S: 'o', L: 'W' },
+  frost_staff: { shape: 'staff', A: 'i', S: 'l', L: 'W' },
+  leather_armor: { shape: 'mail', A: 'b', S: 'B', L: 'n' },
+  tower_shield: { shape: 'kiteShield', A: 'G', S: 'D', L: 'g' },
+  bomb: { shape: 'bomb', A: 'D', S: 'k', L: 'G' },
+  lucky_coin: { shape: 'coin', A: 'y', S: 'o', L: 'W' },
+  ouroboros: { shape: 'ring', A: 'c', S: 't', L: 'W' },
+  dragon_fang: { shape: 'greatsword', A: 'r', S: 'R', L: 'y' },
+  sky_hammer: { shape: 'hammer', A: 'y', S: 'u', L: 'W' },
+  sage_stone: { shape: 'stone', A: 'r', S: 'm', L: 'y' },
+  aegis_gate: { shape: 'kiteShield', A: 'y', S: 'o', L: 'W' },
 };
 
 export function iconPixels(defId: string): string[] {

@@ -1,25 +1,56 @@
 // 30秒のランを固定ステップで進め、イベント列を出す（仕様書 第4〜6章）
 // Phaser 非依存。シーンはここが出すイベントと状態を描画するだけ。
-import { AREA, BOSS, CONSUMABLE, FIELD, HERO, LOOP_SCALING, SIM, STATUS } from '../config/balance';
-import { ESCORT_ID, SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
+import {
+  AREA,
+  BOSS,
+  CHAIN_RULES,
+  ELITES,
+  LUCK,
+  type EliteId,
+  type LuckRules,
+  CONSUMABLE,
+  FIELD,
+  HERO,
+  LOOP_SCALING,
+  LOOT,
+  RARITY,
+  SIM,
+  STATUS,
+  TIME_BONUS,
+  type ChainRules,
+} from '../config/balance';
+import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
-import { bossForLoop, getRegion, type RegionDef } from '../data/regions';
+import { TECHNIQUE_MULT } from '../data/techniques';
+import { getRegion, type RegionDef } from '../data/regions';
+import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, planChain } from './chain';
+import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { Rng } from './rng';
-import type { Area, ChainPlan, ConsumableEffect, ItemInstance, Loadout, Status } from './types';
+import type {
+  Area,
+  ChainPlan,
+  ConsumableEffect,
+  ItemDef,
+  ItemInstance,
+  Loadout,
+  Status,
+} from './types';
 
 export interface HeroStats {
   maxHp: number;
   atbTime: number;
   attackMult: number; // 永続強化の攻撃倍率 U
+  runTime: number; // 出撃時間（秒）。強化込み、延長前
 }
 
 export const BASE_HERO_STATS: HeroStats = {
   maxHp: HERO.maxHp,
   atbTime: HERO.atbTime,
   attackMult: 1,
+  runTime: SIM.runDuration,
 };
 
 export interface RunConfig {
@@ -30,6 +61,12 @@ export interface RunConfig {
   hero: HeroStats;
   mode?: 'run' | 'dummy';
   consumableSlots?: number;
+  /** 連鎖の性格づけ（省略時は CHAIN_RULES） */
+  rules?: Partial<ChainRules>;
+  /** 会心・ダメージの揺れ・精鋭（省略時は LUCK） */
+  luck?: Partial<LuckRules>;
+  /** 体験ラン: 時間はのびない・戦利品は落ちない */
+  demo?: boolean;
 }
 
 export interface EnemyState {
@@ -40,6 +77,7 @@ export interface EnemyState {
   hp: number;
   maxHp: number;
   atk: number;
+  interval: number; // 攻撃間隔（秒）。精鋭・激昂で変わる
   attackTimer: number;
   alive: boolean;
   statuses: Map<Status, number>; // 状態 → 失効する tick
@@ -49,13 +87,29 @@ export interface EnemyState {
   loop: number;
   group: number; // 同じ群れは一緒に寄ってくる
   row: number; // 見た目の前後列（描画のみ。core の距離・標的順には使わない）
+  killedBy: number; // 倒した連鎖の番号（-1 は生存中・連鎖以外）
+  elite: EliteId | null;
+  enraged: boolean;
 }
 
-export type EndReason = 'timeout' | 'dead';
+/** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
+export type EndReason = 'timeout' | 'dead' | 'retreat';
 
 export type CombatEvent =
   | { type: 'loopStart'; tick: number; loop: number; bossId: string }
-  | { type: 'spawn'; tick: number; enemyId: number; defId: string; x: number; escort: boolean }
+  | {
+      type: 'spawn';
+      tick: number;
+      enemyId: number;
+      defId: string;
+      x: number;
+      escort: boolean;
+      elite: EliteId | null;
+    }
+  | { type: 'enrage'; tick: number; enemyId: number }
+  | { type: 'revive'; tick: number }
+  /** 必殺技の一撃（演出用。ダメージは続く hit に入っている） */
+  | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
   | {
       type: 'chainStart';
       tick: number;
@@ -83,6 +137,9 @@ export type CombatEvent =
       damage: number;
       combo: string | null;
       nullified: boolean;
+      crit: boolean;
+      /** 連鎖の何段目の攻撃か（爆弾などは 0） */
+      step: number;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
@@ -111,10 +168,21 @@ export type CombatEvent =
       defenseCells: number[];
       totalDamage: number;
       duration: number;
+      cut: boolean; // 敵がいなくなった、またはよろめいて途中で打ち切った
+      staggered: boolean; // 被弾でよろめいて途切れた
     }
   | { type: 'bossDefeated'; tick: number; loop: number; bossId: string }
   | { type: 'consumable'; tick: number; uid: string; defId: string; effect: ConsumableEffect }
+  | {
+      type: 'timeBonus';
+      tick: number;
+      reason: TimeBonusReason;
+      seconds: number; // 実際に増えた秒数（上限で削られた後）
+      capped: boolean;
+    }
   | { type: 'runEnd'; tick: number; reason: EndReason; reachedLoop: number };
+
+export type TimeBonusReason = 'boss' | 'sweep' | 'consumable';
 
 export interface RunStats {
   fires: number;
@@ -122,10 +190,14 @@ export interface RunStats {
   maxDamage: number;
   totalDamage: number;
   bossesDefeated: number;
+  timeGained: number; // 延長した秒数
+  sweeps: number; // 一網打尽の回数
 }
 
 export interface RunResult {
   reason: EndReason;
+  /** ラン中に使った消耗品の uid（撤退の確定時に倉庫から取り除く） */
+  usedConsumables: string[];
   progress: number;
   reachedLoop: number;
   drops: ItemInstance[];
@@ -145,23 +217,41 @@ interface ActiveChain {
   exec: ExecInfo[];
   totalDamage: number;
   durationTicks: number;
+  cut: boolean; // 狙える敵がいなくなって打ち切った、またはよろめいた
+  staggered: boolean; // 被弾でよろめいて途切れた
+  taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
 const byFront = (a: EnemyState, b: EnemyState): number =>
   a.x - b.x || Number(a.def.boss) - Number(b.def.boss) || a.id - b.id;
 
+/** 爆弾のダメージ表示用（装備の uid ではない） */
+export const BOMB_UID = '__bomb__';
+
 const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 
 export class Combat {
   readonly region: RegionDef;
   readonly mode: 'run' | 'dummy';
-  readonly maxTicks: number;
+  /** 終了する tick。時間延長で増える（上限 TIME_BONUS.maxRunTime） */
+  maxTicks: number;
+  /** 出撃時間の時計（交戦中・連鎖中だけ進む。走っているあいだは止まる） */
+  clock = 0;
+  private chainSerial = 0;
   tick = 0;
   heroX = 0;
   hp: number;
   defense = 0;
-  atb = 0; // 秒
+  /** 幸運の硬貨の効き目が切れる tick */
+  private critUpUntil = -1;
+  atb = 0; // 秒（B の待ちが長いときは負から始まる）
+  readonly rules: ChainRules;
+  readonly luck: LuckRules;
+  private readonly guardAll: boolean;
+  private readonly layoutRng: Rng;
+  /** 今の周回の並び（地域選択・進み具合の表示用） */
+  layout: LoopLayout | null = null;
   running = false; // 勇者が走っているか
   loop = 1;
   bossesDefeated = 0;
@@ -171,8 +261,17 @@ export class Combat {
   ended: EndReason | null = null;
   enemies: EnemyState[] = [];
   drops: ItemInstance[] = [];
+  usedConsumables: string[] = [];
   consumables: (string | null)[];
-  stats: RunStats = { fires: 0, maxStep: 0, maxDamage: 0, totalDamage: 0, bossesDefeated: 0 };
+  stats: RunStats = {
+    fires: 0,
+    maxStep: 0,
+    maxDamage: 0,
+    totalDamage: 0,
+    bossesDefeated: 0,
+    timeGained: 0,
+    sweeps: 0,
+  };
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
@@ -187,11 +286,22 @@ export class Combat {
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
+    this.rules = { ...CHAIN_RULES, ...cfg.rules };
+    this.luck = { ...LUCK, ...cfg.luck };
+    // 不落の城門: バックパックに置いてあれば常に守られる
+    this.guardAll = cfg.loadout.cells.some(
+      (u) => !!u && !!cfg.items.get(u) && !!getItemDef(cfg.items.get(u)!.defId).guardAll,
+    );
+    // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
+    this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
     this.rng = new Rng(cfg.seed);
     this.region = getRegion(cfg.regionId);
     this.hp = cfg.hero.maxHp;
-    this.maxTicks = this.mode === 'dummy' ? Number.POSITIVE_INFINITY : secToTicks(SIM.runDuration);
+    this.maxTicks =
+      this.mode === 'dummy'
+        ? Number.POSITIVE_INFINITY
+        : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
     this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
@@ -218,15 +328,17 @@ export class Combat {
   }
 
   get remaining(): number {
-    return Math.max(0, (this.maxTicks - this.tick) / SIM.ticksPerSecond);
+    return Math.max(0, (this.maxTicks - this.clock) / SIM.ticksPerSecond);
   }
 
+  /** 連鎖中は無防備。ただし起点のあと rules.guardSteps 段目までは守りが残る（next は起点を含む添字） */
   get unguarded(): boolean {
-    return this.chain !== null;
+    if (this.guardAll) return false;
+    return this.chain !== null && this.chain.next > this.rules.guardSteps;
   }
 
   get atbRatio(): number {
-    return Math.min(1, this.atb / this.cfg.hero.atbTime);
+    return Math.max(0, Math.min(1, this.atb / this.cfg.hero.atbTime));
   }
 
   get maxHp(): number {
@@ -256,6 +368,11 @@ export class Combat {
     return this.enemies.filter((e) => e.alive && e.x - this.heroX <= HERO.engageRange);
   }
 
+  /** 接敵: 交戦範囲の敵が、勇者の前の立ち位置まで来ている（連鎖はここから撃つ） */
+  inContact(): boolean {
+    return this.engagedEnemies().some((e) => e.x <= this.heroX + e.standOffset + 0.5);
+  }
+
   get engaged(): boolean {
     return this.engagedEnemies().length > 0;
   }
@@ -275,6 +392,7 @@ export class Combat {
 
   result(): RunResult {
     return {
+      usedConsumables: this.usedConsumables.slice(),
       progress: this.progress,
       reason: this.ended ?? 'timeout',
       reachedLoop: this.reachedLoop,
@@ -308,6 +426,7 @@ export class Combat {
     if (!effect) return false;
     if (effect === 'rally' && (this.chain || this.origins.length === 0)) return false;
     this.consumables[slot] = null;
+    this.usedConsumables.push(uid);
     this.emit({ type: 'consumable', tick: this.tick, uid, defId: def.id, effect });
     switch (effect) {
       case 'rally':
@@ -323,8 +442,36 @@ export class Combat {
       case 'wetAll':
         for (const e of this.onScreen()) this.applyStatus(e, 'wet');
         break;
+      case 'addTime':
+        this.addTime(CONSUMABLE.timeSandSeconds, 'consumable');
+        break;
       case 'heal':
         this.hp = Math.min(this.maxHp, this.hp + CONSUMABLE.healAmount);
+        break;
+      case 'bombAll': {
+        const dmg = CONSUMABLE.bombDamage * this.cfg.hero.attackMult;
+        for (const e of this.onScreen()) {
+          const nullified = e.def.ability === 'damageThreshold' && dmg < BOSS.ironKnightThreshold;
+          this.emit({
+            type: 'hit',
+            tick: this.tick,
+            enemyId: e.id,
+            itemUid: BOMB_UID,
+            damage: nullified ? 0 : dmg,
+            combo: null,
+            nullified,
+            crit: false,
+            step: 0,
+          });
+          if (nullified) continue;
+          e.hp -= dmg;
+          this.stats.totalDamage += dmg;
+          if (e.hp <= 0) this.killEnemy(e);
+        }
+        break;
+      }
+      case 'critUp':
+        this.critUpUntil = this.tick + secToTicks(CONSUMABLE.critUpDuration);
         break;
     }
     return true;
@@ -341,7 +488,7 @@ export class Combat {
     // 2. ATB と発火
     if (!this.chain) {
       this.atb = Math.min(this.cfg.hero.atbTime, this.atb + dt);
-      if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.engaged) this.fire();
+      if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.inContact()) this.fire();
     }
 
     // 3. 状態の失効
@@ -364,14 +511,15 @@ export class Combat {
         if (e.x > stand) e.x = Math.max(stand, e.x - FIELD.enemySpeed * dt);
         if (this.canAttack(e)) {
           e.attackTimer += dt;
-          if (e.attackTimer >= e.def.interval) {
-            e.attackTimer -= e.def.interval;
+          if (e.attackTimer >= e.interval) {
+            e.attackTimer -= e.interval;
             this.damageHero(e);
             if (this.ended) return;
           }
         }
       }
       this.updateSummons(dt, stopped);
+      this.updateBossAbilities(dt, stopped);
     }
 
     // 5. 勇者の移動（連鎖中は立ち止まって攻撃する）
@@ -379,13 +527,35 @@ export class Combat {
     if (this.running) this.heroX += HERO.speed * dt;
 
     this.tick++;
-    if (this.tick >= this.maxTicks) this.end('timeout');
+    // 走っているあいだ（会敵するまで）は出撃時間を減らさない
+    if (!this.running) this.clock++;
+    if (this.clock >= this.maxTicks) this.end('timeout');
   }
 
   // ---- 内部 ----
 
   private emit(ev: CombatEvent): void {
     this.events.push(ev);
+  }
+
+  /** 力尽きたあとの再開（広告の報酬）。1ランに1回、HP全回復＋出撃時間 seconds 秒 */
+  revive(seconds: number): boolean {
+    if (this.mode !== 'run' || this.ended !== 'dead' || this.revived) return false;
+    this.ended = null;
+    this.revived = true;
+    this.hp = this.maxHp;
+    this.maxTicks += secToTicks(seconds);
+    this.emit({ type: 'revive', tick: this.tick });
+    return true;
+  }
+
+  /** このランで再開を使ったか */
+  revived = false;
+
+  /** プレイヤーの撤退。ここまでの戦利品を持ち帰って終わる */
+  retreat(): void {
+    if (this.mode !== 'run') return;
+    this.end('retreat');
   }
 
   private end(reason: EndReason): void {
@@ -396,15 +566,31 @@ export class Combat {
   }
 
   private startLoop(): void {
-    const bossId = bossForLoop(this.region, this.loop);
+    const layout = rollLoop(this.region, this.loop, this.layoutRng, this.layout?.bossId);
+    this.layout = layout;
+    const bossId = layout.bossId;
     this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId });
-    for (const g of this.region.groups) {
+    const eliteChance = Math.min(
+      this.luck.eliteChanceMax,
+      this.luck.eliteChance + this.luck.eliteChancePerLoop * (this.loop - 1),
+    );
+    for (const g of layout.groups) {
       const group = this.nextGroup++;
-      // 前後2列×列。後列（呪術師）は最後の列に回す
-      const ordered = [...g.enemies].sort(
-        (x, y) => Number(getEnemyDef(x).backRow) - Number(getEnemyDef(y).backRow),
-      );
-      ordered.forEach((id, i) => {
+      // 群れに1体まで精鋭が混ざる（後列の呪術師も対象）
+      const eliteAt =
+        this.mode === 'run' && this.layoutRng.next() < eliteChance
+          ? this.layoutRng.int(g.enemies.length)
+          : -1;
+      const elite =
+        eliteAt >= 0
+          ? this.layoutRng.weighted(
+              (Object.keys(ELITES) as EliteId[]).map(
+                (k) => [k, ELITES[k].weight] as [EliteId, number],
+              ),
+            )
+          : null;
+      // 前後2列×列。後列（呪術師）は最後の列（rollLoop で並べ済み）
+      g.enemies.forEach((id, i) => {
         const col = Math.floor(i / FIELD.rowsPerColumn);
         const row = i % FIELD.rowsPerColumn;
         const offset = FIELD.columnSpacing * col;
@@ -415,17 +601,12 @@ export class Combat {
           false,
           group,
           row,
+          i === eliteAt ? elite : null,
         );
       });
     }
     this.bossGroup = this.nextGroup++;
-    this.spawnEnemy(
-      bossId,
-      this.loopStartX + this.region.bossX,
-      FIELD.bossStand,
-      false,
-      this.bossGroup,
-    );
+    this.spawnEnemy(bossId, this.loopStartX + layout.bossX, FIELD.bossStand, false, this.bossGroup);
     this.summonTimer = 0;
   }
 
@@ -436,10 +617,14 @@ export class Combat {
     escort: boolean,
     group: number,
     row = 0,
+    elite: EliteId | null = null,
   ): EnemyState {
     const def = getEnemyDef(defId);
     const scaleLoop = this.loop - 1;
-    const maxHp = def.hp * Math.pow(LOOP_SCALING.hp, scaleLoop);
+    const el = elite ? ELITES[elite] : null;
+    // 地域の強さ × 周回の伸び × 精鋭
+    const maxHp =
+      def.hp * this.region.power.hp * Math.pow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
     const e: EnemyState = {
       id: this.nextEnemyId++,
       defId,
@@ -447,7 +632,8 @@ export class Combat {
       x,
       hp: maxHp,
       maxHp,
-      atk: def.atk * Math.pow(LOOP_SCALING.atk, scaleLoop),
+      atk: def.atk * this.region.power.atk * Math.pow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
+      interval: def.interval * (el?.interval ?? 1),
       // 攻撃のタイミングはシードで少しずらす（同じシードなら同じ結果）
       attackTimer: def.boss ? 0 : this.rng.next() * def.interval * FIELD.attackPhaseJitter,
       alive: true,
@@ -458,9 +644,12 @@ export class Combat {
       loop: this.loop,
       group,
       row,
+      killedBy: -1,
+      elite,
+      enraged: false,
     };
     this.enemies.push(e);
-    this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort });
+    this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort, elite });
     return e;
   }
 
@@ -471,8 +660,11 @@ export class Combat {
   private updateSummons(dt: number, stopped: boolean): void {
     const boss = this.currentBoss();
     if (!boss || boss.def.ability !== 'summonEscorts' || !boss.aggro || stopped) return;
+    const escortId = boss.def.escortId ?? 'goblin';
+    const count = boss.def.escortCount ?? 4;
+    const interval = boss.def.summonInterval ?? 4;
     const escorts = this.enemies.filter((e) => e.alive && e.escort);
-    if (escorts.length >= BOSS.goblinKingEscorts) {
+    if (escorts.length >= count) {
       this.summonTimer = 0;
       return;
     }
@@ -480,7 +672,7 @@ export class Combat {
     // 立ち位置は repack() が2列×前後2段に詰める
     const summon = (): void => {
       this.spawnEnemy(
-        ESCORT_ID,
+        escortId,
         boss.x - FIELD.columnSpacing,
         FIELD.frontStand,
         true,
@@ -488,13 +680,28 @@ export class Combat {
       );
     };
     if (firstWave) {
-      for (let i = 0; i < BOSS.goblinKingEscorts; i++) summon();
+      for (let i = 0; i < count; i++) summon();
       return;
     }
     this.summonTimer += dt;
-    if (this.summonTimer >= BOSS.goblinKingSummonInterval) {
-      this.summonTimer -= BOSS.goblinKingSummonInterval;
+    if (this.summonTimer >= interval) {
+      this.summonTimer -= interval;
       summon();
+    }
+  }
+
+  /** 呪術王の回復、ゴーレムの激昂 */
+  private updateBossAbilities(dt: number, stopped: boolean): void {
+    const boss = this.currentBoss();
+    if (!boss || !boss.aggro || stopped) return;
+    if (boss.def.ability === 'regen' && boss.hp < boss.maxHp) {
+      boss.hp = Math.min(boss.maxHp, boss.hp + boss.maxHp * BOSS.regenPerSec * dt);
+    }
+    if (boss.def.ability === 'enrage' && !boss.enraged && boss.hp < boss.maxHp * BOSS.enrageAt) {
+      boss.enraged = true;
+      boss.interval *= BOSS.enrageInterval;
+      boss.atk *= BOSS.enrageAtk;
+      this.emit({ type: 'enrage', tick: this.tick, enemyId: boss.id });
     }
   }
 
@@ -509,6 +716,12 @@ export class Combat {
       let g = groups.get(e.group);
       if (!g) groups.set(e.group, (g = []));
       g.push(e);
+    }
+    // 取り巻きがいないボスは目の前まで出てくる
+    const escortsAlive = this.enemies.some((e) => e.alive && e.escort);
+    for (const e of this.enemies) {
+      if (e.alive && e.def.boss)
+        e.standOffset = escortsAlive ? FIELD.bossStand : FIELD.bossSoloStand;
     }
     for (const members of groups.values()) {
       members.sort((a, b) => Number(a.def.backRow) - Number(b.def.backRow) || a.id - b.id);
@@ -553,8 +766,12 @@ export class Combat {
       exec: [],
       totalDamage: 0,
       durationTicks: secToTicks(plan.duration),
+      cut: false,
+      staggered: false,
+      taken: 0,
     };
     this.atb = 0;
+    this.chainSerial++;
     this.stats.fires++;
     this.emit({
       type: 'chainStart',
@@ -571,26 +788,66 @@ export class Combat {
   private advanceChain(): void {
     const c = this.chain!;
     const elapsed = this.tick - c.startTick;
+    if (c.cut) {
+      this.finishChain(c, elapsed);
+      return;
+    }
     while (c.next < c.plan.steps.length && secToTicks(c.plan.steps[c.next]!.t) <= elapsed) {
       this.executeStep(c, c.next);
+      if (c.cut) break;
       c.next++;
     }
-    if (c.next >= c.plan.steps.length && elapsed >= c.durationTicks) {
-      const gain = c.plan.defenseGain;
-      this.defense = Math.min(this.maxHp, this.defense + gain);
-      const defenseCells = c.plan.steps
-        .filter((s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind === 'defense')
-        .map((s) => s.cell);
-      this.emit({
-        type: 'chainEnd',
-        tick: this.tick,
-        originUid: c.plan.originUid,
-        defenseGain: gain,
-        defenseCells,
-        totalDamage: c.totalDamage,
-        duration: c.plan.duration,
-      });
-      this.chain = null;
+    if (c.cut || (c.next >= c.plan.steps.length && elapsed >= c.durationTicks))
+      this.finishChain(c, elapsed);
+  }
+
+  /** 連鎖の終了。打ち切ったときは、それまでに通った防御装備の分だけ防御値に加える */
+  private finishChain(c: ActiveChain, elapsed: number): void {
+    const passed = c.cut ? c.plan.steps.slice(0, c.next) : c.plan.steps;
+    const defenseSteps = passed.filter(
+      (s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind === 'defense',
+    );
+    const gain = c.cut
+      ? defenseSteps.reduce((sum, s) => {
+          const it = this.cfg.items.get(s.uid)!;
+          return (
+            sum +
+            (getItemDef(it.defId).defense ?? 0) *
+              RARITY[it.rarity].mult *
+              (1 + affixValue(it, 'sturdy') / 100)
+          );
+        }, 0)
+      : c.plan.defenseGain;
+    // 癒し: 通った防御装備の分だけ回復
+    const mend = defenseSteps.reduce(
+      (sum, s) => sum + affixValue(this.cfg.items.get(s.uid)!, 'mend'),
+      0,
+    );
+    if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
+    this.defense = Math.min(this.maxHp, this.defense + gain);
+    this.emit({
+      type: 'chainEnd',
+      tick: this.tick,
+      originUid: c.plan.originUid,
+      defenseGain: gain,
+      defenseCells: defenseSteps.map((s) => s.cell),
+      totalDamage: c.totalDamage,
+      duration: c.cut ? elapsed / SIM.ticksPerSecond : c.plan.duration,
+      cut: c.cut,
+      staggered: c.staggered,
+    });
+    this.chain = null;
+    // B: 次の発火までの待ちは、撃てた段数に比例（atb を負から始めることで待ちを伸ばす）
+    const r = this.rules;
+    if (r.atbPerStep) {
+      // 起点（先頭）は数えない
+      const steps = Math.max(0, (c.cut ? c.next : c.plan.steps.length) - 1);
+      const origin = this.cfg.items.get(c.plan.originUid)!;
+      const quick = affixValue(origin, 'quick') / 100;
+      const factor =
+        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
+      this.atb = this.cfg.hero.atbTime * (1 - factor);
+    } else {
       this.atb = 0;
     }
   }
@@ -624,10 +881,15 @@ export class Combat {
     let aim =
       parent?.aim != null ? this.enemies.find((e) => e.id === parent.aim && e.alive) : undefined;
     if (!aim) aim = this.targetOrder()[0];
-    const aimId = aim?.id ?? null;
-    const eff = parent && parent.aim === aimId && aimId !== null ? parent.eff + 1 : 1;
+    // 狙える敵がもういない: 残りの段は空振りせず、連鎖を打ち切る
+    if (!aim) {
+      c.cut = true;
+      return;
+    }
+    const aimId = aim.id;
+    const eff = parent && parent.aim === aimId ? parent.eff + 1 : 1;
     c.exec[index] = { eff, aim: aimId };
-    const mult = chainMultiplier(eff);
+    const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
     this.emit({
       type: 'step',
@@ -638,14 +900,45 @@ export class Combat {
       fromCell,
       step: eff,
       mult,
-      whiff: !aim,
+      whiff: false,
     });
-    if (!aim) return;
 
+    // 会心は1回の攻撃ごとに抽選（範囲攻撃なら当たった全員が会心）。双剣は2回それぞれ抽選
+    const critChance =
+      this.luck.critChance +
+      (def.critBonus ?? 0) +
+      affixValue(inst, 'keen') / 100 +
+      (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
+    // 必殺技: 決まった並びの3つ目。止めずに、この一撃だけ強くする
+    const techMult = s.tech ? TECHNIQUE_MULT : 1;
+    if (s.tech)
+      this.emit({ type: 'technique', tick: this.tick, id: s.tech, enemyId: aim.id, uid: s.uid });
+    for (let h = 0; h < (def.hits ?? 1); h++)
+      this.strike(c, s.uid, inst, def, eff, aim, critChance, techMult);
+  }
+
+  /** 1回の攻撃（双剣は1段で2回呼ぶ）。1回目で狙いが倒れたら手前の敵へ */
+  private strike(
+    c: ActiveChain,
+    uid: string,
+    inst: ItemInstance,
+    def: ItemDef,
+    eff: number,
+    aim: EnemyState,
+    critChance: number,
+    techMult = 1,
+  ): void {
+    if (!aim.alive) {
+      const next = this.targetOrder()[0];
+      if (!next) return;
+      aim = next;
+    }
+    const crit = (def.atk ?? 0) > 0 && this.rng.next() < critChance;
     const aimCombo = findCombo(def.element, aim.statuses);
     const area = effectiveArea(def.area ?? 'single', aimCombo);
     const targets = this.resolveTargets(aim, area, def.pierce ?? 0);
     for (const t of targets) {
+      const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
       if (combo) {
         t.statuses.delete(combo.status);
@@ -657,14 +950,26 @@ export class Combat {
           label: combo.label,
         });
       }
-      const raw = computeDamage({
+      const base = computeDamage({
         atk: def.atk ?? 0,
         rarity: inst.rarity,
         step: eff,
-        comboMult: combo?.mult ?? 1,
+        comboMult: combo?.mult ?? (t.statuses.size > 0 ? STATUS.exposedMult : 1),
         upgradeMult: this.cfg.hero.attackMult,
         area: def.area === 'all' ? 'all' : undefined,
+        multCap: c.plan.multCap,
       });
+      const v = this.luck.damageVariance;
+      const roll = v > 0 ? 1 + (this.rng.next() * 2 - 1) * v : 1;
+      const raw =
+        Math.round(
+          base *
+            roll *
+            (crit ? this.luck.critMult : 1) *
+            techMult *
+            this.affixMult(c, inst, eff, t, statused) *
+            100,
+        ) / 100;
       if (raw > 0) {
         const nullified = t.def.ability === 'damageThreshold' && raw < BOSS.ironKnightThreshold;
         const dmg = nullified ? 0 : raw;
@@ -672,10 +977,12 @@ export class Combat {
           type: 'hit',
           tick: this.tick,
           enemyId: t.id,
-          itemUid: s.uid,
+          itemUid: uid,
           damage: dmg,
           combo: combo?.name ?? null,
           nullified,
+          crit,
+          step: eff,
         });
         if (dmg > 0) {
           t.hp -= dmg;
@@ -685,8 +992,31 @@ export class Combat {
         }
       }
       if (def.applies && t.hp > 0) this.applyStatus(t, def.applies);
+      if (def.appliesAll && t.hp > 0)
+        for (const st of ['wet', 'oil', 'frozen'] as const) this.applyStatus(t, st);
       if (t.hp <= 0) this.killEnemy(t);
     }
+  }
+
+  /** 追加効果によるダメージ倍率（装備の分と、起点の「初撃」） */
+  private affixMult(
+    c: ActiveChain,
+    inst: ItemInstance,
+    eff: number,
+    t: EnemyState,
+    statused: boolean,
+  ): number {
+    let m = 1 + affixValue(inst, 'sharp') / 100;
+    if (eff <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;
+    if (eff >= 6) m *= 1 + affixValue(inst, 'finisher') / 100;
+    if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
+    if (t.def.boss)
+      m *= (1 + affixValue(inst, 'slayer') / 100) * (getItemDef(inst.defId).bossMult ?? 1);
+    if (eff === 1) {
+      const origin = this.cfg.items.get(c.plan.originUid);
+      if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
+    }
+    return m;
   }
 
   private resolveTargets(aim: EnemyState, area: Area, pierce: number): EnemyState[] {
@@ -718,6 +1048,7 @@ export class Combat {
     if (!e.alive) return;
     e.alive = false;
     e.hp = 0;
+    e.killedBy = this.chain ? this.chainSerial : -1;
     this.emit({
       type: 'enemyDeath',
       tick: this.tick,
@@ -726,12 +1057,30 @@ export class Combat {
       boss: e.def.boss,
       fled: false,
     });
-    if (!e.escort && this.mode === 'run') {
+    if (!e.escort && this.mode === 'run' && !this.cfg.demo) {
       const roll = this.rng.next();
-      if (roll < e.def.dropRate) {
-        const item = rollLoot(this.rng, e.loop, `drop-${this.nextDropId++}`, e.def.boss);
-        this.drops.push(item);
-        this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+      if (roll < e.def.dropRate || e.elite === 'golden') {
+        const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
+        const rareOrBetter = e.def.boss || e.elite === 'golden';
+        for (let k = 0; k < count; k++) {
+          const item = rollLoot(
+            this.rng,
+            e.loop,
+            `drop-${this.nextDropId++}`,
+            rareOrBetter,
+            this.region.loot,
+          );
+          this.drops.push(item);
+          this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+        }
+      }
+    }
+    // 一網打尽: 群れの全員を同じ1回の連鎖で倒した
+    if (!e.escort && !e.def.boss && this.chain && this.mode === 'run') {
+      const members = this.enemies.filter((o) => o.group === e.group);
+      if (members.every((o) => !o.alive && o.killedBy === this.chainSerial)) {
+        this.stats.sweeps++;
+        this.addTime(TIME_BONUS.sweep, 'sweep');
       }
     }
     if (e.def.boss) {
@@ -752,11 +1101,29 @@ export class Combat {
       this.bossesDefeated++;
       this.stats.bossesDefeated = this.bossesDefeated;
       this.emit({ type: 'bossDefeated', tick: this.tick, loop: this.loop, bossId: e.defId });
+      this.addTime(TIME_BONUS.boss, 'boss');
       this.loop++;
       this.loopStartX = this.heroX + FIELD.loopGap;
       this.enemies = this.enemies.filter((x) => x.alive);
       this.startLoop();
     }
+  }
+
+  /** 出撃時間をのばす（上限 TIME_BONUS.maxRunTime）。実際に増えた分をイベントで出す */
+  private addTime(seconds: number, reason: TimeBonusReason): void {
+    if (this.mode !== 'run' || this.ended || this.cfg.demo) return;
+    const cap = secToTicks(TIME_BONUS.maxRunTime);
+    const before = this.maxTicks;
+    this.maxTicks = Math.min(cap, this.maxTicks + secToTicks(seconds));
+    const gained = (this.maxTicks - before) / SIM.ticksPerSecond;
+    this.stats.timeGained += gained;
+    this.emit({
+      type: 'timeBonus',
+      tick: this.tick,
+      reason,
+      seconds: gained,
+      capped: gained < seconds,
+    });
   }
 
   private damageHero(e: EnemyState): void {
@@ -767,6 +1134,15 @@ export class Combat {
     this.defense -= absorbed;
     dmg -= absorbed;
     this.hp = Math.max(0, this.hp - dmg);
+    // A: 連鎖中に大きく被弾するとよろめき、残りの段が途切れる
+    const c = this.chain;
+    if (c && !c.cut && this.rules.stagger && unguarded) {
+      c.taken += dmg;
+      if (c.taken >= this.maxHp * this.rules.staggerRatio) {
+        c.cut = true;
+        c.staggered = true;
+      }
+    }
     this.emit({
       type: 'heroHit',
       tick: this.tick,
