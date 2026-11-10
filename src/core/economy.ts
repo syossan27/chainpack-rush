@@ -19,7 +19,7 @@ import { ITEM_DEFS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { createItem, rerollExits, rollLoot } from './loot';
+import { allowsRarity, createItem, lineItemFor, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
@@ -253,6 +253,8 @@ export interface SynthPlan {
   /** 揃っている数（選んだ装備を含む） */
   have: number;
   to: Rarity | null;
+  /** できあがる装備（系統で上の装備になることがある） */
+  toDefId?: string;
   cost: number;
   /** 合成できないとき、その理由 */
   reason: string | null;
@@ -270,6 +272,9 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
   const to = NEXT_RARITY[it.rarity] ?? null;
   if (def.kind === 'consumable') return none('消耗品は合成できません');
   if (def.artifact || !to) return none('これ以上のレアリティはありません');
+  // 系統: 上のレアリティがない装備は、系統の次の装備になる（革鎧のレア → 鎖帷子のエピック）
+  const toDefId = lineItemFor(it.defId, to);
+  if (!toDefId) return none('これ以上のレアリティはありません');
   const eq = equippedUids(save);
   const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
   if (eq.has(uid) || it.locked)
@@ -302,7 +307,7 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
       : save.gold < cost
         ? `${cost}G 必要`
         : null;
-  return { uids, have: uids.length, to, cost, reason };
+  return { uids, have: uids.length, to, toDefId, cost, reason };
 }
 
 /** 合成の成功率（そのレアリティから1つ上へ） */
@@ -330,9 +335,11 @@ export function synthesize(save: SaveData, uid: string, rng: Rng): SynthResult |
   const success = rng.next() < SYNTH.successRate[from];
   const newUid = `i${save.nextUid++}`;
   let item: ItemInstance;
-  if (success) item = createItem(rng, base.defId, plan.to, newUid);
+  if (success) item = createItem(rng, plan.toDefId ?? base.defId, plan.to, newUid);
   else {
-    const pool = ITEM_DEFS.filter((d) => d.kind !== 'consumable' && !d.artifact);
+    const pool = ITEM_DEFS.filter(
+      (d) => d.kind !== 'consumable' && !d.artifact && allowsRarity(d.id, from),
+    );
     item = createItem(rng, rng.pick(pool).id, from, newUid);
   }
   save.inventory.push(item);

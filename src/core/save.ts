@@ -1,5 +1,5 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
-import { originRarity } from './loot';
+import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
@@ -283,6 +283,11 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         it.rarity = 'legendary';
         delete it.affixes;
         continue;
+      }
+      // 系統: その装備が出ないレアリティなら、系統の装備に置きかえる（レジェンダリーの革鎧 → 鋼の鎧）
+      if (d.rarities && !allowsRarity(it.defId, it.rarity)) {
+        const to = lineItemFor(it.defId, it.rarity);
+        if (to) it.defId = to;
       }
       if (d.kind !== 'origin') continue;
       if (it.exits.length === 0) it.exits = ['right'];

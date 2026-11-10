@@ -1,7 +1,7 @@
 // 最初の出撃の「体験ラン」用の配置: 伝説の装備とアーティファクトで組んだ、最終的な姿の一例。
 // 草原 → 起点から1本の長い連鎖が蛇行し、5つの必殺技すべてと循環の環（倍率上限×4）を通る。
 // 装備は借り物（倉庫には入らない）。
-import { originRarity } from '../core/loot';
+import { clampRarity, originRarity } from '../core/loot';
 import { getItemDef } from './items';
 import type { HeroStats } from '../core/combat';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
@@ -55,7 +55,9 @@ export function demoLoadout(): { loadout: Loadout; items: Map<string, ItemInstan
     items.set(uid, {
       uid,
       defId,
-      rarity: defId === 'origin_stone' ? originRarity(fixed.length) : 'legendary',
+      // 系統で出せる一番上のレアリティ（松明はレア、短剣はレア など）
+      rarity:
+        defId === 'origin_stone' ? originRarity(fixed.length) : clampRarity(defId, 'legendary'),
       exits: fixed,
       rerollCount: 0,
     });

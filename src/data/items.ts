@@ -12,6 +12,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
 
   {
     id: 'sword',
+    rarities: ['common', 'epic'],
+    next: 'greatsword',
     name: '剣',
     kind: 'attack',
     element: 'physical',
@@ -21,6 +23,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'greatsword',
+    rarities: ['rare', 'legendary'],
+    next: 'holy_sword',
     name: '大剣',
     kind: 'attack',
     element: 'physical',
@@ -41,6 +45,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'axe',
+    rarities: ['common', 'epic'],
+    next: 'war_axe',
     name: '斧',
     kind: 'attack',
     element: 'physical',
@@ -50,6 +56,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'hammer',
+    rarities: ['rare', 'legendary'],
     name: 'ハンマー',
     kind: 'attack',
     element: 'blunt',
@@ -59,6 +66,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'iron_ball',
+    rarities: ['common', 'epic'],
+    next: 'hammer',
     name: '鉄球',
     kind: 'attack',
     element: 'blunt',
@@ -68,6 +77,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'torch',
+    rarities: ['common', 'rare'],
+    next: 'flame_staff',
     name: '松明',
     kind: 'attack',
     element: 'fire',
@@ -77,6 +88,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'flame_staff',
+    rarities: ['rare', 'legendary'],
     name: '炎の杖',
     kind: 'attack',
     element: 'fire',
@@ -86,6 +98,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_staff',
+    rarities: ['rare', 'legendary'],
     name: '雷の杖',
     kind: 'attack',
     element: 'thunder',
@@ -95,6 +108,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_bell',
+    rarities: ['common', 'epic'],
+    next: 'thunder_staff',
     name: '雷鳴の鈴',
     kind: 'attack',
     element: 'thunder',
@@ -104,6 +119,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'ice_sword',
+    rarities: ['rare', 'legendary'],
     name: '氷の剣',
     kind: 'attack',
     element: 'ice',
@@ -114,6 +130,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'canteen',
+    rarities: ['common', 'rare'],
+    next: 'raincloud_staff',
     name: '水筒',
     kind: 'attack',
     element: 'water',
@@ -124,6 +142,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'raincloud_staff',
+    rarities: ['rare', 'legendary'],
     name: '雨雲の杖',
     kind: 'attack',
     element: 'water',
@@ -134,6 +153,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'oil_bottle',
+    rarities: ['common', 'epic'],
     name: '油瓶',
     kind: 'attack',
     element: 'oil',
@@ -145,6 +165,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
 
   {
     id: 'wood_shield',
+    rarities: ['common', 'rare'],
+    next: 'iron_shield',
     name: '木の盾',
     kind: 'defense',
     defense: 8,
@@ -152,13 +174,26 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'chainmail',
+    rarities: ['rare', 'epic'],
+    next: 'steel_armor',
     name: '鎖帷子',
     kind: 'defense',
     defense: 12,
     description: '連鎖が通ると、終了時に防御値+12。',
   },
   {
+    id: 'steel_armor',
+    rarities: ['epic', 'legendary'],
+    name: '鋼の鎧',
+    kind: 'defense',
+    defense: 20,
+    relayDelay: 0.3,
+    description: '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。',
+  },
+  {
     id: 'dagger',
+    rarities: ['common', 'rare'],
+    next: 'sword',
     name: '短剣',
     kind: 'attack',
     element: 'physical',
@@ -189,6 +224,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'war_axe',
+    rarities: ['rare', 'legendary'],
     name: '大斧',
     kind: 'attack',
     element: 'physical',
@@ -199,6 +235,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'holy_sword',
+    rarities: ['epic', 'legendary'],
     name: '聖剣',
     kind: 'attack',
     element: 'physical',
@@ -209,6 +246,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_spear',
+    rarities: ['epic', 'legendary'],
     name: '雷の槍',
     kind: 'attack',
     element: 'thunder',
@@ -219,6 +257,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'frost_staff',
+    rarities: ['common', 'epic'],
+    next: 'ice_sword',
     name: '氷の杖',
     kind: 'attack',
     element: 'ice',
@@ -230,6 +270,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
 
   {
     id: 'leather_armor',
+    rarities: ['common', 'rare'],
+    next: 'chainmail',
     name: '革鎧',
     kind: 'defense',
     defense: 6,
@@ -238,6 +280,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'tower_shield',
+    rarities: ['epic', 'legendary'],
     name: '大盾',
     kind: 'defense',
     defense: 26,
@@ -246,6 +289,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'iron_shield',
+    rarities: ['rare', 'epic'],
+    next: 'tower_shield',
     name: '鉄の盾',
     kind: 'defense',
     defense: 18,

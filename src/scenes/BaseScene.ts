@@ -151,6 +151,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
   {
     title: '倉庫・鍛冶屋・合成',
     lines: [
+      '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（「やってみる」で変えて、「戻す」で元に戻せる）。',
       '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。',
       '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。',
       '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
@@ -1134,7 +1135,7 @@ export class BaseScene extends Phaser.Scene {
     confirmDialog(
       this,
       '合成',
-      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、${RARITY_NAMES[plan.to]}を狙います（${plan.cost}G）。\n成功率は${Math.round(synthRate(it.rarity) * 100)}%。失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ手に入ります`,
+      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、${plan.toDefId && plan.toDefId !== it.defId ? getItemDef(plan.toDefId).name + 'の' : ''}${RARITY_NAMES[plan.to]}を狙います（${plan.cost}G）。\n成功率は${Math.round(synthRate(it.rarity) * 100)}%。失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ手に入ります`,
       '合成する',
       () => {
         const save = getSave();
@@ -1228,7 +1229,9 @@ export class BaseScene extends Phaser.Scene {
         190,
         py + 92,
         plan.to
-          ? `${RARITY_NAMES[it.rarity]} ×3 → ${RARITY_NAMES[plan.to]} ×1`
+          ? `${RARITY_NAMES[it.rarity]} ×3 → ${
+              plan.toDefId && plan.toDefId !== it.defId ? `${getItemDef(plan.toDefId).name}の` : ''
+            }${RARITY_NAMES[plan.to]} ×1`
           : 'これ以上のレアリティはありません',
         24,
         '#5a3a20',

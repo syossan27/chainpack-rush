@@ -1159,6 +1159,7 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   oil_bottle: { shape: 'bottle', A: 'O', S: 'k', L: 'D' },
   wood_shield: { shape: 'roundShield', A: 'b', S: 'B', L: 'n' },
   chainmail: { shape: 'mail', A: 'h', S: 'H', L: 'W' },
+  steel_armor: { shape: 'mail', A: 'g', S: 'D', L: 'y' },
   iron_shield: { shape: 'kiteShield', A: 'h', S: 'H', L: 'W' },
   rally: { shape: 'flag', A: 'r', S: 'R', L: 'p' },
   time_stop: { shape: 'hourglass', A: 'l', S: 'u', L: 'W' },

@@ -36,6 +36,10 @@ export interface ItemDef {
   /** 当てた敵に濡れ・油・凍結をまとめて付ける（賢者の石） */
   appliesAll?: boolean;
   effect?: ConsumableEffect;
+  /** 出るレアリティの幅（下限・上限）。省略時はすべて。上限を超える合成は next の装備になる */
+  rarities?: [Rarity, Rarity];
+  /** 系統の次の装備（合成で上限を超えたとき） */
+  next?: string;
   description: string;
 }
 

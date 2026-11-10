@@ -3,6 +3,7 @@ import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
+import { diagnose } from '../core/diagnose';
 import { getTechnique } from '../data/techniques';
 import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
 import {
@@ -34,7 +35,7 @@ import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
-import { COLORS, LOADOUT_LAYOUT, W, textStyle } from '../ui/theme';
+import { COLORS, LOADOUT_LAYOUT, W, inkStyle, textStyle } from '../ui/theme';
 
 const LONG_PRESS_MS = 450;
 const DRAG_THRESHOLD = 12;
@@ -319,9 +320,154 @@ export class LoadoutScene extends Phaser.Scene {
       };
     })();
     this.routeText = this.add
-      .text(W - 40, -2, summary.text, textStyle(18, summary.color))
+      .text(W - 132, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
+    // 長いときは縮めて、診断ボタンに重ねない
+    const maxW = W - 132 - x - 6;
+    if (this.routeText.width > maxW) this.routeText.setScale(maxW / this.routeText.width);
     bar.add(this.routeText);
+    // 診断: いまの並べ方から、伸ばせる次の一手を出す
+    const dg = this.add
+      .nineslice(W - 80, 0, SKIN.tabOn, undefined, 92, 44, SLICE.tab, SLICE.tab, 14, 14)
+      .setInteractive({ useHandCursor: true });
+    bindTap(dg, () => {
+      sfx('click');
+      this.openDiagnosis();
+    });
+    bar.add(dg);
+    bar.add(this.add.text(W - 80, -2, '診断', textStyle(18, '#fff6d0')).setOrigin(0.5));
+  }
+
+  /** 配置の診断（入れ替え・置きかえ・空きマスを実際に試して、伸びる手を出す） */
+  private openDiagnosis(): void {
+    const save = getSave();
+    const res = diagnose(
+      save.loadout,
+      save.inventory,
+      heroStats(save).attackMult,
+      save.discoveredTechs,
+    );
+    const H = this.scale.gameSize.height;
+    const root = this.add.container(0, 0).setDepth(2600);
+    const close = () => root.destroy();
+    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+    shade.on('pointerup', close);
+    root.add(shade);
+    const fmt = (n: number) => Math.round(n).toLocaleString('ja-JP');
+    const cw = W - 50;
+    const cardH = 150;
+    const list = res.advices;
+    const ch = 170 + Math.max(1, list.length) * (cardH + 12) + 100;
+    const top = H / 2 - ch / 2;
+    root.add(panel(this, W / 2, H / 2, cw, ch, 'panel').setInteractive());
+    root.add(this.add.text(W / 2, top + 44, '配置の診断', textStyle(34, '#ffe27a')).setOrigin(0.5));
+    root.add(
+      this.add
+        .text(
+          W / 2,
+          top + 92,
+          `いまの推定ダメージ 合計 約${fmt(res.total)}`,
+          textStyle(20, COLORS.text),
+        )
+        .setOrigin(0.5),
+    );
+    if (list.length === 0)
+      root.add(
+        this.add
+          .text(
+            W / 2,
+            top + 170 + cardH / 2,
+            'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！',
+            {
+              ...textStyle(22, COLORS.text),
+              align: 'center',
+            },
+          )
+          .setOrigin(0.5),
+      );
+    list.forEach((a, i) => {
+      const y = top + 140 + i * (cardH + 12);
+      root.add(panel(this, W / 2, y + cardH / 2, cw - 40, cardH, 'paper'));
+      const left = 60;
+      const t = this.add.text(left, y + 16, a.title, {
+        ...inkStyle(22),
+        wordWrap: { width: cw - 260, useAdvancedWrap: true },
+      });
+      root.add(t);
+      root.add(
+        this.add.text(left, y + 24 + t.height, a.reason, {
+          ...inkStyle(18, '#8a5a10'),
+          wordWrap: { width: cw - 260, useAdvancedWrap: true },
+        }),
+      );
+      const rx = W - 130;
+      if (a.gain > 0)
+        root.add(
+          this.add
+            .text(rx, y + 40, `+約${fmt(a.gain)}`, textStyle(28, '#3a8a3a'))
+            .setOrigin(0.5)
+            .setStroke('#fff6d0', 4),
+        );
+      if (a.gain > 0 && res.total > 0)
+        root.add(
+          this.add
+            .text(
+              rx,
+              y + 72,
+              `（+${Math.round((a.gain / res.total) * 100)}%）`,
+              inkStyle(18, '#3a8a3a'),
+            )
+            .setOrigin(0.5),
+        );
+      if (a.apply) {
+        const applied = a.apply;
+        root.add(
+          new Button(
+            this,
+            rx,
+            y + cardH - 34,
+            'やってみる',
+            () => {
+              close();
+              const s = getSave();
+              s.loadout = { ...applied, consumables: s.loadout.consumables };
+              this.selected = null;
+              this.commit();
+              this.flashCells(a.cells);
+              this.showToastLine('変えました（「戻す」で元に戻せます）');
+            },
+            { width: 170, height: 52, fontSize: 18, skin: 'green' },
+          ),
+        );
+      } else if (a.cells.length > 0) {
+        root.add(
+          new Button(
+            this,
+            rx,
+            y + cardH - 34,
+            '場所を見る',
+            () => {
+              close();
+              this.flashCells(a.cells);
+            },
+            { width: 170, height: 52, fontSize: 18, skin: 'blue' },
+          ),
+        );
+      }
+    });
+    root.add(
+      new Button(this, W / 2, top + ch - 50, '閉じる', close, {
+        width: 230,
+        height: 68,
+        skin: 'gray',
+      }),
+    );
+  }
+
+  /** 診断で示したマスを、しばらく光らせる */
+  private flashCells(cells: readonly number[]): void {
+    const now = this.time.now;
+    for (const c of cells) this.view.glow(c, 0x6ee06a, now, 1600);
   }
 
   /** 編成のタブ: 1〜5。今の編成をもう一度押すと名前を変えられる */
