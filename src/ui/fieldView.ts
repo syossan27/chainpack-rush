@@ -196,7 +196,9 @@ export class FieldView {
     if (!s?.art) return;
     if (!this.playEnemyAnim(s, 'attack')) return;
     s.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-      if (s.id === id) this.playEnemyAnim(s, 'move');
+      if (s.id === id) {
+        if (!this.playEnemyAnim(s, 'move')) this.playEnemyAnim(s, 'idle');
+      }
     });
   }
 
@@ -391,7 +393,8 @@ export class FieldView {
           .setOrigin(origin.originX, origin.originY)
           .setScale(def.displayScale)
           .setFlipX(!def.facesLeft);
-        s.art = this.playEnemyAnim(s, 'move', true);
+        // ふだんのループ: 雑魚は移動、ボスは待機
+        s.art = this.playEnemyAnim(s, 'move', true) || this.playEnemyAnim(s, 'idle', true);
         s.sprite.setVisible(true);
         s.hpBack.setVisible(true);
         s.hp.setVisible(true);
