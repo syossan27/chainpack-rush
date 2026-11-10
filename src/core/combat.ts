@@ -229,6 +229,14 @@ const byFront = (a: EnemyState, b: EnemyState): number =>
 /** 爆弾のダメージ表示用（装備の uid ではない） */
 export const BOMB_UID = '__bomb__';
 
+/** 敵の属性の得意・苦手（ダメージ倍率） */
+export function resistMult(
+  def: { resist?: Partial<Record<string, number>> },
+  element?: string,
+): number {
+  return def.resist?.[element ?? 'physical'] ?? 1;
+}
+
 const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 
 export class Combat {
@@ -451,7 +459,9 @@ export class Combat {
       case 'bombAll': {
         const dmg = CONSUMABLE.bombDamage * this.cfg.hero.attackMult;
         for (const e of this.onScreen()) {
-          const nullified = e.def.ability === 'damageThreshold' && dmg < BOSS.ironKnightThreshold;
+          const nullified =
+            e.def.ability === 'damageThreshold' &&
+            dmg < (e.def.threshold ?? BOSS.ironKnightThreshold);
           this.emit({
             type: 'hit',
             tick: this.tick,
@@ -967,11 +977,14 @@ export class Combat {
             roll *
             (crit ? this.luck.critMult : 1) *
             techMult *
+            resistMult(t.def, def.element) *
             this.affixMult(c, inst, eff, t, statused) *
             100,
         ) / 100;
       if (raw > 0) {
-        const nullified = t.def.ability === 'damageThreshold' && raw < BOSS.ironKnightThreshold;
+        const nullified =
+          t.def.ability === 'damageThreshold' &&
+          raw < (t.def.threshold ?? BOSS.ironKnightThreshold);
         const dmg = nullified ? 0 : raw;
         this.emit({
           type: 'hit',

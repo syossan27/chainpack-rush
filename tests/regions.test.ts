@@ -105,7 +105,10 @@ describe('地域の強さと戦利品', () => {
       rarityWeights(1, false, shift).find(([r]) => r === 'common')![1];
     const shifts = REGIONS.map((r) => r.loot.rarityShift);
     for (let i = 1; i < shifts.length; i++)
-      expect(common(shifts[i]!)).toBeLessThan(common(shifts[i - 1]!));
+      // コモンが0になるまでは減り続ける（奥の地域ではコモンが出なくなる）
+      if (common(shifts[i - 1]!) > 0)
+        expect(common(shifts[i]!)).toBeLessThan(common(shifts[i - 1]!));
+      else expect(common(shifts[i]!)).toBe(0);
     const total = rarityWeights(1, false, 0.4).reduce((s, [, w]) => s + w, 0);
     expect(total).toBeCloseTo(1);
   });
