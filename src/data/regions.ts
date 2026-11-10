@@ -84,8 +84,9 @@ export const REGIONS: readonly RegionDef[] = [
     groupCount: 2,
     groupSize: [4, 6],
     bossPools: [
-      ['iron_knight', 'golem'],
+      // 1周目は中くらいのボス、強いボス（鉄の騎士・ゴーレム）は2周目から
       ['goblin_king', 'bat_queen'],
+      ['iron_knight', 'golem'],
       ['iron_knight', 'golem', 'lich'],
     ],
     power: { hp: 6, atk: 3 },

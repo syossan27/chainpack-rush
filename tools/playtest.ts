@@ -1,10 +1,11 @@
 // npm run playtest: ボットが初期状態から遊び続け、成長の流れ・詰まる場所・使われない要素を集計する
 // 使い方: PLAYERS=30 RUNS=80 npm run playtest  → reports/playtest.md
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { SIM, UPGRADES, type UpgradeId } from '../src/config/balance';
+import { MONETIZE, SIM, UPGRADES, type UpgradeId } from '../src/config/balance';
 import { Combat, type EndReason } from '../src/core/combat';
 import {
   acceptLoot,
+  doubleLoot,
   consumeItems,
   consumableSlots,
   heroStats,
@@ -17,7 +18,14 @@ import { createInitialSave, serializeSave } from '../src/core/save';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
 import { REGIONS, getRegion, bossPoolForLoop } from '../src/data/regions';
 import { getEnemyDef } from '../src/data/enemies';
-import { buyUpgrades, chainSummary, optimizeLoadout, sellJunk, useConsumables } from './bot';
+import {
+  buyUpgrades,
+  chainSummary,
+  optimizeLoadout,
+  sellJunk,
+  synthAll,
+  useConsumables,
+} from './bot';
 
 const PLAYERS = Number(process.env.PLAYERS ?? 30);
 const RUNS = Number(process.env.RUNS ?? 80);
@@ -49,7 +57,16 @@ const unlockRun: Record<string, number[]> = Object.fromEntries(REGIONS.map((r) =
 const placedCount = new Map<string, number>(); // defId → 配置に入った回数
 const ownedCount = new Map<string, number>(); // defId → 持っていた回数
 const dropCount = new Map<string, number>();
-const blocked: string[] = []; // 出撃できなくなって止まったボット
+const blocked: string[] = [];
+/** ADS=1: 広告のご褒美を使う（戦利品2倍は1日3回、再開は毎ラン1回） */
+const ADS = process.env.ADS === '1';
+const RUNS_PER_DAY = Number(process.env.RUNS_PER_DAY ?? 10);
+let synthTries = 0;
+let synthOk = 0;
+let techTotal = 0;
+let revives = 0;
+let doubles = 0;
+let doublesToday = 0; // 出撃できなくなって止まったボット
 const t0 = Date.now();
 
 for (let p = 0; p < PLAYERS; p++) {
@@ -58,6 +75,9 @@ for (let p = 0; p < PLAYERS; p++) {
   for (let run = 1; run <= RUNS; run++) {
     // 準備: 売る → 強化 → 配置を組み直す
     let goldEarned = sellJunk(save);
+    const synth = synthAll(save, rng);
+    synthTries += synth.tries;
+    synthOk += synth.success;
     const bought = buyUpgrades(save);
     optimizeLoadout(save, rng);
     goldEarned += sellJunk(save); // 組み直しで外れた装備が倉庫に戻るので、あふれたらもう一度売る
@@ -93,11 +113,21 @@ for (let p = 0; p < PLAYERS; p++) {
       hero: heroStats(save),
       consumableSlots: consumableSlots(save),
     });
-    while (!c.ended) {
-      c.step();
-      if (c.tick % 6 === 0) useConsumables(c, items);
-      c.drainEvents();
+    let techs = 0;
+    for (;;) {
+      while (!c.ended) {
+        c.step();
+        if (c.tick % 6 === 0) useConsumables(c, items);
+        for (const e of c.drainEvents()) if (e.type === 'technique') techs++;
+      }
+      // 広告のご褒美: 力尽きたら1回だけ再開
+      if (ADS && c.ended === 'dead' && !c.revived && c.revive(MONETIZE.reviveSeconds)) {
+        revives++;
+        continue;
+      }
+      break;
     }
+    techTotal += techs;
     const r = c.result();
     let deathBy: string | null = null;
     if (r.reason === 'dead') {
@@ -110,6 +140,15 @@ for (let p = 0; p < PLAYERS; p++) {
     consumeItems(save, r.usedConsumables);
     for (const d of r.drops) dropCount.set(d.defId, (dropCount.get(d.defId) ?? 0) + 1);
     acceptLoot(save, r.drops);
+    // 広告のご褒美: 戦利品2倍（1日 RUNS_PER_DAY 回出撃する想定で、1日の回数まで）
+    if (ADS && r.drops.length > 0) {
+      if ((run - 1) % RUNS_PER_DAY === 0) doublesToday = 0;
+      if (doublesToday < MONETIZE.dailyCaps.extraLoot) {
+        doublesToday++;
+        doubles++;
+        doubleLoot(save, r.drops.length, region, r.reachedLoop, rng);
+      }
+    }
     const { unlocked } = recordRun(save, region, r);
     if (unlocked) unlockRun[unlocked]!.push(run);
     logs.push({
@@ -270,6 +309,10 @@ out();
 {
   const arts = ITEM_DEFS.filter((d) => d.artifact);
   const total = arts.reduce((sum, d) => sum + (dropCount.get(d.id) ?? 0), 0);
+  out(
+    `広告のご褒美: ${ADS ? `使う（1日${RUNS_PER_DAY}出撃の想定）。戦利品2倍 ${doubles}回、再開 ${revives}回` : '使わない'}。合成: ${synthTries}回（成功 ${synthOk}回）。必殺技: 1出撃あたり ${(techTotal / Math.max(1, logs.length)).toFixed(2)}回`,
+  );
+  out();
   out(
     `アーティファクト: ${PLAYERS}人×${RUNS}出撃で計 ${total}個（1人あたり ${(total / PLAYERS).toFixed(1)}個）。${arts.map((d) => `${d.name} ${dropCount.get(d.id) ?? 0}`).join('、')}`,
   );

@@ -14,6 +14,8 @@ import {
   storageCount,
   upgradeCost,
   buyUpgrade,
+  synthPlan,
+  synthesize,
 } from '../src/core/economy';
 import { neighborCell } from '../src/core/chain';
 import { Rng } from '../src/core/rng';
@@ -21,6 +23,7 @@ import type { SaveData } from '../src/core/save';
 import type { Dir, ItemInstance, Loadout, Status } from '../src/core/types';
 import { DIRS } from '../src/core/types';
 import { getItemDef } from '../src/data/items';
+import { TECHNIQUE_MULT } from '../src/data/techniques';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
 
@@ -78,14 +81,16 @@ export function scoreLoadout(
       const def = getItemDef(it.defId);
       const combo = findCombo(def.element, statuses);
       if (combo) statuses.delete(combo.status);
-      const d = computeDamage({
-        atk: def.atk ?? 0,
-        rarity: it.rarity,
-        step: s.step,
-        comboMult: combo?.mult ?? (statuses.size > 0 ? STATUS.exposedMult : 1),
-        upgradeMult: attackMult,
-        area: def.area === 'all' ? 'all' : undefined,
-      });
+      const d =
+        computeDamage({
+          atk: def.atk ?? 0,
+          rarity: it.rarity,
+          step: s.step,
+          comboMult: combo?.mult ?? (statuses.size > 0 ? STATUS.exposedMult : 1),
+          upgradeMult: attackMult,
+          area: def.area === 'all' ? 'all' : undefined,
+          multCap: plan.multCap,
+        }) * (s.tech ? TECHNIQUE_MULT : 1);
       damage +=
         d * AREA_WEIGHT[def.area ?? 'single'] * (def.hits ?? 1) * (1 + (def.critBonus ?? 0));
       if (def.applies) statuses.add(def.applies);
@@ -275,4 +280,22 @@ export function chainSummary(save: SaveData): { origins: number; longest: number
     longest: Math.max(0, ...plans.map((p) => p.maxStep)),
     placed: save.loadout.cells.filter(Boolean).length,
   };
+}
+
+/** 合成: 同じ装備・同じレアリティが3つ揃っていて、お金が足りれば合成する（レジェンダリー未満） */
+export function synthAll(save: SaveData, rng: Rng): { tries: number; success: number } {
+  let tries = 0;
+  let success = 0;
+  for (let guard = 0; guard < 20; guard++) {
+    const target = save.inventory.find((i) => {
+      const p = synthPlan(save, i.uid);
+      return p.reason === null && p.to !== null;
+    });
+    if (!target) break;
+    const res = synthesize(save, target.uid, rng);
+    if (!res) break;
+    tries++;
+    if (res.success) success++;
+  }
+  return { tries, success };
 }
