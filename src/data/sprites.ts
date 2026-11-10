@@ -52,7 +52,17 @@ export interface SpriteAnim {
 }
 
 export type UnitAnimName =
-  'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special_crimson_burst';
+  | 'idle'
+  | 'run'
+  | 'attack'
+  | 'hit'
+  | 'move'
+  | 'death'
+  | 'special_crimson_burst'
+  | 'special_tri_thunder'
+  | 'special_frost_breaker'
+  | 'special_triple_slash'
+  | 'special_cyclone_axe';
 
 export interface SpriteDef {
   key: string;
@@ -82,8 +92,9 @@ export const ICON_SIZE = 16;
 export const ICON_SCALE = 4;
 
 /**
- * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃・走り）と必殺クリムゾンバースト。
- * 待機・走り・攻撃・必殺（special_crimson_burst）は anims に登録済み。
+ * 絵柄の参照: assets/raw/hero/ の採用 v4（兜・待機・踏み込み攻撃・走り）と必殺。
+ * 待機・走り・攻撃・必殺（special_crimson_burst、special_tri_thunder、special_frost_breaker、
+ * special_triple_slash、special_cyclone_axe）は anims に登録済み。
  * 必殺を再生するフックはまだないので、戦闘では再生しない。被弾は未登録で、そのときの動作（なければ待機）で代用する。
  */
 export const HERO_REFERENCE = 'assets/raw/hero/hero_idle_v4_helm.png';
@@ -292,6 +303,55 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         frameHeight: 132,
         originX: 62.5 / 184,
         originY: 98 / 132,
+      },
+      // トライサンダー。開始コマの足元を全コマ共通の原点にする（待機の足元と揃う）。
+      // コマごとの横ずれには寄せず、切り直さない。再生箇所は未接続。
+      special_tri_thunder: {
+        file: 'hero/hero_special_tri_thunder.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+      },
+      // フロストブレイカー。原点はトライサンダーと同じ開始コマの足元。
+      // 最終コマは低いしゃがみで、開始姿勢ではない。再生が終わったら最終コマを保持せず待機へ戻す。
+      // コマごとの横ずれには寄せず、切り直さない。再生箇所は未接続。
+      special_frost_breaker: {
+        file: 'hero/hero_special_frost_breaker.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+      },
+      // トリプルスラッシュ。原点は同じ開始コマの足元。コマごとの横ずれには寄せず、切り直さない。
+      // 再生箇所は未接続。
+      special_triple_slash: {
+        file: 'hero/hero_special_triple_slash.png',
+        frames: 7,
+        fps: 14,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+      },
+      // サイクロンアックス。シートは 184×112。開始コマの足元を全コマ共通の原点にする（待機と揃う）。
+      // コマごとの横ずれには寄せず、切り直さない。再生箇所は未接続。
+      special_cyclone_axe: {
+        file: 'hero/hero_special_cyclone_axe.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 112,
+        originX: 0.3424,
+        originY: 0.7857,
       },
     },
   },
