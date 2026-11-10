@@ -810,6 +810,8 @@ export class RunScene extends Phaser.Scene {
         }
         case 'enemyDeath': {
           const p = this.enemyPos(ev.enemyId);
+          // 本素材があれば撃破モーション（逃げたときは出さない）
+          if (!ev.fled) this.field.enemyDeath(ev.enemyId);
           if (p && !ev.fled)
             this.effects.burst(
               p.x,
@@ -850,6 +852,7 @@ export class RunScene extends Phaser.Scene {
         }
         case 'heroHit':
           this.field.heroHurt(now);
+          this.field.enemyAttack(ev.enemyId);
           if (ev.damage > 0) {
             this.numbers.show(
               RUN_LAYOUT.heroScreenX,

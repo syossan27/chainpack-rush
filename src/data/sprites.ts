@@ -79,6 +79,10 @@ export interface SpriteDef {
   overlay?: { pixels: readonly string[]; x: number; y: number };
   /** 顔アイコンに使う範囲（コマ内の px。正方形） */
   avatarCrop?: { x: number; y: number; size: number };
+  /** 本素材の体の高さ（足元から頭のてっぺんまで、コマの px）。HPバーやダメージ数字の位置に使う。省略時はコマの高さ */
+  bodyHeight?: number;
+  /** 本素材が左向き（勇者の方）に描かれている。仮素材は右向きなので反転して出す */
+  facesLeft?: boolean;
 }
 
 /** キャラクターの表示倍率（勇者128×128、雑魚96×96、ボス192×192） */
@@ -413,7 +417,58 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  slime: unit('slime', SLIME, 48),
+  // スライム（PR #8）。仮素材は雑魚の共通サイズ 48、本素材は 64px（攻撃だけ 96×64）。地面は全コマ y=55。
+  // 数値は assets/raw/enemies/slime/ の export どおり。コマの切り直し・中心の寄せはしない
+  slime: {
+    ...unit('slime', SLIME, 48),
+    bodyHeight: 26,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/slime/slime_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で跳ねる（左への移動はゲーム側）
+      move: {
+        file: 'enemies/slime/slime_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // 左へ体当たり。幅 96 なので原点 x=64
+      attack: {
+        file: 'enemies/slime/slime_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。最終コマはうすく残るので、再生後に消す
+      death: {
+        file: 'enemies/slime/slime_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   bat: unit('bat', BAT, 48),
   goblin: unit('goblin', GOBLIN, 48),
   armor: unit('armor', ARMOR, 48),

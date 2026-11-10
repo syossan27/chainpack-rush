@@ -27,6 +27,9 @@ interface EnemySlot {
   flashUntil: number;
   knock: number; // のけぞりの量（px、時間で戻る）
   knockAt: number;
+  /** 本素材のアニメで動かしている（揺らさない） */
+  art: boolean;
+  defId: string;
 }
 
 /** 精鋭の色（体の色味と名札） */
@@ -57,6 +60,8 @@ export class FieldView {
   private readonly heroHasSprites: boolean;
   aimId: number | null = null;
   /** 最後に描いた敵の位置（倒れた直後の演出用） */
+  /** 直近の update の速さ（止めているときは 0） */
+  private lastRate = 1;
   readonly lastSeen = new Map<number, { x: number; y: number }>();
   visibleEnemies = 0;
 
@@ -142,6 +147,8 @@ export class FieldView {
         flashUntil: 0,
         knock: 0,
         knockAt: 0,
+        art: false,
+        defId: '',
       });
     }
   }
@@ -167,6 +174,59 @@ export class FieldView {
     s.flashUntil = now + 70 + strength * 60;
     s.knock = Math.max(s.knock, 6 + strength * 18);
     s.knockAt = now;
+  }
+
+  /** 敵の本素材のアニメを再生する（原点もそのアニメに合わせる）。なければ false */
+  private playEnemyAnim(s: EnemySlot, name: UnitAnimName, randomStart = false): boolean {
+    const def = UNIT_SPRITES[s.defId];
+    const anim = def?.anims?.[name];
+    const key = def ? animKey(def.key, name) : '';
+    if (!def || !anim || !this.scene.anims.exists(key)) return false;
+    const { originX, originY } = animOrigin(def, anim);
+    s.sprite.setOrigin(originX, originY);
+    s.sprite.play(
+      randomStart ? { key, startFrame: Math.floor(Math.random() * anim.frames) } : { key },
+    );
+    return true;
+  }
+
+  /** 敵の攻撃: 本素材の攻撃モーションを1回、終わったら移動に戻す */
+  enemyAttack(id: number): void {
+    const s = this.byId.get(id);
+    if (!s?.art) return;
+    if (!this.playEnemyAnim(s, 'attack')) return;
+    s.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      if (s.id === id) this.playEnemyAnim(s, 'move');
+    });
+  }
+
+  /** 敵の撃破: 本素材の撃破モーションをその場に残して再生し、終わったら消す。出したら true */
+  enemyDeath(id: number): boolean {
+    const s = this.byId.get(id);
+    if (!s?.art) return false;
+    const def = UNIT_SPRITES[s.defId]!;
+    const anim = def.anims?.death;
+    const key = animKey(def.key, 'death');
+    if (!anim || !this.scene.anims.exists(key)) return false;
+    const { originX, originY } = animOrigin(def, anim);
+    const ghost = this.scene.add
+      .sprite(s.sprite.x, s.sprite.y, key)
+      .setOrigin(originX, originY)
+      .setScale(def.displayScale)
+      .setFlipX(s.sprite.flipX)
+      .setDepth(s.sprite.depth);
+    ghost.anims.timeScale = Math.max(1, this.lastRate);
+    ghost.play(key);
+    ghost.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      this.scene.tweens.add({
+        targets: ghost,
+        alpha: 0,
+        duration: 150,
+        onComplete: () => ghost.destroy(),
+      });
+    });
+    s.sprite.setVisible(false);
+    return true;
   }
 
   heroHurt(now: number): void {
@@ -253,6 +313,7 @@ export class FieldView {
 
   /** speed: モーションの再生速度（ゲームスピード。止めているときは 0） */
   update(c: Combat, now: number, speed = 1): void {
+    this.lastRate = speed;
     if (this.aura) {
       this.aura.setPosition(this.hero.x, RUN_LAYOUT.footY);
       this.aura.tick(Math.max(0, now - this.lastNow) / 1000);
@@ -321,11 +382,16 @@ export class FieldView {
         s.id = e.id;
         this.byId.set(e.id, s);
         const def = UNIT_SPRITES[e.defId]!;
+        s.defId = e.defId;
+        // 本素材は静止画の足元（待機・移動の原点）。仮素材は今までどおりコマの下端
+        const origin = stillOrigin(def);
+        s.sprite.anims.stop();
         s.sprite
           .setTexture(def.key)
-          .setOrigin(def.originX, def.originY)
+          .setOrigin(origin.originX, origin.originY)
           .setScale(def.displayScale)
-          .setFlipX(true);
+          .setFlipX(!def.facesLeft);
+        s.art = this.playEnemyAnim(s, 'move', true);
         s.sprite.setVisible(true);
         s.hpBack.setVisible(true);
         s.hp.setVisible(true);
@@ -336,8 +402,10 @@ export class FieldView {
       const def = UNIT_SPRITES[e.defId]!;
       const sx = this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX;
       const footY = RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY;
-      const hgt = def.frameHeight * def.displayScale;
-      const wob = Math.sin(now / 160 + e.id) * 2;
+      const hgt = (def.bodyHeight ?? def.frameHeight) * def.displayScale;
+      // 本素材はアニメが跳ねるので揺らさない。アニメの速さはゲームの速さに合わせる
+      const wob = s.art ? 0 : Math.sin(now / 160 + e.id) * 2;
+      if (s.art) s.sprite.anims.timeScale = this.lastRate;
       this.lastSeen.set(e.id, { x: sx, y: footY - hgt * 0.6 });
       // のけぞり: 0.15秒かけて元の位置へ戻る（描画だけ。core の x は変えない）
       const kt = Math.min(1, (now - s.knockAt) / 150);
