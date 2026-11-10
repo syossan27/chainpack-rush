@@ -323,6 +323,30 @@ const BOSS_SLIME_MOTHER = unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }
 
 const BOSS_GOBLIN_KING = unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 });
 
+const MOB_BAT = unit('bat', BAT, 48);
+
+const MOB_SKELETON = unit('skeleton', SKELETON, 48);
+
+const MOB_ARMOR = unit('armor', ARMOR, 48);
+
+const MOB_SORCERER = unit('sorcerer', SORCERER, 48);
+
+const BOSS_BAT_QUEEN = unit('bat_queen', recolor(BAT, { V: 'R', r: 'y' }), 96, {
+  pixels: CROWN,
+  x: 4,
+  y: 1,
+});
+
+const BOSS_IRON_KNIGHT = unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 });
+
+const BOSS_GOLEM = unit('golem', GOLEM, 96);
+
+const BOSS_LICH = unit('lich', recolor(SORCERER, { V: 'U', m: 'c', s: 'g' }), 96, {
+  pixels: CROWN,
+  x: 4,
+  y: 0,
+});
+
 export const UNIT_SPRITES: Record<string, SpriteDef> = {
   // 本素材は anims に書く（file は assets/sprites/ からの相対パス）。
   // コマ寸法・原点がキャラ共通と違うアニメだけ frameWidth/frameHeight/originX/originY を書く。
@@ -479,7 +503,54 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  bat: unit('bat', BAT, 48),
+  // コウモリ。体は少し浮かせて置く（PixelLab）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
+  bat: {
+    ...MOB_BAT,
+    bodyHeight: 52,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/bat/bat_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      move: {
+        file: 'enemies/bat/bat_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'enemies/bat/bat_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      death: {
+        file: 'enemies/bat/bat_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   // ゴブリン（PR #9）。本素材は 64px コマ（身長約42px、攻撃だけ 96×64）、地面 y=55。絵は左向き。
   // 数値は assets/raw/enemies/goblin/ の export どおり。コマの切り直し・中心の寄せはしない
   goblin: {
@@ -532,8 +603,102 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  armor: unit('armor', ARMOR, 48),
-  sorcerer: unit('sorcerer', SORCERER, 48),
+  // 甲冑兵（PixelLab）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
+  armor: {
+    ...MOB_ARMOR,
+    bodyHeight: 40,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/armor/armor_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      move: {
+        file: 'enemies/armor/armor_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'enemies/armor/armor_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      death: {
+        file: 'enemies/armor/armor_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
+  // 呪術師（PixelLab）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
+  sorcerer: {
+    ...MOB_SORCERER,
+    bodyHeight: 45,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/sorcerer/sorcerer_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      move: {
+        file: 'enemies/sorcerer/sorcerer_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'enemies/sorcerer/sorcerer_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      death: {
+        file: 'enemies/sorcerer/sorcerer_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   scarecrow: unit('scarecrow', SCARECROW, 48),
   // 大スライム（PixelLab）。待機は伸び縮み、やられは王冠を残して溶ける
   // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/big_slime/ の export どおり
@@ -617,7 +782,44 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  iron_knight: unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 }),
+  // 鉄の騎士（PixelLab）。96px コマ（攻撃だけ 128×96）、地面 y=87、左向き
+  iron_knight: {
+    ...BOSS_IRON_KNIGHT,
+    bodyHeight: 74,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/iron_knight/iron_knight_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      attack: {
+        file: 'enemies/iron_knight/iron_knight_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      death: {
+        file: 'enemies/iron_knight/iron_knight_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
   // 狼。PixelLab で作成（シンプルでポップな絵柄、8色）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き。
   // 数値は assets/raw/enemies/wolf/ の export どおり。コマの切り直し・中心の寄せはしない
   wolf: {
@@ -670,7 +872,54 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  skeleton: unit('skeleton', SKELETON, 48),
+  // 骸骨（PixelLab）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
+  skeleton: {
+    ...MOB_SKELETON,
+    bodyHeight: 45,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/skeleton/skeleton_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      move: {
+        file: 'enemies/skeleton/skeleton_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      attack: {
+        file: 'enemies/skeleton/skeleton_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      death: {
+        file: 'enemies/skeleton/skeleton_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   // スライムの母（PixelLab）。待機は伸び縮み、やられは目を閉じて溶ける
   // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/slime_mother/ の export どおり
   slime_mother: {
@@ -712,13 +961,120 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  bat_queen: unit('bat_queen', recolor(BAT, { V: 'R', r: 'y' }), 96, { pixels: CROWN, x: 4, y: 1 }),
-  lich: unit('lich', recolor(SORCERER, { V: 'U', m: 'c', s: 'g' }), 96, {
-    pixels: CROWN,
-    x: 4,
-    y: 0,
-  }),
-  golem: unit('golem', GOLEM, 96),
+  // 吸血女王。少し浮かせて置く（PixelLab）。96px コマ（攻撃だけ 128×96）、地面 y=87、左向き
+  bat_queen: {
+    ...BOSS_BAT_QUEEN,
+    bodyHeight: 81,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/bat_queen/bat_queen_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      attack: {
+        file: 'enemies/bat_queen/bat_queen_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      death: {
+        file: 'enemies/bat_queen/bat_queen_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
+  // 呪術王（PixelLab）。96px コマ（攻撃だけ 128×96）、地面 y=87、左向き
+  lich: {
+    ...BOSS_LICH,
+    bodyHeight: 79,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/lich/lich_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      attack: {
+        file: 'enemies/lich/lich_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      death: {
+        file: 'enemies/lich/lich_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
+  // 岩のゴーレム（PixelLab）。96px コマ（攻撃だけ 128×96）、地面 y=87、左向き
+  golem: {
+    ...BOSS_GOLEM,
+    bodyHeight: 74,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/golem/golem_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      attack: {
+        file: 'enemies/golem/golem_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      death: {
+        file: 'enemies/golem/golem_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
 };
 
 /** 本素材のアニメーションキー（Phaser の anims に登録する名前） */

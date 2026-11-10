@@ -1,0 +1,16 @@
+{
+  "file": "bat_attack.png",
+  "frameWidth": 96,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.6666666666666666,
+  "originY": 0.875,
+  "originPx": [
+    64,
+    56
+  ],
+  "fps": 12,
+  "loop": false,
+  "groundY": 55,
+  "note": "コウモリ（飛ぶ。体は地面から少し浮かせて置く）。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。"
+}

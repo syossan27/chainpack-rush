@@ -1,0 +1,16 @@
+{
+  "file": "armor_attack.png",
+  "frameWidth": 96,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.6666666666666666,
+  "originY": 0.875,
+  "originPx": [
+    64,
+    56
+  ],
+  "fps": 12,
+  "loop": false,
+  "groundY": 55,
+  "note": "甲冑兵（左右反転して、槍を勇者側）。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。"
+}
