@@ -430,27 +430,7 @@ export class LoadoutScene extends Phaser.Scene {
             )
             .setOrigin(0.5),
         );
-      if (a.apply) {
-        const applied = a.apply;
-        root.add(
-          new Button(
-            this,
-            rx,
-            y + cardH - 34,
-            'やってみる',
-            () => {
-              close();
-              const s = getSave();
-              s.loadout = { ...applied, consumables: s.loadout.consumables };
-              this.selected = null;
-              this.commit();
-              this.flashCells(a.cells);
-              this.showToastLine('変えました（「戻す」で元に戻せます）');
-            },
-            { width: 170, height: 52, fontSize: 18, skin: 'green' },
-          ),
-        );
-      } else if (a.cells.length > 0) {
+      if (a.cells.length > 0) {
         root.add(
           new Button(
             this,
@@ -478,7 +458,7 @@ export class LoadoutScene extends Phaser.Scene {
   /** 診断で示したマスを、しばらく光らせる */
   private flashCells(cells: readonly number[]): void {
     const now = this.time.now;
-    for (const c of cells) this.view.glow(c, 0x6ee06a, now, 1600);
+    for (const c of cells) this.view.glow(c, 0x6ee06a, now, 2500);
   }
 
   /** 編成のタブ: 1〜5。今の編成をもう一度押すと名前を変えられる */
