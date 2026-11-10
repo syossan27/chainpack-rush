@@ -313,6 +313,16 @@ const unit = (
   overlay,
 });
 
+const BOSS_BIG_SLIME = unit('big_slime', SLIME, 96);
+
+const BOSS_SLIME_MOTHER = unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }), 96, {
+  pixels: CROWN,
+  x: 4,
+  y: 2,
+});
+
+const BOSS_GOBLIN_KING = unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 });
+
 export const UNIT_SPRITES: Record<string, SpriteDef> = {
   // 本素材は anims に書く（file は assets/sprites/ からの相対パス）。
   // コマ寸法・原点がキャラ共通と違うアニメだけ frameWidth/frameHeight/originX/originY を書く。
@@ -525,8 +535,88 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
   armor: unit('armor', ARMOR, 48),
   sorcerer: unit('sorcerer', SORCERER, 48),
   scarecrow: unit('scarecrow', SCARECROW, 48),
-  big_slime: unit('big_slime', SLIME, 96),
-  goblin_king: unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 }),
+  // 大スライム（PixelLab）。待機は伸び縮み、やられは王冠を残して溶ける
+  // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/big_slime/ の export どおり
+  big_slime: {
+    ...BOSS_BIG_SLIME,
+    bodyHeight: 65,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/big_slime/big_slime_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      // つぶれてから左へ跳んで体当たり。幅 128 なので原点 x=80
+      attack: {
+        file: 'enemies/big_slime/big_slime_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      // ファイル名は defeat（再生後に消す）
+      death: {
+        file: 'enemies/big_slime/big_slime_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
+  // ゴブリン王（PixelLab）。待機はマントが揺れる、やられは目を回して座り込む
+  // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/goblin_king/ の export どおり
+  goblin_king: {
+    ...BOSS_GOBLIN_KING,
+    bodyHeight: 81,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/goblin_king/goblin_king_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      // こん棒を振り上げて左へ振り下ろす。幅 128 なので原点 x=80
+      attack: {
+        file: 'enemies/goblin_king/goblin_king_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      // ファイル名は defeat（再生後に消す）
+      death: {
+        file: 'enemies/goblin_king/goblin_king_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
   iron_knight: unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 }),
   // 狼。PixelLab で作成（シンプルでポップな絵柄、8色）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き。
   // 数値は assets/raw/enemies/wolf/ の export どおり。コマの切り直し・中心の寄せはしない
@@ -581,11 +671,47 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
     },
   },
   skeleton: unit('skeleton', SKELETON, 48),
-  slime_mother: unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }), 96, {
-    pixels: CROWN,
-    x: 4,
-    y: 2,
-  }),
+  // スライムの母（PixelLab）。待機は伸び縮み、やられは目を閉じて溶ける
+  // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/slime_mother/ の export どおり
+  slime_mother: {
+    ...BOSS_SLIME_MOTHER,
+    bodyHeight: 67,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/slime_mother/slime_mother_idle.png',
+        frames: 6,
+        fps: 8,
+        loop: true,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+      // つぶれてから左へ跳んで体当たり。幅 128 なので原点 x=80
+      attack: {
+        file: 'enemies/slime_mother/slime_mother_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 128,
+        frameHeight: 96,
+        originX: 80 / 128,
+        originY: 88 / 96,
+      },
+      // ファイル名は defeat（再生後に消す）
+      death: {
+        file: 'enemies/slime_mother/slime_mother_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 96,
+        originX: 48 / 96,
+        originY: 88 / 96,
+      },
+    },
+  },
   bat_queen: unit('bat_queen', recolor(BAT, { V: 'R', r: 'y' }), 96, { pixels: CROWN, x: 4, y: 1 }),
   lich: unit('lich', recolor(SORCERER, { V: 'U', m: 'c', s: 'g' }), 96, {
     pixels: CROWN,
