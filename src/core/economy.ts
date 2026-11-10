@@ -66,14 +66,27 @@ export function storageCapacity(save: SaveData): number {
   return STORAGE.baseCapacity + UPGRADES.storage.effect * save.upgrades.storage;
 }
 
-export function upgradeCost(id: UpgradeId, level: number): number | null {
+/** 開放した後半の地域（火山から）の数 */
+export function lateRegionsUnlocked(save: SaveData): number {
+  return REGIONS.slice(3).filter((r) => save.progress.unlocked.includes(r.id)).length;
+}
+
+/** 強化の上限（攻撃倍率・最大HPは、後半の地域を開放するたびに上がる） */
+export function upgradeMaxLevel(save: SaveData | null, id: UpgradeId): number {
   const def = UPGRADES[id];
-  if (level >= def.maxLevel) return null;
-  return Math.round(def.baseCost * Math.pow(def.growth, level));
+  return def.maxLevel + (save ? (def.perRegionLevels ?? 0) * lateRegionsUnlocked(save) : 0);
+}
+
+export function upgradeCost(id: UpgradeId, level: number, maxLevel?: number): number | null {
+  const def = UPGRADES[id];
+  if (level >= (maxLevel ?? def.maxLevel)) return null;
+  const base = def.baseCost * Math.pow(def.growth, Math.min(level, def.maxLevel));
+  const late = Math.max(0, level - def.maxLevel);
+  return Math.round(base * Math.pow(def.lateGrowth ?? def.growth, late));
 }
 
 export function buyUpgrade(save: SaveData, id: UpgradeId): boolean {
-  const cost = upgradeCost(id, save.upgrades[id]);
+  const cost = upgradeCost(id, save.upgrades[id], upgradeMaxLevel(save, id));
   if (cost === null || save.gold < cost) return false;
   save.gold -= cost;
   save.upgrades[id]++;

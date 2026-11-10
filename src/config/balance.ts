@@ -312,12 +312,34 @@ export interface UpgradeDef {
   baseCost: number;
   growth: number;
   maxLevel: number;
+  /** 火山・氷河・魔王城を開放するたびに、上限がこの段数ずつ上がる（後半のゴールドの使い道） */
+  perRegionLevels?: number;
+  /** 元の上限を超えた段の値段の伸び（元の上限の値段から、1段ごとに ×これ） */
+  lateGrowth?: number;
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
-  maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.4, maxLevel: 10 },
+  maxHp: {
+    id: 'maxHp',
+    name: '最大HP',
+    effect: 10,
+    baseCost: 50,
+    growth: 1.4,
+    maxLevel: 10,
+    perRegionLevels: 5,
+    lateGrowth: 1.12,
+  },
   atb: { id: 'atb', name: '攻撃間隔', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
-  attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.3, maxLevel: 20 },
+  attack: {
+    id: 'attack',
+    name: '攻撃倍率',
+    effect: 0.05,
+    baseCost: 60,
+    growth: 1.3,
+    maxLevel: 20,
+    perRegionLevels: 10,
+    lateGrowth: 1.12,
+  },
   runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
   backpack: {
     id: 'backpack',

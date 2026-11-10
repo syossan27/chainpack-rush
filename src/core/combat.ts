@@ -1117,8 +1117,7 @@ export class Combat {
     // ゴールド: 地域ごとの1体あたり（ボスは多め）。お供からは出ない
     if (!e.escort && this.mode === 'run' && !this.cfg.demo)
       this.stats.gold =
-        (this.stats.gold ?? 0) +
-        this.region.goldPerKill * (e.def.boss ? PROGRESS.bossGold : 1);
+        (this.stats.gold ?? 0) + this.region.goldPerKill * (e.def.boss ? PROGRESS.bossGold : 1);
     if (!e.escort && this.mode === 'run' && !this.cfg.demo) {
       const roll = this.rng.next();
       if (roll < e.def.dropRate || e.elite === 'golden') {

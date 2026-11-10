@@ -13,6 +13,7 @@ import {
   storageCapacity,
   storageCount,
   upgradeCost,
+  upgradeMaxLevel,
   buyUpgrade,
   synthPlan,
   synthesize,
@@ -260,7 +261,10 @@ const UPGRADE_PRIORITY: UpgradeId[] = [
 export function buyUpgrades(save: SaveData): UpgradeId[] {
   const bought: UpgradeId[] = [];
   for (;;) {
-    const options = UPGRADE_PRIORITY.map((id) => ({ id, cost: upgradeCost(id, save.upgrades[id]) }))
+    const options = UPGRADE_PRIORITY.map((id) => ({
+      id,
+      cost: upgradeCost(id, save.upgrades[id], upgradeMaxLevel(save, id)),
+    }))
       .filter((o): o is { id: UpgradeId; cost: number } => o.cost !== null && o.cost <= save.gold)
       .sort((a, b) => a.cost - b.cost);
     const pick = options[0];

@@ -9,6 +9,7 @@ import {
   equippedUids,
   heroStats,
   totalStars,
+  upgradeMaxLevel,
   itemMap,
   adRemaining,
   recordAd,
@@ -871,7 +872,8 @@ export class BaseScene extends Phaser.Scene {
     (Object.keys(UPGRADES) as UpgradeId[]).forEach((id, i) => {
       const def = UPGRADES[id];
       const lv = save.upgrades[id];
-      const cost = upgradeCost(id, lv);
+      const max = upgradeMaxLevel(save, id);
+      const cost = upgradeCost(id, lv, max);
       // 7項目を1画面に収める（1行 128px）
       const y = CONTENT_TOP + 132 + i * 128;
       this.root.add(panel(this, W / 2, y, W - 30, 120, 'panel'));
@@ -879,7 +881,7 @@ export class BaseScene extends Phaser.Scene {
       this.root.add(this.add.text(140, y - 44, def.name, textStyle(26)));
       this.root.add(this.add.text(140, y - 8, now[id], textStyle(18, COLORS.textDim)));
       // 段階のつぶ
-      const pips = def.maxLevel;
+      const pips = max;
       const pw = Math.min(22, 300 / pips);
       for (let k = 0; k < pips; k++) {
         this.root.add(
