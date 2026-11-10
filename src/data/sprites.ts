@@ -352,6 +352,55 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originY: 98 / 132,
         impactFrame: 4,
       },
+      // 残りの4つ（PR #6）。原点は開始コマの足元（待機と揃う）。impactFrame は大きな演出を合わせるコマ
+      // トライ・サンダー: 160×112・6コマ。剣を掲げて雷を受け、3コマ目で振り下ろす
+      special_thunder: {
+        file: 'hero/hero_special_tri_thunder.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 3,
+      },
+      // フロスト・ブレイカー: 160×112・6コマ。2コマ目で氷の斬り下ろし。最後は低い構え（終わったら待機へ戻る）
+      special_frost: {
+        file: 'hero/hero_special_frost_breaker.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 2,
+      },
+      // トリプル・スラッシュ: 160×112・7コマ。3回振って、4コマ目の大振りが決め
+      special_triple: {
+        file: 'hero/hero_special_triple_slash.png',
+        frames: 7,
+        fps: 14,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 4,
+      },
+      // サイクロン・アックス: 184×112・6コマ。くるっと回って、4コマ目の回転斬りが決め
+      special_whirl: {
+        file: 'hero/hero_special_cyclone_axe.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 184,
+        frameHeight: 112,
+        originX: 0.3424,
+        originY: 0.7857,
+        impactFrame: 4,
+      },
       attack: {
         file: 'hero/hero_attack.png',
         frames: 9,
