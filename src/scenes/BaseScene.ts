@@ -36,6 +36,9 @@ import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
 import { resetTutorials, runTutorial } from '../ui/tutorial';
+import { showAchievements } from '../ui/achievementToast';
+import { checkAchievements } from '../core/achievements';
+import { ACHIEVEMENTS } from '../data/achievements';
 import {
   PREMIUM_PRICE,
   buyPremium,
@@ -63,7 +66,8 @@ import {
 import { generateBackgroundTextures } from '../ui/textures';
 import { COLORS, H, W, inkStyle, rarityCss, textStyle } from '../ui/theme';
 
-type Page = 'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help' | 'techs';
+type Page =
+  'home' | 'storage' | 'smith' | 'upgrade' | 'settings' | 'help' | 'techs' | 'achievements';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -227,6 +231,12 @@ export class BaseScene extends Phaser.Scene {
     this.input.removeAllListeners('pointerup');
     this.root = this.add.container(0, 0);
     const save = getSave();
+    // 実績（合成で手に入れた装備・見つけた必殺技など、拠点で満たしたもの）
+    const achieved = checkAchievements(save);
+    if (achieved.length > 0) {
+      persist();
+      showAchievements(this, achieved, CONTENT_TOP + 70, 300);
+    }
     if (this.page !== 'home')
       this.root.add(this.add.rectangle(0, 0, W, H, COLORS.bg).setOrigin(0, 0));
     switch (this.page) {
@@ -251,10 +261,16 @@ export class BaseScene extends Phaser.Scene {
       case 'techs':
         this.renderTechs();
         break;
+      case 'achievements':
+        this.renderAchievements();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
     const tab: TabId =
-      this.page === 'settings' || this.page === 'help' || this.page === 'techs'
+      this.page === 'settings' ||
+      this.page === 'help' ||
+      this.page === 'techs' ||
+      this.page === 'achievements'
         ? 'home'
         : this.page;
     this.root.add(
@@ -1310,13 +1326,22 @@ export class BaseScene extends Phaser.Scene {
       }
       y += 22;
     }
-    const contentH = y;
+    this.addScroll(content, top, bottom, y, 'help');
+  }
+
+  /** 縦に流す中身: はみ出した分はドラッグ（PCはホイール）でスクロール */
+  private addScroll(
+    content: Phaser.GameObjects.Container,
+    top: number,
+    bottom: number,
+    contentH: number,
+    page: Page,
+  ): void {
     const viewH = bottom - top;
     const mask = this.make.graphics({}, false);
     mask.fillRect(0, top, W, viewH);
     content.setMask(mask.createGeometryMask());
     this.root.add(content);
-    // ドラッグでスクロール
     const zone = this.add.zone(W / 2, (top + bottom) / 2, W - 30, viewH).setInteractive();
     this.root.add(zone);
     let startY = 0;
@@ -1332,18 +1357,87 @@ export class BaseScene extends Phaser.Scene {
       scroll = clamp(startScroll - (p.y - startY));
       content.y = top - scroll;
     });
-    // ホイール（PC）
+    this.input.off('wheel');
     this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      if (this.page !== 'help') return;
+      if (this.page !== page) return;
       scroll = clamp(scroll + dy);
       content.y = top - scroll;
     });
   }
 
+  /** 図鑑の切り替え（必殺技・実績） */
+  private addBookTabs(): void {
+    const tabs: [Page, string][] = [
+      ['techs', '必殺技'],
+      ['achievements', '実績'],
+    ];
+    tabs.forEach(([page, label], i) => {
+      this.root.add(
+        new Button(
+          this,
+          W / 2 + (i === 0 ? -150 : 150),
+          CONTENT_TOP + 40,
+          label,
+          () => this.go(page),
+          {
+            width: 280,
+            height: 68,
+            fontSize: 26,
+            skin: this.page === page ? 'gold' : 'gray',
+            icon: page === 'techs' ? 'crown' : 'star',
+          },
+        ),
+      );
+    });
+  }
+
+  // ---- 実績 ----
+  private renderAchievements(): void {
+    const save = getSave();
+    this.addBookTabs();
+    const done = ACHIEVEMENTS.filter((a) => save.achievements.includes(a.id)).length;
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          CONTENT_TOP + 104,
+          `達成 ${done} / ${ACHIEVEMENTS.length}`,
+          textStyle(24, '#ffe27a'),
+        )
+        .setOrigin(0.5),
+    );
+    const top = CONTENT_TOP + 134;
+    const bottom = CONTENT_BOTTOM - 10;
+    const content = this.add.container(0, top);
+    const rowH = 92;
+    // 達成していないものを先に（次の目標が上に来る）。並びは定義の順
+    const list = [
+      ...ACHIEVEMENTS.filter((a) => !save.achievements.includes(a.id)),
+      ...ACHIEVEMENTS.filter((a) => save.achievements.includes(a.id)),
+    ];
+    list.forEach((a, i) => {
+      const y = i * (rowH + 8) + rowH / 2;
+      const got = save.achievements.includes(a.id);
+      content.add(panel(this, W / 2, y, W - 40, rowH, got ? 'paper' : 'inset'));
+      if (got) {
+        content.add(ink(this, 44, y - 30, a.name, 26, '#8a3a20'));
+        content.add(ink(this, 44, y + 6, a.desc, 18, '#7a5a30'));
+        content.add(ink(this, W - 44, y - 12, '達成', 24, '#3a8a3a').setOrigin(1, 0));
+      } else {
+        content.add(this.add.text(44, y - 30, a.name, textStyle(26, COLORS.text)));
+        content.add(this.add.text(44, y + 6, a.desc, textStyle(18, COLORS.textDim)));
+        content.add(
+          this.add.text(W - 44, y - 14, `${a.reward}G`, textStyle(26, COLORS.gold)).setOrigin(1, 0),
+        );
+      }
+    });
+    this.addScroll(content, top, bottom, list.length * (rowH + 8), 'achievements');
+  }
+
   // ---- 必殺技図鑑 ----
   private renderTechs(): void {
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '必殺技図鑑', 360));
+    this.addBookTabs();
     const found = TECHNIQUES.filter((t) => save.discoveredTechs.includes(t.id)).length;
     this.root.add(
       this.add

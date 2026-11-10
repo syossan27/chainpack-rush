@@ -33,6 +33,8 @@ export interface SaveData {
   premium: boolean;
   /** 見た初心者向けの案内（ui/tutorial.ts のキー） */
   tutorialSeen: string[];
+  /** 達成した実績（data/achievements.ts の id） */
+  achievements: string[];
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
   adLog: { date: string; counts: Record<string, number> };
   settings: {
@@ -118,6 +120,7 @@ export function createInitialSave(): SaveData {
     discoveredTechs: [],
     premium: false,
     tutorialSeen: [],
+    achievements: [],
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -238,6 +241,9 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         : isObj(data.stats) && isNum(data.stats.runs) && data.stats.runs > 0
           ? ['home', 'stage', 'run', 'demoEnd', 'result', 'loadout', 'smith', 'demo']
           : [],
+      achievements: Array.isArray(data.achievements)
+        ? data.achievements.filter((t): t is string => typeof t === 'string')
+        : [],
       adLog:
         isObj(data.adLog) && typeof data.adLog.date === 'string' && isObj(data.adLog.counts)
           ? {

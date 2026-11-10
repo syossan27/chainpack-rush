@@ -71,6 +71,12 @@ export class RunScene extends Phaser.Scene {
   private inspecting = false;
   /** 最初の出撃の体験ラン（伝説の装備を借りる） */
   private demo = false;
+  /** 警報を出したボス（敵の id） */
+  private warned = new Set<number>();
+  /** このランで記録の更新を知らせたもの */
+  private recordShown = new Set<'step' | 'damage'>();
+  /** 出撃前の記録（初めてなら null: 比べるものがない） */
+  private bestBefore: { step: number; damage: number } | null = null;
   private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
@@ -109,6 +115,12 @@ export class RunScene extends Phaser.Scene {
   create(): void {
     const save = getSave();
     this.demo = demoPending();
+    this.warned = new Set();
+    this.recordShown = new Set();
+    this.bestBefore =
+      this.demo || save.stats.runs === 0
+        ? null
+        : { step: save.stats.maxStep, damage: save.stats.maxDamage };
     this.regionId = this.demo ? DEMO_REGION : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = debugSeed() ?? randomSeed();
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
@@ -466,6 +478,7 @@ export class RunScene extends Phaser.Scene {
       this.numbers.show(300 + Math.random() * 350, 280 + Math.random() * 180, Math.random() * 3000);
     }
     this.field.update(this.combat, now, halted ? 0 : rate);
+    this.checkBossApproach();
     this.view.tick(now);
     this.numbers.update(dt);
     this.effects.update(dt);
@@ -579,6 +592,80 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
+  /** ボスが画面に入ってくる少し前に「WARNING」（止めない。1.4秒ほど） */
+  private checkBossApproach(): void {
+    const c = this.combat;
+    for (const e of c.enemies) {
+      if (!e.alive || !e.def.boss || this.warned.has(e.id)) continue;
+      const p = this.field.enemyScreenPos(c, e);
+      if (p.x > W + 160) continue;
+      this.warned.add(e.id);
+      this.showWarning(e.def.name, c.loop);
+    }
+  }
+
+  private showWarning(name: string, loop: number): void {
+    const cy = 250;
+    const root = this.add.container(0, 0).setDepth(70);
+    const band = this.add.rectangle(W / 2, cy, W, 150, 0x8a0a10, 0.55);
+    const lineT = this.add.rectangle(W / 2, cy - 75, W, 6, 0xff3030, 1);
+    const lineB = this.add.rectangle(W / 2, cy + 75, W, 6, 0xff3030, 1);
+    // 帯の上下を流れる小さな文字
+    const tickerT = this.add
+      .text(0, cy - 62, ' WARNING  '.repeat(10), textStyle(18, '#ffb0a0'))
+      .setOrigin(0, 0);
+    const tickerB = this.add
+      .text(-W, cy + 44, ' WARNING  '.repeat(10), textStyle(18, '#ffb0a0'))
+      .setOrigin(0, 0);
+    const big = this.add.text(W / 2, cy - 10, 'WARNING', textStyle(72, '#ff4a3a')).setOrigin(0.5);
+    const sub = this.add
+      .text(W / 2, cy + 34, `${loop}周目のボス　${name}`, textStyle(24, '#ffffff'))
+      .setOrigin(0.5);
+    root.add([band, lineT, lineB, tickerT, tickerB, big, sub]);
+    root.setAlpha(0);
+    sfx('warning');
+    this.tweens.add({ targets: root, alpha: 1, duration: 120 });
+    this.tweens.add({ targets: tickerT, x: -W, duration: 1600 });
+    this.tweens.add({ targets: tickerB, x: 0, duration: 1600 });
+    this.tweens.add({ targets: big, alpha: 0.25, yoyo: true, repeat: 3, duration: 160 });
+    this.tweens.add({
+      targets: root,
+      alpha: 0,
+      delay: 1300,
+      duration: 250,
+      onComplete: () => root.destroy(),
+    });
+  }
+
+  /** 記録の更新（1ランで種類ごとに1回）。勇者の上に小さく、テンポは止めない */
+  private showRecord(kind: 'step' | 'damage'): void {
+    if (this.recordShown.has(kind)) return;
+    this.recordShown.add(kind);
+    const t = this.add
+      .text(
+        RUN_LAYOUT.heroScreenX + 40,
+        RUN_LAYOUT.groundY - 290 - this.recordShown.size * 4,
+        kind === 'step' ? 'NEW RECORD! 最大連鎖' : 'NEW RECORD! 最大ダメージ',
+        { ...textStyle(26, '#ffffff'), backgroundColor: '#d8402a', padding: { x: 8, y: 3 } },
+      )
+      .setOrigin(0, 0.5)
+      .setAngle(-6)
+      .setDepth(67)
+      .setScale(2)
+      .setAlpha(0);
+    if (kind === 'damage' && this.recordShown.has('step')) t.y += 40;
+    sfx('openEpic');
+    this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      y: t.y - 30,
+      delay: 1600,
+      duration: 400,
+      onComplete: () => t.destroy(),
+    });
+  }
+
   private showBanner(text: string, color = '#ffffff'): void {
     const b = this.hud.banner;
     this.tweens.killTweensOf(b);
@@ -598,8 +685,7 @@ export class RunScene extends Phaser.Scene {
     for (const ev of events) {
       switch (ev.type) {
         case 'loopStart':
-          if (ev.loop > 1)
-            this.showBanner(`${ev.loop}周目　${getEnemyDef(ev.bossId).name}`, COLORS.gold);
+          // ボスの名前は、近づいてきたときの警報で出す
           break;
         case 'chainStart':
           this.field.aimId = ev.aimId;
@@ -616,10 +702,13 @@ export class RunScene extends Phaser.Scene {
             else {
               sfxChainStep(ev.step);
               if (ev.step >= 2) this.showChainCount(ev.step);
+              if (this.bestBefore && ev.step > this.bestBefore.step) this.showRecord('step');
             }
           }
           break;
         case 'hit': {
+          if (this.bestBefore && !ev.nullified && Math.round(ev.damage) > this.bestBefore.damage)
+            this.showRecord('damage');
           const p = this.enemyPos(ev.enemyId);
           if (!p) break;
           const strength = Math.min(1, ev.damage / JUICE.hugeHit);

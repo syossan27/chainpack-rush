@@ -1,5 +1,9 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
 import { markDemoDone, runTutorial } from '../ui/tutorial';
+import { sfx } from '../audio/sfx';
+import { showAchievements } from '../ui/achievementToast';
+import { checkAchievements } from '../core/achievements';
+import type { AchievementDef } from '../data/achievements';
 import Phaser from 'phaser';
 import {
   acceptLoot,
@@ -33,6 +37,30 @@ export class ResultScene extends Phaser.Scene {
     super('Result');
   }
 
+  /** 「NEW RECORD!」のはんこ: ぽんと押されて、少し傾いたまま残る */
+  private stamp(x: number, y: number, text: string, delay: number, size = 20): void {
+    const t = this.add
+      .text(x, y, text, {
+        ...textStyle(size, '#ffffff'),
+        backgroundColor: '#d8402a',
+        padding: { x: 6, y: 2 },
+      })
+      .setOrigin(0.5)
+      .setAngle(-10)
+      .setDepth(20)
+      .setAlpha(0)
+      .setScale(2.4);
+    this.tweens.add({
+      targets: t,
+      alpha: 1,
+      scale: 1,
+      delay,
+      duration: 220,
+      ease: 'Back.easeOut',
+      onStart: () => sfx('openEpic'),
+    });
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor(COLORS.bg);
     const last = session.lastResult;
@@ -49,6 +77,14 @@ export class ResultScene extends Phaser.Scene {
     let added: ItemInstance[] = [];
     let auto: { uids: string[]; gold: number } = { uids: [], gold: 0 };
     let unlocked: string | null = null;
+    // 記録の更新（このランの前の記録と比べる）
+    const prev = {
+      step: save.stats.maxStep,
+      damage: save.stats.maxDamage,
+      loop: save.progress.best[regionId] ?? 0,
+      first: save.stats.runs === 0,
+    };
+    let achieved: AchievementDef[] = [];
     if (demo) markDemoDone();
     else {
       consumeItems(save, result.usedConsumables);
@@ -56,6 +92,7 @@ export class ResultScene extends Phaser.Scene {
       // 自動売却（倉庫で設定したレアリティ以下）
       auto = autoSellDrops(save, added);
       unlocked = recordRun(save, regionId, result).unlocked;
+      achieved = checkAchievements(save, result);
     }
     persist();
     session.lastResult = null;
@@ -87,12 +124,25 @@ export class ResultScene extends Phaser.Scene {
       ['時間の延長', `+${result.stats.timeGained.toFixed(1)}秒`],
       ['一網打尽', `${result.stats.sweeps}回`],
     ];
+    // 自己ベストを更新した記録（初めてのランは、比べるものがないので出さない）
+    const newRecord = new Set<string>();
+    if (!demo && !prev.first) {
+      if (result.stats.maxStep > prev.step) newRecord.add('最大連鎖');
+      if (Math.round(result.stats.maxDamage) > prev.damage) newRecord.add('最大ダメージ');
+    }
     stats.forEach(([k, v], i) => {
       const x = i % 2 === 0 ? 70 : W / 2 + 20;
       const y = 330 + Math.floor(i / 2) * 52;
       ink(this, x, y, k, 22, '#7a5a30');
-      ink(this, x + 270, y - 2, v, 28).setOrigin(1, 0);
+      const val = ink(this, x + 270, y - 2, v, 28).setOrigin(1, 0);
+      if (newRecord.has(k)) {
+        val.setColor('#d8402a');
+        this.stamp(x + k.length * 22 + 30, y + 2, 'NEW!', 500 + i * 120, 15);
+      }
     });
+    if (!demo && !prev.first && result.reachedLoop > prev.loop)
+      this.stamp(W / 2 + 200, 220, '自己ベスト！', 400);
+    if (achieved.length > 0) showAchievements(this, achieved, 62, 1400);
     if (unlocked) {
       this.add
         .text(
