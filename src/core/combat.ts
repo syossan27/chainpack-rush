@@ -17,6 +17,7 @@ import {
   SIM,
   STATUS,
   POISON,
+  PROGRESS,
   TIME_BONUS,
   type ChainRules,
 } from '../config/balance';
@@ -198,6 +199,8 @@ export interface RunStats {
   totalDamage: number;
   bossesDefeated: number;
   timeGained: number; // 延長した秒数
+  /** 倒した敵から拾ったゴールド */
+  gold?: number;
   sweeps: number; // 一網打尽の回数
 }
 
@@ -1111,6 +1114,11 @@ export class Combat {
       boss: e.def.boss,
       fled: false,
     });
+    // ゴールド: 地域ごとの1体あたり（ボスは多め）。お供からは出ない
+    if (!e.escort && this.mode === 'run' && !this.cfg.demo)
+      this.stats.gold =
+        (this.stats.gold ?? 0) +
+        this.region.goldPerKill * (e.def.boss ? PROGRESS.bossGold : 1);
     if (!e.escort && this.mode === 'run' && !this.cfg.demo) {
       const roll = this.rng.next();
       if (roll < e.def.dropRate || e.elite === 'golden') {

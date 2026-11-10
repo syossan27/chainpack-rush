@@ -146,7 +146,7 @@ export class ResultScene extends Phaser.Scene {
       ['発火', `${result.stats.fires}回`],
       ['最大連鎖', `${result.stats.maxStep}段`],
       ['最大ダメージ', `${Math.round(result.stats.maxDamage)}`],
-      ['時間の延長', `+${result.stats.timeGained.toFixed(1)}秒`],
+      ['ゴールド', `+${result.stats.gold ?? 0}G`],
       ['一網打尽', `${result.stats.sweeps}回`],
     ];
     // 自己ベストを更新した記録（初めてのランは、比べるものがないので出さない）

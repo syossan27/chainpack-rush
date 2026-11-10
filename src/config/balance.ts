@@ -315,9 +315,9 @@ export interface UpgradeDef {
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
-  maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.6, maxLevel: 10 },
+  maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.4, maxLevel: 10 },
   atb: { id: 'atb', name: '攻撃間隔', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
-  attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.6, maxLevel: 20 },
+  attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.3, maxLevel: 20 },
   runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
   backpack: {
     id: 'backpack',
@@ -356,6 +356,8 @@ export const PROGRESS = {
   /** ★1つあたりの永続ボーナス */
   starAttack: 0.03,
   starHp: 5,
+  /** ボスを倒したときのゴールド（地域の goldPerKill の何倍か） */
+  bossGold: 25,
 } as const;
 
 export const UI = {

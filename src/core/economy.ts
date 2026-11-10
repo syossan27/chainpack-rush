@@ -431,6 +431,8 @@ export function recordRun(
   result: RunResult,
 ): { unlocked: string | null } {
   save.stats.runs++;
+  // 倒した敵から拾ったゴールド
+  save.gold += result.stats.gold ?? 0;
   save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
   save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
   save.progress.best[regionId] = Math.max(save.progress.best[regionId] ?? 0, result.reachedLoop);
