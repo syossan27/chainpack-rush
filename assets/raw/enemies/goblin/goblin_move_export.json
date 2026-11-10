@@ -1,0 +1,16 @@
+{
+  "file": "goblin_move.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.875,
+  "originPx": [
+    32,
+    56
+  ],
+  "fps": 10,
+  "loop": true,
+  "groundY": 55,
+  "note": "Walk toward the left, in-place loop. PixelLab animate-pixminimax from goblin_v3c (take mm_d, seed 83071, frames 0,1,2,4,6,7 of 9). Supporting feet planted to y=55 by a 1px vertical shift only; no hand-redrawn legs and no X recentering."
+}

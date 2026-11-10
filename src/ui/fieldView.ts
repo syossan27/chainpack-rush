@@ -432,7 +432,8 @@ export class FieldView {
                 : 0xffffff,
         );
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
-      const topY = footY - hgt * 0.85;
+      // 本素材は体の高さのすぐ上、仮素材はコマの余白込みで少し下げる
+      const topY = def.bodyHeight ? footY - hgt - 8 : footY - hgt * 0.85;
       s.hpBack
         .setPosition(sx - barW / 2, topY)
         .setSize(barW, 8)

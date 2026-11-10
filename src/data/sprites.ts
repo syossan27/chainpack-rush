@@ -470,7 +470,58 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
     },
   },
   bat: unit('bat', BAT, 48),
-  goblin: unit('goblin', GOBLIN, 48),
+  // ゴブリン（PR #9）。本素材は 64px コマ（身長約42px、攻撃だけ 96×64）、地面 y=55。絵は左向き。
+  // 数値は assets/raw/enemies/goblin/ の export どおり。コマの切り直し・中心の寄せはしない
+  goblin: {
+    ...unit('goblin', GOBLIN, 48),
+    bodyHeight: 42,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/goblin/goblin_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で左へ歩く（移動そのものはゲーム側）
+      move: {
+        file: 'enemies/goblin/goblin_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // 肩のこん棒を左へ振り下ろす。幅 96 なので原点 x=64
+      attack: {
+        file: 'enemies/goblin/goblin_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。目が閉じて倒れ、最終コマはうすく残る（再生後に消す）
+      death: {
+        file: 'enemies/goblin/goblin_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   armor: unit('armor', ARMOR, 48),
   sorcerer: unit('sorcerer', SORCERER, 48),
   scarecrow: unit('scarecrow', SCARECROW, 48),
