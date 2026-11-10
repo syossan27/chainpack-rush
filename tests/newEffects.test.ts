@@ -37,7 +37,13 @@ describe('新しい効果の装備', () => {
 
   it('毒: 当てたあとも、時間でじわじわダメージが入る', () => {
     const { loadout, items } = line(['poison_dagger']);
-    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: { ...hero, maxHp: 9999 } });
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: { ...hero, maxHp: 9999 },
+    });
     let dot = 0;
     let direct = 0;
     for (let i = 0; i < 60 * 20 && !c.ended; i++) {

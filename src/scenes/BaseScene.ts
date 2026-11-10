@@ -1,6 +1,6 @@
 // 拠点: 出撃、配置、倉庫（売却）、鍛冶屋（付け直し）、強化、カカシ、設定
 import Phaser from 'phaser';
-import { MONETIZE, SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
+import { MONETIZE, PROGRESS, SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
 import {
   backpackSize,
   buyUpgrade,
@@ -8,6 +8,7 @@ import {
   consumableSlots,
   equippedUids,
   heroStats,
+  totalStars,
   itemMap,
   adRemaining,
   recordAd,
@@ -857,9 +858,9 @@ export class BaseScene extends Phaser.Scene {
     const hs = heroStats(save);
     const bp = backpackSize(save.upgrades.backpack);
     const now: Record<UpgradeId, string> = {
-      maxHp: `最大HP ${hs.maxHp}`,
+      maxHp: `最大HP ${hs.maxHp}${totalStars(save) > 0 ? `（★${totalStars(save)}で+${PROGRESS.starHp * totalStars(save)}込み）` : ''}`,
       atb: `攻撃間隔 ${hs.atbTime.toFixed(2)}秒`,
-      attack: `攻撃倍率 ×${hs.attackMult.toFixed(2)}`,
+      attack: `攻撃倍率 ×${hs.attackMult.toFixed(2)}${totalStars(save) > 0 ? `（★${totalStars(save)}で+${Math.round(PROGRESS.starAttack * 100 * totalStars(save))}%込み）` : ''}`,
       runTime: Number.isFinite(TIME_BONUS.maxRunTime)
         ? `出撃 ${hs.runTime}秒（延長込みの上限 ${TIME_BONUS.maxRunTime}秒）`
         : `出撃 ${hs.runTime}秒`,

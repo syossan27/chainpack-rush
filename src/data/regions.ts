@@ -121,7 +121,7 @@ export const REGIONS: readonly RegionDef[] = [
   {
     id: 'glacier',
     name: '氷河',
-    mobTrend: '氷の狼、雪だるま、雪男（速い・硬い）',
+    mobTrend: '氷の狼、雪だるま、雪男（速い）',
     resistNote: '氷が効きにくい・炎が弱点',
     mobs: [
       { id: 'ice_wolf', weight: 5 },
@@ -143,7 +143,7 @@ export const REGIONS: readonly RegionDef[] = [
   {
     id: 'demon_castle',
     name: '魔王城',
-    mobTrend: '小悪魔、ガーゴイル、闇の魔導士（群れが大きい）',
+    mobTrend: '小悪魔、ガーゴイル、闇の魔導士',
     resistNote: '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）',
     mobs: [
       { id: 'imp', weight: 5 },

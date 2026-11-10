@@ -351,6 +351,11 @@ export const STORAGE = {
 
 export const PROGRESS = {
   unlockLoop: 3, // 3周目のボスを倒すと次の地域が開放
+  /** 地域の★: この周目のボスを倒すと（＝その次の周目に着くと）★1つ */
+  starLoops: [3, 6, 10],
+  /** ★1つあたりの永続ボーナス */
+  starAttack: 0.03,
+  starHp: 5,
 } as const;
 
 export const UI = {

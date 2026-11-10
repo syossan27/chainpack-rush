@@ -1,7 +1,8 @@
 // 地域の一覧と敵情報（雑魚の傾向、ボスの出現順と特徴）
 import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { sortieBlock } from '../core/economy';
+import { regionStars, sortieBlock } from '../core/economy';
+import { PROGRESS } from '../config/balance';
 import { sellOverflow } from './LoadoutScene';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
 import { REGIONS, regionBosses, type RegionDef } from '../data/regions';
@@ -17,11 +18,16 @@ import { COLORS, H, W, textStyle } from '../ui/theme';
 
 const CARD_H = 300;
 const CARD_TOP = 190;
+/** 地域の一覧を見せる範囲の下端（下のボタンの上） */
+const VIEW_BOTTOM = H - 190;
 
 export class StageSelectScene extends Phaser.Scene {
   /** 地域ごとに、特徴を表示しているボス */
   private readonly traitOf = new Map<string, string>();
   private root!: Phaser.GameObjects.Container;
+  /** 地域の一覧のスクロール（6地域は1画面に収まらない） */
+  private scroll = 0;
+  private dragged = false;
 
   constructor() {
     super('StageSelect');
@@ -37,7 +43,14 @@ export class StageSelectScene extends Phaser.Scene {
     new TopBar(this, save);
     this.add.existing(ribbon(this, W / 2, 140, '地域を選ぶ', 320));
     this.root = this.add.container(0, 0);
+    this.setupScroll();
     this.renderCards();
+    // 選んでいる地域が見えるところまでスクロールしておく
+    const idx = Math.max(
+      0,
+      REGIONS.findIndex((r) => r.id === session.regionId),
+    );
+    this.setScroll(idx * (CARD_H + 14) - 40);
 
     new Button(this, 120, H - 80, '戻る', () => this.scene.start('Base'), {
       width: 190,
@@ -89,6 +102,37 @@ export class StageSelectScene extends Phaser.Scene {
     ]);
   }
 
+  private setScroll(v: number): void {
+    const content = REGIONS.length * (CARD_H + 14);
+    const view = VIEW_BOTTOM - CARD_TOP;
+    this.scroll = Phaser.Math.Clamp(v, 0, Math.max(0, content - view + 10));
+    this.root.y = -this.scroll;
+  }
+
+  /** 一覧をドラッグ（PCはホイール）でスクロール。動かしたあとの指離しはタップにしない */
+  private setupScroll(): void {
+    const mask = this.make.graphics({}, false);
+    mask.fillRect(0, CARD_TOP - 14, W, VIEW_BOTTOM - CARD_TOP + 14);
+    this.root.setMask(mask.createGeometryMask());
+    let start: { y: number; scroll: number } | null = null;
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.dragged = false;
+      start = p.y >= CARD_TOP - 14 && p.y <= VIEW_BOTTOM ? { y: p.y, scroll: this.scroll } : null;
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!start || !p.isDown) return;
+      const dy = p.y - start.y;
+      if (Math.abs(dy) > 12) this.dragged = true;
+      if (this.dragged) this.setScroll(start.scroll - dy);
+    });
+    this.input.on('pointerup', () => {
+      start = null;
+    });
+    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
+      this.setScroll(this.scroll + dy);
+    });
+  }
+
   private renderCards(): void {
     this.root.removeAll(true);
     const save = getSave();
@@ -100,6 +144,7 @@ export class StageSelectScene extends Phaser.Scene {
         useHandCursor: true,
       });
       bindTap(card, () => {
+        if (this.dragged) return;
         if (!unlocked) {
           sfx('error');
           return;
@@ -140,13 +185,16 @@ export class StageSelectScene extends Phaser.Scene {
         ),
       );
       const best = save.progress.best[r.id];
+      // ★: 3・6・10周目のボスを倒すごとに1つ（★ごとに攻撃+3%・最大HP+5）
+      const stars = regionStars(save, r.id);
+      const starText = '★'.repeat(stars) + '☆'.repeat(PROGRESS.starLoops.length - stars);
       const pill = new Pill(
         this,
-        W - 120,
+        W - 140,
         y - 96,
-        170,
+        220,
         'star',
-        best ? `最高 ${best}周` : '未到達',
+        best ? `最高${best}周 ${starText}` : `未到達 ${starText}`,
         best ? COLORS.gold : COLORS.textDim,
       );
       this.root.add(pill);
@@ -173,7 +221,7 @@ export class StageSelectScene extends Phaser.Scene {
           const frame = this.add.image(bx, by, SKIN.round).setDisplaySize(size, size);
           frame.setInteractive({ useHandCursor: true });
           bindTap(frame, () => {
-            if (!unlocked) return;
+            if (!unlocked || this.dragged) return;
             sfx('click');
             this.traitOf.set(r.id, b);
             this.renderCards();
@@ -200,7 +248,9 @@ export class StageSelectScene extends Phaser.Scene {
           y + 70,
           picked
             ? `${getEnemyDef(picked).name}: ${BOSS_TRAITS[picked] ?? ''}`
-            : `ボスは出撃ごとに候補から選ばれます（${regionBosses(r).length}種）。アイコンをタップで特徴`,
+            : r.resistNote
+              ? `敵の得意・苦手: ${r.resistNote}。ボスはアイコンをタップで特徴`
+              : `ボスは出撃ごとに候補から選ばれます（${regionBosses(r).length}種）。アイコンをタップで特徴`,
           {
             ...textStyle(17, picked ? COLORS.text : COLORS.textDim, false),
             wordWrap: { width: W - 90 },

@@ -113,3 +113,36 @@ describe('地域の強さと戦利品', () => {
     expect(total).toBeCloseTo(1);
   });
 });
+
+describe('地域の★', () => {
+  it('3・6・10周目のボスを倒すごとに★、★ごとに攻撃+3%・最大HP+5', async () => {
+    const { regionStars, totalStars, heroStats } = await import('../src/core/economy');
+    const { createInitialSave } = await import('../src/core/save');
+    const s = createInitialSave();
+    const base = heroStats(s);
+    s.progress.best.grassland = 4; // 3周目のボスを倒して4周目に着いた
+    expect(regionStars(s, 'grassland')).toBe(1);
+    s.progress.best.cave = 11;
+    expect(regionStars(s, 'cave')).toBe(3);
+    expect(totalStars(s)).toBe(4);
+    const hs = heroStats(s);
+    expect(hs.attackMult).toBeCloseTo(base.attackMult + 0.12);
+    expect(hs.maxHp).toBe(base.maxHp + 20);
+  });
+});
+
+describe('敵の絵', () => {
+  it('どの地域の敵（ボス・お供も）にも絵がある', async () => {
+    const { REGIONS } = await import('../src/data/regions');
+    const { UNIT_SPRITES } = await import('../src/data/sprites');
+    const { getEnemyDef } = await import('../src/data/enemies');
+    for (const r of REGIONS) {
+      const ids = [...r.mobs.map((m) => m.id), ...r.bossPools.flat()];
+      for (const b of r.bossPools.flat()) {
+        const e = getEnemyDef(b).escortId;
+        if (e) ids.push(e);
+      }
+      for (const id of ids) expect(UNIT_SPRITES[id], id).toBeDefined();
+    }
+  });
+});

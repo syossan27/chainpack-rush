@@ -700,6 +700,38 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
     },
   },
   scarecrow: unit('scarecrow', SCARECROW, 48),
+  // ---- 火山・氷河・魔王城（仮素材。本素材ができるまで、今の敵の色違いで出す） ----
+  fire_lizard: unit('fire_lizard', recolor(WOLF, { G: 'o', g: 'y', D: 'R' }), 48),
+  magma_slime: unit('magma_slime', recolor(SLIME, { e: 'o', E: 'R', W: 'y' }), 48),
+  fire_spirit: unit('fire_spirit', recolor(SORCERER, { V: 'r', v: 'o', m: 'y' }), 48),
+  fire_dragon: unit('fire_dragon', recolor(BAT, { V: 'R', v: 'r' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 1,
+  }),
+  lava_giant: unit('lava_giant', recolor(GOLEM, { G: 'R', g: 'r', D: 'B' }), 96),
+  ice_wolf: unit('ice_wolf', recolor(WOLF, { G: 'l', g: 'i', D: 'u' }), 48),
+  snowman: unit('snowman', recolor(SLIME, { e: 'W', E: 'i' }), 48),
+  yeti: unit('yeti', recolor(GOLEM, { G: 'W', g: 'i', D: 'h' }), 48),
+  ice_queen: unit('ice_queen', recolor(SORCERER, { V: 'l', v: 'i', m: 'c' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 0,
+  }),
+  mammoth: unit('mammoth', recolor(GOLEM, { G: 'b', g: 'n', D: 'B' }), 96),
+  imp: unit('imp', recolor(BAT, { V: 'm', v: 'p' }), 48),
+  gargoyle: unit('gargoyle', recolor(GOLEM, { G: 'G', g: 'g', D: 'D' }), 48),
+  dark_mage: unit('dark_mage', recolor(SORCERER, { V: 'O', v: 'D', m: 'm' }), 48),
+  dark_knight: unit('dark_knight', recolor(ARMOR, { h: 'D', H: 'O', g: 'D' }), 96, {
+    pixels: HELM_PLUME,
+    x: 5,
+    y: 0,
+  }),
+  demon_lord: unit('demon_lord', recolor(SORCERER, { V: 'R', v: 'm', m: 'r' }), 96, {
+    pixels: CROWN,
+    x: 4,
+    y: 0,
+  }),
   // 大スライム（PixelLab）。待機は伸び縮み、やられは王冠を残して溶ける
   // 96px コマ（攻撃だけ 128×96）、地面 y=87、左向き。数値は assets/raw/enemies/big_slime/ の export どおり
   big_slime: {

@@ -24,12 +24,24 @@ import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
 
+/** 地域の★（その地域で倒した周目のボスの数。PROGRESS.starLoops） */
+export function regionStars(save: SaveData, regionId: string): number {
+  const best = save.progress.best[regionId] ?? 0;
+  return PROGRESS.starLoops.filter((l) => best > l).length;
+}
+
+/** 全地域の★の合計 */
+export function totalStars(save: SaveData): number {
+  return REGIONS.reduce((sum, r) => sum + regionStars(save, r.id), 0);
+}
+
 export function heroStats(save: SaveData): HeroStats {
   const u = save.upgrades;
+  const stars = totalStars(save);
   return {
-    maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp,
+    maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp + PROGRESS.starHp * stars,
     atbTime: Math.max(HERO.minAtbTime, HERO.atbTime - UPGRADES.atb.effect * u.atb),
-    attackMult: 1 + UPGRADES.attack.effect * u.attack,
+    attackMult: 1 + UPGRADES.attack.effect * u.attack + PROGRESS.starAttack * stars,
     runTime: Math.min(TIME_BONUS.maxRunTime, SIM.runDuration + UPGRADES.runTime.effect * u.runTime),
   };
 }

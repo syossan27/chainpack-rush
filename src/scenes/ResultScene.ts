@@ -1,12 +1,14 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
 import { markDemoDone, runTutorial } from '../ui/tutorial';
 import { sfx } from '../audio/sfx';
+import { PROGRESS } from '../config/balance';
 import { showAchievements } from '../ui/achievementToast';
 import { checkAchievements } from '../core/achievements';
 import type { AchievementDef } from '../data/achievements';
 import Phaser from 'phaser';
 import {
   acceptLoot,
+  regionStars,
   refillConsumables,
   adRemaining,
   autoSellDrops,
@@ -103,6 +105,7 @@ export class ResultScene extends Phaser.Scene {
       damage: save.stats.maxDamage,
       loop: save.progress.best[regionId] ?? 0,
       first: save.stats.runs === 0,
+      stars: regionStars(save, regionId),
     };
     let achieved: AchievementDef[] = [];
     if (demo) markDemoDone();
@@ -164,6 +167,19 @@ export class ResultScene extends Phaser.Scene {
     });
     if (!demo && !prev.first && result.reachedLoop > prev.loop)
       this.stamp(W / 2 + 200, 220, '自己ベスト！', 400);
+    // 地域の★（3・6・10周目のボス撃破）。★ごとに攻撃+3%・最大HP+5
+    const gained = demo ? 0 : regionStars(save, regionId) - prev.stars;
+    if (gained > 0) {
+      this.stamp(W / 2 - 200, 220, `★${gained > 1 ? `×${gained}` : ''}獲得！`, 700);
+      this.add
+        .text(
+          W / 2,
+          290,
+          `★ボーナス: 攻撃+${Math.round(PROGRESS.starAttack * 100 * gained)}%・最大HP+${PROGRESS.starHp * gained}`,
+          textStyle(20, '#ffe27a'),
+        )
+        .setOrigin(0.5);
+    }
     if (achieved.length > 0) showAchievements(this, achieved, 62, 1400);
     if (unlocked) {
       this.add
