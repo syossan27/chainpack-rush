@@ -105,6 +105,7 @@ export type CombatEvent =
       elite: EliteId | null;
     }
   | { type: 'enrage'; tick: number; enemyId: number }
+  | { type: 'revive'; tick: number }
   /** 必殺技の一撃（演出用。ダメージは続く hit に入っている） */
   | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
   | {
@@ -534,6 +535,20 @@ export class Combat {
   private emit(ev: CombatEvent): void {
     this.events.push(ev);
   }
+
+  /** 力尽きたあとの再開（広告の報酬）。1ランに1回、HP全回復＋出撃時間 seconds 秒 */
+  revive(seconds: number): boolean {
+    if (this.mode !== 'run' || this.ended !== 'dead' || this.revived) return false;
+    this.ended = null;
+    this.revived = true;
+    this.hp = this.maxHp;
+    this.maxTicks += secToTicks(seconds);
+    this.emit({ type: 'revive', tick: this.tick });
+    return true;
+  }
+
+  /** このランで再開を使ったか */
+  revived = false;
 
   /** プレイヤーの撤退。ここまでの戦利品を持ち帰って終わる */
   retreat(): void {

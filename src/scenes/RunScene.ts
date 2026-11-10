@@ -1,6 +1,6 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
 import Phaser from 'phaser';
-import { RARITY, SIM } from '../config/balance';
+import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
 import { Combat, type CombatEvent } from '../core/combat';
 import { consumableSlots, heroStats, itemMap } from '../core/economy';
@@ -18,12 +18,13 @@ import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
-import { Bar, Button, Pill, RoundButton, icon, panel } from '../ui/kit/widgets';
+import { Bar, Button, Pill, RoundButton, choiceDialog, icon, panel } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
 import { ElementFx } from '../ui/elementFx';
 import { getTechnique } from '../data/techniques';
+import { earnReward, isPremium } from '../platform/monetization';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
@@ -741,12 +742,53 @@ export class RunScene extends Phaser.Scene {
           sfx('openRare');
           break;
         case 'runEnd':
-          this.finish();
+          // 力尽きたら、1ランに1回だけ「広告を見て再開」を選べる
+          if (ev.reason === 'dead' && !this.combat.revived && !this.ending) this.askRevive();
+          else this.finish();
+          break;
+        case 'revive':
+          this.showBanner('復活！', '#8be06a');
+          if (this.shake) this.cameras.main.flash(260, 200, 255, 200);
+          sfx('defense');
           break;
         default:
           break;
       }
     }
+  }
+
+  /** 力尽きたとき: 止めて、再開するか聞く */
+  private askRevive(): void {
+    this.inspecting = true;
+    const label = isPremium()
+      ? `再開する（HP全回復・+${MONETIZE.reviveSeconds}秒）`
+      : `▶ 広告を見て再開（HP全回復・+${MONETIZE.reviveSeconds}秒）`;
+    choiceDialog(
+      this,
+      '力尽きた…',
+      [
+        {
+          label,
+          skin: 'gold',
+          onPick: () => {
+            void earnReward(this).then((ok) => {
+              this.inspecting = false;
+              if (ok && this.combat.revive(MONETIZE.reviveSeconds)) {
+                this.handleEvents(this.combat.drainEvents());
+              } else this.finish();
+            });
+          },
+        },
+        { label: 'あきらめる', skin: 'gray', onPick: () => this.giveUp() },
+      ],
+      '1回のランで1回だけ再開できます',
+      () => this.giveUp(),
+    );
+  }
+
+  private giveUp(): void {
+    this.inspecting = false;
+    this.finish();
   }
 
   private finish(): void {

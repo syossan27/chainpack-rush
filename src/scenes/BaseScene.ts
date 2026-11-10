@@ -1,6 +1,6 @@
 // 拠点: 出撃、配置、倉庫（売却）、鍛冶屋（付け直し）、強化、カカシ、設定
 import Phaser from 'phaser';
-import { SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
+import { MONETIZE, SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
 import {
   backpackSize,
   buyUpgrade,
@@ -9,6 +9,8 @@ import {
   equippedUids,
   heroStats,
   itemMap,
+  adRemaining,
+  recordAd,
   rerollCost,
   rerollItem,
   sellItems,
@@ -33,6 +35,13 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
+import {
+  PREMIUM_PRICE,
+  buyPremium,
+  earnReward,
+  isPremium,
+  restorePurchases,
+} from '../platform/monetization';
 import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
 import { otherPresetUse, presetMark } from '../core/presets';
@@ -124,6 +133,13 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
       '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。',
       '・群れとボスは出撃ごとに変わります。精鋭（硬い・速い・金ぴか）が混ざることも。金ぴかは必ずレア以上を2個落とします。',
       '・アーティファクトはごくまれに出る特別な装備です。',
+    ],
+  },
+  {
+    title: 'ご褒美とプレミアム',
+    lines: [
+      '・広告を見ると、ご褒美がもらえます：結果画面で「戦利品をもう1回」（1日3回）、鍛冶屋で「無料で再抽選」（1日3回）、力尽きたときに「再開」（1回のランで1回、HP全回復＋10秒）。',
+      `・プレミアム（${MONETIZE.premiumPrice}、買い切り）なら、広告を見なくても同じご褒美を受け取れます。設定から買えます。`,
     ],
   },
   {
@@ -730,6 +746,29 @@ export class BaseScene extends Phaser.Scene {
         { width: 290, height: 80, skin: 'blue', disabled: save.gold < rc },
       ),
     );
+    // 報酬つき広告: 無料で付け直し（1日の回数まで。お金も付け直し回数も増えない）
+    const freeLeft = adRemaining(save, 'smithReroll');
+    if (freeLeft > 0)
+      this.root.add(
+        new Button(
+          this,
+          W / 2,
+          py + 388,
+          `${isPremium() ? '' : '▶ 広告を見て'}無料で再抽選（今日あと${freeLeft}回）`,
+          () => {
+            void earnReward(this).then((ok) => {
+              if (!ok) return;
+              recordAd(save, 'smithReroll');
+              rerollItem(save, it.uid, new Rng(randomSeed()), true);
+              persist();
+              sfx('openRare');
+              this.specify = it.exits.slice();
+              this.render();
+            });
+          },
+          { width: W - 120, height: 58, fontSize: 22, skin: 'green' },
+        ),
+      );
     this.root.add(ink(this, 50, py + 290, `指定: ${it.exits.length}方向を選ぶ`, 22));
     DIRS.forEach((d, i) => {
       const on = this.specify.includes(d);
@@ -899,6 +938,45 @@ export class BaseScene extends Phaser.Scene {
       },
     );
     this.root.add(ink(this, 70, 760, '検証用。×2 なら30秒のランが15秒で終わります', 18, '#7a5a30'));
+    // プレミアム（買い切り）: 広告を見なくても、広告のご褒美を受け取れる
+    const prem = isPremium();
+    this.root.add(
+      new Button(
+        this,
+        W / 2 - 110,
+        1050,
+        prem ? 'プレミアム（購入済み）' : `プレミアム ${PREMIUM_PRICE}`,
+        () => {
+          if (prem) {
+            this.showToast('広告なしでご褒美を受け取れます');
+            return;
+          }
+          void buyPremium(this).then((ok) => {
+            if (ok) {
+              sfx('openLegend');
+              this.showToast('プレミアムになりました！');
+            }
+            this.render();
+          });
+        },
+        { width: 400, height: 76, fontSize: 24, skin: prem ? 'gray' : 'gold', icon: 'crown' },
+      ),
+    );
+    this.root.add(
+      new Button(
+        this,
+        W / 2 + 214,
+        1050,
+        '購入を復元',
+        () => {
+          void restorePurchases().then((ok) => {
+            this.showToast(ok ? '購入を復元しました' : '復元できる購入はありません', !ok);
+            this.render();
+          });
+        },
+        { width: 200, height: 76, fontSize: 20, skin: 'blue' },
+      ),
+    );
     this.root.add(
       new Button(this, W / 2, 960, '遊び方・強くなるコツ', () => this.go('help'), {
         width: 460,

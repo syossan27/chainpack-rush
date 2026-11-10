@@ -370,13 +370,19 @@ export function choiceDialog(
   title: string,
   choices: Choice[],
   note?: string,
+  /** 外側や「やめる」で閉じたとき */
+  onCancel?: () => void,
 ): Phaser.GameObjects.Container {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
   const root = scene.add.container(0, 0).setDepth(2600);
   const close = () => root.destroy();
+  const cancel = () => {
+    close();
+    onCancel?.();
+  };
   const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
-  shade.on('pointerup', close);
+  shade.on('pointerup', cancel);
   const cw = W - 80;
   const rowH = 92;
   const ch = 120 + choices.length * rowH + (note ? 40 : 0) + 110;
@@ -407,7 +413,7 @@ export function choiceDialog(
     y += 40;
   }
   root.add(
-    new Button(scene, W / 2, y + 20, 'やめる', close, { width: 230, height: 72, skin: 'gray' }),
+    new Button(scene, W / 2, y + 20, 'やめる', cancel, { width: 230, height: 72, skin: 'gray' }),
   );
   return root;
 }

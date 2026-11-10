@@ -1,5 +1,6 @@
 // 売却、付け直し、永続強化、戦利品の受け取り（仕様書 第7章）
 import {
+  MONETIZE,
   SYNTH,
   BACKPACK,
   CONSUMABLE,
@@ -18,7 +19,7 @@ import { ITEM_DEFS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { createItem, rerollExits } from './loot';
+import { createItem, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
@@ -166,15 +167,55 @@ export function canReorient(item: ItemInstance): boolean {
   return def.kind !== 'consumable' && item.exits.length > 0 && item.exits.length < 4;
 }
 
-export function rerollItem(save: SaveData, uid: string, rng: Rng): boolean {
+/** free: 広告の報酬で付け直す（お金を払わず、付け直し回数＝次の料金も増やさない） */
+export function rerollItem(save: SaveData, uid: string, rng: Rng, free = false): boolean {
   const it = save.inventory.find((i) => i.uid === uid);
   if (!it || !canReorient(it)) return false;
-  const cost = rerollCost(it, 'reroll');
-  if (save.gold < cost) return false;
-  save.gold -= cost;
+  if (!free) {
+    const cost = rerollCost(it, 'reroll');
+    if (save.gold < cost) return false;
+    save.gold -= cost;
+  }
   it.exits = rerollExits(rng, it.exits);
-  it.rerollCount++;
+  if (!free) it.rerollCount++;
   return true;
+}
+
+// ---- 報酬つき広告の回数 ----
+
+export type AdPlacement = 'extraLoot' | 'smithReroll';
+
+function todayKey(now: Date): string {
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+}
+
+/** 今日あと何回受け取れるか */
+export function adRemaining(save: SaveData, p: AdPlacement, now = new Date()): number {
+  const used = save.adLog.date === todayKey(now) ? (save.adLog.counts[p] ?? 0) : 0;
+  return Math.max(0, MONETIZE.dailyCaps[p] - used);
+}
+
+/** 受け取った回数を数える */
+export function recordAd(save: SaveData, p: AdPlacement, now = new Date()): void {
+  const key = todayKey(now);
+  if (save.adLog.date !== key) save.adLog = { date: key, counts: {} };
+  save.adLog.counts[p] = (save.adLog.counts[p] ?? 0) + 1;
+}
+
+/** 「戦利品をもう1回」: 今回の戦利品と同じくらいの数を、同じ地域・周回で抽選し直して受け取る */
+export function rollExtraLoot(
+  save: SaveData,
+  regionId: string,
+  loop: number,
+  count: number,
+  rng: Rng,
+): ItemInstance[] {
+  const region = REGIONS.find((r) => r.id === regionId) ?? REGIONS[0]!;
+  const n = Math.min(MONETIZE.extraLootMax, Math.max(MONETIZE.extraLootMin, count));
+  const drops = Array.from({ length: n }, (_, i) =>
+    rollLoot(rng, Math.max(1, loop), `extra-${i}`, false, region.loot),
+  );
+  return acceptLoot(save, drops);
 }
 
 export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[]): boolean {

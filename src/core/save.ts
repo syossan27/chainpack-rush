@@ -29,6 +29,10 @@ export interface SaveData {
   activePreset: number;
   /** 見つけた必殺技（図鑑） */
   discoveredTechs: string[];
+  /** プレミアム（買い切り）を持っているか */
+  premium: boolean;
+  /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
+  adLog: { date: string; counts: Record<string, number> };
   settings: {
     volume: number;
     haptics: boolean;
@@ -110,6 +114,8 @@ export function createInitialSave(): SaveData {
     presets: defaultPresets(),
     activePreset: 0,
     discoveredTechs: [],
+    premium: false,
+    adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
       haptics: true,
@@ -222,6 +228,16 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...(isObj(data.stats) ? (data.stats as Partial<SaveData['stats']>) : {}),
       },
       presets: readPresets(data.presets),
+      premium: data.premium === true,
+      adLog:
+        isObj(data.adLog) && typeof data.adLog.date === 'string' && isObj(data.adLog.counts)
+          ? {
+              date: data.adLog.date,
+              counts: Object.fromEntries(
+                Object.entries(data.adLog.counts).filter(([, v]) => isNum(v)),
+              ) as Record<string, number>,
+            }
+          : { date: '', counts: {} },
       discoveredTechs: Array.isArray(data.discoveredTechs)
         ? data.discoveredTechs.filter((t): t is string => typeof t === 'string')
         : [],

@@ -1,7 +1,18 @@
 // リザルト: 終了理由、到達周回、戦利品の宝箱開封（レアリティの低い順。高いほど派手）、最大連鎖段数、最大ダメージ
 import Phaser from 'phaser';
-import { acceptLoot, autoSellDrops, consumeItems, recordRun, sortieBlock } from '../core/economy';
-import type { Rarity } from '../core/types';
+import {
+  acceptLoot,
+  adRemaining,
+  autoSellDrops,
+  consumeItems,
+  recordAd,
+  recordRun,
+  rollExtraLoot,
+  sortieBlock,
+} from '../core/economy';
+import { Rng, randomSeed } from '../core/rng';
+import { earnReward, isPremium } from '../platform/monetization';
+import type { ItemInstance, Rarity } from '../core/types';
 import { getRegion } from '../data/regions';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
@@ -78,22 +89,32 @@ export class ResultScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
     ribbon(this, W / 2, 590, `戦利品 ${added.length}`, 300).setScale(0.8);
-    if (auto.uids.length > 0)
-      this.add
-        .text(
-          W / 2,
-          624,
-          `自動売却 ${auto.uids.length}個 +${auto.gold}G`,
-          textStyle(18, COLORS.gold),
-        )
-        .setOrigin(0.5);
+    // 戦利品の帯の下の一言（自動売却・もう1回の結果）
+    const lootNote = this.add
+      .text(
+        W / 2,
+        624,
+        auto.uids.length > 0 ? `自動売却 ${auto.uids.length}個 +${auto.gold}G` : '',
+        textStyle(18, COLORS.gold),
+      )
+      .setOrigin(0.5);
     panel(this, W / 2, 850, W - 30, 420, 'inset');
 
     // 宝箱で受け取る: レアリティの低い順に開ける（タップで早送り）
-    const queue = added.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
-    if (queue.length > 0) {
-      const reveal = new ChestReveal(this, queue, {
-        sold: new Set(auto.uids),
+    const hint = this.add
+      .text(W / 2, 1036, '', textStyle(20, COLORS.textDim))
+      .setOrigin(0.5)
+      .setDepth(10);
+    let reveal: ChestReveal | null = null;
+    const emptyText = this.add.text(W / 2, 760, '', textStyle(28, COLORS.textDim)).setOrigin(0.5);
+    const showLoot = (items: ItemInstance[], sold: readonly string[]) => {
+      reveal?.root.destroy();
+      reveal = null;
+      emptyText.setText(items.length === 0 ? '戦利品なし' : '');
+      if (items.length === 0) return;
+      const queue = items.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
+      reveal = new ChestReveal(this, queue, {
+        sold: new Set(sold),
         position: (i) => ({
           x: (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2,
           y: 700 + Math.floor(i / COLS) * (ICON + 34),
@@ -101,18 +122,52 @@ export class ResultScene extends Phaser.Scene {
         iconSize: ICON,
         shake: this.shake,
         onTapItem: (it) => showItemDetail(this, it),
+        onDone: () => hint.setText('タップで能力を確認'),
       });
+      hint.setText('タップで早送り');
       reveal.start();
-      const hint = this.add
-        .text(W / 2, H - 200, 'タップで早送り', textStyle(22, COLORS.textDim))
-        .setOrigin(0.5);
-      this.input.on('pointerup', () => {
-        if (!reveal.finished) reveal.fastForward();
-        else hint.setText('タップで能力を確認');
-      });
-    } else {
-      this.add.text(W / 2, 760, '戦利品なし', textStyle(28, COLORS.textDim)).setOrigin(0.5);
-    }
+    };
+    this.input.on('pointerup', () => {
+      if (reveal && !reveal.finished) reveal.fastForward();
+    });
+    showLoot(added, auto.uids);
+
+    // 報酬つき広告: 戦利品をもう1回（1日の回数まで。プレミアムは広告なし）
+    const extraBtn = new Button(this, W / 2, 1086, '', () => void takeExtra(), {
+      width: W - 80,
+      height: 58,
+      fontSize: 22,
+      skin: 'green',
+    });
+    const refreshExtra = () => {
+      const left = adRemaining(save, 'extraLoot');
+      extraBtn.setText(`${isPremium() ? '' : '▶ 広告を見て'}戦利品をもう1回（今日あと${left}回）`);
+      extraBtn.setVisible(left > 0);
+    };
+    let busy = false;
+    const takeExtra = async () => {
+      if (busy || adRemaining(save, 'extraLoot') <= 0) return;
+      busy = true;
+      const ok = await earnReward(this);
+      busy = false;
+      if (!ok) return;
+      recordAd(save, 'extraLoot');
+      const more = rollExtraLoot(
+        save,
+        regionId,
+        result.reachedLoop,
+        added.length,
+        new Rng(randomSeed()),
+      );
+      const sold = autoSellDrops(save, more);
+      persist();
+      lootNote.setText(
+        `もう1回の戦利品 ${more.length}個${sold.uids.length > 0 ? `（自動売却 ${sold.uids.length}個 +${sold.gold}G）` : ''}`,
+      );
+      showLoot(more, sold.uids);
+      refreshExtra();
+    };
+    refreshExtra();
     new Button(this, W / 2 - 170, H - 110, '拠点へ', () => this.scene.start('Base'), {
       width: 300,
       height: 100,
