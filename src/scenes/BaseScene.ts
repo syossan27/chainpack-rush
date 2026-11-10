@@ -92,7 +92,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
   {
     title: '基本',
     lines: [
-      '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。ATBがたまると起点が順に発火し、つながった装備が順番に攻撃します。',
+      '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（連鎖の間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。',
       '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。',
       '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。',
     ],
@@ -857,7 +857,7 @@ export class BaseScene extends Phaser.Scene {
     const bp = backpackSize(save.upgrades.backpack);
     const now: Record<UpgradeId, string> = {
       maxHp: `最大HP ${hs.maxHp}`,
-      atb: `ATB ${hs.atbTime.toFixed(2)}秒`,
+      atb: `連鎖の間隔 ${hs.atbTime.toFixed(2)}秒`,
       attack: `攻撃倍率 ×${hs.attackMult.toFixed(2)}`,
       runTime: Number.isFinite(TIME_BONUS.maxRunTime)
         ? `出撃 ${hs.runTime}秒（延長込みの上限 ${TIME_BONUS.maxRunTime}秒）`

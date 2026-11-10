@@ -249,15 +249,7 @@ export class ItemList extends Phaser.GameObjects.Container {
         }
       }
       if (mode === 'scroll') {
-        // 一覧の上端より上へ指を出したら、押していたアイテムのドラッグに切り替える
-        if (pressed && this.handlers.onDragStart && p.y < this.viewTop - 10) {
-          mode = 'drag';
-          // ドラッグに切り替えたら、スクロールは押した時点の位置に戻す
-          this.scrollY = start.scroll;
-          this.clampScroll();
-          this.handlers.onDragStart(pressed, p);
-          return;
-        }
+        // スクロールを始めたら、指が一覧の外へ出てもスクロールのまま（位置は戻さない）
         this.scrollY = start.scroll - dy;
         this.clampScroll();
       }

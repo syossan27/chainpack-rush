@@ -357,7 +357,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '号令',
     kind: 'consumable',
     effect: 'rally',
-    description: 'ATBを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。',
+    description: '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。',
   },
   {
     id: 'time_stop',
