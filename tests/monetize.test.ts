@@ -29,30 +29,18 @@ describe('報酬つき広告の回数', () => {
     expect(rerollItem(s, sword.uid, new Rng(1))).toBe(false); // 有料はお金が要る
   });
 
-  it('戦利品2倍: 今回と同じ装備・同じレアリティをもう1セット。アーティファクトは増やさない', () => {
+  it('戦利品2倍: 今回と同じ数だけ、同じ地域・周回で抽選し直して受け取る（種類もレアリティも新しく）', () => {
     const s = createInitialSave();
     const n = s.inventory.length;
-    const drops = [
-      {
-        uid: 'a',
-        defId: 'sword',
-        rarity: 'rare' as const,
-        exits: ['right' as const],
-        rerollCount: 0,
-      },
-      { uid: 'b', defId: 'flame_staff', rarity: 'epic' as const, exits: [], rerollCount: 0 },
-      {
-        uid: 'c',
-        defId: 'dragon_fang',
-        rarity: 'legendary' as const,
-        exits: ['right' as const],
-        rerollCount: 0,
-      },
-    ];
-    const more = doubleLoot(s, drops, new Rng(3));
-    expect(more.map((i) => `${i.defId}:${i.rarity}`)).toEqual(['sword:rare', 'flame_staff:epic']);
-    expect(new Set(more.map((i) => i.uid)).size).toBe(2);
-    expect(s.inventory.length).toBe(n + 2);
+    const more = doubleLoot(s, 5, 'rampart', 3, new Rng(3));
+    expect(more).toHaveLength(5);
+    expect(new Set(more.map((i) => i.uid)).size).toBe(5);
+    expect(s.inventory.length).toBe(n + 5);
+    expect(doubleLoot(s, 0, 'grassland', 1, new Rng(1))).toHaveLength(0);
+    // 抽選し直すので、いろいろな種類が出る
+    const many = doubleLoot(createInitialSave(), 60, 'cave', 2, new Rng(9));
+    expect(new Set(many.map((i) => i.defId)).size).toBeGreaterThan(5);
+    expect(new Set(many.map((i) => i.rarity)).size).toBeGreaterThan(1);
   });
 });
 

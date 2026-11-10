@@ -13,7 +13,6 @@ import {
 import { Rng, randomSeed } from '../core/rng';
 import { earnReward, isPremium } from '../platform/monetization';
 import type { ItemInstance, Rarity } from '../core/types';
-import { getItemDef } from '../data/items';
 import { getRegion } from '../data/regions';
 import { session } from '../platform/session';
 import { getSave, persist } from '../platform/store';
@@ -134,7 +133,6 @@ export class ResultScene extends Phaser.Scene {
     showLoot(added, auto.uids);
 
     // 報酬つき広告: 戦利品2倍（このリザルトで1回・1日の回数まで。プレミアムは広告なし）
-    const doubleable = added.filter((i) => !getItemDef(i.defId).artifact);
     let doubled = false;
     const extraBtn = new Button(this, W / 2, 1086, '', () => void takeExtra(), {
       width: W - 80,
@@ -147,7 +145,7 @@ export class ResultScene extends Phaser.Scene {
       extraBtn.setText(
         `${isPremium() ? '' : '▶ 広告を見て'}戦利品を2倍にする（今日あと${left}回）`,
       );
-      extraBtn.setVisible(left > 0 && !doubled && doubleable.length > 0);
+      extraBtn.setVisible(left > 0 && !doubled && added.length > 0);
     };
     let busy = false;
     const takeExtra = async () => {
@@ -158,7 +156,13 @@ export class ResultScene extends Phaser.Scene {
       if (!ok) return;
       recordAd(save, 'extraLoot');
       doubled = true;
-      const more = doubleLoot(save, doubleable, new Rng(randomSeed()));
+      const more = doubleLoot(
+        save,
+        added.length,
+        regionId,
+        result.reachedLoop,
+        new Rng(randomSeed()),
+      );
       const sold = autoSellDrops(save, more);
       persist();
       lootRibbon.destroy();
