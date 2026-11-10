@@ -168,7 +168,49 @@ export const REGIONS: readonly RegionDef[] = [
   },
 ];
 
+/**
+ * エンドレス: 魔王城の強さから始まり、周回の上限なし（周回の伸びは他の地域と同じ指数）。
+ * 雑魚もボスも全地域から出る。装備とゴールドは落とさない（スコアを競う場）
+ */
+export const ENDLESS: RegionDef = {
+  id: 'endless',
+  name: 'エンドレス',
+  mobTrend: '全地域の雑魚',
+  resistNote: '周回ごとにいろいろな敵。装備とゴールドは出ない',
+  mobs: [
+    { id: 'imp', weight: 3 },
+    { id: 'ice_wolf', weight: 3 },
+    { id: 'fire_lizard', weight: 3 },
+    { id: 'skeleton', weight: 2 },
+    { id: 'gargoyle', weight: 1, maxPerGroup: 1 },
+    { id: 'yeti', weight: 1, maxPerGroup: 1 },
+    { id: 'magma_slime', weight: 1, maxPerGroup: 1 },
+    { id: 'dark_mage', weight: 1, maxPerGroup: 1 },
+  ],
+  groupCount: 3,
+  groupSize: [5, 6],
+  bossPools: [
+    [
+      'fire_dragon',
+      'lava_giant',
+      'ice_queen',
+      'mammoth',
+      'dark_knight',
+      'demon_lord',
+      'golem',
+      'iron_knight',
+      'lich',
+    ],
+  ],
+  power: { hp: 14, atk: 5.5 },
+  goldPerKill: 0,
+  loot: { rarityShift: 0, artifactMult: 0 },
+  bgColors: [0x0c0a18, 0x1a1030, 0x2a1848],
+  groundColor: 0x1a1428,
+};
+
 export function getRegion(id: string): RegionDef {
+  if (id === ENDLESS.id) return ENDLESS;
   const r = REGIONS.find((x) => x.id === id);
   if (!r) throw new Error(`unknown region: ${id}`);
   return r;

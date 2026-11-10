@@ -1,11 +1,11 @@
 // 地域の一覧と敵情報（雑魚の傾向、ボスの出現順と特徴）
 import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { regionStars, sortieBlock } from '../core/economy';
+import { endlessUnlocked, regionStars, sortieBlock } from '../core/economy';
 import { PROGRESS } from '../config/balance';
 import { sellOverflow } from './LoadoutScene';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
-import { REGIONS, regionBosses, type RegionDef } from '../data/regions';
+import { ENDLESS, REGIONS, regionBosses, type RegionDef } from '../data/regions';
 import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
@@ -36,7 +36,11 @@ export class StageSelectScene extends Phaser.Scene {
   create(): void {
     this.cameras.main.setBackgroundColor(COLORS.bg);
     const save = getSave();
-    if (!session.regionId || !save.progress.unlocked.includes(session.regionId)) {
+    const regionOk =
+      session.regionId === ENDLESS.id
+        ? endlessUnlocked(save)
+        : !!session.regionId && save.progress.unlocked.includes(session.regionId);
+    if (!regionOk) {
       session.regionId =
         save.progress.unlocked[save.progress.unlocked.length - 1] ?? REGIONS[0]!.id;
     }
@@ -103,7 +107,7 @@ export class StageSelectScene extends Phaser.Scene {
   }
 
   private setScroll(v: number): void {
-    const content = REGIONS.length * (CARD_H + 14);
+    const content = (REGIONS.length + 1) * (CARD_H + 14);
     const view = VIEW_BOTTOM - CARD_TOP;
     this.scroll = Phaser.Math.Clamp(v, 0, Math.max(0, content - view + 10));
     this.root.y = -this.scroll;
@@ -136,9 +140,10 @@ export class StageSelectScene extends Phaser.Scene {
   private renderCards(): void {
     this.root.removeAll(true);
     const save = getSave();
-    REGIONS.forEach((r, i) => {
+    [...REGIONS, ENDLESS].forEach((r, i) => {
       const y = CARD_TOP + i * (CARD_H + 14) + CARD_H / 2;
-      const unlocked = save.progress.unlocked.includes(r.id);
+      const endless = r.id === ENDLESS.id;
+      const unlocked = endless ? endlessUnlocked(save) : save.progress.unlocked.includes(r.id);
       const sel = session.regionId === r.id;
       const card = panel(this, W / 2, y, W - 30, CARD_H, 'panel').setInteractive({
         useHandCursor: true,
@@ -166,7 +171,9 @@ export class StageSelectScene extends Phaser.Scene {
           .text(
             48,
             y - 100,
-            `敵HP×${r.power.hp} 攻撃×${r.power.atk}\nレア以上 +${Math.round(r.loot.rarityShift * 100)}%`,
+            endless
+              ? `敵HP×${r.power.hp}〜 攻撃×${r.power.atk}〜\n装備・ゴールドは出ない`
+              : `敵HP×${r.power.hp} 攻撃×${r.power.atk}\nレア以上 +${Math.round(r.loot.rarityShift * 100)}%`,
             {
               ...textStyle(15, COLORS.gold, false),
               backgroundColor: '#0c0a12cc',
@@ -180,11 +187,11 @@ export class StageSelectScene extends Phaser.Scene {
         this.add.text(
           270,
           y - 120,
-          `${i + 1}. ${r.name}`,
-          textStyle(38, sel ? '#ffe27a' : COLORS.text),
+          endless ? `∞ ${r.name}` : `${i + 1}. ${r.name}`,
+          textStyle(endless ? 30 : 38, sel ? '#ffe27a' : COLORS.text),
         ),
       );
-      const best = save.progress.best[r.id];
+      const best = endless ? save.endless.bestLoop : save.progress.best[r.id];
       // ★: 3・6・10周目のボスを倒すごとに1つ（★ごとに攻撃+3%・最大HP+5）
       const stars = regionStars(save, r.id);
       const starText = '★'.repeat(stars) + '☆'.repeat(PROGRESS.starLoops.length - stars);
@@ -194,15 +201,31 @@ export class StageSelectScene extends Phaser.Scene {
         y - 96,
         220,
         'star',
-        best ? `最高${best}周 ${starText}` : `未到達 ${starText}`,
+        endless
+          ? best
+            ? `最高${best}周`
+            : '記録なし'
+          : best
+            ? `最高${best}周 ${starText}`
+            : `未到達 ${starText}`,
         best ? COLORS.gold : COLORS.textDim,
       );
       this.root.add(pill);
       this.root.add(
         this.add.text(270, y - 66, `雑魚: ${r.mobTrend}`, textStyle(19, COLORS.textDim, false)),
       );
+      // エンドレス: ボスは全地域から。自己ベストのダメージ
+      if (endless)
+        this.root.add(
+          this.add.text(
+            270,
+            y - 30,
+            `ボス: 全地域から毎周ランダム\n最高ダメージ ${save.endless.bestDamage.toLocaleString('ja-JP')}`,
+            { ...textStyle(19, COLORS.text, false), lineSpacing: 4 },
+          ),
+        );
       // 周回ごとのボス候補（出撃ごとに抽選）。アイコンをタップで特徴
-      r.bossPools.forEach((pool, k) => {
+      (endless ? [] : r.bossPools).forEach((pool, k) => {
         const cx = 330 + k * 140;
         const by = y + 20;
         this.root.add(
@@ -248,12 +271,14 @@ export class StageSelectScene extends Phaser.Scene {
           y + 70,
           picked
             ? `${getEnemyDef(picked).name}: ${BOSS_TRAITS[picked] ?? ''}`
-            : r.resistNote
-              ? `敵の得意・苦手: ${r.resistNote}。ボスはアイコンをタップで特徴`
-              : `ボスは出撃ごとに候補から選ばれます（${regionBosses(r).length}種）。アイコンをタップで特徴`,
+            : endless
+              ? '装備とゴールドは出ない。到達周回と与えたダメージで自己ベストを目指す'
+              : r.resistNote
+                ? `${r.resistNote}（ボスはアイコンをタップで特徴）`
+                : `ボスは出撃ごとに候補から選ばれます（${regionBosses(r).length}種）。アイコンをタップで特徴`,
           {
             ...textStyle(17, picked ? COLORS.text : COLORS.textDim, false),
-            wordWrap: { width: W - 90 },
+            wordWrap: { width: W - 90, useAdvancedWrap: true },
             lineSpacing: 2,
           },
         ),
@@ -263,7 +288,12 @@ export class StageSelectScene extends Phaser.Scene {
         this.root.add(icon(this, W / 2, y - 30, 'lock', 5));
         this.root.add(
           this.add
-            .text(W / 2, y + 40, '前の地域の3周目のボスを倒すと開放', textStyle(24, COLORS.textDim))
+            .text(
+              W / 2,
+              y + 40,
+              endless ? '魔王城で魔王を倒すと開放' : '前の地域の3周目のボスを倒すと開放',
+              textStyle(24, COLORS.textDim),
+            )
             .setOrigin(0.5),
         );
       }

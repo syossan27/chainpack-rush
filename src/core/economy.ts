@@ -16,7 +16,7 @@ import {
   type UpgradeId,
 } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
-import { REGIONS } from '../data/regions';
+import { ENDLESS, REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
 import { allowsRarity, createItem, lineItemFor, rerollExits, rollLoot } from './loot';
@@ -28,6 +28,11 @@ import type { Dir, ItemInstance, Rarity } from './types';
 export function regionStars(save: SaveData, regionId: string): number {
   const best = save.progress.best[regionId] ?? 0;
   return PROGRESS.starLoops.filter((l) => best > l).length;
+}
+
+/** エンドレスが開放されているか（魔王城の3周目のボス＝魔王を倒した） */
+export function endlessUnlocked(save: SaveData): boolean {
+  return regionStars(save, 'demon_castle') >= 1;
 }
 
 /** 全地域の★の合計 */
@@ -448,6 +453,17 @@ export function recordRun(
   save.gold += result.stats.gold ?? 0;
   save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
   save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
+  // エンドレス: 地域の記録・開放とは別に、自己ベスト（到達周回、同じなら合計ダメージ）
+  if (regionId === ENDLESS.id) {
+    const e = save.endless;
+    const dmg = Math.round(result.stats.totalDamage);
+    if (
+      result.reachedLoop > e.bestLoop ||
+      (result.reachedLoop === e.bestLoop && dmg > e.bestDamage)
+    )
+      save.endless = { bestLoop: result.reachedLoop, bestDamage: dmg };
+    return { unlocked: null };
+  }
   save.progress.best[regionId] = Math.max(save.progress.best[regionId] ?? 0, result.reachedLoop);
   let unlocked: string | null = null;
   if (result.stats.bossesDefeated >= PROGRESS.unlockLoop) {

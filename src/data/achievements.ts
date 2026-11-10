@@ -9,7 +9,8 @@ export type AchievementCheck =
   | { kind: 'own'; rarity: 'epic' | 'legendary' | 'artifact' }
   | { kind: 'runBosses'; n: number }
   | { kind: 'runLoop'; n: number }
-  | { kind: 'runSweeps'; n: number };
+  | { kind: 'runSweeps'; n: number }
+  | { kind: 'endlessLoop'; n: number };
 
 export interface AchievementDef {
   id: string;
@@ -173,6 +174,41 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     desc: 'アーティファクトを手に入れる',
     reward: 1200,
     check: { kind: 'own', rarity: 'artifact' },
+  },
+  {
+    id: 'demon_lord',
+    name: '魔王討伐',
+    desc: '魔王城で魔王を倒す（エンドレスが開放）',
+    reward: 5000,
+    check: { kind: 'unlocked', region: 'endless' },
+  },
+  {
+    id: 'endless_5',
+    name: '果てなき道',
+    desc: 'エンドレスで5周目に着く',
+    reward: 3000,
+    check: { kind: 'endlessLoop', n: 5 },
+  },
+  {
+    id: 'endless_10',
+    name: '深淵へ',
+    desc: 'エンドレスで10周目に着く',
+    reward: 8000,
+    check: { kind: 'endlessLoop', n: 10 },
+  },
+  {
+    id: 'endless_15',
+    name: '伝説の勇者',
+    desc: 'エンドレスで15周目に着く',
+    reward: 20000,
+    check: { kind: 'endlessLoop', n: 15 },
+  },
+  {
+    id: 'endless_20',
+    name: '終わりなき者',
+    desc: 'エンドレスで20周目に着く',
+    reward: 50000,
+    check: { kind: 'endlessLoop', n: 20 },
   },
 ];
 

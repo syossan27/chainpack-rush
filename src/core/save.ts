@@ -35,6 +35,8 @@ export interface SaveData {
   tutorialSeen: string[];
   /** 達成した実績（data/achievements.ts の id） */
   achievements: string[];
+  /** エンドレスの自己ベスト（到達周回と、その中で一番多かった合計ダメージ） */
+  endless: { bestLoop: number; bestDamage: number };
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
   adLog: { date: string; counts: Record<string, number> };
   settings: {
@@ -122,6 +124,7 @@ export function createInitialSave(): SaveData {
     premium: false,
     tutorialSeen: [],
     achievements: [],
+    endless: { bestLoop: 0, bestDamage: 0 },
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -251,6 +254,10 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         : isObj(data.stats) && isNum(data.stats.runs) && data.stats.runs > 0
           ? ['home', 'stage', 'run', 'demoEnd', 'result', 'loadout', 'smith', 'demo']
           : [],
+      endless:
+        isObj(data.endless) && isNum(data.endless.bestLoop) && isNum(data.endless.bestDamage)
+          ? { bestLoop: data.endless.bestLoop, bestDamage: data.endless.bestDamage }
+          : { bestLoop: 0, bestDamage: 0 },
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],

@@ -15,7 +15,10 @@ function met(a: AchievementDef, save: SaveData, run: RunResult | null): boolean 
     case 'maxDamage':
       return save.stats.maxDamage >= c.n;
     case 'unlocked':
-      return save.progress.unlocked.includes(c.region);
+      // エンドレスは地域の開放ではなく、魔王城の★1（魔王の撃破）で開く
+      return c.region === 'endless'
+        ? (save.progress.best.demon_castle ?? 0) > 3
+        : save.progress.unlocked.includes(c.region);
     case 'techs':
       return save.discoveredTechs.length >= (c.n === 0 ? TECHNIQUES.length : c.n);
     case 'own':
@@ -30,6 +33,8 @@ function met(a: AchievementDef, save: SaveData, run: RunResult | null): boolean 
       return !!run && run.reachedLoop >= c.n;
     case 'runSweeps':
       return !!run && run.stats.sweeps >= c.n;
+    case 'endlessLoop':
+      return save.endless.bestLoop >= c.n;
   }
 }
 

@@ -103,7 +103,7 @@ export class ResultScene extends Phaser.Scene {
     const prev = {
       step: save.stats.maxStep,
       damage: save.stats.maxDamage,
-      loop: save.progress.best[regionId] ?? 0,
+      loop: regionId === 'endless' ? save.endless.bestLoop : (save.progress.best[regionId] ?? 0),
       first: save.stats.runs === 0,
       stars: regionStars(save, regionId),
     };
@@ -231,7 +231,9 @@ export class ResultScene extends Phaser.Scene {
         items.length === 0
           ? demo
             ? '借りた伝説の装備は、お返ししたよ\n（体験なので戦利品はなし）'
-            : '戦利品なし'
+            : regionId === 'endless'
+              ? `エンドレスは装備が出ません\n自己ベスト ${save.endless.bestLoop}周目・ダメージ ${save.endless.bestDamage.toLocaleString('ja-JP')}`
+              : '戦利品なし'
           : '',
       );
       if (items.length === 0) return;
