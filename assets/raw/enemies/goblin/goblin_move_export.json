@@ -12,5 +12,5 @@
   "fps": 10,
   "loop": true,
   "groundY": 55,
-  "note": "Walk toward the left, in-place loop. PixelLab animate-pixminimax from goblin_v3c (take mm_d, seed 83071, frames 0,1,2,4,6,7 of 9). Supporting feet planted to y=55 by a 1px vertical shift only; no hand-redrawn legs and no X recentering."
+  "note": "Walk toward the left, in-place loop. PixelLab animate-pixminimax from goblin_v3c (take mm_d, seed 83071, frames 0,1,2,4,6,7 of 9). Supporting feet planted to y=55 by a 1px vertical shift only; no hand-redrawn legs and no X recentering.（顔が右を向いていたので、左右反転して左向きにした。x → 64−x で原点 x=32 は変わらない）"
 }
