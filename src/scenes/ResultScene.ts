@@ -107,14 +107,25 @@ export class ResultScene extends Phaser.Scene {
       .setDepth(10);
     let reveal: ChestReveal | null = null;
     const emptyText = this.add.text(W / 2, 760, '', textStyle(28, COLORS.textDim)).setOrigin(0.5);
-    const showLoot = (items: ItemInstance[], sold: readonly string[]) => {
+    const byRarity = (list: ItemInstance[]) =>
+      list.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
+    /** first: 開けた状態で並べる分（最初の戦利品）、bonus: 宝箱から開ける広告のご褒美の分 */
+    const showLoot = (
+      first: ItemInstance[],
+      bonus: ItemInstance[],
+      sold: readonly string[],
+      preopened: boolean,
+    ) => {
       reveal?.root.destroy();
       reveal = null;
+      const items = [...byRarity(first), ...byRarity(bonus)];
       emptyText.setText(items.length === 0 ? '戦利品なし' : '');
       if (items.length === 0) return;
-      const queue = items.slice().sort((a, b) => ORDER[a.rarity] - ORDER[b.rarity]);
+      const queue = items;
       reveal = new ChestReveal(this, queue, {
         sold: new Set(sold),
+        preopened: preopened ? first.length : 0,
+        bonus: new Set(bonus.map((i) => i.uid)),
         position: (i) => ({
           x: (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2,
           y: 700 + Math.floor(i / COLS) * (ICON + 34),
@@ -130,7 +141,7 @@ export class ResultScene extends Phaser.Scene {
     this.input.on('pointerup', () => {
       if (reveal && !reveal.finished) reveal.fastForward();
     });
-    showLoot(added, auto.uids);
+    showLoot(added, [], auto.uids, false);
 
     // 報酬つき広告: 戦利品2倍（このリザルトで1回・1日の回数まで。プレミアムは広告なし）
     let doubled = false;
@@ -174,9 +185,9 @@ export class ResultScene extends Phaser.Scene {
         360,
       ).setScale(0.8);
       lootNote.setText(
-        sold.uids.length > 0 ? `2倍の分 自動売却 ${sold.uids.length}個 +${sold.gold}G` : '',
+        `広告のボーナス +${more.length}個${sold.uids.length > 0 ? `（自動売却 ${sold.uids.length}個 +${sold.gold}G）` : ''}`,
       );
-      showLoot(more, sold.uids);
+      showLoot(added, more, [...auto.uids, ...sold.uids], true);
       refreshExtra();
     };
     refreshExtra();

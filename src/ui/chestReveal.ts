@@ -41,10 +41,14 @@ export interface ChestRevealOptions {
   gap?: number;
   /** 自動売却した装備（開けたあと暗くして「売却」と出す） */
   sold?: ReadonlySet<string>;
+  /** 先頭のこの数は、開けた状態ですぐ並べる（宝箱にしない） */
+  preopened?: number;
+  /** 広告のご褒美でもらった装備（緑の縁と、右上に「広告」の札） */
+  bonus?: ReadonlySet<string>;
 }
 
 export class ChestReveal {
-  private readonly chests: Phaser.GameObjects.Image[] = [];
+  private readonly chests: (Phaser.GameObjects.Image | null)[] = [];
   private next = 0;
   private busy = false;
   private fast = false;
@@ -57,7 +61,13 @@ export class ChestReveal {
     private readonly opts: ChestRevealOptions,
   ) {
     this.root = scene.add.container(0, 0);
+    const pre = Math.min(items.length, opts.preopened ?? 0);
     items.forEach((it, i) => {
+      if (i < pre) {
+        this.chests.push(null);
+        this.showItem(i, it, false);
+        return;
+      }
       const p = opts.position(i);
       const t = tierOf(it);
       const chest = scene.add.image(p.x, p.y, iconTex('chest')).setScale(opts.iconSize / 20);
@@ -95,8 +105,13 @@ export class ChestReveal {
       return;
     }
     this.next++;
+    const chest = this.chests[i];
+    if (!chest) {
+      // 開けた状態で並べてあるものは飛ばす
+      this.openNext();
+      return;
+    }
     this.busy = true;
-    const chest = this.chests[i]!;
     const t = TIER[tierOf(it)];
     const hold = this.fast ? 0 : t.hold;
     if (hold > 0) {
@@ -127,10 +142,10 @@ export class ChestReveal {
 
   private burst(i: number, it: ItemInstance): void {
     const scene = this.scene;
-    const chest = this.chests[i]!;
+    const chest = this.chests[i];
     const x = this.opts.position(i).x;
     const y = this.opts.position(i).y;
-    chest.destroy();
+    chest?.destroy();
     const tier = tierOf(it);
     const t = TIER[tier];
     const color = tier === 'artifact' ? 0xff8ce8 : rarityColor(it.rarity);
@@ -237,7 +252,19 @@ export class ChestReveal {
         hapticMedium();
       } else sfx(tier === 'rare' ? 'openRare' : 'open');
     }
-    // 中身
+    this.showItem(i, it, big);
+    const gap = this.fast ? 40 : (this.opts.gap ?? 300) + (t.pillar ? 250 : 0);
+    scene.time.delayedCall(gap, () => {
+      this.busy = false;
+      this.openNext();
+    });
+  }
+
+  /** 中身（装備のアイコン・名前・売却・ボーナスの札）。big なら弾けて出る */
+  private showItem(i: number, it: ItemInstance, big: boolean): void {
+    const scene = this.scene;
+    const { x, y } = this.opts.position(i);
+    const tier = tierOf(it);
     const icon = new ItemIcon(scene, x, y, it, this.opts.iconSize);
     this.root.add(icon);
     icon.setInteractive({ useHandCursor: true });
@@ -292,10 +319,24 @@ export class ChestReveal {
         });
       }
     }
-    const gap = this.fast ? 40 : (this.opts.gap ?? 300) + (t.pillar ? 250 : 0);
-    scene.time.delayedCall(gap, () => {
-      this.busy = false;
-      this.openNext();
-    });
+    // 広告のご褒美でもらった装備: 緑の縁と、右上の角に「広告」の札（上の出口の矢印にかからない位置）
+    if (this.opts.bonus?.has(it.uid)) {
+      const s = this.opts.iconSize;
+      const ring = scene.add
+        .rectangle(x, y, s - 2, s - 2)
+        .setStrokeStyle(4, 0x6ee06a)
+        .setFillStyle(0x6ee06a, 0.08);
+      this.root.addAt(ring, 0);
+      const tag = scene.add
+        .text(x + s / 2 + 2, y - s / 2 + 4, '広告', {
+          ...textStyle(15, '#ffffff'),
+          stroke: '#1a5a1a',
+          strokeThickness: 3,
+          backgroundColor: '#3aa83a',
+          padding: { x: 4, y: 1 },
+        })
+        .setOrigin(1, 0.5);
+      this.root.add(tag);
+    }
   }
 }
