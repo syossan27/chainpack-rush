@@ -134,7 +134,10 @@ describe('combat', () => {
     const c = new Combat({ seed: 1, regionId: 'rampart', loadout, items, hero: BASE_HERO_STATS });
     // 雑魚を消して騎士を目の前に置く
     for (const e of c.enemies) if (!e.def.boss) e.alive = false;
+    // ボスは抽選なので、鉄の騎士に差し替える
     const knight = c.enemies.find((e) => e.def.boss)!;
+    knight.def = getEnemyDef('iron_knight');
+    knight.defId = 'iron_knight';
     knight.x = c.heroX + 50;
     knight.aggro = true;
     c.atb = 99;
@@ -456,6 +459,10 @@ describe('接敵と連鎖の打ち切り', () => {
       hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
     });
     for (const e of c.enemies) if (!e.def.boss) e.alive = false;
+    // 取り巻きを呼ばないボス（鉄の騎士）に差し替える
+    const boss = c.enemies.find((e) => e.def.boss)!;
+    boss.def = getEnemyDef('iron_knight');
+    boss.defId = 'iron_knight';
     for (let i = 0; i < 60 * 8; i++) c.step();
     const knight = c.enemies.find((e) => e.def.boss)!;
     expect(knight.standOffset).toBe(FIELD.bossSoloStand);
