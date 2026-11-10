@@ -12,5 +12,5 @@
   "fps": 10,
   "loop": false,
   "groundY": 87,
-  "note": "岩のゴーレム。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。"
+  "note": "岩のゴーレム。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。（修正）頭と目が右を向いていたので、待機・撃破を左右反転し、攻撃は反転した待機から作り直した（左へ大きく殴る。seed 42、9コマ中 2,3,4,5,6,8）"
 }
