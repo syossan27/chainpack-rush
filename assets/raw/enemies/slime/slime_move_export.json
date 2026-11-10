@@ -1,0 +1,15 @@
+{
+  "file": "slime_move.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.875,
+  "originPx": [
+    32,
+    56
+  ],
+  "fps": 10,
+  "loop": true,
+  "groundY": 55
+}

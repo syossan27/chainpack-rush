@@ -170,9 +170,11 @@ export class FieldView {
         s.id = e.id;
         this.byId.set(e.id, s);
         const def = UNIT_SPRITES[e.defId]!;
+        // 本素材の静止画はアニメの足元（待機→移動→走り）。仮素材だけ SpriteDef の下端
+        const origin = stillOrigin(def);
         s.sprite
           .setTexture(def.key)
-          .setOrigin(def.originX, def.originY)
+          .setOrigin(origin.originX, origin.originY)
           .setScale(def.displayScale)
           .setFlipX(true);
         s.sprite.setVisible(true);

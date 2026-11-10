@@ -281,7 +281,57 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  slime: unit('slime', SLIME, 48),
+  // 仮素材は雑魚の共通サイズ 48。本素材は勇者に合わせて 64px（攻撃だけ 96×64）。
+  // 敵の描画はまだ静止画なので、待機の1コマ目が出る。move / attack / death は登録のみ。
+  slime: {
+    ...unit('slime', SLIME, 48),
+    anims: {
+      // 基本ポーズ。export はないが、移動・撃破と同じ 64×64・原点 (32, 56)、地面 y=55
+      idle: {
+        file: 'enemies/slime/slime_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で上下する。左への移動はゲーム側。地面 y=55、体の位置は x=32 で全コマ固定
+      move: {
+        file: 'enemies/slime/slime_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // 左へ踏み込む。幅 96 なので原点 x=64。コマごとに寄せず、64×64 にも切らない
+      attack: {
+        file: 'enemies/slime/slime_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。最終コマは空ではなく、うすい色が残る。再生後はスプライトを消す
+      death: {
+        file: 'enemies/slime/slime_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   bat: unit('bat', BAT, 48),
   goblin: unit('goblin', GOBLIN, 48),
   armor: unit('armor', ARMOR, 48),

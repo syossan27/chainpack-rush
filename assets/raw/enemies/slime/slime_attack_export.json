@@ -1,0 +1,15 @@
+{
+  "file": "slime_attack.png",
+  "frameWidth": 96,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.6666666666666666,
+  "originY": 0.875,
+  "originPx": [
+    64,
+    56
+  ],
+  "fps": 12,
+  "loop": false,
+  "groundY": 55
+}
