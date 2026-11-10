@@ -188,7 +188,7 @@ export const BOSS = {
   // 取り巻きの数と呼ぶ間隔は敵の定義（escortCount / summonInterval）。初回はまとめて呼ぶ
   regenPerSec: 0.02, // 呪術王: 毎秒、最大HPの2%を回復
   enrageAt: 0.5, // ゴーレム: HPがこの割合を切ると
-  enrageInterval: 0.5, // 攻撃間隔×0.5
+  enrageInterval: 0.6, // 攻撃間隔×0.6
   enrageAtk: 1.3, // 攻撃力×1.3
 } as const;
 

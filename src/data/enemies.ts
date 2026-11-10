@@ -214,7 +214,7 @@ export const ENEMY_DEFS: Record<string, EnemyDef> = {
   golem: {
     id: 'golem',
     name: '岩のゴーレム',
-    hp: 3500,
+    hp: 3000,
     atk: 16,
     interval: 3.0,
     backRow: false,
@@ -271,8 +271,8 @@ export const ENEMY_DEFS: Record<string, EnemyDef> = {
   fire_dragon: {
     id: 'fire_dragon',
     name: '炎竜',
-    hp: 4000,
-    atk: 18,
+    hp: 3200,
+    atk: 15,
     interval: 2.2,
     backRow: false,
     boss: true,
