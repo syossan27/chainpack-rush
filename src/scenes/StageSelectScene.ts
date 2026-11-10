@@ -181,7 +181,12 @@ export class StageSelectScene extends Phaser.Scene {
           this.root.add(frame);
           const sel = this.traitOf.get(r.id) === b;
           if (sel) this.root.add(this.add.circle(bx, by, size / 2 + 3).setStrokeStyle(3, 0xffd25a));
-          this.root.add(this.add.image(bx, by + 3, b).setScale((0.62 * size) / 84));
+          this.root.add(
+            this.add
+              .image(bx, by + 3, b)
+              .setScale((0.62 * size) / 84)
+              .setFlipX(!UNIT_SPRITES[b]?.facesLeft),
+          );
         });
         if (k < r.bossPools.length - 1)
           this.root.add(
@@ -233,13 +238,16 @@ export class StageSelectScene extends Phaser.Scene {
         .setScale(scale);
       this.root.add(img);
     }
+    // ボスは勇者の方（左）を向ける。本素材は左向きに描いてあり、仮素材は右向きなので反転する
     const boss = r.bossPools[0]![0]!;
+    const bossDef = UNIT_SPRITES[boss]!;
+    const bossOrigin = stillOrigin(bossDef);
     this.root.add(
       this.add
         .image(cx + 50, top + h - 12, boss)
-        .setOrigin(0.5, 1)
+        .setOrigin(bossOrigin.originX, bossOrigin.originY)
         .setScale(0.75)
-        .setFlipX(true),
+        .setFlipX(!bossDef.facesLeft),
     );
     const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
     this.root.add(
