@@ -27,8 +27,26 @@ import { showItemDetail } from '../ui/itemInfo';
 import { COLORS, H, W, textStyle } from '../ui/theme';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
-const ICON = 100;
-const COLS = 6;
+/** 戦利品を並べる枠（宝箱の箱の中）。数が多いほどアイコンを小さく、列を増やして収める */
+const LOOT_TOP = 652;
+const LOOT_BOTTOM = 1026;
+const LOOT_WIDTH = W - 50;
+
+export function lootLayout(n: number): {
+  icon: number;
+  cols: number;
+  rowH: number;
+  names: boolean;
+} {
+  for (let icon = 100; icon >= 40; icon -= 4) {
+    const cols = Math.max(1, Math.floor(LOOT_WIDTH / (icon + 8)));
+    // 小さいときは名前を出さない（重なるので）。名前はタップで見られる
+    const names = icon >= 76;
+    const rowH = icon + (names ? 34 : 10);
+    if (Math.ceil(n / cols) * rowH <= LOOT_BOTTOM - LOOT_TOP) return { icon, cols, rowH, names };
+  }
+  return { icon: 40, cols: Math.floor(LOOT_WIDTH / 48), rowH: 50, names: false };
+}
 
 export class ResultScene extends Phaser.Scene {
   private shake = true;
@@ -193,15 +211,17 @@ export class ResultScene extends Phaser.Scene {
       );
       if (items.length === 0) return;
       const queue = items;
+      const lay = lootLayout(queue.length);
       reveal = new ChestReveal(this, queue, {
         sold: new Set(sold),
         preopened: preopened ? first.length : 0,
         bonus: new Set(bonus.map((i) => i.uid)),
         position: (i) => ({
-          x: (W - COLS * (ICON + 8)) / 2 + (i % COLS) * (ICON + 8) + ICON / 2,
-          y: 700 + Math.floor(i / COLS) * (ICON + 34),
+          x: (W - lay.cols * (lay.icon + 8)) / 2 + (i % lay.cols) * (lay.icon + 8) + lay.icon / 2,
+          y: LOOT_TOP + lay.icon / 2 + Math.floor(i / lay.cols) * lay.rowH,
         }),
-        iconSize: ICON,
+        iconSize: lay.icon,
+        names: lay.names,
         shake: this.shake,
         onTapItem: (it) => showItemDetail(this, it),
         onDone: () => hint.setText('タップで能力を確認'),

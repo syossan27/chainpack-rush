@@ -43,6 +43,8 @@ export interface ChestRevealOptions {
   sold?: ReadonlySet<string>;
   /** 先頭のこの数は、開けた状態ですぐ並べる（宝箱にしない） */
   preopened?: number;
+  /** 装備の名前を下に出す（省略時は出す） */
+  names?: boolean;
   /** 広告のご褒美でもらった装備（緑の縁と、右上に「広告」の札） */
   bonus?: ReadonlySet<string>;
 }
@@ -274,10 +276,19 @@ export class ChestReveal {
     if (this.opts.sold?.has(it.uid)) {
       icon.setDimmed(true);
       const tag = scene.add
-        .text(x, y, '売却', textStyle(22, '#ffe27a'))
+        .text(
+          x,
+          y,
+          '売却',
+          textStyle(Math.min(22, Math.round(this.opts.iconSize * 0.22)), '#ffe27a'),
+        )
         .setOrigin(0.5)
         .setAngle(-12);
       this.root.add(tag);
+    }
+    if (this.opts.names === false) {
+      this.finishItem(i, it, icon, big);
+      return;
     }
     const name = scene.add
       .text(
@@ -288,6 +299,14 @@ export class ChestReveal {
       )
       .setOrigin(0.5, 0);
     this.root.add(name);
+    this.finishItem(i, it, icon, big);
+  }
+
+  /** 弾けて出る動きと、ボーナスの札 */
+  private finishItem(i: number, it: ItemInstance, icon: ItemIcon, big: boolean): void {
+    const scene = this.scene;
+    const { x, y } = this.opts.position(i);
+    const tier = tierOf(it);
     if (big) {
       icon.setScale(0.2);
       scene.tweens.add({
@@ -329,7 +348,7 @@ export class ChestReveal {
       this.root.addAt(ring, 0);
       const tag = scene.add
         .text(x + s / 2 + 2, y - s / 2 + 4, '広告', {
-          ...textStyle(15, '#ffffff'),
+          ...textStyle(Math.min(15, Math.max(11, Math.round(s * 0.15))), '#ffffff'),
           stroke: '#1a5a1a',
           strokeThickness: 3,
           backgroundColor: '#3aa83a',
