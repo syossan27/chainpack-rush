@@ -1,0 +1,16 @@
+{
+  "file": "wolf_move.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.875,
+  "originPx": [
+    32,
+    56
+  ],
+  "fps": 10,
+  "loop": true,
+  "groundY": 55,
+  "note": "その場で左へ小走り。PixelLab animate-pixminimax（seed 11、9コマ中 0,1,3,4,5,7）。足はすべて y=55。"
+}

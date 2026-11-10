@@ -528,7 +528,58 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
   big_slime: unit('big_slime', SLIME, 96),
   goblin_king: unit('goblin_king', GOBLIN, 96, { pixels: CROWN, x: 4, y: 0 }),
   iron_knight: unit('iron_knight', ARMOR, 96, { pixels: HELM_PLUME, x: 5, y: 0 }),
-  wolf: unit('wolf', WOLF, 48),
+  // 狼。PixelLab で作成（シンプルでポップな絵柄、8色）。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き。
+  // 数値は assets/raw/enemies/wolf/ の export どおり。コマの切り直し・中心の寄せはしない
+  wolf: {
+    ...unit('wolf', WOLF, 48),
+    bodyHeight: 43,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/wolf/wolf_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // その場で左へ小走り（移動そのものはゲーム側）
+      move: {
+        file: 'enemies/wolf/wolf_move.png',
+        frames: 6,
+        fps: 10,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+      // しゃがんで左へ飛びかかり、かみつく。幅 96 なので原点 x=64
+      attack: {
+        file: 'enemies/wolf/wolf_attack.png',
+        frames: 6,
+        fps: 12,
+        loop: false,
+        frameWidth: 96,
+        frameHeight: 64,
+        originX: 64 / 96,
+        originY: 56 / 64,
+      },
+      // ファイル名は defeat。はじき飛ばされて横たわり、目を閉じる（再生後に消す）
+      death: {
+        file: 'enemies/wolf/wolf_defeat.png',
+        frames: 6,
+        fps: 10,
+        loop: false,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   skeleton: unit('skeleton', SKELETON, 48),
   slime_mother: unit('slime_mother', recolor(SLIME, { e: 'p', E: 'm' }), 96, {
     pixels: CROWN,
