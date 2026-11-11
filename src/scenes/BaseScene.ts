@@ -37,7 +37,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
-import { resetTutorials, runTutorial } from '../ui/tutorial';
+import { resetTutorials, runTutorial, tutorialSeen } from '../ui/tutorial';
 import { showAchievements } from '../ui/achievementToast';
 import { checkAchievements } from '../core/achievements';
 import { ACHIEVEMENTS } from '../data/achievements';
@@ -1144,13 +1144,24 @@ export class BaseScene extends Phaser.Scene {
 
   /** 初めての人向けの案内（拠点・鍛冶屋） */
   private maybeTutorial(): void {
-    if (this.page === 'home')
+    if (this.page === 'home') {
       runTutorial(this, 'home', [
         {
           rect: { x: W / 2, y: 760, w: 476, h: 132 },
-          text: 'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」してみよう！',
+          text: 'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！',
+          onTap: () => this.scene.start('StageSelect'),
         },
       ]);
+      // After the first own run: guide to the loadout tab to place the loot
+      if (tutorialSeen('result') && !tutorialSeen('loadout'))
+        runTutorial(this, 'loadoutGo', [
+          {
+            rect: { x: (W / 5) * 4.5, y: H - TAB_BAR_H + 56, w: 128, h: 116 },
+            text: '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね',
+            onTap: () => goTab(this, 'loadout'),
+          },
+        ]);
+    }
     if (this.page === 'smith')
       runTutorial(this, 'smith', [
         {

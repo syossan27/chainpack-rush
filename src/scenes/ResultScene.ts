@@ -427,15 +427,16 @@ export class ResultScene extends Phaser.Scene {
     if (!challenge) session.regionId = regionId;
     // 挑戦は装備が出ないので、倉庫があふれていても同じ挑戦はできる
     const block = challenge ? null : sortieBlock(save);
+    const again = () => {
+      if (!block && challenge) session.challenge = challenge;
+      this.scene.start(block ? 'Loadout' : 'Run');
+    };
     new Button(
       this,
       W / 2 + 170,
       H - 110,
       block ? '配置へ' : demo ? '自分で出撃' : 'もう一度',
-      () => {
-        if (!block && challenge) session.challenge = challenge;
-        this.scene.start(block ? 'Loadout' : 'Run');
-      },
+      again,
       { width: 300, height: 100, fontSize: 34, skin: 'gold', icon: block ? 'bag' : 'swords' },
     );
     if (block)
@@ -455,7 +456,10 @@ export class ResultScene extends Phaser.Scene {
         },
         {
           rect: { x: W / 2 + 170, y: H - 110, w: 312, h: 112 },
-          text: 'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！',
+          text: block
+            ? 'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！'
+            : 'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、いつかこの姿に！\n「自分で出撃」を押してね',
+          onTap: again,
         },
       ]);
       return;
@@ -463,11 +467,15 @@ export class ResultScene extends Phaser.Scene {
     runTutorial(this, 'result', [
       {
         rect: { x: W / 2, y: 850, w: W - 26, h: 424 },
-        text: '宝箱から装備をゲット！\n開いたあとにタップすると、能力が見られるよ',
+        text:
+          added.length > 0
+            ? '宝箱から装備をゲット！\n開いたあとにタップすると、能力が見られるよ'
+            : '敵を倒すと、宝箱から装備が手に入るよ。\n開いたあとにタップすると、能力が見られる',
       },
       {
         rect: { x: W / 2 - 170, y: H - 110, w: 312, h: 112 },
-        text: '拠点の「配置」で、拾った装備を\nバックパックに置くと強くなるよ',
+        text: '拾った装備は、バックパックに置くと\n強くなるよ。まずは「拠点へ」戻ろう',
+        onTap: () => this.scene.start('Base'),
       },
     ]);
   }

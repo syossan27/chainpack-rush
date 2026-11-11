@@ -1,5 +1,7 @@
 // 初めて遊ぶ人向けの案内（各画面で1回だけ）。説明したい場所だけ明るく残し、矢印と吹き出しで示す。
 // 画面のどこかをタップすると次へ。「スキップ」で以降の案内をすべて出さない。
+// 最後のステップに onTap があれば「やってみよう」の案内: 光っている場所をタップしたときだけ進み、
+// そのボタンを押したのと同じことをする（ホーム → 地域 → 体験ラン → 結果 → 配置 と順に導く）。
 import Phaser from 'phaser';
 import { getSave, persist } from '../platform/store';
 import { sfx } from '../audio/sfx';
@@ -13,6 +15,7 @@ export const TUTORIAL_KEYS = [
   'run',
   'demoEnd',
   'result',
+  'loadoutGo',
   'loadout',
   'smith',
 ] as const;
@@ -33,6 +36,11 @@ export interface CoachStep {
   /** 明るく残す場所（中心と大きさ）。null なら画面全体を薄暗くするだけ */
   rect: { x: number; y: number; w: number; h: number } | null;
   text: string;
+  /**
+   * Action step (last step only, needs rect): advances only when the highlighted area is tapped,
+   * then closes the tutorial and runs this (the same handler as the button underneath)
+   */
+  onTap?: () => void;
 }
 
 export interface CoachOptions {
@@ -51,6 +59,9 @@ function markSeen(keys: readonly string[]): void {
   persist();
 }
 
+/** Tutorials currently on screen */
+const open = new Set<string>();
+
 /** まだ見ていなければ案内を出す。出したら true */
 export function runTutorial(
   scene: Phaser.Scene,
@@ -58,7 +69,10 @@ export function runTutorial(
   steps: CoachStep[],
   opts: CoachOptions = {},
 ): boolean {
-  if (tutorialSeen(key) || steps.length === 0) return false;
+  // Don't stack the same tutorial when the screen re-renders while it is open
+  if (tutorialSeen(key) || steps.length === 0 || open.has(key)) return false;
+  open.add(key);
+  scene.events.once('shutdown', () => open.delete(key));
   opts.onStart?.();
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -69,6 +83,7 @@ export function runTutorial(
   const finish = (skipAll: boolean) => {
     if (closed) return;
     closed = true;
+    open.delete(key);
     markSeen(skipAll ? TUTORIAL_KEYS : [key]);
     root.destroy();
     opts.onDone?.();
@@ -102,7 +117,17 @@ export function runTutorial(
       .setOrigin(0, 0)
       .setInteractive();
     root.add([...shades, catcher]);
-    catcher.on('pointerup', () => {
+    const action = r && step.onTap && index === steps.length - 1 ? step.onTap : null;
+    catcher.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (action && r) {
+        // Only the highlighted area works; other taps are ignored
+        const inside = Math.abs(p.x - r.x) <= r.w / 2 && Math.abs(p.y - r.y) <= r.h / 2;
+        if (!inside) return;
+        sfx('click');
+        finish(false);
+        action();
+        return;
+      }
       sfx('click');
       index++;
       if (index >= steps.length) finish(false);
@@ -156,7 +181,9 @@ export function runTutorial(
       .text(
         W / 2,
         bubbleY + bh / 2 - 22,
-        `タップで次へ（${index + 1}/${steps.length}）`,
+        action
+          ? `光っているところをタップ（${index + 1}/${steps.length}）`
+          : `タップで次へ（${index + 1}/${steps.length}）`,
         textStyle(16, '#7a5a30', false),
       )
       .setOrigin(0.5);

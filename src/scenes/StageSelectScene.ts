@@ -101,7 +101,9 @@ export class StageSelectScene extends Phaser.Scene {
       },
       {
         rect: { x: W - 140, y: H - 80, w: 256, h: 112 },
-        text: '準備ができたら「出撃！」',
+        text: block ? '準備ができたら「出撃！」' : '「出撃！」を押して、冒険に出よう！',
+        // Only make it an action when sortie is actually possible
+        ...(block ? {} : { onTap: () => this.scene.start('Run') }),
       },
     ]);
   }
