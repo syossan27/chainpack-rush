@@ -56,6 +56,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 function partOf(h: number, s: number, l: number): Part | null {
   if (l < 0.17 || l > 0.97) return null; // outlines and pure highlights
+  if (s >= 0.95 && l >= 0.45) return null; // vivid effect colors (the fire slash, sparks)
   if (s < 0.22) return 'armor';
   if (h >= 300 && s > 0.35) return 'cape';
   if (h >= 15 && h <= 52 && s > 0.4) return 'trim';

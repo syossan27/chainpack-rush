@@ -5,7 +5,13 @@ import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
 import { diagnose } from '../core/diagnose';
 import { getTechnique } from '../data/techniques';
-import { otherPresetUse, presetMark, presetName, switchPreset } from '../core/presets';
+import {
+  defaultPresetName,
+  otherPresetUse,
+  presetMark,
+  presetName,
+  switchPreset,
+} from '../core/presets';
 import {
   checkRules,
   challengeStart,
@@ -665,7 +671,8 @@ export class LoadoutScene extends Phaser.Scene {
     if (v === null) return;
     const name = v.trim().slice(0, 8);
     if (!name) return;
-    save.presets[i]!.name = name;
+    // Keeping the shown default name stores '' so it stays translated in every language
+    save.presets[i]!.name = name === defaultPresetName(i).slice(0, 8) ? '' : name;
     persist();
     this.buildPresetBar();
     this.refresh();

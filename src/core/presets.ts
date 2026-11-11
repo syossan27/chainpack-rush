@@ -67,9 +67,14 @@ export function switchPreset(save: SaveData, index: number): boolean {
   return true;
 }
 
-/** A preset's name in the current language (an empty name is the default '編成{n}') */
+/** The default name of preset i in the current language */
+export function defaultPresetName(i: number): string {
+  return t('編成{n}', { n: i + 1 });
+}
+
+/** A preset's name in the current language (an empty name is the default) */
 export function presetName(save: SaveData, i: number): string {
-  return save.presets[i]?.name || t('編成{n}', { n: i + 1 });
+  return save.presets[i]?.name || defaultPresetName(i);
 }
 
 /** 編成の印（一覧用）: 「編成2」など。複数なら「編成2+」 */

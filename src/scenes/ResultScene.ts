@@ -494,7 +494,9 @@ export class ResultScene extends Phaser.Scene {
       refreshExtra();
     };
     refreshExtra();
-    new Button(this, W / 2 - 170, H - 110, t('拠点へ'), () => this.scene.start('Base'), {
+    // After a challenge run, go back to the challenge page
+    const toBase = () => this.scene.start('Base', challenge ? { page: 'challenge' } : {});
+    new Button(this, W / 2 - 170, H - 110, t('拠点へ'), toBase, {
       width: 300,
       height: 100,
       fontSize: 34,
