@@ -40,7 +40,7 @@ for (const f of files) {
     if (!isScript(cp)) symbols.add(ch);
   }
 }
-const base = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-×%/.:,\'!?()[]{}&#"';
+const base = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-×%/.:;,\'!?()[]{}&#"~|=*<>_@$';
 const names = Object.values(LANG_NAMES).join('');
 
 const sets = Object.fromEntries(

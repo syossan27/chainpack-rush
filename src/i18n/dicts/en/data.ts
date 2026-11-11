@@ -30,7 +30,7 @@ export const DATA: Dict = {
   '6段目以降なら ダメージ +{v}%': 'Damage +{v}% from the 6th link on',
   弱点突き: 'Exploit',
   '状態がついた敵に ダメージ +{v}%': 'Damage +{v}% to enemies with a status',
-  ボス特効: 'Slayer',
+  ボス特効: 'Boss Slayer',
   'ボスに ダメージ +{v}%': 'Damage +{v}% to bosses',
   頑丈: 'Sturdy',
   '防御値 +{v}%': 'Defense +{v}%',
@@ -379,7 +379,7 @@ export const DATA: Dict = {
   '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）':
     'Resists Physical and Fire; weak to Thunder (Gargoyles: weak to Blunt)',
   エンドレス: 'Endless',
-  全地域の雑魚: 'Foes from every region',
+  全地域の雑魚: 'From every region',
   '周回ごとにいろいろな敵。装備とゴールドは出ない': 'New foes every loop. No gear or gold drops.',
 
   // src/data/techniques.ts
