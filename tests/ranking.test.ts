@@ -78,3 +78,20 @@ describe('ランキングの記録の確認', () => {
     );
   });
 });
+
+describe('シーズンの呼び名と報酬', () => {
+  it('挑戦は回、エンドレスは年月', async () => {
+    const { seasonLabel, endlessSeason } = await import('../src/core/ranking');
+    expect(seasonLabel('challenge-3')).toBe('挑戦 第4回');
+    expect(seasonLabel(`endless-${endlessSeason(Date.UTC(2026, 11, 5))}`)).toBe(
+      'エンドレス 2026年12月',
+    );
+  });
+  it('順位帯', async () => {
+    const { rewardBand } = await import('../src/core/names');
+    expect(rewardBand(1, 1000)).toBe('top1');
+    expect(rewardBand(50, 1000)).toBe('top10');
+    expect(rewardBand(400, 1000)).toBe('top50');
+    expect(rewardBand(900, 1000)).toBe('joined');
+  });
+});

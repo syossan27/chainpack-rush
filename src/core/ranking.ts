@@ -261,3 +261,22 @@ function validLoadout(lo: Loadout, items: ReadonlyMap<string, ItemInstance>): bo
   }
   return true;
 }
+
+/** シーズンの呼び名（'challenge-3' → '挑戦 第4回'、'endless-24323' → 'エンドレス 2026年12月'） */
+export function seasonLabel(sid: string): string {
+  const [mode, n] = sid.split('-');
+  const v = Number(n);
+  if (mode === 'challenge') return `挑戦 第${v + 1}回`;
+  return `エンドレス ${Math.floor(v / 12)}年${(v % 12) + 1}月`;
+}
+
+/** 順位帯ごとの報酬（強さに関係しないもの: ゴールドと称号） */
+export const RANK_REWARDS: Record<
+  'top1' | 'top10' | 'top50' | 'joined',
+  { gold: number; title: string | null; label: string }
+> = {
+  top1: { gold: 30000, title: '上位1%', label: '上位1%' },
+  top10: { gold: 15000, title: '上位10%', label: '上位10%' },
+  top50: { gold: 8000, title: '上位50%', label: '上位50%' },
+  joined: { gold: 3000, title: null, label: '参加' },
+};

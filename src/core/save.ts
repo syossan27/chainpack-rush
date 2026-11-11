@@ -1,4 +1,5 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
+import { validName } from './names';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
@@ -41,6 +42,12 @@ export interface SaveData {
   challenge: { period: number; best: number; bestLoop: number };
   /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
   challengeLoadout: Loadout | null;
+  /** ランキングに送った自己ベスト（シーズンごと。'challenge-3' → スコア） */
+  rankSent: Record<string, number>;
+  /** ランキングの報酬でもらった称号（新しい順） */
+  titles: string[];
+  /** ランキングの表示名（言葉の番号）。初めて送るときに決める */
+  rankName: { a: number; b: number; tag: number } | null;
   /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
   editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
@@ -133,6 +140,9 @@ export function createInitialSave(): SaveData {
     endless: { bestLoop: 0, bestDamage: 0 },
     challenge: { period: -1, best: 0, bestLoop: 0 },
     challengeLoadout: null,
+    rankSent: {},
+    titles: [],
+    rankName: null,
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -282,6 +292,16 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
             }
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
+      rankSent: isObj(data.rankSent)
+        ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
+            string,
+            number
+          >)
+        : {},
+      rankName: validName(data.rankName) ? data.rankName : null,
+      titles: Array.isArray(data.titles)
+        ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
+        : [],
       ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')

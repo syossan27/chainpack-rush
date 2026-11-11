@@ -32,6 +32,8 @@ import { buildShareImage, shareImage } from '../ui/shareCard';
 import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
 import { challengeLoadoutOf } from '../core/challengeLoadout';
+import { rankScore } from '../core/ranking';
+import { ensureName, rankingReady, submitScore } from '../platform/ranking';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 /** 戦利品を並べる枠（宝箱の箱の中）。数が多いほどアイコンを小さく、列を増やして収める */
@@ -165,6 +167,26 @@ export class ResultScene extends Phaser.Scene {
     );
     title.setScale(0.3).setAngle(-8);
     this.tweens.add({ targets: title, scale: 1, angle: 0, duration: 380, ease: 'Back.easeOut' });
+    // ランキング: シーズンの自己ベストなら送る（Firebase の設定が入るまでは何もしない）
+    const sub = last.submission;
+    if (sub && rankingReady()) {
+      const key = `${sub.mode}-${sub.season}`;
+      const score = rankScore(sub.mode, {
+        totalDamage: result.stats.totalDamage,
+        reachedLoop: result.reachedLoop,
+      });
+      if (score > (save.rankSent[key] ?? -1)) {
+        void ensureName(save)
+          .then(() => submitScore(sub))
+          .then((res) => {
+            if (res === 'best' || res === 'kept') {
+              save.rankSent[key] = Math.max(score, save.rankSent[key] ?? -1);
+              persist();
+            }
+            if (res === 'best' && this.scene.isActive()) this.flash('ランキングに記録しました');
+          });
+      }
+    }
     // 結果を画像にして共有（体験ランは借りた装備なので出さない）
     if (!demo) {
       const summary: ShareSummary = {

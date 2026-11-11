@@ -3,8 +3,15 @@ import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
-import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
-import { consumableSlots, heroStats, itemMap, refillConsumables } from '../core/economy';
+import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
+import { buildSubmission, endlessSeason } from '../core/ranking';
+import {
+  consumableSlots,
+  heroStats,
+  itemMap,
+  refillConsumables,
+  totalStars,
+} from '../core/economy';
 import { randomSeed } from '../core/rng';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
@@ -78,6 +85,8 @@ export class RunScene extends Phaser.Scene {
   private demo = false;
   /** 挑戦の出撃（なければ null） */
   private challenge: ChallengeSortie | null = null;
+  private cfg!: RunConfig;
+  private season = 0;
   /** 警報を出したボス（敵の id） */
   private warned = new Set<number>();
   /** このランで記録の更新を知らせたもの */
@@ -151,7 +160,7 @@ export class RunScene extends Phaser.Scene {
     this.loadout = loadout;
     this.items = demo ? demo.items : itemMap(save);
     this.shake = save.settings.shake;
-    this.combat = new Combat({
+    this.cfg = {
       seed: this.seed,
       regionId: this.regionId,
       loadout,
@@ -160,7 +169,10 @@ export class RunScene extends Phaser.Scene {
       noLoot: !!this.challenge,
       consumableSlots: demo ? 0 : consumableSlots(save),
       demo: this.demo,
-    });
+    };
+    this.combat = new Combat(this.cfg);
+    // ランキングのシーズン（出撃した時点で決める）
+    this.season = this.challenge ? this.challenge.period : endlessSeason(Date.now());
     this.acc = 0;
     this.paused = false;
     this.inspecting = false;
@@ -994,12 +1006,18 @@ export class RunScene extends Phaser.Scene {
     this.ending = true;
     sfx('runEnd');
     const r = this.combat.result();
+    // 挑戦とエンドレスは、ランキングに送れる記録を作っておく（送るのは自己ベストのときだけ）
+    const mode = this.challenge ? 'challenge' : this.regionId === 'endless' ? 'endless' : null;
+    const save = getSave();
     session.lastResult = {
       regionId: this.regionId,
       result: r,
       seed: this.seed,
       demo: this.demo,
       ...(this.challenge ? { challenge: this.challenge } : {}),
+      ...(mode && !this.demo
+        ? { submission: buildSubmission(mode, this.season, this.cfg, r, save, totalStars(save)) }
+        : {}),
     };
     this.showBanner(
       this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！',

@@ -60,6 +60,19 @@ import {
 } from '../core/challenge';
 import { session } from '../platform/session';
 import { devChallengeOpen } from '../platform/debug';
+import { RANK_REWARDS, endlessSeason, seasonLabel, type RankMode } from '../core/ranking';
+import { nameText } from '../core/names';
+import {
+  claimSeasonRewards,
+  fetchBoard,
+  fetchMyRank,
+  randomName,
+  rankingReady,
+  saveName,
+} from '../platform/ranking';
+
+/** ランキングの報酬は、起動してから1回だけ確かめる */
+let rewardsChecked = false;
 import { challengeLoadoutOf, fitToRules } from '../core/challengeLoadout';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
@@ -87,7 +100,8 @@ type Page =
   | 'help'
   | 'techs'
   | 'achievements'
-  | 'challenge';
+  | 'challenge'
+  | 'ranking';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -206,6 +220,8 @@ export class BaseScene extends Phaser.Scene {
   /** 拠点のオーラを毎フレーム動かす（描き直すたびに付け替える） */
   private auraTick: ((t: number, dt: number) => void) | null = null;
   private toast: Phaser.GameObjects.Text | null = null;
+  private rankTab: RankMode = 'challenge';
+  private rankGen = 0;
 
   constructor() {
     super('Base');
@@ -289,6 +305,9 @@ export class BaseScene extends Phaser.Scene {
       case 'challenge':
         this.renderChallenge();
         break;
+      case 'ranking':
+        this.renderRanking();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
     const tab: TabId =
@@ -296,7 +315,8 @@ export class BaseScene extends Phaser.Scene {
       this.page === 'help' ||
       this.page === 'techs' ||
       this.page === 'achievements' ||
-      this.page === 'challenge'
+      this.page === 'challenge' ||
+      this.page === 'ranking'
         ? 'home'
         : this.page;
     this.root.add(
@@ -380,6 +400,10 @@ export class BaseScene extends Phaser.Scene {
     );
     this.root.add(new RoundButton(this, 70, 480, 96, 'gear', '設定', () => this.go('settings')));
     this.root.add(new RoundButton(this, 70, 620, 96, 'book', 'ヘルプ', () => this.go('help')));
+    this.root.add(
+      new RoundButton(this, 70, 760, 96, 'star', 'ランキング', () => this.go('ranking')),
+    );
+    this.claimRankRewards();
     // 2週替わりの挑戦（始まるまでは予告）。開いていて今回まだ遊んでいなければ印を付ける
     const ch = currentChallenge(Date.now(), challengeStart(devChallengeOpen()));
     this.root.add(
@@ -419,10 +443,10 @@ export class BaseScene extends Phaser.Scene {
       this.root.add(
         this.add
           .text(
-            W / 2,
+            W / 2 + 40, // 左のランキングの文字に重ねない
             830,
             '倉庫があふれています。売却するまで出撃できません',
-            textStyle(20, COLORS.textWarn),
+            textStyle(19, COLORS.textWarn),
           )
           .setOrigin(0.5),
       );
@@ -1443,6 +1467,167 @@ export class BaseScene extends Phaser.Scene {
   }
 
   // ---- 実績 ----
+  // ---- ランキング（挑戦・エンドレス） ----
+  private renderRanking(): void {
+    const save = getSave();
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, 'ランキング', 420));
+    const now = Date.now();
+    const ch = currentChallenge(now, challengeStart(devChallengeOpen()));
+    const tabs: [RankMode, string][] = [
+      ['challenge', '2週替わりの挑戦'],
+      ['endless', 'エンドレス（月ごと）'],
+    ];
+    tabs.forEach(([m, label], i) =>
+      this.root.add(
+        new Button(
+          this,
+          W / 2 + (i === 0 ? -170 : 170),
+          CONTENT_TOP + 110,
+          label,
+          () => {
+            this.rankTab = m;
+            this.render();
+          },
+          { width: 320, height: 64, fontSize: 22, skin: this.rankTab === m ? 'gold' : 'gray' },
+        ),
+      ),
+    );
+    let y = CONTENT_TOP + 170;
+    const season = this.rankTab === 'challenge' ? (ch?.period ?? null) : endlessSeason(now);
+    const sid = season === null ? null : `${this.rankTab}-${season}`;
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          y,
+          sid ? seasonLabel(sid) : '挑戦はまだ始まっていません',
+          textStyle(26, '#ffe27a'),
+        )
+        .setOrigin(0.5, 0),
+    );
+    y += 44;
+    const myName = save.rankName ? nameText(save.rankName) : '（初めて記録を送るときに決まります）';
+    this.root.add(this.add.text(40, y, `あなたの名前: ${myName}`, textStyle(20, COLORS.textDim)));
+    if (rankingReady()) {
+      this.root.add(
+        new Button(
+          this,
+          W - 90,
+          y + 12,
+          '変える',
+          () => {
+            const n = randomName();
+            void saveName(n).then((ok) => {
+              if (ok === null) return this.showToast('つながりませんでした', true);
+              save.rankName = n;
+              persist();
+              if (this.page === 'ranking') this.render();
+            });
+          },
+          { width: 110, height: 48, fontSize: 20, skin: 'blue' },
+        ),
+      );
+    }
+    y += 50;
+    // 報酬の案内
+    const rw = RANK_REWARDS;
+    const note = `シーズンの終わりに: 上位1% ${rw.top1.gold}G＋称号 / 上位10% ${rw.top10.gold}G＋称号 / 上位50% ${rw.top50.gold}G＋称号 / 参加 ${rw.joined.gold}G`;
+    const bottom = CONTENT_BOTTOM - 70;
+    this.root.add(
+      this.add
+        .text(W / 2, CONTENT_BOTTOM - 36, note, {
+          ...textStyle(16, COLORS.textDim),
+          align: 'center',
+          wordWrap: { width: W - 60, useAdvancedWrap: true },
+        })
+        .setOrigin(0.5),
+    );
+    if (!rankingReady() || !sid || season === null) {
+      this.root.add(
+        this.add
+          .text(
+            W / 2,
+            (y + bottom) / 2,
+            !rankingReady()
+              ? 'ランキングは、サーバーの準備ができたら開きます'
+              : '挑戦が始まったら、ここに順位が出ます',
+            textStyle(22, COLORS.textDim),
+          )
+          .setOrigin(0.5),
+      );
+      return;
+    }
+    const loading = this.add
+      .text(W / 2, (y + bottom) / 2, '読み込み中…', textStyle(22, COLORS.textDim))
+      .setOrigin(0.5);
+    this.root.add(loading);
+    const gen = ++this.rankGen;
+    const mode = this.rankTab;
+    void Promise.all([fetchBoard(mode, season), fetchMyRank(mode, season)]).then(([board, me]) => {
+      if (gen !== this.rankGen || this.page !== 'ranking' || !loading.active) return;
+      loading.destroy();
+      if (!board && !me) {
+        this.root.add(
+          this.add
+            .text(W / 2, (y + bottom) / 2, 'つながりませんでした', textStyle(22, COLORS.textWarn))
+            .setOrigin(0.5),
+        );
+        return;
+      }
+      const total = me?.total ?? board?.total ?? 0;
+      const mine =
+        me?.rank != null
+          ? `あなた: ${me.rank}位 / ${total}人（上位${Math.max(1, Math.ceil((me.rank / Math.max(1, total)) * 100))}%）`
+          : `まだ記録がありません（参加 ${total}人）`;
+      this.root.add(this.add.text(W / 2, y, mine, textStyle(24, COLORS.text)).setOrigin(0.5, 0));
+      const top = y + 46;
+      const content = this.add.container(0, top);
+      const rows = board?.top ?? [];
+      rows.forEach((r, i) => {
+        const ry = i * 52;
+        const me2 = save.rankName && r.name === nameText(save.rankName);
+        content.add(panel(this, W / 2, ry + 24, W - 40, 48, me2 ? 'paper' : 'inset'));
+        const col = me2 ? '#5a3a20' : r.rank <= 3 ? '#ffe27a' : COLORS.text;
+        content.add(this.add.text(40, ry + 10, `${r.rank}`, textStyle(22, col)));
+        content.add(this.add.text(100, ry + 10, r.name, textStyle(20, col)));
+        const val =
+          mode === 'challenge'
+            ? Math.round(r.totalDamage).toLocaleString('ja-JP')
+            : `${r.reachedLoop}周・${Math.round(r.totalDamage).toLocaleString('ja-JP')}`;
+        content.add(this.add.text(W - 40, ry + 10, val, textStyle(20, col)).setOrigin(1, 0));
+      });
+      if (rows.length === 0)
+        content.add(
+          this.add
+            .text(W / 2, 40, 'まだ誰も記録していません', textStyle(22, COLORS.textDim))
+            .setOrigin(0.5),
+        );
+      this.addScroll(content, top, bottom, Math.max(rows.length * 52, 80), 'ranking');
+    });
+  }
+
+  /** 終わったシーズンの報酬を受け取る（起動して最初にホームを開いたとき） */
+  private claimRankRewards(): void {
+    if (rewardsChecked || !rankingReady()) return;
+    rewardsChecked = true;
+    void claimSeasonRewards().then((list) => {
+      if (list.length === 0) return;
+      const save = getSave();
+      const lines: string[] = [];
+      for (const r of list) {
+        const rw = RANK_REWARDS[r.band];
+        save.gold += rw.gold;
+        const label = seasonLabel(r.season);
+        if (rw.title) save.titles.unshift(`${label} ${rw.title}`);
+        lines.push(`${label}: ${r.rank}位 / ${r.total}人（${rw.label}）  +${rw.gold}G`);
+      }
+      save.titles = save.titles.slice(0, 50);
+      persist();
+      if (this.page === 'home') this.render();
+      confirmDialog(this, 'ランキングの報酬', lines.join('\n'), '受け取る', () => undefined);
+    });
+  }
+
   // ---- 2週替わりの挑戦 ----
   private renderChallenge(): void {
     const save = getSave();
