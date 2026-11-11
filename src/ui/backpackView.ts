@@ -4,9 +4,10 @@ import Phaser from 'phaser';
 import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
+import { t } from '../i18n';
 import { ItemIcon } from './itemIcon';
 import { SKIN } from './kit/skin';
-import { panel } from './kit/widgets';
+import { fitText, panel } from './kit/widgets';
 import { CELL_SIZE, COLORS, W, textStyle } from './theme';
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
@@ -187,7 +188,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
     const focused = focus !== null ? p.plans[focus] : undefined;
-    const known = (t: string | undefined) => !!t && discovered.has(t);
+    const known = (tech: string | undefined) => !!tech && discovered.has(tech);
     const onRoute = new Set(focused?.steps.map((s) => s.cell) ?? []);
     for (const [cell, icon] of this.icons) {
       icon.setDimmed(p.unreachable.has(cell));
@@ -227,18 +228,22 @@ export class BackpackView extends Phaser.GameObjects.Container {
       for (const s of plan.steps) {
         if (s.step === null) continue;
         const c = this.cellCenter(s.cell);
-        const t = this.scene.add
+        const label = this.scene.add
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
-            known(s.tech) ? `必殺 ${s.step}段` : `${s.step}段 ×${s.mult.toFixed(2)}`,
+            known(s.tech)
+              ? t('必殺 {step}段', { step: s.step })
+              : t('{step}段 ×{mult}', { step: s.step, mult: s.mult.toFixed(2) }),
             textStyle(
               focused ? 15 : 13,
               known(s.tech) ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0',
             ),
           )
           .setOrigin(1, 1);
-        this.labelLayer.add(t);
+        // About one cell wide (a longer translation shrinks instead of covering the next cell)
+        fitText(label, this.cell + 6);
+        this.labelLayer.add(label);
       }
       if (focused) {
         this.flowSpan = plan.duration;

@@ -2,6 +2,7 @@
 // 推定ダメージ（estimateRoute）が一番伸びる手を、理由つきで返す。答えをそのまま組むのではなく、次の一手を示す。
 // 防具には手を付けない（守りを削ってダメージを伸ばす提案はしない）。
 import { getItemDef } from '../data/items';
+import { t } from '../i18n';
 import { simulateChain } from './chain';
 import { estimateRoute } from './estimate';
 import type { ItemInstance, Loadout } from './types';
@@ -72,12 +73,12 @@ function candidates(stored: readonly ItemInstance[], limit: number): ItemInstanc
 /** なぜ伸びるかを、前後の違いから言葉にする */
 function explain(before: Score, after: Score, knownTech: boolean, kind: AdviceKind): string {
   if (after.techs > before.techs)
-    return knownTech ? '必殺技の並びがそろう！' : '何か特別なことが起きそうな並び…';
-  if (after.combos > before.combos) return '状態異常のコンボが増える';
-  if (after.maxStep > before.maxStep) return `連鎖が${after.maxStep}段まで長くなる`;
-  if (kind === 'replace') return 'もっと強い装備（レアリティ・攻撃力）に替える';
-  if (kind === 'place') return '空いているマスも連鎖に使う';
-  return '強い装備が後ろの段（倍率が高い）に来る';
+    return t(knownTech ? '必殺技の並びがそろう！' : '何か特別なことが起きそうな並び…');
+  if (after.combos > before.combos) return t('状態異常のコンボが増える');
+  if (after.maxStep > before.maxStep) return t('連鎖が{n}段まで長くなる', { n: after.maxStep });
+  if (kind === 'replace') return t('もっと強い装備（レアリティ・攻撃力）に替える');
+  if (kind === 'place') return t('空いているマスも連鎖に使う');
+  return t('強い装備が後ろの段（倍率が高い）に来る');
 }
 
 export function diagnose(
@@ -85,23 +86,27 @@ export function diagnose(
   inventory: readonly ItemInstance[],
   attackMult: number,
   discoveredTechs: readonly string[],
+  /** Only suggest stored items that pass this (e.g. the challenge rules) */
+  usable: (it: ItemInstance) => boolean = () => true,
 ): Diagnosis {
   const items = new Map(inventory.map((i) => [i.uid, i]));
   const base = score(loadout, items, attackMult);
   const placed = new Set(loadout.cells.filter((c): c is string => !!c));
   const consumableUids = new Set(loadout.consumables);
-  const stored = inventory.filter((i) => !placed.has(i.uid) && !consumableUids.has(i.uid));
+  const stored = inventory.filter(
+    (i) => !placed.has(i.uid) && !consumableUids.has(i.uid) && usable(i),
+  );
   const pool = candidates(stored, 30);
-  const name = (it: ItemInstance) => getItemDef(it.defId).name;
+  const name = (it: ItemInstance) => t(getItemDef(it.defId).name);
   const knownTech = discoveredTechs.length > 0;
   const minGain = Math.max(5, base.total * 0.03);
 
   type Try = { kind: AdviceKind; title: string; l: Loadout; cells: number[]; s?: Score };
   const best: Partial<Record<AdviceKind, Try & { s: Score }>> = {};
-  const consider = (t: Try) => {
-    const s = score(t.l, items, attackMult);
-    const cur = best[t.kind];
-    if (!cur || s.total > cur.s.total) best[t.kind] = { ...t, s };
+  const consider = (cand: Try) => {
+    const s = score(cand.l, items, attackMult);
+    const cur = best[cand.kind];
+    if (!cur || s.total > cur.s.total) best[cand.kind] = { ...cand, s };
   };
   const withCells = (cells: (string | null)[]): Loadout => ({ ...loadout, cells });
 
@@ -119,7 +124,10 @@ export function diagnose(
       cells[B.c] = A.u;
       consider({
         kind: 'swap',
-        title: `「${name(items.get(A.u!)!)}」と「${name(items.get(B.u!)!)}」を入れ替える`,
+        title: t('「{a}」と「{b}」を入れ替える', {
+          a: name(items.get(A.u!)!),
+          b: name(items.get(B.u!)!),
+        }),
         l: withCells(cells),
         cells: [A.c, B.c],
       });
@@ -131,7 +139,7 @@ export function diagnose(
       cells[x.c] = it.uid;
       consider({
         kind: 'replace',
-        title: `「${name(items.get(x.u!)!)}」を倉庫の「${name(it)}」に置きかえる`,
+        title: t('「{a}」を倉庫の「{b}」に置きかえる', { a: name(items.get(x.u!)!), b: name(it) }),
         l: withCells(cells),
         cells: [x.c],
       });
@@ -144,7 +152,7 @@ export function diagnose(
       cells[c] = it.uid;
       consider({
         kind: 'place',
-        title: `空いているマスに「${name(it)}」を置く`,
+        title: t('空いているマスに「{item}」を置く', { item: name(it) }),
         l: withCells(cells),
         cells: [c],
       });
@@ -152,17 +160,17 @@ export function diagnose(
   });
 
   const advices: Advice[] = [];
-  for (const t of Object.values(best)) {
-    if (!t) continue;
-    const gain = t.s.total - base.total;
+  for (const cand of Object.values(best)) {
+    if (!cand) continue;
+    const gain = cand.s.total - base.total;
     if (gain < minGain) continue;
     advices.push({
-      kind: t.kind,
-      title: t.title,
-      reason: explain(base, t.s, knownTech, t.kind),
+      kind: cand.kind,
+      title: cand.title,
+      reason: explain(base, cand.s, knownTech, cand.kind),
       gain,
-      apply: t.l,
-      cells: t.cells,
+      apply: cand.l,
+      cells: cand.cells,
     });
   }
   advices.sort((a, b) => b.gain - a.gain);
@@ -173,8 +181,8 @@ export function diagnose(
   if (unreached.length > 0)
     advices.push({
       kind: 'unreached',
-      title: `どの起点からも届いていない装備が${unreached.length}個`,
-      reason: '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）',
+      title: t('どの起点からも届いていない装備が{n}個', { n: unreached.length }),
+      reason: t('起点から矢印をたどって、つながる向きに置き直そう（光っているマス）'),
       gain: 0,
       apply: null,
       cells: unreached,
@@ -183,8 +191,11 @@ export function diagnose(
   if (short >= 0 && preview.plans.length > 1)
     advices.push({
       kind: 'short',
-      title: `起点${short + 1}の連鎖が${preview.plans[short]!.maxStep}段で止まっている`,
-      reason: '長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手',
+      title: t('起点{n}の連鎖が{step}段で止まっている', {
+        n: short + 1,
+        step: preview.plans[short]!.maxStep,
+      }),
+      reason: t('長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手'),
       gain: 0,
       apply: null,
       cells: [],

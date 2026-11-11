@@ -1,12 +1,9 @@
 // Client-side language setup: registers the dictionaries and decides the language at boot.
-import { EN } from './dicts/en';
-import { KO } from './dicts/ko';
-import { ZH_HANT } from './dicts/zh-Hant';
+import { DICTS, type TargetLang } from './dicts';
 import { LANGS, detectLang, registerDict, setLang, type Lang } from './index';
 
-registerDict('en', EN);
-registerDict('zh-Hant', ZH_HANT);
-registerDict('ko', KO);
+for (const [l, dict] of Object.entries(DICTS) as [TargetLang, (typeof DICTS)[TargetLang]][])
+  registerDict(l, dict);
 
 /**
  * Languages players can pick (and auto-detection can choose).

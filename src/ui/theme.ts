@@ -34,11 +34,18 @@ export const COLORS = {
 } as const;
 
 /** Font stack per language (M PLUS Rounded has no Hangul and no Traditional-only Han glyphs) */
+const ROUNDED = '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif';
+// The rounded font's Latin subsets cover the accented letters of pt/es/de/fr/id
 const FONTS: Record<Lang, string> = {
-  ja: '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif',
-  en: '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif',
+  ja: ROUNDED,
+  en: ROUNDED,
   'zh-Hant': '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
   ko: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+  'pt-BR': ROUNDED,
+  es: ROUNDED,
+  de: ROUNDED,
+  fr: ROUNDED,
+  id: ROUNDED,
 };
 
 /** Font stack for the current language (read at draw time) */

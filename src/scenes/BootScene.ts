@@ -1,5 +1,6 @@
 // ロード、セーブ読み込み → 拠点
 import Phaser from 'phaser';
+import { applyHeroLook } from '../ui/cosmeticsView';
 import { UNIT_SPRITES, animFrameSize, animKey, iconKey, type UnitAnimName } from '../data/sprites';
 import { ITEM_DEFS } from '../data/items';
 import { loadSave } from '../platform/storage';
@@ -98,6 +99,8 @@ export class BootScene extends Phaser.Scene {
     void loadSave().then(async (save) => {
       setSave(save);
       applyLang(save.settings.lang);
+      // Challenge reward look (recolors the hero textures for every scene)
+      applyHeroLook(this, save.look.hero);
       await loadFonts();
       this.scene.start('Base');
     });

@@ -5,7 +5,7 @@ import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
 import { diagnose } from '../core/diagnose';
 import { getTechnique } from '../data/techniques';
-import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
+import { otherPresetUse, presetMark, presetName, switchPreset } from '../core/presets';
 import {
   checkRules,
   challengeStart,
@@ -32,6 +32,7 @@ import {
   removeItem,
   setConsumable,
 } from '../core/loadout';
+import { BASE_HERO_STATS } from '../core/combat';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
@@ -40,12 +41,13 @@ import { BackpackView } from '../ui/backpackView';
 import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
 import { SKIN, SLICE } from '../ui/kit/skin';
-import { Button, RoundButton, confirmDialog, panel, bindTap } from '../ui/kit/widgets';
+import { Button, RoundButton, confirmDialog, fitText, panel, bindTap } from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { ItemIcon } from '../ui/itemIcon';
 import { chainContext, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ItemList } from '../ui/itemList';
 import { COLORS, LOADOUT_LAYOUT, W, inkStyle, textStyle } from '../ui/theme';
+import { num, t } from '../i18n';
 
 const LONG_PRESS_MS = 450;
 const DRAG_THRESHOLD = 12;
@@ -70,6 +72,8 @@ export class LoadoutScene extends Phaser.Scene {
   private focus: number | null = null;
   private routeBar!: Phaser.GameObjects.Container;
   private routeText!: Phaser.GameObjects.Text;
+  /** Width the route summary may use (up to the diagnosis button) */
+  private routeTextMaxW = 0;
   private presetBar!: Phaser.GameObjects.Container;
   /** ほかの編成で使っている装備 */
   private presetUses = new Map<string, number[]>();
@@ -122,7 +126,7 @@ export class LoadoutScene extends Phaser.Scene {
       this,
       W - 206,
       LOADOUT_LAYOUT.backpackTop - 38,
-      '↶ 戻す',
+      t('↶ 戻す'),
       () => this.undo(),
       { width: 106, height: 56, fontSize: 20, skin: 'blue' },
     );
@@ -131,7 +135,7 @@ export class LoadoutScene extends Phaser.Scene {
       this,
       W - 80,
       LOADOUT_LAYOUT.backpackTop - 38,
-      '全部外す',
+      t('全部外す'),
       () => this.confirmReset(),
       {
         width: 132,
@@ -142,7 +146,13 @@ export class LoadoutScene extends Phaser.Scene {
     );
     this.focus = null;
     this.routeBar = this.add.container(0, this.view.y + this.view.gridHeight + 30);
-    this.info = this.add.text(W / 2, 0, '', textStyle(18, COLORS.textDim)).setOrigin(0.5, 0);
+    this.info = this.add
+      .text(W / 2, 0, '', {
+        ...textStyle(18, COLORS.textDim),
+        align: 'center',
+        wordWrap: { width: W - 40, useAdvancedWrap: true },
+      })
+      .setOrigin(0.5, 0);
     this.slots = this.add.container(0, LOADOUT_LAYOUT.slotsTop);
     this.warn = this.add
       .text(W / 2 + 60, LOADOUT_LAYOUT.slotsTop - 18, '', textStyle(20, COLORS.textWarn))
@@ -163,12 +173,12 @@ export class LoadoutScene extends Phaser.Scene {
       (it) =>
         this.challenge
           ? itemViolation(it, this.challenge.def.rules)
-            ? '使えない'
+            ? t('使えない')
             : null
           : presetMark(getSave(), this.presetUses, it.uid),
     );
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
-    new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, 'カカシ', () =>
+    new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
       this.scene.start('Dummy'),
     );
     new RoundButton(
@@ -177,7 +187,7 @@ export class LoadoutScene extends Phaser.Scene {
       LOADOUT_LAYOUT.slotsTop + 44,
       88,
       this.challenge ? 'clock' : 'swords',
-      this.challenge ? '挑戦へ' : '出撃',
+      t(this.challenge ? '挑戦へ' : '出撃'),
       () =>
         this.challenge
           ? this.scene.start('Base', { page: 'challenge' })
@@ -199,7 +209,7 @@ export class LoadoutScene extends Phaser.Scene {
           w: W - 12,
           h: LOADOUT_LAYOUT.listBottom - LOADOUT_LAYOUT.listTop + 10,
         },
-        text: '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう',
+        text: t('下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう'),
       },
       {
         rect: {
@@ -208,11 +218,13 @@ export class LoadoutScene extends Phaser.Scene {
           w: W - 120,
           h: this.view.gridHeight + 16,
         },
-        text: '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！',
+        text: t(
+          '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！',
+        ),
       },
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
-        text: '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！',
+        text: t('「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！'),
       },
     ]);
   }
@@ -232,7 +244,7 @@ export class LoadoutScene extends Phaser.Scene {
       this.view.showPreview(preview, this.focus, new Set(save.discoveredTechs));
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
-    this.info.setText('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）');
+    this.info.setText(t('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）'));
     // 消耗品枠を手で変えたら、その中身を覚える（使い切ったら倉庫から自動で入れ直す）
     const cons = JSON.stringify(save.loadout.consumables);
     if (cons !== this.lastCons) {
@@ -256,15 +268,20 @@ export class LoadoutScene extends Phaser.Scene {
     this.info.setY(this.routeBar.y + 32);
     const block = sortieBlock(save);
     const bad = this.challenge ? checkRules(save.loadout, items, this.challenge.def.rules) : [];
-    this.warn.setText(
-      bad.length > 0
-        ? bad[0]!.replace(/がある$/, 'があります')
-        : block === 'noOrigin'
-          ? '起点が0個です。出撃できません'
-          : block === 'storageFull' && !this.challenge
-            ? '倉庫があふれています（タップで売却）'
-            : '',
-    );
+    // The challenge reason comes translated from core and is shown as is
+    this.warn
+      .setScale(1)
+      .setText(
+        bad.length > 0
+          ? bad[0]!
+          : block === 'noOrigin'
+            ? t('起点が0個です。出撃できません')
+            : block === 'storageFull' && !this.challenge
+              ? t('倉庫があふれています（タップで売却）')
+              : '',
+      );
+    // Centered at W/2 + 60: x 130..710, clear of the "consumables" label on the same row
+    fitText(this.warn, 2 * (W / 2 + 60 - 130));
     const eq = equippedUids(save);
     this.list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
     this.list.setSelected(this.selected?.uid ?? null);
@@ -302,14 +319,17 @@ export class LoadoutScene extends Phaser.Scene {
     let x = 30;
     chip(x, 72, shown && this.focus === null, () => this.setFocus(null));
     bar.add(
-      this.add
-        .text(
-          x + 36,
-          -2,
-          '全部',
-          textStyle(18, shown && this.focus === null ? '#fff6d0' : COLORS.text),
-        )
-        .setOrigin(0.5),
+      fitText(
+        this.add
+          .text(
+            x + 36,
+            -2,
+            t('全部'),
+            textStyle(18, shown && this.focus === null ? '#fff6d0' : COLORS.text),
+          )
+          .setOrigin(0.5),
+        64,
+      ),
     );
     x += 78;
     preview.plans.forEach((_, i) => {
@@ -334,14 +354,17 @@ export class LoadoutScene extends Phaser.Scene {
       this.refresh();
     });
     bar.add(
-      this.add
-        .text(
-          x + 38,
-          -2,
-          shown ? '線を消す' : '線なし',
-          textStyle(15, !shown ? '#fff6d0' : COLORS.text),
-        )
-        .setOrigin(0.5),
+      fitText(
+        this.add
+          .text(
+            x + 38,
+            -2,
+            t(shown ? '線を消す' : '線なし'),
+            textStyle(15, !shown ? '#fff6d0' : COLORS.text),
+          )
+          .setOrigin(0.5),
+        68,
+      ),
     );
     x += 82;
     // 推定ダメージ（ふつうの敵1体に撃ったときの期待値。コンボ・追加効果・会心込み）
@@ -349,27 +372,30 @@ export class LoadoutScene extends Phaser.Scene {
     const items = itemMap(save);
     const u = heroStats(save).attackMult;
     const est = preview.plans.map((p) => estimateRoute(p, items, u));
-    const fmt = (n: number) => Math.round(n).toLocaleString('ja-JP');
     const summary = (() => {
-      if (!shown) return { text: '番号を選ぶと表示に戻す', color: COLORS.textDim };
+      if (!shown) return { text: t('番号を選ぶと表示に戻す'), color: COLORS.textDim };
       if (preview.plans.length === 0)
-        return { text: '起点を置いてください', color: COLORS.textWarn };
+        return { text: t('起点を置いてください'), color: COLORS.textWarn };
       if (this.focus === null)
         return {
-          text: `合計 約${fmt(est.reduce((sum, e) => sum + e.total, 0))}`,
+          text: t('合計 約{n}', { n: num(est.reduce((sum, e) => sum + e.total, 0)) }),
           color: '#ffe27a',
         };
       const p = preview.plans[this.focus]!;
       const e = est[this.focus]!;
       // 必殺技の名前は、見つけたあとだけ出す（ネタバレしない）
-      const knownTech = e.techs.find((t) => save.discoveredTechs.includes(t));
-      const combo = knownTech
-        ? `・${getTechnique(knownTech)?.name ?? '必殺技'}`
-        : e.combos > 0
-          ? `・コンボ${e.combos}`
-          : '';
+      const knownTech = e.techs.find((id) => save.discoveredTechs.includes(id));
+      const tech = knownTech ? getTechnique(knownTech) : undefined;
+      const params = { n: num(e.total), step: p.maxStep };
       return {
-        text: `約${fmt(e.total)}・${p.maxStep}段${combo}`,
+        text: knownTech
+          ? t('約{n}・{step}段・{tech}', {
+              ...params,
+              tech: tech ? t(tech.name) : t('必殺技|fallback'),
+            })
+          : e.combos > 0
+            ? t('約{n}・{step}段・コンボ{combo}', { ...params, combo: e.combos })
+            : t('約{n}・{step}段', params),
         color: routeCss(this.focus),
       };
     })();
@@ -377,8 +403,8 @@ export class LoadoutScene extends Phaser.Scene {
       .text(W - 132, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
     // 長いときは縮めて、診断ボタンに重ねない
-    const maxW = W - 132 - x - 6;
-    if (this.routeText.width > maxW) this.routeText.setScale(maxW / this.routeText.width);
+    this.routeTextMaxW = W - 132 - x - 6;
+    fitText(this.routeText, this.routeTextMaxW);
     bar.add(this.routeText);
     // 診断: いまの並べ方から、伸ばせる次の一手を出す
     const dg = this.add
@@ -389,17 +415,22 @@ export class LoadoutScene extends Phaser.Scene {
       this.openDiagnosis();
     });
     bar.add(dg);
-    bar.add(this.add.text(W - 80, -2, '診断', textStyle(18, '#fff6d0')).setOrigin(0.5));
+    bar.add(
+      fitText(this.add.text(W - 80, -2, t('診断'), textStyle(18, '#fff6d0')).setOrigin(0.5), 84),
+    );
   }
 
   /** 配置の診断（入れ替え・置きかえ・空きマスを実際に試して、伸びる手を出す） */
   private openDiagnosis(): void {
     const save = getSave();
+    // In the challenge: the hero starts from base strength and only allowed items are suggested
+    const rules = this.challenge?.def.rules;
     const res = diagnose(
       save.loadout,
       save.inventory,
-      heroStats(save).attackMult,
+      rules ? BASE_HERO_STATS.attackMult : heroStats(save).attackMult,
       save.discoveredTechs,
+      rules ? (it) => !itemViolation(it, rules) : undefined,
     );
     const H = this.scale.gameSize.height;
     const root = this.add.container(0, 0).setDepth(2600);
@@ -407,23 +438,30 @@ export class LoadoutScene extends Phaser.Scene {
     const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
     shade.on('pointerup', close);
     root.add(shade);
-    const fmt = (n: number) => Math.round(n).toLocaleString('ja-JP');
     const cw = W - 50;
     const cardH = 150;
     const list = res.advices;
     const ch = 170 + Math.max(1, list.length) * (cardH + 12) + 100;
     const top = H / 2 - ch / 2;
     root.add(panel(this, W / 2, H / 2, cw, ch, 'panel').setInteractive());
-    root.add(this.add.text(W / 2, top + 44, '配置の診断', textStyle(34, '#ffe27a')).setOrigin(0.5));
     root.add(
-      this.add
-        .text(
-          W / 2,
-          top + 92,
-          `いまの推定ダメージ 合計 約${fmt(res.total)}`,
-          textStyle(20, COLORS.text),
-        )
-        .setOrigin(0.5),
+      fitText(
+        this.add.text(W / 2, top + 44, t('配置の診断'), textStyle(34, '#ffe27a')).setOrigin(0.5),
+        cw - 40,
+      ),
+    );
+    root.add(
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            top + 92,
+            t('いまの推定ダメージ 合計 約{n}', { n: num(res.total) }),
+            textStyle(20, COLORS.text),
+          )
+          .setOrigin(0.5),
+        cw - 40,
+      ),
     );
     if (list.length === 0)
       root.add(
@@ -431,10 +469,11 @@ export class LoadoutScene extends Phaser.Scene {
           .text(
             W / 2,
             top + 170 + cardH / 2,
-            'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！',
+            t('いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！'),
             {
               ...textStyle(22, COLORS.text),
               align: 'center',
+              wordWrap: { width: cw - 60, useAdvancedWrap: true },
             },
           )
           .setOrigin(0.5),
@@ -443,35 +482,43 @@ export class LoadoutScene extends Phaser.Scene {
       const y = top + 140 + i * (cardH + 12);
       root.add(panel(this, W / 2, y + cardH / 2, cw - 40, cardH, 'paper'));
       const left = 60;
-      const t = this.add.text(left, y + 16, a.title, {
+      const titleText = this.add.text(left, y + 16, a.title, {
         ...inkStyle(22),
         wordWrap: { width: cw - 260, useAdvancedWrap: true },
       });
-      root.add(t);
+      root.add(titleText);
       root.add(
-        this.add.text(left, y + 24 + t.height, a.reason, {
+        this.add.text(left, y + 24 + titleText.height, a.reason, {
           ...inkStyle(18, '#8a5a10'),
           wordWrap: { width: cw - 260, useAdvancedWrap: true },
         }),
       );
+      // Right column: between the text column (ends at x=left + cw - 260) and the card edge
       const rx = W - 130;
+      const colW = 2 * (W - 40 - rx);
       if (a.gain > 0)
         root.add(
-          this.add
-            .text(rx, y + 40, `+約${fmt(a.gain)}`, textStyle(28, '#3a8a3a'))
-            .setOrigin(0.5)
-            .setStroke('#fff6d0', 4),
+          fitText(
+            this.add
+              .text(rx, y + 40, t('+約{n}', { n: num(a.gain) }), textStyle(28, '#3a8a3a'))
+              .setOrigin(0.5)
+              .setStroke('#fff6d0', 4),
+            colW,
+          ),
         );
       if (a.gain > 0 && res.total > 0)
         root.add(
-          this.add
-            .text(
-              rx,
-              y + 72,
-              `（+${Math.round((a.gain / res.total) * 100)}%）`,
-              inkStyle(18, '#3a8a3a'),
-            )
-            .setOrigin(0.5),
+          fitText(
+            this.add
+              .text(
+                rx,
+                y + 72,
+                t('（+{pct}%）', { pct: Math.round((a.gain / res.total) * 100) }),
+                inkStyle(18, '#3a8a3a'),
+              )
+              .setOrigin(0.5),
+            colW,
+          ),
         );
       if (a.cells.length > 0) {
         root.add(
@@ -479,7 +526,7 @@ export class LoadoutScene extends Phaser.Scene {
             this,
             rx,
             y + cardH - 34,
-            '場所を見る',
+            t('場所を見る'),
             () => {
               close();
               this.flashCells(a.cells);
@@ -490,7 +537,7 @@ export class LoadoutScene extends Phaser.Scene {
       }
     });
     root.add(
-      new Button(this, W / 2, top + ch - 50, '閉じる', close, {
+      new Button(this, W / 2, top + ch - 50, t('閉じる'), close, {
         width: 230,
         height: 68,
         skin: 'gray',
@@ -512,13 +559,17 @@ export class LoadoutScene extends Phaser.Scene {
     if (this.challenge) {
       // 挑戦用の編成: 編成の切り替えの代わりに、名前と「制限に合わせる」
       const label = this.add
-        .text(24, -2, `挑戦「${this.challenge.def.name}」用`, textStyle(22, '#ffe27a'))
+        .text(
+          24,
+          -2,
+          t('挑戦「{name}」用', { name: t(this.challenge.def.name) }),
+          textStyle(22, '#ffe27a'),
+        )
         .setOrigin(0, 0.5);
-      const maxW = 380 - 76 - 8 - 24;
-      if (label.width > maxW) label.setScale(maxW / label.width);
+      fitText(label, 380 - 76 - 8 - 24);
       bar.add(label);
       bar.add(
-        new Button(this, 380, 0, '制限に合わせる', () => this.fitChallenge(), {
+        new Button(this, 380, 0, t('制限に合わせる'), () => this.fitChallenge(), {
           width: 150,
           height: 52,
           fontSize: 18,
@@ -562,12 +613,11 @@ export class LoadoutScene extends Phaser.Scene {
           .setOrigin(0.5),
       );
     });
-    const name = save.presets[save.activePreset]!.name;
+    const name = presetName(save, save.activePreset);
     // 名前は「戻す」ボタンの手前まで（長い名前は縮める）
     const nameX = 24 + 5 * (w + 6) + 4;
     const label = this.add.text(nameX, -2, `${name} ✎`, textStyle(22, '#ffe27a')).setOrigin(0, 0.5);
-    const maxW = W - 206 - 53 - 8 - nameX;
-    if (label.width > maxW) label.setScale(maxW / label.width);
+    fitText(label, W - 206 - 53 - 8 - nameX);
     bar.add(label);
   }
 
@@ -582,7 +632,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.selected = null;
     this.buildPresetBar();
     this.refresh();
-    this.showToastLine(`${save.presets[i]!.name} に切り替えました`);
+    this.showToastLine(t('{name} に切り替えました', { name: presetName(save, i) }));
   }
 
   /** 制限に合わない装備を、同じ種類で出口の向きが近いものに入れ替える（最適にはしない） */
@@ -591,7 +641,7 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const items = itemMap(save);
     if (checkRules(save.loadout, items, this.challenge.def.rules).length === 0) {
-      this.showToastLine('もう制限に合っています');
+      this.showToastLine(t('もう制限に合っています'));
       return;
     }
     save.loadout = fitToRules(save, save.loadout, this.challenge.def.rules);
@@ -599,16 +649,19 @@ export class LoadoutScene extends Phaser.Scene {
     this.commit();
     const left = checkRules(save.loadout, itemMap(save), this.challenge.def.rules);
     this.showToastLine(
-      left.length === 0
-        ? '制限に合わせました。並べ方を詰めよう'
-        : '合う装備が足りず、空いたマスがあります',
+      t(
+        left.length === 0
+          ? '制限に合わせました。並べ方を詰めよう'
+          : '合う装備が足りず、空いたマスがあります',
+      ),
     );
   }
 
   private renamePreset(i: number): void {
     const save = getSave();
-    const now = save.presets[i]!.name;
-    const v = typeof window !== 'undefined' ? window.prompt('編成の名前（8文字まで）', now) : null;
+    const now = presetName(save, i);
+    const v =
+      typeof window !== 'undefined' ? window.prompt(t('編成の名前（8文字まで）'), now) : null;
     if (v === null) return;
     const name = v.trim().slice(0, 8);
     if (!name) return;
@@ -620,17 +673,20 @@ export class LoadoutScene extends Phaser.Scene {
 
   /** 画面下の一時的なお知らせ */
   private showToastLine(msg: string): void {
-    const t = this.add
-      .text(W / 2, LOADOUT_LAYOUT.backpackTop + 10, msg, textStyle(24, '#ffe27a'))
-      .setOrigin(0.5)
-      .setDepth(3000);
+    const line = fitText(
+      this.add
+        .text(W / 2, LOADOUT_LAYOUT.backpackTop + 10, msg, textStyle(24, '#ffe27a'))
+        .setOrigin(0.5)
+        .setDepth(3000),
+      W - 40,
+    );
     this.tweens.add({
-      targets: t,
+      targets: line,
       alpha: 0,
-      y: t.y - 20,
+      y: line.y - 20,
       delay: 900,
       duration: 400,
-      onComplete: () => t.destroy(),
+      onComplete: () => line.destroy(),
     });
   }
 
@@ -650,8 +706,12 @@ export class LoadoutScene extends Phaser.Scene {
     this.slots.removeAll(true);
     const n = consumableSlots(save);
     const items = itemMap(save);
+    // Stops short of the warning line on the same row (its left edge is at x >= 130)
     this.slots.add(
-      this.add.text(30, -18, '消耗品', textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
+      fitText(
+        this.add.text(30, -18, t('消耗品|slots'), textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
+        92,
+      ),
     );
     // 覚えている消耗品のうち、いま枠に入っていないもの（空いた枠にうすく出す）
     const ghosts = (save.loadout.consumableAuto ?? []).slice();
@@ -675,9 +735,12 @@ export class LoadoutScene extends Phaser.Scene {
             .setAlpha(0.3),
         );
         this.slots.add(
-          this.add
-            .text(x, 44 + SLOT_SIZE / 2 - 4, '自動', textStyle(14, COLORS.textDim))
-            .setOrigin(0.5),
+          fitText(
+            this.add
+              .text(x, 44 + SLOT_SIZE / 2 - 4, t('自動|refill'), textStyle(14, COLORS.textDim))
+              .setOrigin(0.5),
+            SLOT_SIZE - 8,
+          ),
         );
       } else
         this.slots.add(this.add.text(x, 44, '+', textStyle(30, COLORS.textDim)).setOrigin(0.5));
@@ -721,7 +784,7 @@ export class LoadoutScene extends Phaser.Scene {
     persist();
     sfx('click');
     this.refresh();
-    this.showToastLine('ひとつ前の並べ方に戻しました');
+    this.showToastLine(t('ひとつ前の並べ方に戻しました'));
   }
 
   private commit(): void {
@@ -736,9 +799,12 @@ export class LoadoutScene extends Phaser.Scene {
     if (placed === 0) return;
     confirmDialog(
       this,
-      '全部外す',
-      `バックパックと消耗品枠の ${placed}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。`,
-      '全部外す',
+      t('全部外す'),
+      t(
+        'バックパックと消耗品枠の {n}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。',
+        { n: placed },
+      ),
+      t('全部外す'),
       () => {
         save.loadout = clearLoadout(save.loadout);
         this.selected = null;
@@ -755,7 +821,10 @@ export class LoadoutScene extends Phaser.Scene {
   private selectForPlacing(it: ItemInstance): void {
     this.selected = it;
     this.list.setSelected(it.uid);
-    this.routeText.setText('置きたいマスをタップ').setColor(COLORS.gold);
+    fitText(
+      this.routeText.setScale(1).setText(t('置きたいマスをタップ')).setColor(COLORS.gold),
+      this.routeTextMaxW,
+    );
   }
 
   /** 装備の詳細カード。置き場所に応じた操作をカードに並べる */
@@ -772,7 +841,7 @@ export class LoadoutScene extends Phaser.Scene {
     const actions: DetailAction[] = [];
     if (where === 'grid' || where === 'slot') {
       actions.push({
-        label: '外す',
+        label: t('外す'),
         skin: 'red',
         onTap: () => {
           save.loadout = removeItem(save.loadout, items, it.uid);
@@ -782,7 +851,7 @@ export class LoadoutScene extends Phaser.Scene {
       const order = save.loadout.originOrder;
       if (kind === 'origin' && order.length >= 2) {
         actions.push({
-          label: '発火順を前へ',
+          label: t('発火順を前へ'),
           skin: 'blue',
           onTap: () => {
             save.loadout = cycleOriginOrder(save.loadout, it.uid);
@@ -794,7 +863,7 @@ export class LoadoutScene extends Phaser.Scene {
       const n = consumableSlots(save);
       const free = save.loadout.consumables.length < n;
       actions.push({
-        label: free ? '枠に入れる' : '枠がいっぱい',
+        label: t(free ? '枠に入れる' : '枠がいっぱい'),
         skin: 'green',
         disabled: !free,
         onTap: () => {
@@ -804,7 +873,7 @@ export class LoadoutScene extends Phaser.Scene {
       });
     } else {
       actions.push({
-        label: '置く',
+        label: t('置く'),
         skin: 'green',
         icon: 'bag',
         onTap: () => this.selectForPlacing(it),
@@ -927,9 +996,12 @@ export function sellOverflow(scene: Phaser.Scene): void {
   if (plan.uids.length === 0) return;
   confirmDialog(
     scene,
-    'あふれた分を売る',
-    `安いものから${plan.uids.length}個を売って倉庫に収めます\n（+${plan.gold}G）`,
-    '売る',
+    t('あふれた分を売る'),
+    t('安いものから{n}個を売って倉庫に収めます\n（+{gold}G）', {
+      n: plan.uids.length,
+      gold: plan.gold,
+    }),
+    t('売る'),
     () => {
       sellItems(save, plan.uids);
       persist();

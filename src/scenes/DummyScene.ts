@@ -21,6 +21,7 @@ import { getTechnique } from '../data/techniques';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
+import { t } from '../i18n';
 
 export class DummyScene extends Phaser.Scene {
   private combat!: Combat;
@@ -63,25 +64,27 @@ export class DummyScene extends Phaser.Scene {
       41,
     );
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
-    this.add.existing(ribbon(this, W / 2, 50, 'カカシで試し撃ち', 360).setDepth(70));
+    this.add.existing(ribbon(this, W / 2, 50, t('カカシで試し撃ち'), 360).setDepth(70));
     panel(this, 230, RUN_LAYOUT.middleTop + 86, 420, 140, 'inset').setDepth(70);
     this.stats = this.add
-      .text(40, RUN_LAYOUT.middleTop + 26, '「発火」で次の起点を撃つ', {
+      .text(40, RUN_LAYOUT.middleTop + 26, t('「発火」で次の起点を撃つ'), {
         ...textStyle(22),
         lineSpacing: 2,
+        // Stay inside the inset panel (x 20..440) when a translation is longer
+        wordWrap: { width: 390, useAdvancedWrap: true },
       })
       .setDepth(71);
     new Button(
       this,
       W - 150,
       RUN_LAYOUT.middleTop + 86,
-      '発火',
+      t('発火'),
       () => {
         if (!this.combat.fireNext()) sfx('error');
       },
       { width: 240, height: 110, fontSize: 40, skin: 'gold', icon: 'swords', silent: true },
     ).setDepth(70);
-    new Button(this, 90, 130, '配置', () => this.scene.start('Loadout'), {
+    new Button(this, 90, 130, t('配置'), () => this.scene.start('Loadout'), {
       width: 150,
       height: 64,
       skin: 'gray',
@@ -129,7 +132,7 @@ export class DummyScene extends Phaser.Scene {
       if (ev.type === 'chainStart') {
         this.comboLabel = [];
         sfx('fire');
-        this.stats.setText(`起点${originLabel(ev.originIndex)} 発火中…`);
+        this.stats.setText(t('起点{origin} 発火中…', { origin: originLabel(ev.originIndex) }));
       } else if (ev.type === 'step') {
         this.view.glow(ev.cell, ev.step === null ? COLORS.accent : COLORS.chainLine, now, 450);
         if (ev.fromCell !== null) this.view.flashLine(ev.fromCell, ev.cell, COLORS.chainLine);
@@ -153,34 +156,35 @@ export class DummyScene extends Phaser.Scene {
         }
         sfx('hit');
       } else if (ev.type === 'technique') {
-        const t = getTechnique(ev.id);
+        const tech = getTechnique(ev.id);
         const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
-        const impact = this.field.heroSpecial(0xffe060, t?.id);
+        const impact = this.field.heroSpecial(0xffe060, tech?.id);
         const save = getSave();
-        if (t && !save.discoveredTechs.includes(t.id)) {
-          save.discoveredTechs.push(t.id);
+        if (tech && !save.discoveredTechs.includes(tech.id)) {
+          save.discoveredTechs.push(tech.id);
           persist();
-          showDiscovery(this, t.name, 190);
+          // showDiscovery translates the data key itself
+          showDiscovery(this, tech.name, 190);
         }
         if (e) {
           const p = this.field.enemyScreenPos(this.combat, e);
           this.time.delayedCall(impact / Math.max(0.1, gameSpeed()), () => {
-            this.elementFx.special(p.x, p.y, t?.element);
+            this.elementFx.special(p.x, p.y, tech?.element);
             this.effects.flash(p.x, p.y, 0xffffff, 4);
           });
         }
         sfx('explode');
       } else if (ev.type === 'combo') {
-        this.comboLabel.push(ev.label);
+        this.comboLabel.push(t(ev.label));
         sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');
         hapticMedium();
       } else if (ev.type === 'chainEnd') {
         this.stats.setText(
           [
-            `総ダメージ ${Math.round(ev.totalDamage)}`,
-            `持続（無防備） ${ev.duration.toFixed(1)}秒`,
-            `防御値 +${Math.round(ev.defenseGain)}`,
-            this.comboLabel.length ? `コンボ ${this.comboLabel.join(' ')}` : '',
+            t('総ダメージ {n}', { n: Math.round(ev.totalDamage) }),
+            t('持続（無防備） {sec}秒', { sec: ev.duration.toFixed(1) }),
+            t('防御値 +{n}', { n: Math.round(ev.defenseGain) }),
+            this.comboLabel.length ? t('コンボ {list}', { list: this.comboLabel.join(' ') }) : '',
           ]
             .filter(Boolean)
             .join('\n'),

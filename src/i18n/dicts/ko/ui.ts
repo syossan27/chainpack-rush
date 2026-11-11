@@ -1,6 +1,8 @@
-// Korean. Key: Japanese source string → value: translation (keep {placeholders} as they are)
-export const KO: Readonly<Record<string, string>> = {
-  カカシ: '허수아비',
+// Korean: screens and messages. Key: Japanese source string → value: translation
+// (keep {placeholders} and the meaning of any '|context' key)
+import type { Dict } from '../types';
+
+export const UI: Dict = {
   設定: '설정',
   ヘルプ: '도움말',
   ランキング: '랭킹',

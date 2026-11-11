@@ -50,7 +50,7 @@ import {
 } from '../platform/monetization';
 import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
-import { otherPresetUse, presetMark } from '../core/presets';
+import { otherPresetUse, presetMark, presetName } from '../core/presets';
 import {
   challengeStart,
   checkRules,
@@ -59,18 +59,33 @@ import {
   rulesText,
 } from '../core/challenge';
 import { session } from '../platform/session';
-import { devChallengeOpen } from '../platform/debug';
-import { LANG_NAMES, lang, t } from '../i18n';
+import { devAllCosmetics, devChallengeOpen } from '../platform/debug';
+import { LANG_NAMES, k, lang, num, t } from '../i18n';
 import { READY_LANGS, applyLang, type LangSetting } from '../i18n/setup';
 import { loadFonts } from '../ui/fonts';
-import { RANK_REWARDS, endlessSeason, seasonLabel, type RankMode } from '../core/ranking';
-import { nameText } from '../core/names';
+import { RANK_REWARDS, endlessSeason, seasonLabel, titleId, type RankMode } from '../core/ranking';
+import { nameText, rowName, sameName } from '../core/names';
+import {
+  addPet,
+  applyHeroLook,
+  cosmeticTexture,
+  decoTexture,
+  heroLookPreview,
+} from '../ui/cosmeticsView';
+import {
+  COSMETICS,
+  cosmeticsForBand,
+  getCosmetic,
+  isChallengeSeason,
+  type CosmeticKind,
+} from '../core/cosmetics';
 import {
   claimSeasonRewards,
   fetchBoard,
   fetchMyRank,
   randomName,
   rankingReady,
+  saveDeco,
   saveName,
 } from '../platform/ranking';
 
@@ -86,6 +101,7 @@ import {
   bindTap,
   choiceDialog,
   confirmDialog,
+  fitText,
   ink,
   panel,
   ribbon,
@@ -104,7 +120,8 @@ type Page =
   | 'techs'
   | 'achievements'
   | 'challenge'
-  | 'ranking';
+  | 'ranking'
+  | 'wardrobe';
 
 const DIR_ARROW: Record<Dir, string> = { up: '↑', right: '→', down: '↓', left: '←' };
 
@@ -124,77 +141,122 @@ const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
 /** 拠点の勇者を地面の帯へ沈める量（論理px。勇者は×3表示なので 4ドット分） */
 const HOME_HERO_SINK = 12;
 
-/** ヘルプの中身（数値は balance.ts と合わせる） */
+/**
+ * ヘルプの中身（数値は balance.ts と合わせる）
+ * Translation keys, drawn with t(line, params): {n} = technique count, {price} = premium price.
+ */
 const HELP_SECTIONS: { title: string; lines: string[] }[] = [
   {
-    title: '基本',
+    title: k('基本'),
     lines: [
-      '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。',
-      '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。',
-      '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。',
+      k(
+        '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。',
+      ),
+      k('1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。'),
+      k(
+        '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。',
+      ),
     ],
   },
   {
-    title: 'ダメージの決まり方',
+    title: k('ダメージの決まり方'),
     lines: [
-      '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）',
-      '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4',
-      '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）',
-      '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2',
-      '・強化：拠点の「攻撃倍率」',
-      '・会心：8%でダメージ×2（聖剣・会心の追加効果・幸運の硬貨で上がる）',
+      k('攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）'),
+      k('・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4'),
+      k('・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）'),
+      k(
+        '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2',
+      ),
+      k('・強化：拠点の「攻撃倍率」'),
+      k('・会心：8%でダメージ×2（聖剣・会心の追加効果・幸運の硬貨で上がる）'),
     ],
   },
   {
-    title: 'ダメージを伸ばすコツ',
+    title: k('ダメージを伸ばすコツ'),
     lines: [
-      '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。',
-      '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。',
-      '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。',
-      '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。',
-      '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。',
+      k(
+        '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。',
+      ),
+      k(
+        '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。',
+      ),
+      k('・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。'),
+      k('・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。'),
+      k(
+        '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。',
+      ),
     ],
   },
   {
-    title: '必殺技',
+    title: k('必殺技'),
     lines: [
-      '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。',
-      `・必殺技は全部で${TECHNIQUES.length}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。`,
+      k(
+        '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。',
+      ),
+      k(
+        '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。',
+      ),
     ],
   },
   {
-    title: '短い連鎖と長い連鎖',
+    title: k('短い連鎖と長い連鎖'),
     lines: [
-      '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。',
-      '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。',
-      '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。',
+      k(
+        '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。',
+      ),
+      k('・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。'),
+      k(
+        '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。',
+      ),
     ],
   },
   {
-    title: '地域と敵',
+    title: k('地域と敵'),
     lines: [
-      '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。',
-      '・群れとボスは出撃ごとに変わります。精鋭（硬い・速い・金ぴか）が混ざることも。金ぴかは必ずレア以上を2個落とします。',
-      '・アーティファクトはごくまれに出る特別な装備です。',
+      k(
+        '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。',
+      ),
+      k(
+        '・群れとボスは出撃ごとに変わります。精鋭（硬い・速い・金ぴか）が混ざることも。金ぴかは必ずレア以上を2個落とします。',
+      ),
+      k('・アーティファクトはごくまれに出る特別な装備です。'),
     ],
   },
   {
-    title: 'ご褒美とプレミアム',
+    title: k('ご褒美とプレミアム'),
     lines: [
-      '・広告を見ると、ご褒美がもらえます：結果画面で「戦利品を2倍にする」（1日3回、同じ数だけ抽選し直してもう1セット）、鍛冶屋で「無料で再抽選」（1日3回）、力尽きたときに「再開」（1回のランで1回、HP全回復＋10秒）。',
-      `・プレミアム（${MONETIZE.premiumPrice}、買い切り）なら、広告を見なくても同じご褒美を受け取れます。設定から買えます。`,
+      k(
+        '・広告を見ると、ご褒美がもらえます：結果画面で「戦利品を2倍にする」（1日3回、同じ数だけ抽選し直してもう1セット）、鍛冶屋で「無料で再抽選」（1日3回）、力尽きたときに「再開」（1回のランで1回、HP全回復＋10秒）。',
+      ),
+      k(
+        '・プレミアム（{price}、買い切り）なら、広告を見なくても同じご褒美を受け取れます。設定から買えます。',
+      ),
     ],
   },
   {
-    title: '倉庫・鍛冶屋・合成',
+    title: k('倉庫・鍛冶屋・合成'),
     lines: [
-      '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。',
-      '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（並べ替えは自分で。「場所を見る」で関係するマスが光ります）。',
-      '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。',
-      '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。',
-      '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
-      '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
-      '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。',
+      k(
+        '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。',
+      ),
+      k(
+        '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（並べ替えは自分で。「場所を見る」で関係するマスが光ります）。',
+      ),
+      k(
+        '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。',
+      ),
+      k(
+        '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。',
+      ),
+      k(
+        '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
+      ),
+      k(
+        '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。',
+      ),
+      k(
+        '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。',
+      ),
     ],
   },
 ];
@@ -260,14 +322,14 @@ export class BaseScene extends Phaser.Scene {
       .text(W / 2, CONTENT_BOTTOM - 30, msg, textStyle(30, warn ? COLORS.textWarn : COLORS.gold))
       .setOrigin(0.5)
       .setDepth(2000);
-    const t = this.toast;
+    const toast = fitText(this.toast, W - 40);
     this.tweens.add({
-      targets: t,
-      y: t.y - 40,
+      targets: toast,
+      y: toast.y - 40,
       alpha: 0,
       delay: 900,
       duration: 500,
-      onComplete: () => t.destroy(),
+      onComplete: () => toast.destroy(),
     });
   }
 
@@ -316,6 +378,9 @@ export class BaseScene extends Phaser.Scene {
       case 'ranking':
         this.renderRanking();
         break;
+      case 'wardrobe':
+        this.renderWardrobe();
+        break;
     }
     this.root.add(new TopBar(this, save, () => this.go('settings')));
     const tab: TabId =
@@ -324,7 +389,8 @@ export class BaseScene extends Phaser.Scene {
       this.page === 'techs' ||
       this.page === 'achievements' ||
       this.page === 'challenge' ||
-      this.page === 'ranking'
+      this.page === 'ranking' ||
+      this.page === 'wardrobe'
         ? 'home'
         : this.page;
     this.root.add(
@@ -346,11 +412,11 @@ export class BaseScene extends Phaser.Scene {
     const groundY = 600;
     this.root.add(this.add.rectangle(0, 0, W, groundY + 60, region.bgColors[0]).setOrigin(0, 0));
     const keys = generateBackgroundTextures(this, region.id, region.bgColors, region.groundColor);
-    keys.forEach((k) => {
-      const h = this.textures.get(k).getSourceImage().height;
+    keys.forEach((key) => {
+      const h = this.textures.get(key).getSourceImage().height;
       this.root.add(
         this.add
-          .tileSprite(0, groundY + 80, W / 2, h, k)
+          .tileSprite(0, groundY + 80, W / 2, h, key)
           .setOrigin(0, 1)
           .setScale(2),
       );
@@ -380,6 +446,9 @@ export class BaseScene extends Phaser.Scene {
     // 置いている装備の強さで、勇者にオーラ
     const aura = new HeroAura(this, W / 2, footY, auraTier(save.loadout, itemMap(save)), 170);
     this.root.add([glow, shadow, aura, hero]);
+    // Pet (challenge reward) flies at the hero's upper left
+    const pet = addPet(this, save.look.pet, W / 2 - 120, footY - 128, 4);
+    if (pet) this.root.add(pet);
     if (this.auraTick) this.events.off('update', this.auraTick);
     this.auraTick = (_t: number, dt: number) => {
       if (aura.active) aura.tick(dt / 1000);
@@ -415,9 +484,9 @@ export class BaseScene extends Phaser.Scene {
     // 2週替わりの挑戦（始まるまでは予告）。開いていて今回まだ遊んでいなければ印を付ける
     const ch = currentChallenge(Date.now(), challengeStart(devChallengeOpen()));
     this.root.add(
-      new RoundButton(this, W - 70, 760, 96, 'clock', t('挑戦'), () => this.go('challenge')).setBadge(
-        !!ch && save.challenge.period !== ch.period,
-      ),
+      new RoundButton(this, W - 70, 760, 96, 'clock', t('挑戦'), () =>
+        this.go('challenge'),
+      ).setBadge(!!ch && save.challenge.period !== ch.period),
     );
     const block = storageCount(save) > storageCapacity(save);
     this.root.add(
@@ -428,7 +497,9 @@ export class BaseScene extends Phaser.Scene {
     this.root.add(
       new RoundButton(this, W - 70, 480, 96, 'anvil', t('鍛冶屋'), () => this.go('smith')),
     );
-    this.root.add(new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')));
+    this.root.add(
+      new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')),
+    );
 
     // 出撃
     const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {
@@ -449,14 +520,18 @@ export class BaseScene extends Phaser.Scene {
     });
     if (block) {
       this.root.add(
-        this.add
-          .text(
-            W / 2 + 40, // 左のランキングの文字に重ねない
-            830,
-            '倉庫があふれています。売却するまで出撃できません',
-            textStyle(19, COLORS.textWarn),
-          )
-          .setOrigin(0.5),
+        fitText(
+          this.add
+            .text(
+              W / 2 + 40, // 左のランキングの文字に重ねない
+              830,
+              t('倉庫があふれています。売却するまで出撃できません'),
+              textStyle(19, COLORS.textWarn),
+            )
+            .setOrigin(0.5),
+          // Stay between the left and right round-button captions
+          W - 220,
+        ),
       );
     }
 
@@ -467,30 +542,37 @@ export class BaseScene extends Phaser.Scene {
     const st = save.stats;
     const py = 1032;
     this.root.add(panel(this, W / 2, py, W - 60, 220, 'paper'));
-    this.root.add(ink(this, 70, py - 92, '冒険の記録', 26, '#7a3c10'));
+    this.root.add(ink(this, 70, py - 92, t('冒険の記録'), 26, '#7a3c10'));
     const rows: [string, string][] = [
-      ['出撃', `${st.runs}回`],
-      ['最大連鎖', `${st.maxStep}段`],
-      ['最大ダメージ', `${st.maxDamage}`],
-      ['開放した地域', `${save.progress.unlocked.length}/${REGIONS.length}`],
+      [t('出撃|stat'), t('{n}回', { n: st.runs })],
+      [t('最大連鎖'), t('{n}段', { n: st.maxStep })],
+      [t('最大ダメージ'), `${st.maxDamage}`],
+      [t('開放した地域'), `${save.progress.unlocked.length}/${REGIONS.length}`],
     ];
-    rows.forEach(([k, v], i) => {
+    rows.forEach(([label, v], i) => {
       const x = i % 2 === 0 ? 70 : W / 2 + 20;
       const y = py - 40 + Math.floor(i / 2) * 56;
-      this.root.add(ink(this, x, y, k, 22, '#7a5a30'));
-      this.root.add(ink(this, x + 270, y, v, 26).setOrigin(1, 0));
+      const value = ink(this, x + 270, y, v, 26).setOrigin(1, 0);
+      // The label must end before the right-aligned value
+      this.root.add(fitText(ink(this, x, y, label, 22, '#7a5a30'), 270 - value.width - 12));
+      this.root.add(value);
     });
-    const bests = REGIONS.filter((r) => save.progress.best[r.id]).map(
-      (r) => `${r.name} ${save.progress.best[r.id]}周`,
+    const bests = REGIONS.filter((r) => save.progress.best[r.id]).map((r) =>
+      t('{region} {n}周', { region: t(r.name), n: save.progress.best[r.id] ?? 0 }),
     );
     this.root.add(
-      ink(
-        this,
-        70,
-        py + 70,
-        `最高到達: ${bests.length ? bests.join('　') : 'まだありません'}`,
-        20,
-        '#7a5a30',
+      fitText(
+        ink(
+          this,
+          70,
+          py + 70,
+          t('最高到達: {list}', {
+            list: bests.length ? bests.join(t('　|sep')) : t('まだありません'),
+          }),
+          20,
+          '#7a5a30',
+        ),
+        W - 140,
       ),
     );
   }
@@ -498,7 +580,7 @@ export class BaseScene extends Phaser.Scene {
   // ---- 倉庫（売却） ----
   private renderStorage(): void {
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '倉庫'));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('倉庫')));
     const eq = equippedUids(save);
     // タップで能力の詳細。売却はカードから
     const openDetail = (it: ItemInstance): void => {
@@ -512,7 +594,7 @@ export class BaseScene extends Phaser.Scene {
             ? []
             : [this.synthAction(it, () => openDetail(it))]),
           {
-            label: it.locked ? 'ロック中' : `売る ${sellPrice(it)}G`,
+            label: it.locked ? t('ロック中') : t('売る {price}G', { price: sellPrice(it) }),
             skin: 'gold',
             icon: 'coin',
             disabled: !!it.locked,
@@ -529,18 +611,23 @@ export class BaseScene extends Phaser.Scene {
               if (usedIn && usedIn.length > 0)
                 confirmDialog(
                   this,
-                  '編成で使っている装備',
-                  `${usedIn.map((i) => save.presets[i]!.name).join('・')}で使っています。\n売ると、その編成のマスは空きになります`,
-                  '売る',
+                  t('編成で使っている装備'),
+                  t('{presets}で使っています。\n売ると、その編成のマスは空きになります', {
+                    presets: usedIn.map((i) => presetName(save, i)).join(t('・|sep')),
+                  }),
+                  t('売る'),
                   sell,
                 );
               // アーティファクトは誤って売らないよう確認する
               else if (getItemDef(it.defId).artifact)
                 confirmDialog(
                   this,
-                  'アーティファクトを売る',
-                  `${getItemDef(it.defId).name}を${sellPrice(it)}Gで売ります`,
-                  '売る',
+                  t('アーティファクトを売る'),
+                  t('{item}を{price}Gで売ります', {
+                    item: t(getItemDef(it.defId).name),
+                    price: sellPrice(it),
+                  }),
+                  t('売る'),
                   sell,
                 );
               else sell();
@@ -562,12 +649,12 @@ export class BaseScene extends Phaser.Scene {
           if (!pick) return openDetail(it);
           if (it.locked) {
             sfx('error');
-            this.showToast('ロック中の装備は売れません', true);
+            this.showToast(t('ロック中の装備は売れません'), true);
             return;
           }
           if (presetUses.has(it.uid)) {
             sfx('error');
-            this.showToast('ほかの編成で使っている装備です（詳細から売れます）', true);
+            this.showToast(t('ほかの編成で使っている装備です（詳細から売れます）'), true);
             return;
           }
           if (pick.has(it.uid)) pick.delete(it.uid);
@@ -578,28 +665,40 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: openDetail,
       },
-      (it) => (pick?.has(it.uid) ? '売る' : presetMark(save, presetUses, it.uid)),
+      (it) => (pick?.has(it.uid) ? t('売る') : presetMark(save, presetUses, it.uid)),
     );
     list.setItems(stored());
     this.root.add(list);
     if (pick) {
       this.root.add(
-        this.add
-          .text(
-            W / 2,
-            950,
-            '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）',
-            textStyle(20, COLORS.gold),
-          )
-          .setOrigin(0.5),
+        fitText(
+          this.add
+            .text(
+              W / 2,
+              950,
+              t('売るものをタップで選ぶ（もう一度で外す・長押しで詳細）'),
+              textStyle(20, COLORS.gold),
+            )
+            .setOrigin(0.5),
+          W - 40,
+        ),
       );
     } else {
       // 自動売却の設定（ラン後の結果画面で、設定したレアリティ以下の戦利品を売る）
       const st = save.settings;
       const label =
         st.autoSell === 'off'
-          ? '自動売却：オフ'
-          : `自動売却：${RARITY_NAMES[st.autoSell]}${st.autoSell === 'common' ? '' : '以下'}${st.autoSellKeepAffix ? '（✦は残す）' : ''}`;
+          ? t('自動売却：オフ')
+          : t(
+              st.autoSell === 'common'
+                ? st.autoSellKeepAffix
+                  ? '自動売却：{rarity}（✦は残す）'
+                  : '自動売却：{rarity}'
+                : st.autoSellKeepAffix
+                  ? '自動売却：{rarity}以下（✦は残す）'
+                  : '自動売却：{rarity}以下',
+              { rarity: t(RARITY_NAMES[st.autoSell]) },
+            );
       this.root.add(
         new Button(this, W / 2, 952, label, () => this.openAutoSell(), {
           width: W - 120,
@@ -614,14 +713,20 @@ export class BaseScene extends Phaser.Scene {
     const sellWithConfirm = (uids: string[], title: string) => {
       const items = save.inventory.filter((i) => uids.includes(i.uid));
       const gold = items.reduce((sum, i) => sum + sellPrice(i), 0);
-      confirmDialog(this, title, `${items.length}個を売ります（+${gold}G）`, '売る', () => {
-        const g = sellItems(save, uids);
-        persist();
-        sfx('drop');
-        this.sellPick = null;
-        this.showToast(`+${g}G`);
-        this.render();
-      });
+      confirmDialog(
+        this,
+        title,
+        t('{n}個を売ります（+{gold}G）', { n: items.length, gold }),
+        t('売る'),
+        () => {
+          const g = sellItems(save, uids);
+          persist();
+          sfx('drop');
+          this.sellPick = null;
+          this.showToast(`+${g}G`);
+          this.render();
+        },
+      );
     };
 
     let pickBtn: Button | null = null;
@@ -630,7 +735,9 @@ export class BaseScene extends Phaser.Scene {
       const gold = save.inventory
         .filter((i) => pick.has(i.uid))
         .reduce((sum, i) => sum + sellPrice(i), 0);
-      pickBtn.setText(pick.size > 0 ? `${pick.size}個を売る +${gold}G` : '選んで売る');
+      pickBtn.setText(
+        t(pick.size > 0 ? '{n}個を売る +{gold}G' : '選んで売る', { n: pick.size, gold }),
+      );
       pickBtn.setDisabled(pick.size === 0);
     };
 
@@ -640,7 +747,7 @@ export class BaseScene extends Phaser.Scene {
           this,
           W / 2 - 166,
           1060,
-          'やめる',
+          t('やめる'),
           () => {
             this.sellPick = null;
             this.render();
@@ -653,7 +760,7 @@ export class BaseScene extends Phaser.Scene {
         W / 2 + 166,
         1060,
         '',
-        () => sellWithConfirm([...pick], 'まとめて売る'),
+        () => sellWithConfirm([...pick], t('まとめて売る')),
         { width: 320, height: 72, fontSize: 22, skin: 'red' },
       );
       this.root.add(pickBtn);
@@ -664,7 +771,7 @@ export class BaseScene extends Phaser.Scene {
           this,
           W / 2 - 166,
           1060,
-          'まとめて売る',
+          t('まとめて売る'),
           () => {
             this.sellPick = new Set();
             this.render();
@@ -685,13 +792,18 @@ export class BaseScene extends Phaser.Scene {
         const choices: Choice[] = (['common', 'rare', 'epic'] as const).map((r) => {
           const list = below(r);
           const gold = list.reduce((sum, i) => sum + sellPrice(i), 0);
+          const rarity = t(RARITY_NAMES[r]);
           return {
-            label: `${RARITY_NAMES[r]}${r === 'common' ? '' : '以下'}  ${list.length}個 +${gold}G`,
+            label: t(r === 'common' ? '{rarity}  {n}個 +{gold}G' : '{rarity}以下  {n}個 +{gold}G', {
+              rarity,
+              n: list.length,
+              gold,
+            }),
             disabled: list.length === 0,
             onPick: () =>
               sellWithConfirm(
                 list.map((i) => i.uid),
-                `${RARITY_NAMES[r]}${r === 'common' ? '' : '以下'}を一括売却`,
+                t(r === 'common' ? '{rarity}を一括売却' : '{rarity}以下を一括売却', { rarity }),
               ),
           };
         });
@@ -701,17 +813,17 @@ export class BaseScene extends Phaser.Scene {
         );
         const cGold = consumables.reduce((sum, i) => sum + sellPrice(i), 0);
         choices.push({
-          label: `消耗品  ${consumables.length}個 +${cGold}G`,
+          label: t('消耗品  {n}個 +{gold}G', { n: consumables.length, gold: cGold }),
           disabled: consumables.length === 0,
           skin: 'green',
           onPick: () =>
             sellWithConfirm(
               consumables.map((i) => i.uid),
-              '消耗品を一括売却',
+              t('消耗品を一括売却'),
             ),
         });
         choices.push({
-          label: this.keepAffixes ? '✦付きは残す：オン' : '✦付きは残す：オフ',
+          label: t(this.keepAffixes ? '✦付きは残す：オン' : '✦付きは残す：オフ'),
           skin: 'blue',
           onPick: () => {
             this.keepAffixes = !this.keepAffixes;
@@ -720,13 +832,13 @@ export class BaseScene extends Phaser.Scene {
         });
         choiceDialog(
           this,
-          '一括売却',
+          t('一括売却'),
           choices,
-          '装備中・ロック中・編成で使用中・アーティファクトは売りません',
+          t('装備中・ロック中・編成で使用中・アーティファクトは売りません'),
         );
       };
       this.root.add(
-        new Button(this, W / 2 + 166, 1060, '一括売却', openBulk, {
+        new Button(this, W / 2 + 166, 1060, t('一括売却'), openBulk, {
           width: 320,
           height: 72,
           fontSize: 24,
@@ -740,8 +852,8 @@ export class BaseScene extends Phaser.Scene {
   private renderSmith(): void {
     // 上の切り替え: 付け直し／合成
     const modes: ['reorient' | 'synth', string][] = [
-      ['reorient', '向きの付け直し'],
-      ['synth', '合成'],
+      ['reorient', t('向きの付け直し')],
+      ['synth', t('合成')],
     ];
     modes.forEach(([m, label], i) => {
       this.root.add(
@@ -782,7 +894,7 @@ export class BaseScene extends Phaser.Scene {
         onTap: (it) => {
           if (!canReorient(it)) {
             sfx('error');
-            this.showToast('この装備は向きを付け直せません', true);
+            this.showToast(t('この装備は向きを付け直せません'), true);
             return;
           }
           this.selected = it.uid;
@@ -791,7 +903,7 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: (it) => showItemDetail(this, it),
       },
-      (it) => (eq.has(it.uid) ? '装備中' : presetMark(save, presetUses, it.uid)),
+      (it) => (eq.has(it.uid) ? t('装備中') : presetMark(save, presetUses, it.uid)),
     );
     list.setItems(save.inventory.filter((i) => getItemDef(i.defId).kind !== 'consumable'));
     list.setSelected(this.selected);
@@ -807,25 +919,49 @@ export class BaseScene extends Phaser.Scene {
           .setScale(7)
           .setAlpha(0.5),
       );
-      this.root.add(ink(this, W / 2, py + 270, '付け直す装備を選んでください', 26).setOrigin(0.5));
       this.root.add(
-        ink(
-          this,
-          W / 2,
-          py + 312,
-          '出口の数は変わらず、方向だけが変わります',
-          20,
-          '#7a5a30',
-        ).setOrigin(0.5),
+        fitText(
+          ink(this, W / 2, py + 270, t('付け直す装備を選んでください'), 26).setOrigin(0.5),
+          W - 70,
+        ),
+      );
+      this.root.add(
+        fitText(
+          ink(
+            this,
+            W / 2,
+            py + 312,
+            t('出口の数は変わらず、方向だけが変わります'),
+            20,
+            '#7a5a30',
+          ).setOrigin(0.5),
+          W - 70,
+        ),
       );
       return;
     }
     const def = getItemDef(it.defId);
     this.root.add(new ItemIcon(this, 110, py + 90, it, 120));
-    this.root.add(this.add.text(190, py + 40, def.name, textStyle(34, rarityCss(it.rarity))));
-    this.root.add(ink(this, 190, py + 92, describeItem(it)[1] ?? '', 22, '#5a3a20'));
+    // Text right of the icon stays inside the paper panel
+    const infoW = W - 190 - 30;
     this.root.add(
-      ink(this, 190, py + 124, `付け直し ${it.rerollCount}回（毎回 料金×1.5）`, 18, '#7a5a30'),
+      fitText(this.add.text(190, py + 40, t(def.name), textStyle(34, rarityCss(it.rarity))), infoW),
+    );
+    this.root.add(
+      fitText(ink(this, 190, py + 92, describeItem(it)[1] ?? '', 22, '#5a3a20'), infoW),
+    );
+    this.root.add(
+      fitText(
+        ink(
+          this,
+          190,
+          py + 124,
+          t('付け直し {n}回（毎回 料金×1.5）', { n: it.rerollCount }),
+          18,
+          '#7a5a30',
+        ),
+        infoW,
+      ),
     );
     const rc = rerollCost(it, 'reroll');
     const sc = rerollCost(it, 'specify');
@@ -834,10 +970,10 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 - 160,
         py + 210,
-        `再抽選 ${rc}G`,
+        t('再抽選 {gold}G', { gold: rc }),
         () => {
           if (!rerollItem(save, it.uid, new Rng(randomSeed()))) {
-            this.showToast('ゴールドが足りません', true);
+            this.showToast(t('ゴールドが足りません'), true);
             return;
           }
           persist();
@@ -856,7 +992,14 @@ export class BaseScene extends Phaser.Scene {
           this,
           W / 2,
           py + 388,
-          `${isPremium() ? '' : '▶ 広告を見て'}無料で再抽選（今日あと${freeLeft}回）`,
+          t(
+            isPremium()
+              ? '無料で再抽選（今日あと{n}回）'
+              : '▶ 広告を見て無料で再抽選（今日あと{n}回）',
+            {
+              n: freeLeft,
+            },
+          ),
           () => {
             void earnReward(this).then((ok) => {
               if (!ok) return;
@@ -871,7 +1014,10 @@ export class BaseScene extends Phaser.Scene {
           { width: W - 120, height: 58, fontSize: 22, skin: 'green' },
         ),
       );
-    this.root.add(ink(this, 50, py + 290, `指定: ${it.exits.length}方向を選ぶ`, 22));
+    // Must end before the first arrow button (its left edge is at x = 330 - 37)
+    this.root.add(
+      fitText(ink(this, 50, py + 290, t('指定: {n}方向を選ぶ', { n: it.exits.length }), 22), 233),
+    );
     DIRS.forEach((d, i) => {
       const on = this.specify.includes(d);
       this.root.add(
@@ -895,11 +1041,13 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 + 160,
         py + 210,
-        `指定 ${sc}G`,
+        t('指定 {gold}G', { gold: sc }),
         () => {
           if (!specifyExits(save, it.uid, this.specify)) {
             this.showToast(
-              ready ? 'ゴールドが足りません' : `方向を${it.exits.length}つ選んでください`,
+              ready
+                ? t('ゴールドが足りません')
+                : t('方向を{n}つ選んでください', { n: it.exits.length }),
               true,
             );
             return;
@@ -916,19 +1064,31 @@ export class BaseScene extends Phaser.Scene {
   // ---- 永続強化 ----
   private renderUpgrade(): void {
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '強化'));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('強化')));
     const hs = heroStats(save);
     const bp = backpackSize(save.upgrades.backpack);
+    const stars = totalStars(save);
     const now: Record<UpgradeId, string> = {
-      maxHp: `最大HP ${hs.maxHp}${totalStars(save) > 0 ? `（★${totalStars(save)}で+${PROGRESS.starHp * totalStars(save)}込み）` : ''}`,
-      atb: `攻撃間隔 ${hs.atbTime.toFixed(2)}秒`,
-      attack: `攻撃倍率 ×${hs.attackMult.toFixed(2)}${totalStars(save) > 0 ? `（★${totalStars(save)}で+${Math.round(PROGRESS.starAttack * 100 * totalStars(save))}%込み）` : ''}`,
+      maxHp: t(stars > 0 ? '最大HP {hp}（★{stars}で+{bonus}込み）' : '最大HP {hp}', {
+        hp: hs.maxHp,
+        stars,
+        bonus: PROGRESS.starHp * stars,
+      }),
+      atb: t('攻撃間隔 {sec}秒', { sec: hs.atbTime.toFixed(2) }),
+      attack: t(stars > 0 ? '攻撃倍率 ×{mult}（★{stars}で+{bonus}%込み）' : '攻撃倍率 ×{mult}', {
+        mult: hs.attackMult.toFixed(2),
+        stars,
+        bonus: Math.round(PROGRESS.starAttack * 100 * stars),
+      }),
       runTime: Number.isFinite(TIME_BONUS.maxRunTime)
-        ? `出撃 ${hs.runTime}秒（延長込みの上限 ${TIME_BONUS.maxRunTime}秒）`
-        : `出撃 ${hs.runTime}秒`,
-      backpack: `${bp.width}×${bp.height}マス`,
-      consumableSlots: `${consumableSlots(save)}枠`,
-      storage: `${storageCapacity(save)}個`,
+        ? t('出撃 {sec}秒（延長込みの上限 {max}秒）', {
+            sec: hs.runTime,
+            max: TIME_BONUS.maxRunTime,
+          })
+        : t('出撃 {sec}秒', { sec: hs.runTime }),
+      backpack: t('{w}×{h}マス', { w: bp.width, h: bp.height }),
+      consumableSlots: t('{n}枠', { n: consumableSlots(save) }),
+      storage: t('{n}個', { n: storageCapacity(save) }),
     };
     (Object.keys(UPGRADES) as UpgradeId[]).forEach((id, i) => {
       const def = UPGRADES[id];
@@ -939,8 +1099,12 @@ export class BaseScene extends Phaser.Scene {
       const y = CONTENT_TOP + 132 + i * 128;
       this.root.add(panel(this, W / 2, y, W - 30, 120, 'panel'));
       this.root.add(new RoundButton(this, 80, y, 84, UPGRADE_ICON[id], null, () => undefined));
-      this.root.add(this.add.text(140, y - 44, def.name, textStyle(26)));
-      this.root.add(this.add.text(140, y - 8, now[id], textStyle(18, COLORS.textDim)));
+      // Name and value end before the buy button (its left edge is at x = W - 220)
+      const textW = W - 220 - 140 - 10;
+      this.root.add(fitText(this.add.text(140, y - 44, t(def.name), textStyle(26)), textW));
+      this.root.add(
+        fitText(this.add.text(140, y - 8, now[id], textStyle(18, COLORS.textDim)), textW),
+      );
       // 段階のつぶ
       const pips = max;
       const pw = Math.min(22, 300 / pips);
@@ -957,10 +1121,10 @@ export class BaseScene extends Phaser.Scene {
           this,
           W - 130,
           y,
-          cost === null ? '最大' : `${cost}`,
+          cost === null ? t('最大') : `${cost}`,
           () => {
             if (!buyUpgrade(save, id)) {
-              this.showToast('ゴールドが足りません', true);
+              this.showToast(t('ゴールドが足りません'), true);
               return;
             }
             persist();
@@ -983,7 +1147,7 @@ export class BaseScene extends Phaser.Scene {
   private renderSettings(): void {
     const save = getSave();
     const st = save.settings;
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '設定'));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('設定')));
     this.root.add(panel(this, W / 2, 545, W - 40, 670, 'paper'));
     const row = (
       y: number,
@@ -992,14 +1156,17 @@ export class BaseScene extends Phaser.Scene {
       onMinus: (() => void) | null,
       onPlus: () => void,
     ) => {
-      this.root.add(ink(this, 70, y, label, 28).setOrigin(0, 0.5));
-      this.root.add(ink(this, W - 250, y, value, 30, '#7a3c10').setOrigin(0.5));
+      const valueText = ink(this, W - 250, y, value, 30, '#7a3c10').setOrigin(0.5);
+      // The label ends before the − button, or before the value when there is none
+      const labelEnd = onMinus ? W - 360 - 37 : valueText.x - valueText.width / 2;
+      this.root.add(fitText(ink(this, 70, y, label, 28).setOrigin(0, 0.5), labelEnd - 70 - 12));
+      this.root.add(valueText);
       if (onMinus)
         this.root.add(
           new Button(this, W - 360, y, '−', onMinus, { width: 74, height: 70, skin: 'blue' }),
         );
       this.root.add(
-        new Button(this, W - 120, y, onMinus ? '+' : '切替', onPlus, {
+        new Button(this, W - 120, y, onMinus ? '+' : t('切替'), onPlus, {
           width: onMinus ? 74 : 140,
           height: 70,
           skin: onMinus ? 'blue' : value === 'ON' ? 'green' : 'gray',
@@ -1013,7 +1180,7 @@ export class BaseScene extends Phaser.Scene {
     };
     row(
       300,
-      '音量',
+      t('音量'),
       `${Math.round(st.volume * 100)}%`,
       () => {
         st.volume = Math.max(0, Math.round((st.volume - 0.1) * 10) / 10);
@@ -1029,7 +1196,7 @@ export class BaseScene extends Phaser.Scene {
     const si = Math.max(0, speeds.indexOf(st.gameSpeed));
     row(
       690,
-      'ゲームスピード',
+      t('ゲームスピード'),
       `×${st.gameSpeed}`,
       () => {
         st.gameSpeed = speeds[Math.max(0, si - 1)]!;
@@ -1040,7 +1207,12 @@ export class BaseScene extends Phaser.Scene {
         changed();
       },
     );
-    this.root.add(ink(this, 70, 760, '検証用。×2 なら30秒のランが15秒で終わります', 18, '#7a5a30'));
+    this.root.add(
+      fitText(
+        ink(this, 70, 760, t('検証用。×2 なら30秒のランが15秒で終わります'), 18, '#7a5a30'),
+        W - 140,
+      ),
+    );
     // プレミアム（買い切り）: 広告を見なくても、広告のご褒美を受け取れる
     const prem = isPremium();
     this.root.add(
@@ -1048,16 +1220,16 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 - 110,
         1050,
-        prem ? 'プレミアム（購入済み）' : `プレミアム ${PREMIUM_PRICE}`,
+        t(prem ? 'プレミアム（購入済み）' : 'プレミアム {price}', { price: t(PREMIUM_PRICE) }),
         () => {
           if (prem) {
-            this.showToast('広告なしでご褒美を受け取れます');
+            this.showToast(t('広告なしでご褒美を受け取れます'));
             return;
           }
           void buyPremium(this).then((ok) => {
             if (ok) {
               sfx('openLegend');
-              this.showToast('プレミアムになりました！');
+              this.showToast(t('プレミアムになりました！'));
             }
             this.render();
           });
@@ -1070,10 +1242,10 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 + 214,
         1050,
-        '購入を復元',
+        t('購入を復元'),
         () => {
           void restorePurchases().then((ok) => {
-            this.showToast(ok ? '購入を復元しました' : '復元できる購入はありません', !ok);
+            this.showToast(t(ok ? '購入を復元しました' : '復元できる購入はありません'), !ok);
             this.render();
           });
         },
@@ -1081,7 +1253,7 @@ export class BaseScene extends Phaser.Scene {
       ),
     );
     this.root.add(
-      new Button(this, W / 2 - 110, 960, '遊び方・強くなるコツ', () => this.go('help'), {
+      new Button(this, W / 2 - 110, 960, t('遊び方・強くなるコツ'), () => this.go('help'), {
         width: 400,
         height: 84,
         fontSize: 24,
@@ -1095,19 +1267,19 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 + 214,
         960,
-        '案内をもう一度',
+        t('案内をもう一度'),
         () => {
           resetTutorials();
-          this.showToast('各画面で、案内がもう一度出ます');
+          this.showToast(t('各画面で、案内がもう一度出ます'));
         },
         { width: 200, height: 84, fontSize: 20, skin: 'blue' },
       ),
     );
-    row(430, '振動', st.haptics ? 'ON' : 'OFF', null, () => {
+    row(430, t('振動'), st.haptics ? 'ON' : 'OFF', null, () => {
       st.haptics = !st.haptics;
       changed();
     });
-    row(560, '画面揺れ・光', st.shake ? 'ON' : 'OFF', null, () => {
+    row(560, t('画面揺れ・光'), st.shake ? 'ON' : 'OFF', null, () => {
       st.shake = !st.shake;
       changed();
     });
@@ -1115,8 +1287,13 @@ export class BaseScene extends Phaser.Scene {
     if (READY_LANGS.length > 1) {
       const y = 830;
       const label = lang() === 'en' ? 'Language' : `${t('言語')} / Language`;
-      this.root.add(ink(this, 70, y, label, 26).setOrigin(0, 0.5));
-      const now = st.lang === 'auto' ? `${t('自動')}（${LANG_NAMES[lang()]}）` : LANG_NAMES[st.lang];
+      // Ends before the language button (its left edge is at x = W - 340)
+      this.root.add(fitText(ink(this, 70, y, label, 26).setOrigin(0, 0.5), W - 340 - 70 - 12));
+      // "{auto}（{lang}）" is a label with its value; keeps the existing 自動 / 端末の言語 keys
+      const now =
+        st.lang === 'auto'
+          ? t('{auto}（{lang}）', { auto: t('自動'), lang: LANG_NAMES[lang()] })
+          : LANG_NAMES[st.lang];
       this.root.add(
         new Button(this, W - 190, y, now, () => this.openLanguage(), {
           width: 300,
@@ -1133,7 +1310,10 @@ export class BaseScene extends Phaser.Scene {
     const st = getSave().settings;
     const opts: LangSetting[] = ['auto', ...READY_LANGS];
     const choices: Choice[] = opts.map((v) => {
-      const name = v === 'auto' ? `${t('自動')}（${t('端末の言語')}）` : LANG_NAMES[v];
+      const name =
+        v === 'auto'
+          ? t('{auto}（{lang}）', { auto: t('自動'), lang: t('端末の言語') })
+          : LANG_NAMES[v];
       return {
         label: st.lang === v ? `● ${name}` : name,
         skin: st.lang === v ? 'gold' : 'blue',
@@ -1153,10 +1333,10 @@ export class BaseScene extends Phaser.Scene {
     const save = getSave();
     const st = save.settings;
     const opts: [SaveData['settings']['autoSell'], string][] = [
-      ['off', 'オフ（売らない）'],
-      ['common', 'コモンを売る'],
-      ['rare', 'レア以下を売る'],
-      ['epic', 'エピック以下を売る'],
+      ['off', t('オフ（売らない）')],
+      ['common', t('コモンを売る')],
+      ['rare', t('レア以下を売る')],
+      ['epic', t('エピック以下を売る')],
     ];
     const choices: Choice[] = opts.map(([v, label]) => ({
       label: st.autoSell === v ? `● ${label}` : label,
@@ -1168,7 +1348,7 @@ export class BaseScene extends Phaser.Scene {
       },
     }));
     choices.push({
-      label: st.autoSellKeepAffix ? '✦付きは残す：オン' : '✦付きは残す：オフ',
+      label: t(st.autoSellKeepAffix ? '✦付きは残す：オン' : '✦付きは残す：オフ'),
       skin: 'gray',
       onPick: () => {
         st.autoSellKeepAffix = !st.autoSellKeepAffix;
@@ -1179,9 +1359,9 @@ export class BaseScene extends Phaser.Scene {
     });
     choiceDialog(
       this,
-      '自動売却',
+      t('自動売却'),
       choices,
-      'ラン後に戦利品から売ります。消耗品・アーティファクトは売りません',
+      t('ラン後に戦利品から売ります。消耗品・アーティファクトは売りません'),
     );
   }
 
@@ -1191,7 +1371,9 @@ export class BaseScene extends Phaser.Scene {
       runTutorial(this, 'home', [
         {
           rect: { x: W / 2, y: 760, w: 476, h: 132 },
-          text: 'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！',
+          text: t(
+            'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！',
+          ),
           onTap: () => this.goSortie(),
         },
       ]);
@@ -1200,7 +1382,9 @@ export class BaseScene extends Phaser.Scene {
         runTutorial(this, 'loadoutGo', [
           {
             rect: { x: (W / 5) * 4.5, y: H - TAB_BAR_H + 56, w: 128, h: 116 },
-            text: '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね',
+            text: t(
+              '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね',
+            ),
             onTap: () => goTab(this, 'loadout'),
           },
         ]);
@@ -1209,7 +1393,9 @@ export class BaseScene extends Phaser.Scene {
       runTutorial(this, 'smith', [
         {
           rect: { x: W / 2, y: CONTENT_TOP + 40, w: W - 20, h: 80 },
-          text: '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ',
+          text: t(
+            '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ',
+          ),
         },
       ]);
   }
@@ -1220,7 +1406,10 @@ export class BaseScene extends Phaser.Scene {
     const plan = synthPlan(getSave(), it.uid);
     const ok = plan.reason === null && plan.to !== null;
     return {
-      label: plan.to === null ? '合成' : ok ? `合成 ${plan.cost}G` : `合成 ${plan.have}/3`,
+      label: t(plan.to === null ? '合成' : ok ? '合成 {gold}G' : '合成 {have}/3', {
+        gold: plan.cost,
+        have: plan.have,
+      }),
       skin: 'blue',
       icon: 'up',
       disabled: !ok,
@@ -1243,11 +1432,24 @@ export class BaseScene extends Phaser.Scene {
       return;
     }
     const def = getItemDef(it.defId);
+    const lineUp = !!plan.toDefId && plan.toDefId !== it.defId;
     confirmDialog(
       this,
-      '合成',
-      `${def.name}（${RARITY_NAMES[it.rarity]}）を3つ使って、${plan.toDefId && plan.toDefId !== it.defId ? getItemDef(plan.toDefId).name + 'の' : ''}${RARITY_NAMES[plan.to]}を狙います（${plan.cost}G）。\n成功率は${Math.round(synthRate(it.rarity) * 100)}%。失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ手に入ります`,
-      '合成する',
+      t('合成'),
+      t(
+        lineUp
+          ? '{item}（{rarity}）を3つ使って、{target}の{to}を狙います（{gold}G）。\n成功率は{rate}%。失敗すると{rarity}のランダムな装備が1つ手に入ります'
+          : '{item}（{rarity}）を3つ使って、{to}を狙います（{gold}G）。\n成功率は{rate}%。失敗すると{rarity}のランダムな装備が1つ手に入ります',
+        {
+          item: t(def.name),
+          rarity: t(RARITY_NAMES[it.rarity]),
+          target: plan.toDefId ? t(getItemDef(plan.toDefId).name) : '',
+          to: t(RARITY_NAMES[plan.to]),
+          gold: plan.cost,
+          rate: Math.round(synthRate(it.rarity) * 100),
+        },
+      ),
+      t('合成する'),
       () => {
         const save = getSave();
         const res = synthesize(save, it.uid, new Rng(randomSeed()));
@@ -1287,10 +1489,10 @@ export class BaseScene extends Phaser.Scene {
         onLongPress: (it) => showItemDetail(this, it),
       },
       (it) => {
-        if (eq.has(it.uid)) return '装備中';
-        if (it.locked) return 'ロック';
+        if (eq.has(it.uid)) return t('装備中');
+        if (it.locked) return t('ロック');
         const n = groupCount(it);
-        return n >= 3 ? `${n}つ` : presetMark(save, presetUses, it.uid);
+        return n >= 3 ? t('{n}つ', { n }) : presetMark(save, presetUses, it.uid);
       },
     );
     list.setItems(candidates);
@@ -1307,69 +1509,105 @@ export class BaseScene extends Phaser.Scene {
           .setScale(7)
           .setAlpha(0.5),
       );
-      this.root.add(ink(this, W / 2, py + 250, '合成する装備を選んでください', 26).setOrigin(0.5));
       this.root.add(
-        ink(
-          this,
-          W / 2,
-          py + 292,
-          '同じ装備・同じレアリティを3つで、1つ上のレアリティに',
-          20,
-          '#7a5a30',
-        ).setOrigin(0.5),
+        fitText(
+          ink(this, W / 2, py + 250, t('合成する装備を選んでください'), 26).setOrigin(0.5),
+          W - 70,
+        ),
       );
       this.root.add(
-        ink(
-          this,
-          W / 2,
-          py + 326,
-          '「○つ」の印は、3つ以上揃っている装備です',
-          18,
-          '#7a5a30',
-        ).setOrigin(0.5),
+        fitText(
+          ink(
+            this,
+            W / 2,
+            py + 292,
+            t('同じ装備・同じレアリティを3つで、1つ上のレアリティに'),
+            20,
+            '#7a5a30',
+          ).setOrigin(0.5),
+          W - 70,
+        ),
+      );
+      this.root.add(
+        fitText(
+          ink(
+            this,
+            W / 2,
+            py + 326,
+            t('「○つ」の印は、3つ以上揃っている装備です'),
+            18,
+            '#7a5a30',
+          ).setOrigin(0.5),
+          W - 70,
+        ),
       );
       return;
     }
     const def = getItemDef(it.defId);
     const plan = synthPlan(save, it.uid);
     this.root.add(new ItemIcon(this, 110, py + 90, it, 120));
-    this.root.add(this.add.text(190, py + 40, def.name, textStyle(34, rarityCss(it.rarity))));
+    // Text right of the icon stays inside the paper panel
+    const infoW = W - 190 - 30;
     this.root.add(
-      ink(
-        this,
-        190,
-        py + 92,
-        plan.to
-          ? `${RARITY_NAMES[it.rarity]} ×3 → ${
-              plan.toDefId && plan.toDefId !== it.defId ? `${getItemDef(plan.toDefId).name}の` : ''
-            }${RARITY_NAMES[plan.to]} ×1`
-          : 'これ以上のレアリティはありません',
-        24,
-        '#5a3a20',
+      fitText(this.add.text(190, py + 40, t(def.name), textStyle(34, rarityCss(it.rarity))), infoW),
+    );
+    const lineUp = !!plan.toDefId && plan.toDefId !== it.defId;
+    this.root.add(
+      fitText(
+        ink(
+          this,
+          190,
+          py + 92,
+          plan.to
+            ? t(lineUp ? '{rarity} ×3 → {target}の{to} ×1' : '{rarity} ×3 → {to} ×1', {
+                rarity: t(RARITY_NAMES[it.rarity]),
+                target: plan.toDefId ? t(getItemDef(plan.toDefId).name) : '',
+                to: t(RARITY_NAMES[plan.to]),
+              })
+            : t('これ以上のレアリティはありません'),
+          24,
+          '#5a3a20',
+        ),
+        infoW,
       ),
     );
     this.root.add(
-      ink(
-        this,
-        190,
-        py + 128,
-        `使える数: ${groupCount(it)}つ（装備中・ロック中・ほかの編成で使用中は除く）`,
-        18,
-        '#7a5a30',
+      fitText(
+        ink(
+          this,
+          190,
+          py + 128,
+          t('使える数: {n}つ（装備中・ロック中・ほかの編成で使用中は除く）', { n: groupCount(it) }),
+          18,
+          '#7a5a30',
+        ),
+        infoW,
       ),
     );
     if (plan.to) {
       this.root.add(
-        ink(this, 50, py + 176, `成功率 ${Math.round(synthRate(it.rarity) * 100)}%`, 28, '#2a6a30'),
-      );
-      this.root.add(
         ink(
           this,
           50,
-          py + 214,
-          `失敗すると${RARITY_NAMES[it.rarity]}のランダムな装備が1つ（追加効果・向きは新しく）`,
-          18,
-          '#7a5a30',
+          py + 176,
+          t('成功率 {rate}%', { rate: Math.round(synthRate(it.rarity) * 100) }),
+          28,
+          '#2a6a30',
+        ),
+      );
+      this.root.add(
+        fitText(
+          ink(
+            this,
+            50,
+            py + 214,
+            t('失敗すると{rarity}のランダムな装備が1つ（追加効果・向きは新しく）', {
+              rarity: t(RARITY_NAMES[it.rarity]),
+            }),
+            18,
+            '#7a5a30',
+          ),
+          W - 50 - 30,
         ),
       );
     }
@@ -1378,13 +1616,15 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2,
         py + 290,
-        plan.to ? `合成する ${plan.cost}G` : '合成できません',
+        t(plan.to ? '合成する {gold}G' : '合成できません', { gold: plan.cost }),
         () => this.confirmSynth(it),
         { width: 420, height: 88, fontSize: 30, skin: 'blue', icon: 'up', disabled: !!plan.reason },
       ),
     );
     if (plan.reason)
-      this.root.add(ink(this, W / 2, py + 360, plan.reason, 22, '#a03020').setOrigin(0.5));
+      this.root.add(
+        fitText(ink(this, W / 2, py + 360, plan.reason, 22, '#a03020').setOrigin(0.5), W - 70),
+      );
   }
 
   /** 合成の結果: 宝箱から出てくる演出。成否は開いたあとに出す。開いたあとタップで閉じる */
@@ -1393,7 +1633,7 @@ export class BaseScene extends Phaser.Scene {
     const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.75).setOrigin(0, 0).setInteractive();
     root.add(shade);
     const title = this.add
-      .text(W / 2, H / 2 - 220, '合成中…', textStyle(56, '#ffe27a'))
+      .text(W / 2, H / 2 - 220, t('合成中…'), textStyle(56, '#ffe27a'))
       .setOrigin(0.5);
     root.add(title);
     const hint = this.add
@@ -1405,11 +1645,15 @@ export class BaseScene extends Phaser.Scene {
       iconSize: 160,
       shake: getSave().settings.shake,
       onDone: () => {
-        hint.setText('タップで閉じる');
-        title.setText(success ? '合成成功！' : '失敗…').setColor(success ? '#ffe27a' : '#a0a0b8');
+        hint.setText(t('タップで閉じる'));
+        title
+          .setText(t(success ? '合成成功！' : '失敗…'))
+          .setColor(success ? '#ffe27a' : '#a0a0b8');
+        // Pop relative to the fitted scale so a long translation stays on screen
+        const fit = fitText(title, W - 40).scaleX;
         this.tweens.add({
           targets: title,
-          scale: { from: 1.4, to: 1 },
+          scale: { from: 1.4 * fit, to: fit },
           duration: 260,
           ease: 'Back.easeOut',
         });
@@ -1430,7 +1674,7 @@ export class BaseScene extends Phaser.Scene {
 
   // ---- ヘルプ（遊び方・強くなるコツ） ----
   private renderHelp(): void {
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '遊び方・強くなるコツ', 420));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('遊び方・強くなるコツ'), 420));
     const top = CONTENT_TOP + 90;
     const bottom = CONTENT_BOTTOM - 10;
     this.root.add(panel(this, W / 2, (top + bottom) / 2, W - 30, bottom - top + 10, 'paper'));
@@ -1439,19 +1683,21 @@ export class BaseScene extends Phaser.Scene {
     let y = 24;
     const left = 44;
     const width = W - 88;
+    const params = { n: TECHNIQUES.length, price: t(MONETIZE.premiumPrice) };
     for (const sec of HELP_SECTIONS) {
-      const h = ink(this, left, y, sec.title, 28, '#8a3a20');
+      const h = ink(this, left, y, t(sec.title), 28, '#8a3a20').setWordWrapWidth(width, true);
       content.add(h);
       y += h.height + 10;
       for (const line of sec.lines) {
-        const bullet = line.startsWith('・') || line.startsWith('　');
-        const t = this.add.text(left + (bullet ? 8 : 0), y, line, {
+        // Indent decided by the Japanese key ('・' bullet or U+3000 indent), whatever the translation
+        const bullet = line.charCodeAt(0) === 0x30fb || line.charCodeAt(0) === 0x3000;
+        const text = this.add.text(left + (bullet ? 8 : 0), y, t(line, params), {
           ...inkStyle(20),
           wordWrap: { width: width - (bullet ? 8 : 0), useAdvancedWrap: true },
           lineSpacing: 4,
         });
-        content.add(t);
-        y += t.height + 8;
+        content.add(text);
+        y += text.height + 8;
       }
       y += 22;
     }
@@ -1497,8 +1743,8 @@ export class BaseScene extends Phaser.Scene {
   /** 図鑑の切り替え（必殺技・実績） */
   private addBookTabs(): void {
     const tabs: [Page, string][] = [
-      ['techs', '必殺技'],
-      ['achievements', '実績'],
+      ['techs', t('必殺技')],
+      ['achievements', t('実績')],
     ];
     tabs.forEach(([page, label], i) => {
       this.root.add(
@@ -1524,12 +1770,12 @@ export class BaseScene extends Phaser.Scene {
   // ---- ランキング（挑戦・エンドレス） ----
   private renderRanking(): void {
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, 'ランキング', 420));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('ランキング'), 420));
     const now = Date.now();
     const ch = currentChallenge(now, challengeStart(devChallengeOpen()));
     const tabs: [RankMode, string][] = [
-      ['challenge', '2週替わりの挑戦'],
-      ['endless', 'エンドレス（月ごと）'],
+      ['challenge', t('2週替わりの挑戦')],
+      ['endless', t('エンドレス（月ごと）')],
     ];
     tabs.forEach(([m, label], i) =>
       this.root.add(
@@ -1550,29 +1796,45 @@ export class BaseScene extends Phaser.Scene {
     const season = this.rankTab === 'challenge' ? (ch?.period ?? null) : endlessSeason(now);
     const sid = season === null ? null : `${this.rankTab}-${season}`;
     this.root.add(
-      this.add
-        .text(
-          W / 2,
-          y,
-          sid ? seasonLabel(sid) : '挑戦はまだ始まっていません',
-          textStyle(26, '#ffe27a'),
-        )
-        .setOrigin(0.5, 0),
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            y,
+            sid ? seasonLabel(sid) : t('挑戦はまだ始まっていません'),
+            textStyle(26, '#ffe27a'),
+          )
+          .setOrigin(0.5, 0),
+        W - 40,
+      ),
     );
     y += 44;
-    const myName = save.rankName ? nameText(save.rankName) : '（初めて記録を送るときに決まります）';
-    this.root.add(this.add.text(40, y, `あなたの名前: ${myName}`, textStyle(20, COLORS.textDim)));
+    const myName = save.rankName
+      ? nameText(save.rankName)
+      : t('（初めて記録を送るときに決まります）');
+    // Ends before the "change" button (its left edge is at x = W - 145) when it is shown
+    this.root.add(
+      fitText(
+        this.add.text(
+          40,
+          y,
+          t('あなたの名前: {name}', { name: myName }),
+          textStyle(20, COLORS.textDim),
+        ),
+        (rankingReady() ? W - 145 - 10 : W - 40) - 40,
+      ),
+    );
     if (rankingReady()) {
       this.root.add(
         new Button(
           this,
           W - 90,
           y + 12,
-          '変える',
+          t('変える'),
           () => {
             const n = randomName();
             void saveName(n).then((ok) => {
-              if (ok === null) return this.showToast('つながりませんでした', true);
+              if (ok === null) return this.showToast(t('つながりませんでした'), true);
               save.rankName = n;
               persist();
               if (this.page === 'ranking') this.render();
@@ -1585,7 +1847,10 @@ export class BaseScene extends Phaser.Scene {
     y += 50;
     // 報酬の案内
     const rw = RANK_REWARDS;
-    const note = `シーズンの終わりに: 上位1% ${rw.top1.gold}G＋称号 / 上位10% ${rw.top10.gold}G＋称号 / 上位50% ${rw.top50.gold}G＋称号 / 参加 ${rw.joined.gold}G`;
+    const note = t(
+      'シーズンの終わりに: 上位1% {top1}G＋称号 / 上位10% {top10}G＋称号 / 上位50% {top50}G＋称号 / 参加 {joined}G',
+      { top1: rw.top1.gold, top10: rw.top10.gold, top50: rw.top50.gold, joined: rw.joined.gold },
+    );
     const bottom = CONTENT_BOTTOM - 70;
     this.root.add(
       this.add
@@ -1602,17 +1867,23 @@ export class BaseScene extends Phaser.Scene {
           .text(
             W / 2,
             (y + bottom) / 2,
-            !rankingReady()
-              ? 'ランキングは、サーバーの準備ができたら開きます'
-              : '挑戦が始まったら、ここに順位が出ます',
-            textStyle(22, COLORS.textDim),
+            t(
+              !rankingReady()
+                ? 'ランキングは、サーバーの準備ができたら開きます'
+                : '挑戦が始まったら、ここに順位が出ます',
+            ),
+            {
+              ...textStyle(22, COLORS.textDim),
+              align: 'center',
+              wordWrap: { width: W - 60, useAdvancedWrap: true },
+            },
           )
           .setOrigin(0.5),
       );
       return;
     }
     const loading = this.add
-      .text(W / 2, (y + bottom) / 2, '読み込み中…', textStyle(22, COLORS.textDim))
+      .text(W / 2, (y + bottom) / 2, t('読み込み中…'), textStyle(22, COLORS.textDim))
       .setOrigin(0.5);
     this.root.add(loading);
     const gen = ++this.rankGen;
@@ -1623,7 +1894,12 @@ export class BaseScene extends Phaser.Scene {
       if (!board && !me) {
         this.root.add(
           this.add
-            .text(W / 2, (y + bottom) / 2, 'つながりませんでした', textStyle(22, COLORS.textWarn))
+            .text(
+              W / 2,
+              (y + bottom) / 2,
+              t('つながりませんでした'),
+              textStyle(22, COLORS.textWarn),
+            )
             .setOrigin(0.5),
         );
         return;
@@ -1631,29 +1907,57 @@ export class BaseScene extends Phaser.Scene {
       const total = me?.total ?? board?.total ?? 0;
       const mine =
         me?.rank != null
-          ? `あなた: ${me.rank}位 / ${total}人（上位${Math.max(1, Math.ceil((me.rank / Math.max(1, total)) * 100))}%）`
-          : `まだ記録がありません（参加 ${total}人）`;
-      this.root.add(this.add.text(W / 2, y, mine, textStyle(24, COLORS.text)).setOrigin(0.5, 0));
+          ? t('あなた: {rank}位 / {total}人（上位{pct}%）', {
+              rank: me.rank,
+              total,
+              pct: Math.max(1, Math.ceil((me.rank / Math.max(1, total)) * 100)),
+            })
+          : t('まだ記録がありません（参加 {total}人）', { total });
+      this.root.add(
+        fitText(
+          this.add.text(W / 2, y, mine, textStyle(24, COLORS.text)).setOrigin(0.5, 0),
+          W - 40,
+        ),
+      );
       const top = y + 46;
       const content = this.add.container(0, top);
       const rows = board?.top ?? [];
       rows.forEach((r, i) => {
         const ry = i * 52;
-        const me2 = save.rankName && r.name === nameText(save.rankName);
+        // Names arrive as word ids and are shown in this language
+        const me2 = sameName(r.name, save.rankName);
+        const name = rowName(r.name);
         content.add(panel(this, W / 2, ry + 24, W - 40, 48, me2 ? 'paper' : 'inset'));
         const col = me2 ? '#5a3a20' : r.rank <= 3 ? '#ffe27a' : COLORS.text;
         content.add(this.add.text(40, ry + 10, `${r.rank}`, textStyle(22, col)));
-        content.add(this.add.text(100, ry + 10, r.name, textStyle(20, col)));
         const val =
           mode === 'challenge'
-            ? Math.round(r.totalDamage).toLocaleString('ja-JP')
-            : `${r.reachedLoop}周・${Math.round(r.totalDamage).toLocaleString('ja-JP')}`;
-        content.add(this.add.text(W - 40, ry + 10, val, textStyle(20, col)).setOrigin(1, 0));
+            ? num(r.totalDamage)
+            : t('{loop}周・{damage}', { loop: r.reachedLoop, damage: num(r.totalDamage) });
+        const valText = this.add.text(W - 40, ry + 10, val, textStyle(20, col)).setOrigin(1, 0);
+        // Name decoration (challenge reward) before the name
+        const deco = decoTexture(this, r.deco);
+        if (deco)
+          content.add(
+            this.add
+              .image(100, ry + 24, deco)
+              .setScale(2)
+              .setOrigin(0, 0.5),
+          );
+        const nameX = deco ? 136 : 100;
+        // The name ends before the right-aligned score
+        content.add(
+          fitText(
+            this.add.text(nameX, ry + 10, name, textStyle(20, col)),
+            W - 40 - valText.width - nameX - 16,
+          ),
+        );
+        content.add(valText);
       });
       if (rows.length === 0)
         content.add(
           this.add
-            .text(W / 2, 40, 'まだ誰も記録していません', textStyle(22, COLORS.textDim))
+            .text(W / 2, 40, t('まだ誰も記録していません'), textStyle(22, COLORS.textDim))
             .setOrigin(0.5),
         );
       this.addScroll(content, top, bottom, Math.max(rows.length * 52, 80), 'ranking');
@@ -1668,24 +1972,193 @@ export class BaseScene extends Phaser.Scene {
       if (list.length === 0) return;
       const save = getSave();
       const lines: string[] = [];
+      const gained: string[] = [];
       for (const r of list) {
         const rw = RANK_REWARDS[r.band];
         save.gold += rw.gold;
-        const label = seasonLabel(r.season);
-        if (rw.title) save.titles.unshift(`${label} ${rw.title}`);
-        lines.push(`${label}: ${r.rank}位 / ${r.total}人（${rw.label}）  +${rw.gold}G`);
+        // Saved as an id so the title shows in whatever language is active later
+        if (rw.title) save.titles.unshift(titleId(r.season, r.band));
+        lines.push(
+          t('{season}: {rank}位 / {total}人（{band}）  +{gold}G', {
+            season: seasonLabel(r.season),
+            rank: r.rank,
+            total: r.total,
+            band: t(rw.label),
+            gold: rw.gold,
+          }),
+        );
+        // Challenge top ranks also earn cosmetics (looks only)
+        if (isChallengeSeason(r.season))
+          for (const id of cosmeticsForBand(r.band))
+            if (!save.cosmetics.includes(id)) {
+              save.cosmetics.push(id);
+              gained.push(id);
+            }
       }
+      if (gained.length > 0)
+        lines.push(
+          t('新しい装飾品: {list}', {
+            list: gained.map((id) => t(getCosmetic(id)!.name)).join(t('・|sep')),
+          }),
+        );
       save.titles = save.titles.slice(0, 50);
       persist();
       if (this.page === 'home') this.render();
-      confirmDialog(this, 'ランキングの報酬', lines.join('\n'), '受け取る', () => undefined);
+      confirmDialog(this, t('ランキングの報酬'), lines.join('\n'), t('受け取る'), () => undefined);
+    });
+  }
+
+  // ---- 装飾品（挑戦の上位のご褒美。見た目だけで、強さは変わらない） ----
+  private renderWardrobe(): void {
+    const save = getSave();
+    const owns = (id: string | null) => !id || devAllCosmetics() || save.cosmetics.includes(id);
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('装飾品'), 340));
+    this.root.add(
+      new Button(this, 76, CONTENT_TOP + 40, t('戻る'), () => this.go('challenge'), {
+        width: 112,
+        height: 56,
+        fontSize: 20,
+      }),
+    );
+    this.root.add(
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            CONTENT_TOP + 80,
+            t('挑戦で上位に入るともらえる、見た目だけの装飾品'),
+            textStyle(20, COLORS.textDim),
+          )
+          .setOrigin(0.5, 0),
+        W - 40,
+      ),
+    );
+    // Preview: the hero in the worn look with the pet, and the name as the ranking shows it
+    const stageY = CONTENT_TOP + 222;
+    this.root.add(panel(this, W / 2, stageY, W - 40, 196, 'inset'));
+    const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
+    const footY = stageY + 86;
+    this.root.add(
+      this.add
+        .sprite(W / 2, footY, 'hero')
+        .setScale(2.2)
+        .setOrigin(heroOrigin.originX, heroOrigin.originY),
+    );
+    const pet = addPet(this, save.look.pet, W / 2 - 104, footY - 96, 3);
+    if (pet) this.root.add(pet);
+    const nameY = stageY + 124;
+    const deco = decoTexture(this, save.look.deco);
+    const nameText0 = this.add
+      .text(
+        0,
+        nameY,
+        save.rankName ? nameText(save.rankName) : t('冒険者'),
+        textStyle(22, COLORS.text),
+      )
+      .setOrigin(0, 0.5);
+    fitText(nameText0, W - 160);
+    const rowW = nameText0.displayWidth + (deco ? 40 : 0);
+    nameText0.x = W / 2 - rowW / 2 + (deco ? 40 : 0);
+    if (deco)
+      this.root.add(
+        this.add
+          .image(W / 2 - rowW / 2, nameY, deco)
+          .setScale(2)
+          .setOrigin(0, 0.5),
+      );
+    this.root.add(nameText0);
+
+    const wear = (kind: CosmeticKind, id: string | null) => {
+      if (!owns(id)) {
+        this.showToast(t('挑戦で上位に入るともらえます'), true);
+        return;
+      }
+      sfx('click');
+      save.look = { ...save.look, [kind]: id };
+      if (kind === 'hero') applyHeroLook(this, id);
+      // Others see the decoration in the ranking (the server checks it was earned)
+      if (kind === 'deco') void saveDeco(id);
+      persist();
+      this.render();
+    };
+    const sections: { kind: CosmeticKind; title: string; none: string }[] = [
+      { kind: 'hero', title: t('勇者の色'), none: t('いつもの色') },
+      { kind: 'pet', title: t('ペット'), none: t('なし') },
+      { kind: 'deco', title: t('名前の飾り（ランキング）'), none: t('なし') },
+    ];
+    const cw = 150;
+    const ch = 140;
+    const gap = 12;
+    sections.forEach((sec, si) => {
+      const hy = CONTENT_TOP + 372 + si * 206;
+      this.root.add(fitText(this.add.text(36, hy, sec.title, textStyle(24, '#ffe27a')), W - 72));
+      const opts: (string | null)[] = [
+        null,
+        ...COSMETICS.filter((c) => c.kind === sec.kind).map((c) => c.id),
+      ];
+      const total = opts.length * cw + (opts.length - 1) * gap;
+      opts.forEach((id, i) => {
+        const x = W / 2 - total / 2 + cw / 2 + i * (cw + gap);
+        const cy = hy + 40 + ch / 2;
+        const def = id ? getCosmetic(id) : undefined;
+        const owned = owns(id);
+        const worn = save.look[sec.kind] === id;
+        this.root.add(panel(this, x, cy, cw, ch, worn ? 'paper' : 'inset'));
+        const key =
+          sec.kind === 'hero' ? heroLookPreview(this, id) : id ? cosmeticTexture(this, id) : null;
+        if (key) {
+          const src = this.textures.get(key).getSourceImage();
+          const img = this.add
+            .image(x, cy - 16, key)
+            .setScale(Math.min(80 / src.height, 120 / src.width, 4));
+          if (!owned) img.setTint(0x222230);
+          this.root.add(img);
+        } else {
+          const none = worn
+            ? ink(this, x, cy - 16, '—', 30)
+            : this.add.text(x, cy - 16, '—', textStyle(30, COLORS.textDim));
+          this.root.add(none.setOrigin(0.5));
+        }
+        const label = def ? t(def.name) : sec.none;
+        const name = worn
+          ? ink(this, x, cy + 30, label, 18, '#5a3a20')
+          : this.add.text(x, cy + 30, label, textStyle(18, owned ? COLORS.text : COLORS.textDim));
+        this.root.add(fitText(name.setOrigin(0.5), cw - 14));
+        const state = worn
+          ? t('使用中')
+          : owned
+            ? ''
+            : t('{band}でもらえる', { band: t(RANK_REWARDS[def!.band].label) });
+        if (state)
+          this.root.add(
+            fitText(
+              (worn
+                ? ink(this, x, cy + 54, state, 16, '#3a8a3a')
+                : this.add.text(x, cy + 54, state, textStyle(16, COLORS.textWarn))
+              ).setOrigin(0.5),
+              cw - 12,
+            ),
+          );
+        const hit = this.add.zone(x, cy, cw, ch).setInteractive({ useHandCursor: true });
+        hit.on('pointerup', () => wear(sec.kind, id));
+        this.root.add(hit);
+      });
     });
   }
 
   // ---- 2週替わりの挑戦 ----
   private renderChallenge(): void {
     const save = getSave();
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, '2週替わりの挑戦', 420));
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('2週替わりの挑戦'), 400));
+    // Cosmetics earned from the challenge ranking
+    this.root.add(
+      new Button(this, W - 64, CONTENT_TOP + 40, t('装飾品'), () => this.go('wardrobe'), {
+        width: 104,
+        height: 56,
+        fontSize: 18,
+        skin: save.cosmetics.length > 0 || devAllCosmetics() ? 'gold' : undefined,
+      }),
+    );
     const now = Date.now();
     const start = challengeStart(devChallengeOpen());
     const ch = currentChallenge(now, start);
@@ -1694,18 +2167,35 @@ export class BaseScene extends Phaser.Scene {
     let y = CONTENT_TOP + 100;
     // 説明（羊皮紙）
     const rules = rulesText(def.rules);
-    const boxH = 150 + rules.length * 34;
+    const desc = this.add.text(44, y + 66, t(def.text), {
+      ...inkStyle(20),
+      wordWrap: { width: W - 88, useAdvancedWrap: true },
+    });
+    // Rules start below the description (50px fits one or two lines; longer translations push down)
+    const rulesTop = 66 + Math.max(50, desc.height + 8);
+    const boxH = rulesTop + rules.length * 34 + 34;
     this.root.add(panel(this, W / 2, y + boxH / 2, W - 40, boxH, 'paper'));
-    this.root.add(ink(this, 44, y + 18, def.name, 34, '#8a3a20'));
-    this.root.add(ink(this, W - 44, y + 26, `舞台: ${region.name}`, 22, '#7a5a30').setOrigin(1, 0));
+    const stage = ink(
+      this,
+      W - 44,
+      y + 26,
+      t('舞台: {region}', { region: t(region.name) }),
+      22,
+      '#7a5a30',
+    ).setOrigin(1, 0);
+    // The challenge name ends before the stage label on the same row
     this.root.add(
-      this.add.text(44, y + 66, def.text, {
-        ...inkStyle(20),
-        wordWrap: { width: W - 88, useAdvancedWrap: true },
-      }),
+      fitText(ink(this, 44, y + 18, t(def.name), 34, '#8a3a20'), W - 88 - stage.width - 16),
     );
+    this.root.add(stage);
+    this.root.add(desc);
     rules.forEach((r, i) =>
-      this.root.add(ink(this, 52, y + 116 + i * 34, `・${r}`, 20, '#5a3a20')),
+      this.root.add(
+        fitText(
+          ink(this, 52, y + rulesTop + i * 34, t('・{rule}', { rule: r }), 20, '#5a3a20'),
+          W - 52 - 40,
+        ),
+      ),
     );
     y += boxH + 24;
 
@@ -1713,18 +2203,27 @@ export class BaseScene extends Phaser.Scene {
       // まだ始まっていない: 予告だけ
       const when =
         start === null
-          ? 'リリースから2週間後に開放！'
-          : `開放まで あと${Math.ceil((start - now) / 86_400_000)}日`;
-      this.root.add(this.add.text(W / 2, y + 40, when, textStyle(36, '#ffe27a')).setOrigin(0.5));
+          ? t('リリースから2週間後に開放！')
+          : t('開放まで あと{n}日', { n: Math.ceil((start - now) / 86_400_000) });
+      this.root.add(
+        fitText(
+          this.add.text(W / 2, y + 40, when, textStyle(36, '#ffe27a')).setOrigin(0.5),
+          W - 40,
+        ),
+      );
       const lines = [
-        '2週間ごとに、地域と制限が入れ替わります。',
-        '全員が同じ敵の並びに、自分の装備で挑み、合計ダメージを競います。',
-        '強化と★は使わず、勇者は最初の強さ。並べ方の腕が勝負です。',
-        '装備とゴールドは出ません。',
+        t('2週間ごとに、地域と制限が入れ替わります。'),
+        t('全員が同じ敵の並びに、自分の装備で挑み、合計ダメージを競います。'),
+        t('強化と★は使わず、勇者は最初の強さ。並べ方の腕が勝負です。'),
+        t('装備とゴールドは出ません。'),
       ];
+      // Fixed 40px rows: shrink rather than wrap
       lines.forEach((l, i) =>
         this.root.add(
-          this.add.text(W / 2, y + 110 + i * 40, l, textStyle(20, COLORS.textDim)).setOrigin(0.5),
+          fitText(
+            this.add.text(W / 2, y + 110 + i * 40, l, textStyle(20, COLORS.textDim)).setOrigin(0.5),
+            W - 40,
+          ),
         ),
       );
       return;
@@ -1737,7 +2236,12 @@ export class BaseScene extends Phaser.Scene {
     const best = save.challenge.period === ch.period ? save.challenge.best : 0;
     this.root.add(
       this.add
-        .text(W / 2, y + 10, `残り ${days}日${hours}時間`, textStyle(24, COLORS.textDim))
+        .text(
+          W / 2,
+          y + 10,
+          t('残り {days}日{hours}時間', { days, hours }),
+          textStyle(24, COLORS.textDim),
+        )
         .setOrigin(0.5),
     );
     this.root.add(
@@ -1745,7 +2249,7 @@ export class BaseScene extends Phaser.Scene {
         .text(
           W / 2,
           y + 56,
-          best > 0 ? `自己ベスト ${best.toLocaleString('ja-JP')}` : 'まだ挑戦していません',
+          best > 0 ? t('自己ベスト {score}', { score: num(best) }) : t('まだ挑戦していません'),
           textStyle(32, '#ffe27a'),
         )
         .setOrigin(0.5),
@@ -1759,23 +2263,30 @@ export class BaseScene extends Phaser.Scene {
     const origins = lo.cells.filter(
       (u) => u && getItemDef(items.get(u)!.defId).kind === 'origin',
     ).length;
-    this.root.add(this.add.text(40, y, '挑戦用の編成', textStyle(26, COLORS.text)));
+    const loStatus = this.add
+      .text(
+        W - 40,
+        y + 4,
+        placed > 0
+          ? t('装備 {n}個・起点 {origins}個', { n: placed, origins })
+          : t('まだ組んでいません'),
+        textStyle(22, COLORS.textDim),
+      )
+      .setOrigin(1, 0);
+    // The heading ends before the right-aligned status
     this.root.add(
-      this.add
-        .text(
-          W - 40,
-          y + 4,
-          placed > 0 ? `装備 ${placed}個・起点 ${origins}個` : 'まだ組んでいません',
-          textStyle(22, COLORS.textDim),
-        )
-        .setOrigin(1, 0),
+      fitText(
+        this.add.text(40, y, t('挑戦用の編成'), textStyle(26, COLORS.text)),
+        W - 80 - loStatus.width - 16,
+      ),
     );
+    this.root.add(loStatus);
     y += 48;
     const bad = checkRules(lo, items, def.rules);
     if (placed > 0 && bad.length === 0) {
       this.root.add(
         this.add
-          .text(W / 2, y + 10, 'この編成で挑戦できます', textStyle(22, '#7ad67a'))
+          .text(W / 2, y + 10, t('この編成で挑戦できます'), textStyle(22, '#7ad67a'))
           .setOrigin(0.5, 0),
       );
     } else if (placed > 0) {
@@ -1783,9 +2294,12 @@ export class BaseScene extends Phaser.Scene {
         .slice(0, 3)
         .forEach((b, i) =>
           this.root.add(
-            this.add
-              .text(W / 2, y + 10 + i * 30, b, textStyle(20, COLORS.textWarn))
-              .setOrigin(0.5, 0),
+            fitText(
+              this.add
+                .text(W / 2, y + 10 + i * 30, b, textStyle(20, COLORS.textWarn))
+                .setOrigin(0.5, 0),
+              W - 40,
+            ),
           ),
         );
     }
@@ -1794,7 +2308,7 @@ export class BaseScene extends Phaser.Scene {
     const fromNormal = () => {
       save.challengeLoadout = fitToRules(save, save.loadout, def.rules);
       persist();
-      this.showToast('ふだんの編成から組みました。並べ方を詰めよう');
+      this.showToast(t('ふだんの編成から組みました。並べ方を詰めよう'));
       this.render();
     };
     this.root.add(
@@ -1802,15 +2316,17 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2,
         y,
-        'ふだんの編成から組む',
+        t('ふだんの編成から組む'),
         () => {
           if (placed === 0) fromNormal();
           else
             confirmDialog(
               this,
-              'ふだんの編成から組む',
-              '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。',
-              '組み直す',
+              t('ふだんの編成から組む'),
+              t(
+                '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。',
+              ),
+              t('組み直す'),
               fromNormal,
             );
         },
@@ -1818,14 +2334,17 @@ export class BaseScene extends Phaser.Scene {
       ),
     );
     this.root.add(
-      this.add
-        .text(
-          W / 2,
-          y + 56,
-          '出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第',
-          textStyle(18, COLORS.textDim),
-        )
-        .setOrigin(0.5, 0),
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            y + 56,
+            t('出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第'),
+            textStyle(18, COLORS.textDim),
+          )
+          .setOrigin(0.5, 0),
+        W - 40,
+      ),
     );
 
     const by = CONTENT_BOTTOM - 80;
@@ -1835,7 +2354,7 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 - 150,
         by,
-        '編成する',
+        t('編成する'),
         () => this.scene.start('Loadout', { challenge: true }),
         { width: 260, height: 96, fontSize: 28, skin: 'blue', icon: 'bag' },
       ),
@@ -1845,11 +2364,11 @@ export class BaseScene extends Phaser.Scene {
         this,
         W / 2 + 140,
         by,
-        '挑戦する',
+        t('挑戦する'),
         () => {
           if (blocked) {
             this.showToast(
-              placed === 0 ? '挑戦用の編成を組んでください' : '編成が制限に合っていません',
+              t(placed === 0 ? '挑戦用の編成を組んでください' : '編成が制限に合っていません'),
               true,
             );
             return;
@@ -1882,7 +2401,7 @@ export class BaseScene extends Phaser.Scene {
         .text(
           W / 2,
           CONTENT_TOP + 104,
-          `達成 ${done} / ${ACHIEVEMENTS.length}`,
+          t('達成 {done} / {total}', { done, total: ACHIEVEMENTS.length }),
           textStyle(24, '#ffe27a'),
         )
         .setOrigin(0.5),
@@ -1900,16 +2419,25 @@ export class BaseScene extends Phaser.Scene {
       const y = i * (rowH + 8) + rowH / 2;
       const got = save.achievements.includes(a.id);
       content.add(panel(this, W / 2, y, W - 40, rowH, got ? 'paper' : 'inset'));
+      // Name and description end before the right-hand mark (達成 or the reward)
       if (got) {
-        content.add(ink(this, 44, y - 30, a.name, 26, '#8a3a20'));
-        content.add(ink(this, 44, y + 6, a.desc, 18, '#7a5a30'));
-        content.add(ink(this, W - 44, y - 12, '達成', 24, '#3a8a3a').setOrigin(1, 0));
+        const mark = ink(this, W - 44, y - 12, t('達成'), 24, '#3a8a3a').setOrigin(1, 0);
+        const textW = W - 88 - mark.width - 16;
+        content.add(fitText(ink(this, 44, y - 30, t(a.name), 26, '#8a3a20'), textW));
+        content.add(fitText(ink(this, 44, y + 6, t(a.desc), 18, '#7a5a30'), textW));
+        content.add(mark);
       } else {
-        content.add(this.add.text(44, y - 30, a.name, textStyle(26, COLORS.text)));
-        content.add(this.add.text(44, y + 6, a.desc, textStyle(18, COLORS.textDim)));
+        const mark = this.add
+          .text(W - 44, y - 14, `${a.reward}G`, textStyle(26, COLORS.gold))
+          .setOrigin(1, 0);
+        const textW = W - 88 - mark.width - 16;
         content.add(
-          this.add.text(W - 44, y - 14, `${a.reward}G`, textStyle(26, COLORS.gold)).setOrigin(1, 0),
+          fitText(this.add.text(44, y - 30, t(a.name), textStyle(26, COLORS.text)), textW),
         );
+        content.add(
+          fitText(this.add.text(44, y + 6, t(a.desc), textStyle(18, COLORS.textDim)), textW),
+        );
+        content.add(mark);
       }
     });
     this.addScroll(content, top, bottom, list.length * (rowH + 8), 'achievements');
@@ -1919,43 +2447,68 @@ export class BaseScene extends Phaser.Scene {
   private renderTechs(): void {
     const save = getSave();
     this.addBookTabs();
-    const found = TECHNIQUES.filter((t) => save.discoveredTechs.includes(t.id)).length;
+    const found = TECHNIQUES.filter((tech) => save.discoveredTechs.includes(tech.id)).length;
     this.root.add(
       this.add
         .text(
           W / 2,
           CONTENT_TOP + 92,
-          `見つけた必殺技 ${found} / ${TECHNIQUES.length}`,
+          t('見つけた必殺技 {found} / {total}', { found, total: TECHNIQUES.length }),
           textStyle(24, '#ffe27a'),
         )
         .setOrigin(0.5),
     );
     const top = CONTENT_TOP + 130;
     const rowH = 176;
-    TECHNIQUES.forEach((t, i) => {
+    // Single lines inside the row panel (W - 40 wide)
+    const lineW = W - 100;
+    TECHNIQUES.forEach((tech, i) => {
       const y = top + i * (rowH + 10) + rowH / 2;
-      const known = save.discoveredTechs.includes(t.id);
+      const known = save.discoveredTechs.includes(tech.id);
       this.root.add(panel(this, W / 2, y, W - 40, rowH, known ? 'paper' : 'inset'));
-      const color = TECH_CSS[t.element] ?? '#5a3a20';
+      const color = TECH_CSS[tech.element] ?? '#5a3a20';
       if (known) {
-        this.root.add(ink(this, 50, y - 64, t.name, 34, color));
-        this.root.add(ink(this, 50, y - 14, `発動：${t.hint}`, 20, '#5a3a20'));
+        this.root.add(fitText(ink(this, 50, y - 64, t(tech.name), 34, color), lineW));
         this.root.add(
-          ink(this, 50, y + 22, '3つ目の一撃がダメージ×2.5、勇者が大きく踏み込む', 18, '#7a5a30'),
+          fitText(
+            ink(this, 50, y - 14, t('発動：{hint}', { hint: t(tech.hint) }), 20, '#5a3a20'),
+            lineW,
+          ),
+        );
+        this.root.add(
+          fitText(
+            ink(
+              this,
+              50,
+              y + 22,
+              t('3つ目の一撃がダメージ×2.5、勇者が大きく踏み込む'),
+              18,
+              '#7a5a30',
+            ),
+            lineW,
+          ),
         );
         // 並びのアイコン（それぞれの段の最初の装備）
-        t.seq.forEach((opts, k) => {
-          const x = W - 230 + k * 76;
+        tech.seq.forEach((opts, step) => {
+          const x = W - 230 + step * 76;
           this.root.add(this.add.image(x, y + 50, iconKey(opts[0]!)).setScale(3));
-          if (k < 2)
+          if (step < 2)
             this.root.add(
               this.add.text(x + 38, y + 50, '›', textStyle(28, '#7a5a30')).setOrigin(0.5),
             );
         });
       } else {
-        this.root.add(this.add.text(50, y - 64, '？？？', textStyle(34, COLORS.textDim)));
+        this.root.add(this.add.text(50, y - 64, t('？？？'), textStyle(34, COLORS.textDim)));
         this.root.add(
-          this.add.text(50, y - 10, `ヒント：${t.teaser}`, textStyle(22, COLORS.textDim)),
+          fitText(
+            this.add.text(
+              50,
+              y - 10,
+              t('ヒント：{teaser}', { teaser: t(tech.teaser) }),
+              textStyle(22, COLORS.textDim),
+            ),
+            lineW,
+          ),
         );
       }
     });
@@ -1972,33 +2525,40 @@ export class BaseScene extends Phaser.Scene {
       .text(
         -w / 2 + 64,
         0,
-        prem
-          ? 'プレミアム：広告なしでご褒美を受け取れます'
-          : `プレミアム ${PREMIUM_PRICE}｜広告なしでご褒美がもらえる`,
+        t(
+          prem
+            ? 'プレミアム：広告なしでご褒美を受け取れます'
+            : 'プレミアム {price}｜広告なしでご褒美がもらえる',
+          { price: t(PREMIUM_PRICE) },
+        ),
         textStyle(20, prem ? COLORS.textDim : '#ffe27a'),
       )
       .setOrigin(0, 0.5);
+    const more = prem
+      ? null
+      : this.add.text(w / 2 - 18, 0, t('詳しく ›'), textStyle(18, COLORS.text)).setOrigin(1, 0.5);
+    // The message ends before "詳しく ›" (or the bar's right edge)
+    fitText(text, w / 2 - 18 - (more ? more.width + 12 : 0) - (-w / 2 + 64));
     bar.add([bg, crown, text]);
-    if (!prem)
-      bar.add(
-        this.add.text(w / 2 - 18, 0, '詳しく ›', textStyle(18, COLORS.text)).setOrigin(1, 0.5),
-      );
+    if (more) bar.add(more);
     bindTap(bg, () => {
       sfx('click');
       if (prem) {
-        this.showToast('広告なしでご褒美を受け取れます');
+        this.showToast(t('広告なしでご褒美を受け取れます'));
         return;
       }
       confirmDialog(
         this,
-        `プレミアム ${PREMIUM_PRICE}（買い切り）`,
-        '広告を見なくても、ご褒美をすぐ受け取れます。\n・結果画面「戦利品を2倍にする」\n・鍛冶屋「無料で再抽選」\n・力尽きたときの「再開」\n（回数はそのまま。強さは変わりません）',
-        '購入する',
+        t('プレミアム {price}（買い切り）', { price: t(PREMIUM_PRICE) }),
+        t(
+          '広告を見なくても、ご褒美をすぐ受け取れます。\n・結果画面「戦利品を2倍にする」\n・鍛冶屋「無料で再抽選」\n・力尽きたときの「再開」\n（回数はそのまま。強さは変わりません）',
+        ),
+        t('購入する'),
         () => {
           void buyPremium(this).then((ok) => {
             if (ok) {
               sfx('openLegend');
-              this.showToast('プレミアムになりました！');
+              this.showToast(t('プレミアムになりました！'));
             }
             this.render();
           });

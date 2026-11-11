@@ -12,6 +12,8 @@ import { replayRun, sameResult } from './replay';
 import type { SaveData } from './save';
 import { DIRS, type ItemInstance, type Loadout } from './types';
 import { getItemDef } from '../data/items';
+import { k, locale, t } from '../i18n';
+import type { RewardBand } from './names';
 import { REGIONS } from '../data/regions';
 
 export const SUBMISSION_VERSION = 1;
@@ -262,21 +264,38 @@ function validLoadout(lo: Loadout, items: ReadonlyMap<string, ItemInstance>): bo
   return true;
 }
 
-/** シーズンの呼び名（'challenge-3' → '挑戦 第4回'、'endless-24323' → 'エンドレス 2026年12月'） */
+/** Season name in the current language ('challenge-3' → '挑戦 第4回', 'endless-24323' → 'エンドレス 2026年12月') */
 export function seasonLabel(sid: string): string {
   const [mode, n] = sid.split('-');
   const v = Number(n);
-  if (mode === 'challenge') return `挑戦 第${v + 1}回`;
-  return `エンドレス ${Math.floor(v / 12)}年${(v % 12) + 1}月`;
+  if (mode === 'challenge') return t('挑戦 第{n}回', { n: v + 1 });
+  const month = new Date(Date.UTC(Math.floor(v / 12), v % 12, 1)).toLocaleDateString(locale(), {
+    year: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  });
+  return t('エンドレス {month}', { month });
 }
 
-/** 順位帯ごとの報酬（強さに関係しないもの: ゴールドと称号） */
+/** Reward per rank band (nothing that makes you stronger: gold and a title). Text goes through t() */
 export const RANK_REWARDS: Record<
-  'top1' | 'top10' | 'top50' | 'joined',
+  RewardBand,
   { gold: number; title: string | null; label: string }
 > = {
-  top1: { gold: 30000, title: '上位1%', label: '上位1%' },
-  top10: { gold: 15000, title: '上位10%', label: '上位10%' },
-  top50: { gold: 8000, title: '上位50%', label: '上位50%' },
-  joined: { gold: 3000, title: null, label: '参加' },
+  top1: { gold: 30000, title: k('上位1%'), label: k('上位1%') },
+  top10: { gold: 15000, title: k('上位10%'), label: k('上位10%') },
+  top50: { gold: 8000, title: k('上位50%'), label: k('上位50%') },
+  joined: { gold: 3000, title: null, label: k('参加') },
 };
+
+/** A title is saved as an id ('challenge-3|top1') and shown in the current language */
+export function titleId(season: string, band: RewardBand): string {
+  return `${season}|${band}`;
+}
+
+export function titleText(id: string): string {
+  const [season, band] = id.split('|');
+  const title = RANK_REWARDS[band as RewardBand]?.title;
+  if (!season || !title) return id;
+  return t('{season} {title}', { season: seasonLabel(season), title: t(title) });
+}

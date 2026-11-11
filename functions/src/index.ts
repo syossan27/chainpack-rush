@@ -3,6 +3,7 @@
 //
 // - submitScore: 自己ベストを受け付ける。ゲームと同じ計算（src/core）でランを再生し、結果が一致したときだけ記録する
 // - setName: 表示名（決まった言葉の組み合わせ）を設定する
+// - setDeco: ランキングで名前の横に出す飾りを選ぶ（挑戦の上位でもらった物だけ）
 // - myRank: 自分の順位と参加人数
 // - buildBoards（5分ごと）: 上位100人の表を作り直す
 // - grantRewards（毎日）: 終わったシーズンの順位帯ごとに報酬を配る。ゲームは claimRewards で受け取る
@@ -18,7 +19,8 @@ import {
   type RankMode,
   type ScoreSubmission,
 } from '../../src/core/ranking';
-import { nameText, rewardBand, validName, type DisplayName } from '../../src/core/names';
+import { rewardBand, validName, type DisplayName } from '../../src/core/names';
+import { getCosmetic, ownedFromRewards } from '../../src/core/cosmetics';
 
 initializeApp();
 setGlobalOptions({ region: 'asia-northeast1', maxInstances: 10 });
@@ -74,7 +76,9 @@ export const submitScore = onCall(
         score: v.score,
         totalDamage: v.totalDamage,
         reachedLoop: v.reachedLoop,
-        name: (player.get('name') as string | undefined) ?? null,
+        // Word ids, not text: each client shows the name in its own language
+        name: (player.get('nameParts') as DisplayName | undefined) ?? null,
+        deco: (player.get('deco') as string | undefined) ?? null,
         at: now,
       });
       return true;
@@ -87,9 +91,39 @@ export const setName = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (req
   const uid = uidOf(req);
   const n = req.data as DisplayName;
   if (!validName(n)) throw new HttpsError('invalid-argument', 'bad name');
-  const name = nameText(n);
-  await db().doc(`players/${uid}`).set({ name, nameParts: n }, { merge: true });
+  const name: DisplayName = { a: n.a, b: n.b, tag: n.tag };
+  await db().doc(`players/${uid}`).set({ nameParts: name }, { merge: true });
   return { name };
+});
+
+/**
+ * Pick the decoration shown next to your name in the ranking (null = none).
+ * Only decorations earned from challenge rewards on this server are accepted.
+ * Entries of the running seasons are updated too, so the boards show it within minutes.
+ */
+export const setDeco = onCall({ enforceAppCheck: ENFORCE_APP_CHECK }, async (req) => {
+  const uid = uidOf(req);
+  const deco = (req.data as { deco?: unknown } | null)?.deco ?? null;
+  if (deco !== null) {
+    if (typeof deco !== 'string' || getCosmetic(deco)?.kind !== 'deco')
+      throw new HttpsError('invalid-argument', 'bad deco');
+    const rewards = await db().collection(`players/${uid}/rewards`).get();
+    const owned = ownedFromRewards(
+      rewards.docs.map((d) => ({
+        season: d.get('season') as string,
+        band: d.get('band') as string,
+      })),
+    );
+    if (!owned.includes(deco)) throw new HttpsError('permission-denied', 'not owned');
+  }
+  await db().doc(`players/${uid}`).set({ deco }, { merge: true });
+  const batch = db().batch();
+  for (const sid of activeSeasons(Date.now())) {
+    const ref = db().doc(`seasons/${sid}/entries/${uid}`);
+    if ((await ref.get()).exists) batch.update(ref, { deco });
+  }
+  await batch.commit();
+  return { deco };
 });
 
 /** 自分の順位（スコアが自分より上の人数＋1）と参加人数 */
@@ -127,7 +161,9 @@ export const buildBoards = onSchedule(
       const total = (await col.count().get()).data().count;
       const top = snap.docs.map((d, i) => ({
         rank: i + 1,
-        name: (d.get('name') as string | null) ?? '名無しの冒険者',
+        // null = no name chosen (the client shows its own word for an unnamed adventurer)
+        name: (d.get('name') as DisplayName | null) ?? null,
+        deco: (d.get('deco') as string | null | undefined) ?? null,
         score: d.get('score') as number,
         totalDamage: d.get('totalDamage') as number,
         reachedLoop: d.get('reachedLoop') as number,

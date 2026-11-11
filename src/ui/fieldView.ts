@@ -5,6 +5,7 @@ import { ELITES, FIELD, HERO, UI, type EliteId } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
+import { t } from '../i18n';
 import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
 import { HeroAura, type AuraTier } from './aura';
@@ -461,7 +462,7 @@ export class FieldView {
       }
       s.tag
         .setVisible(!!e.elite)
-        .setText(e.elite ? ELITES[e.elite].name : '')
+        .setText(e.elite ? t(ELITES[e.elite].name) : '')
         .setColor(e.elite ? ELITE_TEXT[e.elite] : '#ffffff')
         .setPosition(sx + barW / 2 - 4, topY - 6)
         .setDepth(32);

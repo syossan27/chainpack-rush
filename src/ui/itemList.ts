@@ -4,9 +4,10 @@ import Phaser from 'phaser';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
+import { k, t } from '../i18n';
 import { ItemIcon } from './itemIcon';
 import { SKIN, SLICE } from './kit/skin';
-import { panel } from './kit/widgets';
+import { fitText, panel } from './kit/widgets';
 import { sfx } from '../audio/sfx';
 import { COLORS, W, textStyle } from './theme';
 
@@ -21,11 +22,11 @@ export type KindFilter = ItemKind | 'all';
 export type RarityFilter = Rarity | 'all';
 
 const KIND_LABEL: Record<KindFilter, string> = {
-  all: '全部',
-  origin: '起点',
-  attack: '攻撃',
-  defense: '防御',
-  consumable: '消耗品',
+  all: k('全部'),
+  origin: k('起点'),
+  attack: k('攻撃'),
+  defense: k('防御'),
+  consumable: k('消耗品'),
 };
 
 const LONG_PRESS_MS = 450;
@@ -81,7 +82,7 @@ export class ItemList extends Phaser.GameObjects.Container {
       .text(
         W / 2,
         this.viewTop + this.viewHeight / 2,
-        '倉庫は空です',
+        t('倉庫は空です'),
         textStyle(24, COLORS.textDim),
       )
       .setOrigin(0.5);
@@ -108,20 +109,23 @@ export class ItemList extends Phaser.GameObjects.Container {
       const bg = this.scene.add
         .nineslice(x + w / 2, 24, on ? SKIN.tabOn : SKIN.tab, undefined, w, 46, m, m, 14, 14)
         .setInteractive({ useHandCursor: true });
-      const t = this.scene.add
-        .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
-        .setOrigin(0.5);
+      const text = fitText(
+        this.scene.add
+          .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
+          .setOrigin(0.5),
+        w - 10,
+      );
       bindTap(bg, () => {
         sfx('click');
         onTap();
       });
-      this.filterBar.add([bg, t]);
+      this.filterBar.add([bg, text]);
     };
     const kinds: KindFilter[] = ['all', 'origin', 'attack', 'defense', 'consumable'];
     const cw = 100;
-    kinds.forEach((k, i) =>
-      chip(12 + i * (cw + 4), cw, KIND_LABEL[k], this.kind === k, () => {
-        this.kind = k;
+    kinds.forEach((kind, i) =>
+      chip(12 + i * (cw + 4), cw, t(KIND_LABEL[kind]), this.kind === kind, () => {
+        this.kind = kind;
         this.scrollY = 0;
         this.buildFilters();
         this.render();
@@ -129,7 +133,10 @@ export class ItemList extends Phaser.GameObjects.Container {
     );
     // レアリティはタップで順に切り替え
     const rs: RarityFilter[] = ['all', ...RARITIES];
-    const label = this.rarity === 'all' ? '★全部' : `★${RARITY_NAMES[this.rarity]!}`;
+    const label =
+      this.rarity === 'all'
+        ? t('★全部')
+        : t('★{rarity}', { rarity: t(RARITY_NAMES[this.rarity]!) });
     chip(12 + 5 * (cw + 4), W - 24 - 5 * (cw + 4), label, this.rarity !== 'all', () => {
       this.rarity = rs[(rs.indexOf(this.rarity) + 1) % rs.length]!;
       this.scrollY = 0;
@@ -180,10 +187,12 @@ export class ItemList extends Phaser.GameObjects.Container {
         const b = this.scene.add
           .rectangle(cx - 22, cy - 34, 48, 22, 0x0c0a12, 0.85)
           .setStrokeStyle(2, 0xffd25a);
-        const t = this.scene.add
-          .text(cx - 22, cy - 34, mark, textStyle(13, COLORS.gold))
-          .setOrigin(0.5);
-        this.content.add([b, t]);
+        // The badge is 48px wide; a longer mark (translation, typed preset name) shrinks to fit
+        const markText = fitText(
+          this.scene.add.text(cx - 22, cy - 34, mark, textStyle(13, COLORS.gold)).setOrigin(0.5),
+          56,
+        );
+        this.content.add([b, markText]);
       }
     });
     this.contentHeight = Math.ceil(list.length / this.cols) * this.cellSize + 12;

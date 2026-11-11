@@ -17,6 +17,18 @@ import { RunScene } from './scenes/RunScene';
 import { StageSelectScene } from './scenes/StageSelectScene';
 import { COLORS, H, W } from './ui/theme';
 
+// Phaser reuses a scene's previous start data when it is started without any: after
+// start('Loadout', { challenge: true }), a plain start('Loadout') opened the challenge loadout again
+// (and start('Base') could reopen an old page). Always pass an object so each start gets only its own data.
+const sceneStart = Phaser.Scenes.ScenePlugin.prototype.start;
+Phaser.Scenes.ScenePlugin.prototype.start = function (
+  this: Phaser.Scenes.ScenePlugin,
+  key?: string | Phaser.Scene,
+  data?: object,
+) {
+  return sceneStart.call(this, key, data ?? {});
+};
+
 initLifecycle();
 // バックグラウンドでは音を止める（ランは RunScene 側で自動ポーズ）
 onAppStateChange((active) => setAudioSuspended(!active));

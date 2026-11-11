@@ -6,6 +6,7 @@ import {
   type ChallengeRules,
 } from '../data/challenges';
 import { getItemDef, RARITY_NAMES, ELEMENT_NAMES } from '../data/items';
+import { t } from '../i18n';
 import type { ItemInstance, Loadout, Rarity } from './types';
 
 /**
@@ -64,26 +65,35 @@ function seedOf(s: string): number {
 /** 制限のひとこと（画面に出す） */
 export function rulesText(r: ChallengeRules): string[] {
   const out = [
-    `レアリティは${RARITY_NAMES[r.maxRarity]}まで（起点は問わない）`,
-    'アーティファクトは使えない',
+    t('レアリティは{rarity}まで（起点は問わない）', { rarity: t(RARITY_NAMES[r.maxRarity] ?? '') }),
+    t('アーティファクトは使えない'),
   ];
-  if (r.maxOrigins) out.push(`起点は${r.maxOrigins}つまで`);
-  if (r.elements) out.push(`攻撃装備は ${r.elements.map((e) => ELEMENT_NAMES[e]).join('・')} だけ`);
-  if (r.bannedKinds?.includes('defense')) out.push('防具は使えない');
-  out.push('強化と★は使わない（勇者は最初の強さ）');
+  if (r.maxOrigins) out.push(t('起点は{n}つまで', { n: r.maxOrigins }));
+  if (r.elements)
+    out.push(
+      t('攻撃装備は {elements} だけ', {
+        elements: r.elements.map((e) => t(ELEMENT_NAMES[e] ?? '')).join(t('・|sep')),
+      }),
+    );
+  if (r.bannedKinds?.includes('defense')) out.push(t('防具は使えない'));
+  out.push(t('強化と★は使わない（勇者は最初の強さ）'));
   return out;
 }
 
 /** この装備を挑戦で置けるか。置けなければ理由（起点の数は見ない） */
 export function itemViolation(it: ItemInstance, r: ChallengeRules): string | null {
   const d = getItemDef(it.defId);
-  if (d.artifact) return `アーティファクト（${d.name}）は使えない`;
+  const item = t(d.name);
+  if (d.artifact) return t('アーティファクト（{item}）は使えない', { item });
   // 起点は道筋を作るだけなので、レアリティは問わない
   if (d.kind !== 'origin' && RANK[it.rarity] > RANK[r.maxRarity])
-    return `${RARITY_NAMES[r.maxRarity]}より上の装備（${d.name}）がある`;
+    return t('{rarity}より上の装備（{item}）がある', {
+      rarity: t(RARITY_NAMES[r.maxRarity] ?? ''),
+      item,
+    });
   if (r.elements && d.kind === 'attack' && !r.elements.includes(d.element ?? 'physical'))
-    return `使えない属性の装備（${d.name}）がある`;
-  if (r.bannedKinds?.includes(d.kind)) return `使えない種類の装備（${d.name}）がある`;
+    return t('使えない属性の装備（{item}）がある', { item });
+  if (r.bannedKinds?.includes(d.kind)) return t('使えない種類の装備（{item}）がある', { item });
   return null;
 }
 
@@ -104,7 +114,7 @@ export function checkRules(
     if (getItemDef(it.defId).kind === 'origin') origins++;
   }
   if (r.maxOrigins && origins > r.maxOrigins)
-    out.add(`起点が${origins}つある（${r.maxOrigins}つまで）`);
-  if (origins === 0) out.add('起点がない');
+    out.add(t('起点が{n}つある（{max}つまで）', { n: origins, max: r.maxOrigins }));
+  if (origins === 0) out.add(t('起点がない'));
   return [...out];
 }

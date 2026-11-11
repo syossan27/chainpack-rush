@@ -1,5 +1,6 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
 import { validName } from './names';
+import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
@@ -49,6 +50,9 @@ export interface SaveData {
   titles: string[];
   /** ランキングの表示名（言葉の番号）。初めて送るときに決める */
   rankName: { a: number; b: number; tag: number } | null;
+  /** Cosmetics earned in the challenge ranking (ids) and what is worn */
+  cosmetics: string[];
+  look: Look;
   /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
   editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
@@ -79,7 +83,8 @@ export interface Preset {
 }
 
 export function defaultPresets(): Preset[] {
-  return Array.from({ length: PRESET_COUNT }, (_, i) => ({ name: `編成${i + 1}`, loadout: null }));
+  // '' = the default name, shown as t('編成{n}') in the current language (see presetName)
+  return Array.from({ length: PRESET_COUNT }, () => ({ name: '', loadout: null }));
 }
 
 export function emptyLoadout(
@@ -146,6 +151,8 @@ export function createInitialSave(): SaveData {
     rankSent: {},
     titles: [],
     rankName: null,
+    cosmetics: [],
+    look: { ...NO_LOOK },
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -173,7 +180,12 @@ function readPresets(v: unknown): Preset[] {
   return base.map((b, i) => {
     const p: unknown = v[i];
     if (!isObj(p)) return b;
-    const name = typeof p.name === 'string' && p.name.length > 0 ? p.name.slice(0, 12) : b.name;
+    // Older saves stored the Japanese default name ('編成2'); turn it back into the default
+    const legacy = typeof p.name === 'string' ? /^編成(\d+)$/.exec(p.name) : null;
+    const name =
+      typeof p.name === 'string' && !(legacy && Number(legacy[1]) === i + 1)
+        ? p.name.slice(0, 12)
+        : b.name;
     return { name, loadout: readLoadoutRec(p.loadout) };
   });
 }
@@ -303,6 +315,13 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
           >)
         : {},
       rankName: validName(data.rankName) ? data.rankName : null,
+      cosmetics: Array.isArray(data.cosmetics)
+        ? COSMETICS.map((c) => c.id).filter((id) => (data.cosmetics as unknown[]).includes(id))
+        : [],
+      look: validLook(
+        isObj(data.look) ? (data.look as Partial<Look>) : undefined,
+        Array.isArray(data.cosmetics) ? (data.cosmetics as string[]) : [],
+      ),
       titles: Array.isArray(data.titles)
         ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
         : [],
@@ -332,7 +351,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       },
     };
     if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
-    if (save.settings.lang !== 'auto' && !LANGS.includes(save.settings.lang)) save.settings.lang = 'auto';
+    if (save.settings.lang !== 'auto' && !LANGS.includes(save.settings.lang))
+      save.settings.lang = 'auto';
     if (!['off', 'common', 'rare', 'epic'].includes(save.settings.autoSell))
       save.settings.autoSell = 'off';
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')

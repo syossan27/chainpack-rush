@@ -16,6 +16,7 @@ import {
   type UpgradeId,
 } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
+import { t } from '../i18n';
 import { ENDLESS, REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
@@ -340,14 +341,14 @@ export interface SynthPlan {
 export function synthPlan(save: SaveData, uid: string): SynthPlan {
   const it = save.inventory.find((i) => i.uid === uid);
   const none = (reason: string): SynthPlan => ({ uids: [], have: 0, to: null, cost: 0, reason });
-  if (!it) return none('見つかりません');
+  if (!it) return none(t('見つかりません'));
   const def = getItemDef(it.defId);
   const to = NEXT_RARITY[it.rarity] ?? null;
-  if (def.kind === 'consumable') return none('消耗品は合成できません');
-  if (def.artifact || !to) return none('これ以上のレアリティはありません');
+  if (def.kind === 'consumable') return none(t('消耗品は合成できません'));
+  if (def.artifact || !to) return none(t('これ以上のレアリティはありません'));
   // 系統: 上のレアリティがない装備は、系統の次の装備になる（革鎧のレア → 鎖帷子のエピック）
   const toDefId = lineItemFor(it.defId, to);
-  if (!toDefId) return none('これ以上のレアリティはありません');
+  if (!toDefId) return none(t('これ以上のレアリティはありません'));
   const eq = equippedUids(save);
   const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
   if (eq.has(uid) || it.locked)
@@ -356,7 +357,9 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
       have: 0,
       to,
       cost,
-      reason: eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
+      reason: t(
+        eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
+      ),
     };
   const inPresets = otherPresetUse(save);
   const mates = save.inventory
@@ -376,9 +379,9 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
   const uids = [uid, ...mates.slice(0, SYNTH.count - 1).map((i) => i.uid)];
   const reason =
     uids.length < SYNTH.count
-      ? `同じ装備があと${SYNTH.count - uids.length}つ必要`
+      ? t('同じ装備があと{n}つ必要', { n: SYNTH.count - uids.length })
       : save.gold < cost
-        ? `${cost}G 必要`
+        ? t('{cost}G 必要', { cost })
         : null;
   return { uids, have: uids.length, to, toDefId, cost, reason };
 }

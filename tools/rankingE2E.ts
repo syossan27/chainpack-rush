@@ -45,7 +45,8 @@ const sub = buildSubmission('endless', season, cfg, c.result(), s, totalStars(s)
 
 check(
   '名前を設定',
-  (await call<{ name: string }>('setName', { a: 1, b: 2, tag: 7 })).name.length > 0,
+  (await call<{ name: { a: number; b: number; tag: number } }>('setName', { a: 1, b: 2, tag: 7 }))
+    .name.tag === 7,
 );
 const r1 = await call<{ accepted: boolean; best?: boolean }>('submitScore', sub);
 check('正しい記録は受け付けて、自己ベストになる', r1.accepted && r1.best === true, r1);

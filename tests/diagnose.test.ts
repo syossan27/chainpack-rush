@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { diagnose } from '../src/core/diagnose';
+import { itemViolation } from '../src/core/challenge';
 import type { ItemInstance, Loadout } from '../src/core/types';
 
 const item = (
@@ -55,5 +56,31 @@ describe('配置の診断', () => {
     };
     const res = diagnose(loadout, inv, 1, []);
     expect(res.advices.some((a) => a.kind === 'unreached' && a.cells.includes(5))).toBe(true);
+  });
+
+  it('挑戦では、制限で使えない倉庫の装備は勧めない', () => {
+    // 起点 → 短剣 → 短剣。倉庫にレジェンドの大剣（制限で使えない）とレアの剣（使える）
+    const inv = [
+      item('o', 'origin_stone', 'common', ['right']),
+      item('d1', 'dagger', 'common', ['right']),
+      item('d2', 'dagger', 'common', ['right']),
+      item('big', 'greatsword', 'legendary', ['right']),
+      item('ok', 'sword', 'rare', ['right']),
+    ];
+    const loadout: Loadout = {
+      width: 3,
+      height: 1,
+      cells: ['o', 'd1', 'd2'],
+      originOrder: ['o'],
+      consumables: [],
+    };
+    const rules = { maxRarity: 'rare' as const };
+    const free = diagnose(loadout, inv, 1, []);
+    const uses = (res: typeof free, uid: string) =>
+      res.advices.some((a) => a.apply?.cells.includes(uid));
+    expect(uses(free, 'big')).toBe(true); // 制限がなければ大剣を勧める
+    const ch = diagnose(loadout, inv, 1, [], (it) => !itemViolation(it, rules));
+    expect(uses(ch, 'big')).toBe(false);
+    expect(uses(ch, 'ok')).toBe(true);
   });
 });

@@ -3,6 +3,7 @@ import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
 import { planChain } from '../core/chain';
+import { addPet } from '../ui/cosmeticsView';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
 import {
@@ -31,7 +32,16 @@ import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
-import { Bar, Button, Pill, RoundButton, choiceDialog, icon, panel } from '../ui/kit/widgets';
+import {
+  Bar,
+  Button,
+  Pill,
+  RoundButton,
+  choiceDialog,
+  fitText,
+  icon,
+  panel,
+} from '../ui/kit/widgets';
 import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
@@ -42,6 +52,7 @@ import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { DEMO_HERO, DEMO_REGION, demoLoadout } from '../data/demoLoadout';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
+import { num, t } from '../i18n';
 
 const MAX_STEPS_PER_FRAME = 5;
 const COMBO_COLOR: Record<string, string> = {
@@ -183,6 +194,11 @@ export class RunScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.bg);
 
     this.field = new FieldView(this, this.regionId);
+    // Pet (challenge reward) hovers at the hero's upper left; not in the demo run
+    if (!this.demo)
+      addPet(this, save.look.pet, RUN_LAYOUT.heroScreenX - 84, RUN_LAYOUT.footY - 112, 3)?.setDepth(
+        19,
+      );
 
     this.field.setAura(auraTier(loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
@@ -233,9 +249,11 @@ export class RunScene extends Phaser.Scene {
             w: W - 40,
             h: this.view.gridHeight + 20,
           },
-          text: this.demo
-            ? '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！'
-            : 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
+          text: t(
+            this.demo
+              ? '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！'
+              : 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
+          ),
         },
         ...(this.demo
           ? [
@@ -246,14 +264,18 @@ export class RunScene extends Phaser.Scene {
                   w: W - 40,
                   h: this.view.gridHeight + 20,
                 },
-                text: '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる',
+                text: t(
+                  '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる',
+                ),
               },
             ]
           : []),
         // Hero's attack gauge (under the hero) and the "next chain" panel
         {
           rect: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.footY - 20, w: 200, h: 110 },
-          text: '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る',
+          text: t(
+            '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る',
+          ),
         },
         {
           rect: {
@@ -262,19 +284,25 @@ export class RunScene extends Phaser.Scene {
             w: W,
             h: RUN_LAYOUT.fieldHeight - 90,
           },
-          text: '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！',
+          text: t(
+            '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！',
+          ),
         },
         {
           rect: { x: W / 2 + 74, y: 70, w: 210, h: 130 },
-          text: this.demo
-            ? '残り時間。ふだんは0になるか、\nHPがなくなると終わり'
-            : '残り時間。0になるか、HPがなくなると終わり。\n拾った装備は持ち帰れるよ',
+          text: t(
+            this.demo
+              ? '残り時間。ふだんは0になるか、\nHPがなくなると終わり'
+              : '残り時間。0になるか、HPがなくなると終わり。\n拾った装備は持ち帰れるよ',
+          ),
         },
         {
           rect: { x: W - 50, y: RUN_LAYOUT.middleTop + 86, w: 92, h: 92 },
-          text: this.demo
-            ? '止めたいときはここ。撤退もできるよ。\nさあ、伝説の力を見てみよう！'
-            : '止めたいときはここ。撤退もできるよ',
+          text: t(
+            this.demo
+              ? '止めたいときはここ。撤退もできるよ。\nさあ、伝説の力を見てみよう！'
+              : '止めたいときはここ。撤退もできるよ',
+          ),
         },
       ],
       {
@@ -312,7 +340,7 @@ export class RunScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(d + 1);
     const loop = this.add
-      .text(W / 2 + 74, 86, '1周目', textStyle(20, COLORS.gold))
+      .text(W / 2 + 74, 86, t('{n}周目', { n: 1 }), textStyle(20, COLORS.gold))
       .setOrigin(0.5, 0)
       .setDepth(d + 1);
     const track = this.add.graphics().setDepth(d + 1);
@@ -328,9 +356,13 @@ export class RunScene extends Phaser.Scene {
       : null;
     // 中段右: 次に発火する起点
     panel(this, W - 210, RUN_LAYOUT.middleTop + 86, 240, 116, 'inset').setDepth(d);
-    this.add
-      .text(W - 316, RUN_LAYOUT.middleTop + 44, '次の連鎖', textStyle(18, COLORS.textDim))
-      .setDepth(d + 1);
+    // Inside the inset panel (right edge at W - 90)
+    fitText(
+      this.add
+        .text(W - 316, RUN_LAYOUT.middleTop + 44, t('次の連鎖'), textStyle(18, COLORS.textDim))
+        .setDepth(d + 1),
+      220,
+    );
     const nextBadge = this.add
       .text(W - 300, RUN_LAYOUT.middleTop + 100, '', textStyle(40, '#ffe27a'))
       .setOrigin(0.5)
@@ -349,22 +381,33 @@ export class RunScene extends Phaser.Scene {
     pause.add([
       shade,
       panel(this, W / 2, H / 2, 480, 400, 'panel'),
-      this.add.text(W / 2, H / 2 - 120, '一時停止中', textStyle(48, '#ffe27a')).setOrigin(0.5),
-      new Button(this, W / 2, H / 2 - 10, '再開', () => this.setPaused(false), {
+      fitText(
+        this.add.text(W / 2, H / 2 - 120, t('一時停止中'), textStyle(48, '#ffe27a')).setOrigin(0.5),
+        440,
+      ),
+      new Button(this, W / 2, H / 2 - 10, t('再開'), () => this.setPaused(false), {
         width: 300,
         height: 88,
         skin: 'gold',
       }),
-      new Button(this, W / 2, H / 2 + 100, '撤退する', () => this.retreat(), {
+      new Button(this, W / 2, H / 2 + 100, t('撤退する'), () => this.retreat(), {
         width: 300,
         height: 80,
         fontSize: 26,
         skin: 'red',
         icon: 'back',
       }),
-      this.add
-        .text(W / 2, H / 2 + 162, 'ここまでの戦利品を持ち帰ります', textStyle(18, COLORS.textDim))
-        .setOrigin(0.5),
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            H / 2 + 162,
+            t('ここまでの戦利品を持ち帰ります'),
+            textStyle(18, COLORS.textDim),
+          )
+          .setOrigin(0.5),
+        440,
+      ),
     ]);
     this.hud = {
       timer,
@@ -385,9 +428,13 @@ export class RunScene extends Phaser.Scene {
 
   private buildConsumables(): void {
     const slots = this.combat.consumables;
-    this.add
-      .text(30, RUN_LAYOUT.middleTop + 18, '消耗品', textStyle(18, COLORS.textDim))
-      .setDepth(70);
+    // Left of the "next chain" panel (left edge at W - 330)
+    fitText(
+      this.add
+        .text(30, RUN_LAYOUT.middleTop + 18, t('消耗品|slots'), textStyle(18, COLORS.textDim))
+        .setDepth(70),
+      W - 330 - 30 - 10,
+    );
     slots.forEach((uid, i) => {
       const x = 74 + i * 96;
       const y = RUN_LAYOUT.middleTop + 96;
@@ -534,28 +581,53 @@ export class RunScene extends Phaser.Scene {
     this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
     // 走っているあいだは出撃時間が止まっている: タイマーを薄く
     this.hud.timer.setAlpha(c.running ? 0.45 : 1);
-    this.hud.loop.setText(
-      `${getRegion(this.regionId).name}　${c.loop}周目${this.speed !== 1 ? `　×${this.speed}` : ''}`,
+    const region = t(getRegion(this.regionId).name);
+    // Between the HP plate (right edge x=326) and the loot pill (left edge x=582)
+    fitText(
+      this.hud.loop
+        .setScale(1)
+        .setText(
+          this.speed !== 1
+            ? t('{region}　{loop}周目　×{speed}', { region, loop: c.loop, speed: this.speed })
+            : t('{region}　{loop}周目', { region, loop: c.loop }),
+        ),
+      230,
     );
     this.hud.hp.setRatio(c.hp / c.maxHp);
     this.hud.def.setRatio(Math.min(1, c.defense / c.maxHp));
     this.hud.hpText.setText(`${Math.ceil(c.hp)}/${c.maxHp}`);
-    this.hud.defText.setText(`防御 ${Math.round(c.defense)}`);
+    // Inside the HP plate (right edge x=326)
+    fitText(this.hud.defText.setScale(1).setText(t('防御 {n}', { n: Math.round(c.defense) })), 190);
     const nextUid = c.nextOriginUid;
     if (nextUid) {
       const plan = planChain(this.loadout, this.items, nextUid);
       const idx = c.originOrder.indexOf(nextUid);
       this.hud.nextBadge.setText(originLabel(idx));
-      this.hud.next.setText(
-        c.chain ? '連鎖中！' : `${plan.maxStep}段・${plan.duration.toFixed(1)}秒`,
+      // Inside the "next chain" panel (right edge x=630)
+      fitText(
+        this.hud.next
+          .setScale(1)
+          .setText(
+            c.chain
+              ? t('連鎖中！')
+              : t('{step}段・{sec}秒', { step: plan.maxStep, sec: plan.duration.toFixed(1) }),
+          ),
+        164,
       );
     }
     this.view.setBlinkOrigin(c.chain ? null : nextUid);
     this.hud.loot.setValue(`${c.drops.length}`);
     this.drawTrack();
     if (this.hud.fps) {
+      // Developer overlay (debug flag only)
       this.hud.fps.setText(
-        `FPS ${this.game.loop.actualFps.toFixed(0)}  敵 ${this.field.visibleEnemies}  粒 ${this.effects.activeCount()}  数字 ${this.numbers.activeCount()}  seed ${this.seed}`,
+        t('FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}', {
+          fps: this.game.loop.actualFps.toFixed(0),
+          enemies: this.field.visibleEnemies,
+          particles: this.effects.activeCount(),
+          numbers: this.numbers.activeCount(),
+          seed: this.seed,
+        }),
       );
     }
   }
@@ -567,17 +639,18 @@ export class RunScene extends Phaser.Scene {
 
   /** 連鎖カウンター: 段数が進むほど大きく、色も白→金→赤→桃 */
   private showChainCount(step: number): void {
-    const t = this.chainText;
+    const txt = this.chainText;
     const colors = JUICE.chainColors;
     const color = colors[Math.min(colors.length - 1, Math.floor((step - 2) / 2))]!;
-    this.tweens.killTweensOf(t);
-    t.setText(`${step} CHAIN`)
+    this.tweens.killTweensOf(txt);
+    txt
+      .setText(`${step} CHAIN`)
       .setColor(color)
       .setFontSize(Math.min(72, 40 + step * 3))
       .setAlpha(1)
       .setScale(1.5)
       .setAngle(-4 + Math.random() * 8);
-    this.tweens.add({ targets: t, scale: 1, angle: 0, duration: 160, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: txt, scale: 1, angle: 0, duration: 160, ease: 'Back.easeOut' });
   }
 
   /** 連鎖の終わり: カウンターを消し、合計ダメージを大きく出す */
@@ -591,39 +664,41 @@ export class RunScene extends Phaser.Scene {
       onComplete: () => this.chainText.setY(RUN_LAYOUT.groundY - 210),
     });
     if (total < JUICE.bigHit) return;
-    const t = this.totalText;
-    this.tweens.killTweensOf(t);
-    t.setText(`TOTAL ${Math.round(total).toLocaleString('en-US')}`)
+    const txt = this.totalText;
+    this.tweens.killTweensOf(txt);
+    txt
+      .setText(`TOTAL ${num(total)}`)
       .setColor(damageColor(total))
       .setAlpha(1)
       .setScale(0.4)
       .setY(360);
-    this.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: t, alpha: 0, y: 330, delay: 700, duration: 350 });
+    this.tweens.add({ targets: txt, scale: 1, duration: 220, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: txt, alpha: 0, y: 330, delay: 700, duration: 350 });
   }
 
   /** 時間が延びた: タイマーの横に「+8.0」が浮かび、タイマーが金色に光る */
   private showTimeBonus(seconds: number, capped: boolean): void {
-    const label = seconds > 0 ? `+${seconds.toFixed(1)}` : '上限';
     // 周回ゲージの下（地域名や一網打尽の帯と重ならない所）に出して、少し浮かせて消す。
     // ゲームスピードに関係なく同じ長さで見せる
-    const t = this.add
+    const txt = this.add
       .text(
         W / 2 + 74,
         TIME_BONUS_Y,
-        `時間 ${label}`,
+        seconds > 0 ? t('時間 +{sec}', { sec: seconds.toFixed(1) }) : t('時間 上限'),
         textStyle(34, capped && seconds <= 0 ? COLORS.textDim : '#ffe27a'),
       )
       .setOrigin(0.5)
       .setDepth(80);
+    // Centered at W/2 + 74; stay left of the right screen edge
+    fitText(txt, 2 * (W - (W / 2 + 74)) - 20);
     const k = this.speed;
     this.tweens.add({
-      targets: t,
+      targets: txt,
       y: TIME_BONUS_Y - 18,
       alpha: 0,
       delay: 600 * k,
       duration: 600 * k,
-      onComplete: () => t.destroy(),
+      onComplete: () => txt.destroy(),
     });
     if (seconds > 0) {
       this.hud.timer.setTint(0xffe27a);
@@ -640,7 +715,7 @@ export class RunScene extends Phaser.Scene {
       const p = this.field.enemyScreenPos(c, e);
       if (p.x > W + 160) continue;
       this.warned.add(e.id);
-      this.showWarning(e.def.name, c.loop);
+      this.showWarning(t(e.def.name), c.loop);
     }
   }
 
@@ -658,9 +733,17 @@ export class RunScene extends Phaser.Scene {
       .text(-W, cy + 44, ' WARNING  '.repeat(10), textStyle(18, '#ffb0a0'))
       .setOrigin(0, 0);
     const big = this.add.text(W / 2, cy - 10, 'WARNING', textStyle(72, '#ff4a3a')).setOrigin(0.5);
-    const sub = this.add
-      .text(W / 2, cy + 34, `${loop}周目のボス　${name}`, textStyle(24, '#ffffff'))
-      .setOrigin(0.5);
+    const sub = fitText(
+      this.add
+        .text(
+          W / 2,
+          cy + 34,
+          t('{loop}周目のボス　{name}', { loop, name }),
+          textStyle(24, '#ffffff'),
+        )
+        .setOrigin(0.5),
+      W - 40,
+    );
     root.add([band, lineT, lineB, tickerT, tickerB, big, sub]);
     root.setAlpha(0);
     sfx('warning');
@@ -681,36 +764,42 @@ export class RunScene extends Phaser.Scene {
   private showRecord(kind: 'step' | 'damage'): void {
     if (this.recordShown.has(kind)) return;
     this.recordShown.add(kind);
-    const t = this.add
+    const x = RUN_LAYOUT.heroScreenX + 40;
+    const txt = this.add
       .text(
-        RUN_LAYOUT.heroScreenX + 40,
+        x,
         RUN_LAYOUT.groundY - 290 - this.recordShown.size * 4,
-        kind === 'step' ? 'NEW RECORD! 最大連鎖' : 'NEW RECORD! 最大ダメージ',
+        t(kind === 'step' ? 'NEW RECORD! 最大連鎖' : 'NEW RECORD! 最大ダメージ'),
         { ...textStyle(26, '#ffffff'), backgroundColor: '#d8402a', padding: { x: 8, y: 3 } },
       )
       .setOrigin(0, 0.5)
       .setAngle(-6)
       .setDepth(67)
-      .setScale(2)
       .setAlpha(0);
-    if (kind === 'damage' && this.recordShown.has('step')) t.y += 40;
+    // Settle at a scale that keeps a long translation on screen (the pop-in tween scales from 2x)
+    const fit = Math.min(1, (W - x - 10) / txt.width);
+    txt.setScale(2 * fit);
+    if (kind === 'damage' && this.recordShown.has('step')) txt.y += 40;
     sfx('openEpic');
-    this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 200, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: txt, alpha: 1, scale: fit, duration: 200, ease: 'Back.easeOut' });
     this.tweens.add({
-      targets: t,
+      targets: txt,
       alpha: 0,
-      y: t.y - 30,
+      y: txt.y - 30,
       delay: 1600,
       duration: 400,
-      onComplete: () => t.destroy(),
+      onComplete: () => txt.destroy(),
     });
   }
 
   private showBanner(text: string, color = '#ffffff'): void {
     const b = this.hud.banner;
     this.tweens.killTweensOf(b);
-    b.setText(text).setColor(color).setAlpha(1).setScale(0.3).setAngle(-6);
-    this.tweens.add({ targets: b, scale: 1, angle: 0, duration: 220, ease: 'Back.easeOut' });
+    b.setText(text).setColor(color).setAlpha(1).setAngle(-6);
+    // Settle at a scale that keeps a long translation (e.g. an artifact name) on screen
+    const fit = Math.min(1, (W - 40) / b.width);
+    b.setScale(0.3 * fit);
+    this.tweens.add({ targets: b, scale: fit, angle: 0, duration: 220, ease: 'Back.easeOut' });
     this.tweens.add({ targets: b, alpha: 0, y: { from: 250, to: 220 }, delay: 700, duration: 320 });
   }
 
@@ -759,7 +848,7 @@ export class RunScene extends Phaser.Scene {
           const strength = Math.min(1, ev.damage / JUICE.hugeHit);
           this.field.flashEnemy(ev.enemyId, now, strength);
           if (ev.nullified) {
-            this.numbers.showText(p.x, p.y, '無効', 26, '#a0a0b0');
+            this.numbers.showText(p.x, p.y, t('無効'), 26, '#a0a0b0');
             this.effects.flash(p.x, p.y, 0x8a8a9a, 1.2);
             sfx('hit');
             break;
@@ -801,21 +890,22 @@ export class RunScene extends Phaser.Scene {
           break;
         }
         case 'technique': {
-          const t = getTechnique(ev.id);
+          const tech = getTechnique(ev.id);
           const p = this.enemyPos(ev.enemyId);
-          const color = t ? (TECH_COLOR[t.element] ?? 0xffffff) : 0xffffff;
+          const color = tech ? (TECH_COLOR[tech.element] ?? 0xffffff) : 0xffffff;
           // 必殺モーションがあれば、大きな演出は斬りつけのコマに合わせる（ダメージ数字はそのまま）
-          const impact = this.field.heroSpecial(color, t?.id);
+          const impact = this.field.heroSpecial(color, tech?.id);
           // 初めて出した技は図鑑に登録して、テロップで知らせる
           const save = getSave();
-          if (t && !this.demo && !save.discoveredTechs.includes(t.id)) {
-            save.discoveredTechs.push(t.id);
+          if (tech && !this.demo && !save.discoveredTechs.includes(tech.id)) {
+            save.discoveredTechs.push(tech.id);
             persist();
-            showDiscovery(this, t.name);
+            // showDiscovery translates the data key itself
+            showDiscovery(this, tech.name);
           }
           const burst = () => {
             if (p) {
-              this.elementFx.special(p.x, p.y, t?.element);
+              this.elementFx.special(p.x, p.y, tech?.element);
               this.effects.slash(p.x, p.y, color, 3);
               this.effects.flash(p.x, p.y, color, 4);
             }
@@ -828,13 +918,13 @@ export class RunScene extends Phaser.Scene {
           break;
         }
         case 'enrage':
-          this.showBanner('激昂！', COLORS.textWarn);
+          this.showBanner(t('激昂！'), COLORS.textWarn);
           if (this.shake) this.cameras.main.shake(260, 0.01);
           sfx('bossDown');
           break;
         case 'combo': {
           const p = this.enemyPos(ev.enemyId);
-          this.showBanner(ev.label, COMBO_COLOR[ev.name] ?? '#ffffff');
+          this.showBanner(t(ev.label), COMBO_COLOR[ev.name] ?? '#ffffff');
           if (p)
             this.effects.burst(
               p.x,
@@ -880,14 +970,17 @@ export class RunScene extends Phaser.Scene {
             this.numbers.showText(
               p.x,
               p.y - 40,
-              `+${RARITY_NAMES[ev.item.rarity]}`,
+              `+${t(RARITY_NAMES[ev.item.rarity])}`,
               22,
               `#${RARITY[ev.item.rarity].color.toString(16).padStart(6, '0')}`,
             );
           sfx('drop');
           if (ev.item.rarity !== 'common') hapticMedium(); // レア以上の取得
           if (getItemDef(ev.item.defId).artifact) {
-            this.showBanner(`アーティファクト！ ${getItemDef(ev.item.defId).name}`, '#ff8ce8');
+            this.showBanner(
+              t('アーティファクト！ {name}', { name: t(getItemDef(ev.item.defId).name) }),
+              '#ff8ce8',
+            );
             if (p) this.effects.burst(p.x, p.y, 0xff8ce8, 40, 420);
             if (this.shake) this.cameras.main.flash(300, 255, 200, 255);
             sfx('openRare');
@@ -913,7 +1006,7 @@ export class RunScene extends Phaser.Scene {
           this.field.aimId = null;
           this.endChainCount(ev.totalDamage);
           if (ev.staggered) {
-            this.showBanner('よろめき！', COLORS.textWarn);
+            this.showBanner(t('よろめき！'), COLORS.textWarn);
             if (this.shake) this.cameras.main.shake(160, 0.008);
           }
           if (ev.defenseGain > 0) {
@@ -934,17 +1027,17 @@ export class RunScene extends Phaser.Scene {
           break;
         case 'timeBonus':
           this.showTimeBonus(ev.seconds, ev.capped);
-          if (ev.reason === 'sweep') this.showBanner('一網打尽！', '#8be06a');
+          if (ev.reason === 'sweep') this.showBanner(t('一網打尽！'), '#8be06a');
           break;
         case 'bossDefeated':
-          this.showBanner('ボス撃破！', COLORS.gold);
+          this.showBanner(t('ボス撃破！'), COLORS.gold);
           this.slowUntil = now + JUICE.bossSlowMs;
           if (this.shake) this.cameras.main.flash(220, 255, 240, 200);
           sfx('bossDown');
           hapticSuccess();
           break;
         case 'consumable':
-          this.showBanner(getItemDef(ev.defId).name, COLORS.accentText);
+          this.showBanner(t(getItemDef(ev.defId).name), COLORS.accentText);
           sfx('openRare');
           break;
         case 'runEnd':
@@ -961,7 +1054,7 @@ export class RunScene extends Phaser.Scene {
           else this.finish();
           break;
         case 'revive':
-          this.showBanner('復活！', '#8be06a');
+          this.showBanner(t('復活！'), '#8be06a');
           if (this.shake) this.cameras.main.flash(260, 200, 255, 200);
           sfx('defense');
           break;
@@ -974,12 +1067,13 @@ export class RunScene extends Phaser.Scene {
   /** 力尽きたとき: 止めて、再開するか聞く */
   private askRevive(): void {
     this.inspecting = true;
+    const sec = MONETIZE.reviveSeconds;
     const label = isPremium()
-      ? `再開する（HP全回復・+${MONETIZE.reviveSeconds}秒）`
-      : `▶ 広告を見て再開（HP全回復・+${MONETIZE.reviveSeconds}秒）`;
+      ? t('再開する（HP全回復・+{sec}秒）', { sec })
+      : t('▶ 広告を見て再開（HP全回復・+{sec}秒）', { sec });
     choiceDialog(
       this,
-      '力尽きた…',
+      t('力尽きた…'),
       [
         {
           label,
@@ -993,9 +1087,9 @@ export class RunScene extends Phaser.Scene {
             });
           },
         },
-        { label: 'あきらめる', skin: 'gray', onPick: () => this.giveUp() },
+        { label: t('あきらめる'), skin: 'gray', onPick: () => this.giveUp() },
       ],
-      '1回のランで1回だけ再開できます',
+      t('1回のランで1回だけ再開できます'),
       undefined,
       true,
     );
@@ -1025,7 +1119,7 @@ export class RunScene extends Phaser.Scene {
         : {}),
     };
     this.showBanner(
-      this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！',
+      t(this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！'),
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,
     );
     this.time.delayedCall(1300, () => this.scene.start('Result'));

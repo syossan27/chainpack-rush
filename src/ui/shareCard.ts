@@ -3,6 +3,7 @@ import type Phaser from 'phaser';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { iconKey } from '../data/sprites';
+import { num, t } from '../i18n';
 import { font, rarityCss } from './theme';
 import { SHARE_TAG, type ShareSummary } from '../core/shareText';
 
@@ -29,40 +30,65 @@ export async function buildShareImage(
   grad.addColorStop(1, '#120e1a');
   g.fillStyle = grad;
   g.fillRect(0, 0, CW, CH);
-  const text = (
-    t: string,
-    x: number,
-    y: number,
-    size: number,
-    color: string,
-    align: CanvasTextAlign = 'center',
-  ) => {
+  const setFont = (size: number) => {
     g.font = `800 ${size}px ${font()}`;
-    g.textAlign = align;
+  };
+  /** Width of str at this font size */
+  const measure = (str: string, size: number) => {
+    setFont(size);
+    return g.measureText(str).width;
+  };
+  /**
+   * Font size that makes str at most maxW wide: shrinks down to 70% of size, and below that the
+   * canvas squeezes the glyphs (fillText's maxWidth) instead of making the text tiny
+   */
+  const fitSize = (str: string, size: number, maxW: number) => {
+    const w = measure(str, size);
+    return w <= maxW ? size : Math.max(Math.round(size * 0.7), Math.floor((size * maxW) / w));
+  };
+  const text = (str: string, x: number, y: number, size: number, color: string, maxW = CW - 40) => {
+    const fs = fitSize(str, size, maxW);
+    setFont(fs);
+    g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.lineWidth = Math.max(4, size / 6);
+    g.lineWidth = Math.max(4, fs / 6);
     g.strokeStyle = '#1a1020';
-    g.strokeText(t, x, y);
+    g.strokeText(str, x, y, maxW);
     g.fillStyle = color;
-    g.fillText(t, x, y);
+    g.fillText(str, x, y, maxW);
   };
   text('Chainpack Rush', CW / 2, 70, 56, '#ffe27a');
-  const n = (v: number) => Math.round(v).toLocaleString('ja-JP');
+  // Region and challenge names are Japanese keys (translating twice is harmless)
   const sub = s.challengeName
-    ? `挑戦「${s.challengeName}」`
+    ? t('挑戦「{name}」', { name: t(s.challengeName) })
     : s.endless
-      ? 'エンドレス'
-      : s.regionName;
+      ? t('エンドレス')
+      : t(s.regionName);
   text(sub, CW / 2, 140, 30, '#d8d0e8');
   text(
-    s.challengeName ? `スコア ${n(s.totalDamage)}` : `${s.reachedLoop}周目に到達`,
+    s.challengeName
+      ? t('スコア {score}', { score: num(s.totalDamage) })
+      : t('{loop}周目に到達', { loop: s.reachedLoop }),
     CW / 2,
     200,
     52,
     '#ffffff',
   );
-  text(`最大連鎖 ${s.maxStep}段`, CW / 2 - 170, 270, 28, '#ffd27a');
-  text(`最大ダメージ ${n(s.maxDamage)}`, CW / 2 + 150, 270, 28, '#ff9a7a');
+  // Two stats side by side. If either runs past its half (long translations), each gets half the
+  // card and shrinks to fit
+  const stepStat = t('最大連鎖 {step}段', { step: s.maxStep });
+  const damageStat = t('最大ダメージ {damage}', { damage: num(s.maxDamage) });
+  const sw = measure(stepStat, 28);
+  const dw = measure(damageStat, 28);
+  const lx = CW / 2 - 170;
+  const rx = CW / 2 + 150;
+  if (lx - sw / 2 >= 12 && lx + sw / 2 + 16 <= rx - dw / 2 && rx + dw / 2 <= CW - 12) {
+    text(stepStat, lx, 270, 28, '#ffd27a');
+    text(damageStat, rx, 270, 28, '#ff9a7a');
+  } else {
+    text(stepStat, CW / 4, 270, 28, '#ffd27a', CW / 2 - 32);
+    text(damageStat, (CW * 3) / 4, 270, 28, '#ff9a7a', CW / 2 - 32);
+  }
 
   // 配置（バックパック）
   const cell = Math.min(88, Math.floor(620 / loadout.width), Math.floor(520 / loadout.height));

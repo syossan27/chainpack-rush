@@ -37,3 +37,8 @@ export function devChallengeOpen(): number | undefined {
   d.setHours(0, 0, 0, 0);
   return d.getTime();
 }
+
+/** Development only: ?cosmetics=all lets you wear every challenge cosmetic (never in production builds) */
+export function devAllCosmetics(): boolean {
+  return import.meta.env.DEV && params.get('cosmetics') === 'all';
+}

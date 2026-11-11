@@ -6,7 +6,10 @@ import { NAME_FIRST, NAME_SECOND, type DisplayName, type RewardBand } from '../c
 
 export interface BoardRow {
   rank: number;
-  name: string;
+  /** Name as word ids (shown in the viewer's language); null = never picked */
+  name: DisplayName | null;
+  /** Name decoration (cosmetic id) or null */
+  deco?: string | null;
   score: number;
   totalDamage: number;
   reachedLoop: number;
@@ -100,12 +103,23 @@ export async function fetchMyRank(
   }
 }
 
-export async function saveName(n: DisplayName): Promise<string | null> {
+export async function saveName(n: DisplayName): Promise<DisplayName | null> {
   if (!rankingReady()) return null;
   try {
-    return (await (await connect()).call<{ name: string }>('setName', n)).name;
+    return (await (await connect()).call<{ name: DisplayName }>('setName', n)).name;
   } catch {
     return null;
+  }
+}
+
+/** Choose the name decoration others see in the ranking (the server checks you earned it) */
+export async function saveDeco(deco: string | null): Promise<boolean> {
+  if (!rankingReady()) return false;
+  try {
+    await (await connect()).call('setDeco', { deco });
+    return true;
+  } catch {
+    return false;
   }
 }
 
