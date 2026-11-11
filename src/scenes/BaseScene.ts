@@ -60,6 +60,9 @@ import {
 } from '../core/challenge';
 import { session } from '../platform/session';
 import { devChallengeOpen } from '../platform/debug';
+import { LANG_NAMES, lang, t } from '../i18n';
+import { READY_LANGS, applyLang, type LangSetting } from '../i18n/setup';
+import { loadFonts } from '../ui/fonts';
 import { RANK_REWARDS, endlessSeason, seasonLabel, type RankMode } from '../core/ranking';
 import { nameText } from '../core/names';
 import {
@@ -401,34 +404,34 @@ export class BaseScene extends Phaser.Scene {
     // 左右の丸ボタン（イベントアイコン風）
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.4);
     this.root.add(
-      new RoundButton(this, 70, 340, 96, scare, 'カカシ', () => this.scene.start('Dummy')),
+      new RoundButton(this, 70, 340, 96, scare, t('カカシ'), () => this.scene.start('Dummy')),
     );
-    this.root.add(new RoundButton(this, 70, 480, 96, 'gear', '設定', () => this.go('settings')));
-    this.root.add(new RoundButton(this, 70, 620, 96, 'book', 'ヘルプ', () => this.go('help')));
+    this.root.add(new RoundButton(this, 70, 480, 96, 'gear', t('設定'), () => this.go('settings')));
+    this.root.add(new RoundButton(this, 70, 620, 96, 'book', t('ヘルプ'), () => this.go('help')));
     this.root.add(
-      new RoundButton(this, 70, 760, 96, 'star', 'ランキング', () => this.go('ranking')),
+      new RoundButton(this, 70, 760, 96, 'star', t('ランキング'), () => this.go('ranking')),
     );
     this.claimRankRewards();
     // 2週替わりの挑戦（始まるまでは予告）。開いていて今回まだ遊んでいなければ印を付ける
     const ch = currentChallenge(Date.now(), challengeStart(devChallengeOpen()));
     this.root.add(
-      new RoundButton(this, W - 70, 760, 96, 'clock', '挑戦', () => this.go('challenge')).setBadge(
+      new RoundButton(this, W - 70, 760, 96, 'clock', t('挑戦'), () => this.go('challenge')).setBadge(
         !!ch && save.challenge.period !== ch.period,
       ),
     );
     const block = storageCount(save) > storageCapacity(save);
     this.root.add(
-      new RoundButton(this, W - 70, 340, 96, 'chest', '倉庫', () => this.go('storage')).setBadge(
+      new RoundButton(this, W - 70, 340, 96, 'chest', t('倉庫'), () => this.go('storage')).setBadge(
         block,
       ),
     );
     this.root.add(
-      new RoundButton(this, W - 70, 480, 96, 'anvil', '鍛冶屋', () => this.go('smith')),
+      new RoundButton(this, W - 70, 480, 96, 'anvil', t('鍛冶屋'), () => this.go('smith')),
     );
-    this.root.add(new RoundButton(this, W - 70, 620, 96, 'crown', '図鑑', () => this.go('techs')));
+    this.root.add(new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')));
 
     // 出撃
-    const sortie = new Button(this, W / 2, 760, '出撃', () => this.goSortie(), {
+    const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {
       width: 460,
       height: 116,
       fontSize: 48,
@@ -1108,6 +1111,41 @@ export class BaseScene extends Phaser.Scene {
       st.shake = !st.shake;
       changed();
     });
+    // Language (also labelled in English so a player stuck in an unknown language can find it)
+    if (READY_LANGS.length > 1) {
+      const y = 830;
+      const label = lang() === 'en' ? 'Language' : `${t('言語')} / Language`;
+      this.root.add(ink(this, 70, y, label, 26).setOrigin(0, 0.5));
+      const now = st.lang === 'auto' ? `${t('自動')}（${LANG_NAMES[lang()]}）` : LANG_NAMES[st.lang];
+      this.root.add(
+        new Button(this, W - 190, y, now, () => this.openLanguage(), {
+          width: 300,
+          height: 70,
+          fontSize: 22,
+          skin: 'blue',
+        }),
+      );
+    }
+  }
+
+  /** Pick the display language: re-applies it, loads its font, then redraws the screen */
+  private openLanguage(): void {
+    const st = getSave().settings;
+    const opts: LangSetting[] = ['auto', ...READY_LANGS];
+    const choices: Choice[] = opts.map((v) => {
+      const name = v === 'auto' ? `${t('自動')}（${t('端末の言語')}）` : LANG_NAMES[v];
+      return {
+        label: st.lang === v ? `● ${name}` : name,
+        skin: st.lang === v ? 'gold' : 'blue',
+        onPick: () => {
+          st.lang = v;
+          persist();
+          applyLang(v);
+          void loadFonts().then(() => this.scene.restart({ page: 'settings' }));
+        },
+      };
+    });
+    choiceDialog(this, `${t('言語')} / Language`, choices);
   }
 
   /** 自動売却の設定 */

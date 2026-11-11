@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { FIELD, RARITY } from '../config/balance';
 import type { Rarity } from '../core/types';
+import { lang, type Lang } from '../i18n';
 
 export const W = 720;
 export const H = 1280;
@@ -32,7 +33,18 @@ export const COLORS = {
   ok: 0x2c6c34,
 } as const;
 
-export const FONT = '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif';
+/** Font stack per language (M PLUS Rounded has no Hangul and no Traditional-only Han glyphs) */
+const FONTS: Record<Lang, string> = {
+  ja: '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif',
+  en: '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif',
+  'zh-Hant': '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif',
+  ko: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
+};
+
+/** Font stack for the current language (read at draw time) */
+export function font(l: Lang = lang()): string {
+  return FONTS[l];
+}
 
 /** 太い丸ゴシック＋濃い縁取り＋落ち影（ゲームらしい見出し文字） */
 export function textStyle(
@@ -41,7 +53,7 @@ export function textStyle(
   bold = true,
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
-    fontFamily: FONT,
+    fontFamily: font(),
     fontSize: `${size}px`,
     color,
     fontStyle: bold ? '800' : '500',
@@ -68,7 +80,7 @@ export function inkStyle(
   bold = true,
 ): Phaser.Types.GameObjects.Text.TextStyle {
   return {
-    fontFamily: FONT,
+    fontFamily: font(),
     fontSize: `${size}px`,
     color,
     fontStyle: bold ? '800' : '500',

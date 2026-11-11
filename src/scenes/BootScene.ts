@@ -4,14 +4,12 @@ import { UNIT_SPRITES, animFrameSize, animKey, iconKey, type UnitAnimName } from
 import { ITEM_DEFS } from '../data/items';
 import { loadSave } from '../platform/storage';
 import { setSave } from '../platform/store';
-import { GLYPHS } from '../ui/kit/glyphs.generated';
 import { generateUiIcons } from '../ui/kit/icons';
 import { generateSkin } from '../ui/kit/skin';
 import { generateAllTextures } from '../ui/textures';
-import { FONT } from '../ui/theme';
+import { applyLang } from '../i18n/setup';
+import { loadFonts } from '../ui/fonts';
 import { COLORS, H, W, textStyle } from '../ui/theme';
-
-const FONT_TIMEOUT_MS = 2500;
 
 // assets/sprites 以下の PNG はビルドに同梱し、その URL をここで引く（置いてあるものだけ読み込む）
 const SPRITE_URLS = import.meta.glob('../../assets/sprites/**/*.png', {
@@ -96,13 +94,11 @@ export class BootScene extends Phaser.Scene {
     }
     generateSkin(this);
     generateUiIcons(this);
-    // フォントはサブセット分割なので、画面で使う文字の分だけ先に読み込む（失敗しても代替フォントで続行）
-    const fonts = Promise.all(
-      ['800', '500'].map((w) => document.fonts.load(`${w} 32px ${FONT}`, GLYPHS)),
-    ).catch(() => undefined);
-    const timeout = new Promise((r) => setTimeout(r, FONT_TIMEOUT_MS));
-    void Promise.all([loadSave(), Promise.race([fonts, timeout])]).then(([save]) => {
+    // The language comes from the save, so load it first; then preload the fonts for that language
+    void loadSave().then(async (save) => {
       setSave(save);
+      applyLang(save.settings.lang);
+      await loadFonts();
       this.scene.start('Base');
     });
   }

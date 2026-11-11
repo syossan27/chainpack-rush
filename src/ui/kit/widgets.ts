@@ -79,6 +79,7 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly ic: Phaser.GameObjects.Image | null;
   private disabledState = false;
   private readonly skin: ButtonSkin;
+  private boxW = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -101,12 +102,8 @@ export class Button extends Phaser.GameObjects.Container {
     this.ic = opts.icon
       ? scene.add.image(0, -3, iconTex(opts.icon)).setScale(Math.max(2, Math.floor(h / 30)))
       : null;
-    if (this.ic) {
-      const gap = 8;
-      const total = this.ic.displayWidth + gap + this.label.width;
-      this.ic.x = -total / 2 + this.ic.displayWidth / 2;
-      this.label.x = this.ic.x + this.ic.displayWidth / 2 + gap + this.label.width / 2;
-    }
+    this.boxW = w;
+    this.layout();
     this.add(this.ic ? [this.bg, this.ic, this.label] : [this.bg, this.label]);
     this.setSize(w, h);
     this.bg.setInteractive({ useHandCursor: true });
@@ -138,8 +135,29 @@ export class Button extends Phaser.GameObjects.Container {
 
   setText(t: string): this {
     this.label.setText(t);
+    this.layout();
     return this;
   }
+
+  /** Place icon and label side by side, shrinking the label to fit (translations can be long) */
+  private layout(): void {
+    const gap = 8;
+    const icW = this.ic ? this.ic.displayWidth + gap : 0;
+    this.label.setScale(1);
+    fitText(this.label, this.boxW - 24 - icW);
+    const lw = this.label.displayWidth;
+    if (this.ic) {
+      const total = icW + lw;
+      this.ic.x = -total / 2 + this.ic.displayWidth / 2;
+      this.label.x = this.ic.x + this.ic.displayWidth / 2 + gap + lw / 2;
+    } else this.label.x = 0;
+  }
+}
+
+/** Shrink a text object so it is at most maxW wide (keeps its current scale if it already fits) */
+export function fitText<T extends Phaser.GameObjects.Text>(text: T, maxW: number): T {
+  if (maxW > 0 && text.displayWidth > maxW) text.setScale((text.scaleX * maxW) / text.displayWidth);
+  return text;
 }
 
 /** 丸い枠のボタン（アイコン＋下にラベル） */
@@ -172,6 +190,7 @@ export class RoundButton extends Phaser.GameObjects.Container {
           .text(0, size / 2 + 4, label, textStyle(Math.max(16, Math.round(size / 5))))
           .setOrigin(0.5, 0)
       : null;
+    if (this.caption) fitText(this.caption, size * 1.5);
     if (this.caption) this.add(this.caption);
     this.setSize(size, size);
     this.frame.setInteractive({ useHandCursor: true });
@@ -248,6 +267,7 @@ export function ribbon(
 ): Phaser.GameObjects.Container {
   const t = scene.add.text(0, -4, title, textStyle(30, '#fff6d0')).setOrigin(0.5);
   const width = w ?? Math.max(260, t.width + 120);
+  fitText(t, width - 90);
   const m = SLICE.ribbon;
   const bg = scene.add.nineslice(0, 0, SKIN.ribbon, undefined, width, 64, m, m, 20, 12);
   const c = scene.add.container(x, y, [bg, t]);

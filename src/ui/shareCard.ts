@@ -3,7 +3,7 @@ import type Phaser from 'phaser';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { iconKey } from '../data/sprites';
-import { FONT, rarityCss } from './theme';
+import { font, rarityCss } from './theme';
 import { SHARE_TAG, type ShareSummary } from '../core/shareText';
 
 const CW = 720;
@@ -37,7 +37,7 @@ export async function buildShareImage(
     color: string,
     align: CanvasTextAlign = 'center',
   ) => {
-    g.font = `800 ${size}px ${FONT}`;
+    g.font = `800 ${size}px ${font()}`;
     g.textAlign = align;
     g.textBaseline = 'middle';
     g.lineWidth = Math.max(4, size / 6);

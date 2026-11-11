@@ -1,5 +1,10 @@
 import '@fontsource/m-plus-rounded-1c/500.css';
 import '@fontsource/m-plus-rounded-1c/800.css';
+// Traditional Chinese and Korean (subset files are only downloaded when their characters are drawn)
+import '@fontsource/noto-sans-tc/500.css';
+import '@fontsource/noto-sans-tc/800.css';
+import '@fontsource/noto-sans-kr/500.css';
+import '@fontsource/noto-sans-kr/800.css';
 import Phaser from 'phaser';
 import { setAudioSuspended, unlockAudio } from './audio/sfx';
 import { initLifecycle, onAppStateChange } from './platform/lifecycle';

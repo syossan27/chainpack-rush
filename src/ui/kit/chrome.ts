@@ -7,7 +7,8 @@ import { COLORS, H, W, textStyle } from '../theme';
 import type { IconName } from './icons';
 import { iconTex } from './icons';
 import { SKIN, SLICE } from './skin';
-import { Pill, RoundButton, bindTap } from './widgets';
+import { Pill, RoundButton, bindTap, fitText } from './widgets';
+import { t } from '../../i18n';
 
 export const TOP_BAR_H = 96;
 export const TAB_BAR_H = 128;
@@ -40,8 +41,8 @@ export class TopBar extends Phaser.GameObjects.Container {
     const bg = scene.add.rectangle(0, 0, W, TOP_BAR_H, 0x0c0a12, 0.55).setOrigin(0, 0);
     this.add(bg);
     this.add(avatar(scene, 54, 50, 84));
-    this.add(scene.add.text(104, 18, '冒険者', textStyle(24)));
-    this.add(scene.add.text(104, 52, `出撃 ${save.stats.runs}回`, textStyle(18, COLORS.textDim)));
+    this.add(scene.add.text(104, 18, t('冒険者'), textStyle(24)));
+    this.add(scene.add.text(104, 52, t('出撃 {n}回', { n: save.stats.runs }), textStyle(18, COLORS.textDim)));
     this.gold = new Pill(scene, 0, 0, 170, 'coin', `${save.gold}`, COLORS.gold);
     this.storage = new Pill(scene, 0, 0, 150, 'chest', '');
     this.gold.setPosition(W - (onSettings ? 360 : 270), 48);
@@ -93,9 +94,9 @@ export class TabBar extends Phaser.GameObjects.Container {
     );
     this.add(bg);
     const tw = W / TABS.length;
-    TABS.forEach((t, i) => {
-      const on = t.id === active;
-      const center = t.id === 'home';
+    TABS.forEach((tab, i) => {
+      const on = tab.id === active;
+      const center = tab.id === 'home';
       const x = tw * i + tw / 2;
       const size = center ? 116 : 104;
       const y = center ? 44 : 56;
@@ -112,17 +113,18 @@ export class TabBar extends Phaser.GameObjects.Container {
         m,
         m,
       );
-      const ic = scene.add.image(x, y - (center ? 16 : 12), iconTex(t.icon)).setScale(3);
+      const ic = scene.add.image(x, y - (center ? 16 : 12), iconTex(tab.icon)).setScale(3);
       const label = scene.add
         .text(
           x,
           y + (center ? 32 : 30),
-          t.label,
+          t(tab.label),
           textStyle(center ? 22 : 20, on ? '#fff6d0' : COLORS.text),
         )
         .setOrigin(0.5);
+      fitText(label, size - 6);
       this.add([tile, ic, label]);
-      if (badges[t.id])
+      if (badges[tab.id])
         this.add(
           scene.add
             .circle(x + size / 2 - 12, y - size / 2 + 12, 9, 0xe83c3c)
@@ -133,7 +135,7 @@ export class TabBar extends Phaser.GameObjects.Container {
       tile.on('pointerout', () => tile.setScale(1));
       bindTap(tile, () => {
         tile.setScale(1);
-        if (!on) onSelect(t.id);
+        if (!on) onSelect(tab.id);
       });
     });
     this.setDepth(900);

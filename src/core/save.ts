@@ -1,5 +1,6 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
 import { validName } from './names';
+import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
@@ -63,6 +64,8 @@ export interface SaveData {
     autoSell: 'off' | 'common' | 'rare' | 'epic';
     /** 自動売却で、追加効果（✦）つきは残すか */
     autoSellKeepAffix: boolean;
+    /** Display language ('auto' follows the device) */
+    lang: Lang | 'auto';
   };
 }
 
@@ -152,6 +155,7 @@ export function createInitialSave(): SaveData {
       showRoutes: true,
       autoSell: 'off',
       autoSellKeepAffix: true,
+      lang: 'auto',
     },
   };
 }
@@ -328,6 +332,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       },
     };
     if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
+    if (save.settings.lang !== 'auto' && !LANGS.includes(save.settings.lang)) save.settings.lang = 'auto';
     if (!['off', 'common', 'rare', 'epic'].includes(save.settings.autoSell))
       save.settings.autoSell = 'off';
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
