@@ -10,7 +10,7 @@ for (const [l, dict] of Object.entries(DICTS) as [TargetLang, (typeof DICTS)[Tar
  * A language is added here only once its translation is complete, so a deploy mid-way never
  * shows a half-translated UI.
  */
-export const READY_LANGS: readonly Lang[] = ['ja'];
+export const READY_LANGS: readonly Lang[] = LANGS;
 
 /** Setting value: a language, or 'auto' (follow the device) */
 export type LangSetting = Lang | 'auto';
