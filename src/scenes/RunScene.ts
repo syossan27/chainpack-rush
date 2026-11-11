@@ -246,10 +246,15 @@ export class RunScene extends Phaser.Scene {
                   w: W - 40,
                   h: this.view.gridHeight + 20,
                 },
-                text: '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど強い。起点が2つなら交互に発火！',
+                text: '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる',
               },
             ]
           : []),
+        // Hero's attack gauge (under the hero) and the "next chain" panel
+        {
+          rect: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.footY - 20, w: 200, h: 110 },
+          text: '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る',
+        },
         {
           rect: {
             x: W / 2,
