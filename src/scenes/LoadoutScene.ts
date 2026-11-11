@@ -7,6 +7,15 @@ import { diagnose } from '../core/diagnose';
 import { getTechnique } from '../data/techniques';
 import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
 import {
+  checkRules,
+  challengeStart,
+  currentChallenge,
+  itemViolation,
+  type ChallengeNow,
+} from '../core/challenge';
+import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
+import { devChallengeOpen } from '../platform/debug';
+import {
   consumableSlots,
   equippedUids,
   heroStats,
@@ -74,9 +83,17 @@ export class LoadoutScene extends Phaser.Scene {
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
+  /** 挑戦用の編成を編集中（その挑戦） */
+  private challenge: ChallengeNow | null = null;
 
   constructor() {
     super('Loadout');
+  }
+
+  init(data?: { challenge?: boolean }): void {
+    this.challenge = data?.challenge
+      ? currentChallenge(Date.now(), challengeStart(devChallengeOpen()))
+      : null;
   }
 
   create(): void {
@@ -84,6 +101,15 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     this.drag = null;
     this.selected = null;
+    // 挑戦用の編成: 画面を出ている間だけ loadout と入れ替える（出るときに戻す）
+    if (this.challenge) {
+      enterChallengeEdit(save);
+      persist();
+      this.events.once('shutdown', () => {
+        leaveChallengeEdit(getSave());
+        persist();
+      });
+    }
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
     // 編成の切り替え（並べ方の記録。装備は倉庫に置いたまま）
     this.presetBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
@@ -134,14 +160,28 @@ export class LoadoutScene extends Phaser.Scene {
         onLongPress: (it) => this.openDetail(it, 'list'),
         onDragStart: (it, p) => this.startDrag(it, -1, -1, p),
       },
-      (it) => presetMark(getSave(), this.presetUses, it.uid),
+      (it) =>
+        this.challenge
+          ? itemViolation(it, this.challenge.def.rules)
+            ? '使えない'
+            : null
+          : presetMark(getSave(), this.presetUses, it.uid),
     );
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, 'カカシ', () =>
       this.scene.start('Dummy'),
     );
-    new RoundButton(this, W - 76, LOADOUT_LAYOUT.slotsTop + 44, 88, 'swords', '出撃', () =>
-      this.scene.start('StageSelect'),
+    new RoundButton(
+      this,
+      W - 76,
+      LOADOUT_LAYOUT.slotsTop + 44,
+      88,
+      this.challenge ? 'clock' : 'swords',
+      this.challenge ? '挑戦へ' : '出撃',
+      () =>
+        this.challenge
+          ? this.scene.start('Base', { page: 'challenge' })
+          : this.scene.start('StageSelect'),
     ).setLit(true);
     new TopBar(this, save);
     new TabBar(this, 'loadout', (id) => {
@@ -215,12 +255,15 @@ export class LoadoutScene extends Phaser.Scene {
     this.routeBar.setY(this.view.y + this.view.gridHeight + 30);
     this.info.setY(this.routeBar.y + 32);
     const block = sortieBlock(save);
+    const bad = this.challenge ? checkRules(save.loadout, items, this.challenge.def.rules) : [];
     this.warn.setText(
-      block === 'noOrigin'
-        ? '起点が0個です。出撃できません'
-        : block === 'storageFull'
-          ? '倉庫があふれています（タップで売却）'
-          : '',
+      bad.length > 0
+        ? bad[0]!.replace(/がある$/, 'があります')
+        : block === 'noOrigin'
+          ? '起点が0個です。出撃できません'
+          : block === 'storageFull' && !this.challenge
+            ? '倉庫があふれています（タップで売却）'
+            : '',
     );
     const eq = equippedUids(save);
     this.list.setItems(save.inventory.filter((i) => !eq.has(i.uid)));
@@ -466,6 +509,24 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const bar = this.presetBar;
     bar.removeAll(true);
+    if (this.challenge) {
+      // 挑戦用の編成: 編成の切り替えの代わりに、名前と「制限に合わせる」
+      const label = this.add
+        .text(24, -2, `挑戦「${this.challenge.def.name}」用`, textStyle(22, '#ffe27a'))
+        .setOrigin(0, 0.5);
+      const maxW = 380 - 76 - 8 - 24;
+      if (label.width > maxW) label.setScale(maxW / label.width);
+      bar.add(label);
+      bar.add(
+        new Button(this, 380, 0, '制限に合わせる', () => this.fitChallenge(), {
+          width: 150,
+          height: 52,
+          fontSize: 18,
+          skin: 'gold',
+        }),
+      );
+      return;
+    }
     const w = 54;
     save.presets.forEach((p, i) => {
       const x = 24 + i * (w + 6);
@@ -522,6 +583,26 @@ export class LoadoutScene extends Phaser.Scene {
     this.buildPresetBar();
     this.refresh();
     this.showToastLine(`${save.presets[i]!.name} に切り替えました`);
+  }
+
+  /** 制限に合わない装備を、同じ種類で出口の向きが近いものに入れ替える（最適にはしない） */
+  private fitChallenge(): void {
+    if (!this.challenge) return;
+    const save = getSave();
+    const items = itemMap(save);
+    if (checkRules(save.loadout, items, this.challenge.def.rules).length === 0) {
+      this.showToastLine('もう制限に合っています');
+      return;
+    }
+    save.loadout = fitToRules(save, save.loadout, this.challenge.def.rules);
+    this.selected = null;
+    this.commit();
+    const left = checkRules(save.loadout, itemMap(save), this.challenge.def.rules);
+    this.showToastLine(
+      left.length === 0
+        ? '制限に合わせました。並べ方を詰めよう'
+        : '合う装備が足りず、空いたマスがあります',
+    );
   }
 
   private renamePreset(i: number): void {

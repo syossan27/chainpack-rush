@@ -24,3 +24,16 @@ export function debugSpeed(): number | null {
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
+
+/** 開発用: URL に ?challenge=open を付ける（または試遊版のビルド）と、今日から挑戦が始まったことにする */
+export function devChallengeOpen(): number | undefined {
+  // 試遊版のビルド（VITE_CHALLENGE_OPEN=1）でも開いた状態にする
+  const forced = import.meta.env.VITE_CHALLENGE_OPEN === '1';
+  if (!forced) {
+    if (typeof location === 'undefined') return undefined;
+    if (new URLSearchParams(location.search).get('challenge') !== 'open') return undefined;
+  }
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}

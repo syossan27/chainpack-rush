@@ -10,6 +10,11 @@ import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
 import { setAudioSuspended, sfx, sfxChainStep } from '../audio/sfx';
+import {
+  challengeLoadoutOf,
+  enterChallengeEdit,
+  leaveChallengeEdit,
+} from '../core/challengeLoadout';
 import { debugFps, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
@@ -121,7 +126,13 @@ export class RunScene extends Phaser.Scene {
     session.challenge = null;
     this.demo = !this.challenge && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
-    if (!this.demo && refillConsumables(save).length > 0) persist();
+    // 挑戦は挑戦用の編成で（消耗品の入れ直しも挑戦用の編成に）
+    if (this.challenge) {
+      enterChallengeEdit(save);
+      refillConsumables(save);
+      leaveChallengeEdit(save);
+      persist();
+    } else if (!this.demo && refillConsumables(save).length > 0) persist();
     this.warned = new Set();
     this.recordShown = new Set();
     this.bestBefore =
@@ -136,7 +147,7 @@ export class RunScene extends Phaser.Scene {
     this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
     const demo = this.demo ? demoLoadout() : null;
-    const loadout = demo ? demo.loadout : save.loadout;
+    const loadout = demo ? demo.loadout : this.challenge ? challengeLoadoutOf(save) : save.loadout;
     this.loadout = loadout;
     this.items = demo ? demo.items : itemMap(save);
     this.shake = save.settings.shake;

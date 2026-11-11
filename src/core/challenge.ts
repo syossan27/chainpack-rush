@@ -74,6 +74,19 @@ export function rulesText(r: ChallengeRules): string[] {
   return out;
 }
 
+/** この装備を挑戦で置けるか。置けなければ理由（起点の数は見ない） */
+export function itemViolation(it: ItemInstance, r: ChallengeRules): string | null {
+  const d = getItemDef(it.defId);
+  if (d.artifact) return `アーティファクト（${d.name}）は使えない`;
+  // 起点は道筋を作るだけなので、レアリティは問わない
+  if (d.kind !== 'origin' && RANK[it.rarity] > RANK[r.maxRarity])
+    return `${RARITY_NAMES[r.maxRarity]}より上の装備（${d.name}）がある`;
+  if (r.elements && d.kind === 'attack' && !r.elements.includes(d.element ?? 'physical'))
+    return `使えない属性の装備（${d.name}）がある`;
+  if (r.bannedKinds?.includes(d.kind)) return `使えない種類の装備（${d.name}）がある`;
+  return null;
+}
+
 /** 並べ方が制限に合っているか。合っていなければ、その理由（空なら出撃できる） */
 export function checkRules(
   loadout: Loadout,
@@ -86,15 +99,9 @@ export function checkRules(
     if (!uid) continue;
     const it = items.get(uid);
     if (!it) continue;
-    const d = getItemDef(it.defId);
-    if (d.artifact) out.add(`アーティファクト（${d.name}）は使えない`);
-    // 起点は道筋を作るだけなので、レアリティは問わない
-    else if (d.kind !== 'origin' && RANK[it.rarity] > RANK[r.maxRarity])
-      out.add(`${RARITY_NAMES[r.maxRarity]}より上の装備（${d.name}）がある`);
-    if (d.kind === 'origin') origins++;
-    if (r.elements && d.kind === 'attack' && !r.elements.includes(d.element ?? 'physical'))
-      out.add(`使えない属性の装備（${d.name}）がある`);
-    if (r.bannedKinds?.includes(d.kind)) out.add(`使えない種類の装備（${d.name}）がある`);
+    const v = itemViolation(it, r);
+    if (v) out.add(v);
+    if (getItemDef(it.defId).kind === 'origin') origins++;
   }
   if (r.maxOrigins && origins > r.maxOrigins)
     out.add(`起点が${origins}つある（${r.maxOrigins}つまで）`);

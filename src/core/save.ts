@@ -39,6 +39,10 @@ export interface SaveData {
   endless: { bestLoop: number; bestDamage: number };
   /** 2週替わりの挑戦の自己ベスト（期間の番号ごと。今の期間だけ残す） */
   challenge: { period: number; best: number; bestLoop: number };
+  /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
+  challengeLoadout: Loadout | null;
+  /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
+  editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
   adLog: { date: string; counts: Record<string, number> };
   settings: {
@@ -128,6 +132,7 @@ export function createInitialSave(): SaveData {
     achievements: [],
     endless: { bestLoop: 0, bestDamage: 0 },
     challenge: { period: -1, best: 0, bestLoop: 0 },
+    challengeLoadout: null,
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -155,18 +160,22 @@ function readPresets(v: unknown): Preset[] {
     const p: unknown = v[i];
     if (!isObj(p)) return b;
     const name = typeof p.name === 'string' && p.name.length > 0 ? p.name.slice(0, 12) : b.name;
-    const lo = validLoadout(p.loadout)
-      ? {
-          width: p.loadout.width,
-          height: p.loadout.height,
-          cells: p.loadout.cells.map((c) => (typeof c === 'string' ? c : null)),
-          originOrder: p.loadout.originOrder.filter((u): u is string => typeof u === 'string'),
-          consumables: p.loadout.consumables.filter((u): u is string => typeof u === 'string'),
-          ...autoOf(p.loadout),
-        }
-      : null;
-    return { name, loadout: lo };
+    return { name, loadout: readLoadoutRec(p.loadout) };
   });
+}
+
+/** 並べ方の記録の読み込み。壊れていたら null */
+function readLoadoutRec(v: unknown): Loadout | null {
+  return validLoadout(v)
+    ? {
+        width: v.width,
+        height: v.height,
+        cells: v.cells.map((c) => (typeof c === 'string' ? c : null)),
+        originOrder: v.originOrder.filter((u): u is string => typeof u === 'string'),
+        consumables: v.consumables.filter((u): u is string => typeof u === 'string'),
+        ...autoOf(v),
+      }
+    : null;
 }
 
 /** 消耗品の自動補充の記録（古いセーブにはない） */
@@ -272,6 +281,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
               bestLoop: data.challenge.bestLoop,
             }
           : { period: -1, best: 0, bestLoop: 0 },
+      challengeLoadout: readLoadoutRec(data.challengeLoadout),
+      ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],

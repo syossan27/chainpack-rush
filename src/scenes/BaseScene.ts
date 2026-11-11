@@ -50,7 +50,7 @@ import {
 } from '../platform/monetization';
 import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
-import { otherPresetUse, presetMark, switchPreset } from '../core/presets';
+import { otherPresetUse, presetMark } from '../core/presets';
 import {
   challengeStart,
   checkRules,
@@ -59,6 +59,8 @@ import {
   rulesText,
 } from '../core/challenge';
 import { session } from '../platform/session';
+import { devChallengeOpen } from '../platform/debug';
+import { challengeLoadoutOf, fitToRules } from '../core/challengeLoadout';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
@@ -1511,42 +1513,35 @@ export class BaseScene extends Phaser.Scene {
     );
     y += 110;
 
-    // 使う編成
-    this.root.add(this.add.text(40, y, '使う編成', textStyle(24, COLORS.text)));
-    y += 70;
-    const n = save.presets.length;
-    const bw = Math.min(128, (W - 60) / n - 8);
-    save.presets.forEach((p, i) => {
-      const x = 30 + (bw + 8) * i + bw / 2;
-      this.root.add(
-        new Button(
-          this,
-          x,
-          y,
-          p.name,
-          () => {
-            if (switchPreset(save, i)) {
-              persist();
-              this.render();
-            }
-          },
-          { width: bw, height: 64, fontSize: 18, skin: i === save.activePreset ? 'gold' : 'gray' },
-        ),
-      );
-    });
-    y += 60;
-
-    // 制限に合っているか
-    const bad = checkRules(save.loadout, itemMap(save), def.rules);
-    if (bad.length === 0) {
+    // 挑戦用の編成（ふだんの編成とは別）
+    const lo = challengeLoadoutOf(save);
+    const items = itemMap(save);
+    const placed = lo.cells.filter(Boolean).length;
+    const origins = lo.cells.filter(
+      (u) => u && getItemDef(items.get(u)!.defId).kind === 'origin',
+    ).length;
+    this.root.add(this.add.text(40, y, '挑戦用の編成', textStyle(26, COLORS.text)));
+    this.root.add(
+      this.add
+        .text(
+          W - 40,
+          y + 4,
+          placed > 0 ? `装備 ${placed}個・起点 ${origins}個` : 'まだ組んでいません',
+          textStyle(22, COLORS.textDim),
+        )
+        .setOrigin(1, 0),
+    );
+    y += 48;
+    const bad = checkRules(lo, items, def.rules);
+    if (placed > 0 && bad.length === 0) {
       this.root.add(
         this.add
           .text(W / 2, y + 10, 'この編成で挑戦できます', textStyle(22, '#7ad67a'))
           .setOrigin(0.5, 0),
       );
-    } else {
+    } else if (placed > 0) {
       bad
-        .slice(0, 4)
+        .slice(0, 3)
         .forEach((b, i) =>
           this.root.add(
             this.add
@@ -1555,14 +1550,56 @@ export class BaseScene extends Phaser.Scene {
           ),
         );
     }
-    const by = CONTENT_BOTTOM - 80;
+    y += 110;
+    // ふだんの編成をもとに、制限に合わない装備を入れ替えて「出撃できる形」まで組む（最適にはしない）
+    const fromNormal = () => {
+      save.challengeLoadout = fitToRules(save, save.loadout, def.rules);
+      persist();
+      this.showToast('ふだんの編成から組みました。並べ方を詰めよう');
+      this.render();
+    };
     this.root.add(
-      new Button(this, W / 2 - 150, by, '編成を変える', () => goTab(this, 'loadout'), {
-        width: 260,
-        height: 96,
-        fontSize: 26,
-        skin: 'blue',
-      }),
+      new Button(
+        this,
+        W / 2,
+        y,
+        'ふだんの編成から組む',
+        () => {
+          if (placed === 0) fromNormal();
+          else
+            confirmDialog(
+              this,
+              'ふだんの編成から組む',
+              '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。',
+              '組み直す',
+              fromNormal,
+            );
+        },
+        { width: 440, height: 76, fontSize: 24, skin: 'green' },
+      ),
+    );
+    this.root.add(
+      this.add
+        .text(
+          W / 2,
+          y + 56,
+          '出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第',
+          textStyle(18, COLORS.textDim),
+        )
+        .setOrigin(0.5, 0),
+    );
+
+    const by = CONTENT_BOTTOM - 80;
+    const blocked = placed === 0 || bad.length > 0;
+    this.root.add(
+      new Button(
+        this,
+        W / 2 - 150,
+        by,
+        '編成する',
+        () => this.scene.start('Loadout', { challenge: true }),
+        { width: 260, height: 96, fontSize: 28, skin: 'blue', icon: 'bag' },
+      ),
     );
     this.root.add(
       new Button(
@@ -1571,8 +1608,11 @@ export class BaseScene extends Phaser.Scene {
         by,
         '挑戦する',
         () => {
-          if (bad.length > 0) {
-            this.showToast('編成が制限に合っていません', true);
+          if (blocked) {
+            this.showToast(
+              placed === 0 ? '挑戦用の編成を組んでください' : '編成が制限に合っていません',
+              true,
+            );
             return;
           }
           session.challenge = {
@@ -1587,7 +1627,7 @@ export class BaseScene extends Phaser.Scene {
           width: 280,
           height: 96,
           fontSize: 30,
-          skin: bad.length > 0 ? 'gray' : 'gold',
+          skin: blocked ? 'gray' : 'gold',
           icon: 'swords',
         },
       ),
@@ -1729,17 +1769,4 @@ export class BaseScene extends Phaser.Scene {
     });
     this.root.add(bar);
   }
-}
-
-/** 開発用: URL に ?challenge=open を付ける（または試遊版のビルド）と、今日から挑戦が始まったことにする */
-function devChallengeOpen(): number | undefined {
-  // 試遊版のビルド（VITE_CHALLENGE_OPEN=1）でも開いた状態にする
-  const forced = import.meta.env.VITE_CHALLENGE_OPEN === '1';
-  if (!forced) {
-    if (typeof location === 'undefined') return undefined;
-    if (new URLSearchParams(location.search).get('challenge') !== 'open') return undefined;
-  }
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
 }

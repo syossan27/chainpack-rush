@@ -5,10 +5,13 @@ import { setHapticsEnabled } from './haptics';
 import { SIM } from '../config/balance';
 import { debugSpeed } from './debug';
 import { writeSave } from './storage';
+import { leaveChallengeEdit } from '../core/challengeLoadout';
 
 let current: SaveData | null = null;
 
 export function setSave(save: SaveData): void {
+  // 挑戦用の編成を編集したまま閉じていたら、ふだんの編成に戻す
+  leaveChallengeEdit(save);
   current = save;
   applySettings();
 }

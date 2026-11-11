@@ -31,6 +31,7 @@ import { COLORS, H, W, textStyle } from '../ui/theme';
 import { buildShareImage, shareImage } from '../ui/shareCard';
 import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
+import { challengeLoadoutOf } from '../core/challengeLoadout';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 /** 戦利品を並べる枠（宝箱の箱の中）。数が多いほどアイコンを小さく、列を増やして収める */
@@ -185,7 +186,12 @@ export class ResultScene extends Phaser.Scene {
           if (sharing) return;
           sharing = true;
           void (async () => {
-            const blob = await buildShareImage(this, summary, save.loadout, itemMap(save));
+            const blob = await buildShareImage(
+              this,
+              summary,
+              challenge ? challengeLoadoutOf(save) : save.loadout,
+              itemMap(save),
+            );
             const res = blob ? await shareImage(blob, shareText(summary)) : 'failed';
             sharing = false;
             if (res === 'saved') this.flash('画像を保存しました（文はコピー済み）');
