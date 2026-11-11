@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "npm run glyphs && tsc --noEmit && vite build",
+    "build:trial": "npm run glyphs && tsc --noEmit && VITE_CHALLENGE_OPEN=1 vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
     "test:watch": "vitest",
