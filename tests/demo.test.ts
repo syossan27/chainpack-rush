@@ -27,7 +27,8 @@ describe('体験ラン（最初の出撃で伝説の装備を借りる）', () =
       expect(r.drops).toHaveLength(0);
       expect(r.stats.timeGained).toBe(0);
       expect(r.stats.maxStep).toBeGreaterThanOrEqual(12);
-      expect(techs.size).toBeGreaterThanOrEqual(4);
+      // Enemies can run out mid-chain, so the last technique of a chain may be skipped
+      expect(techs.size).toBeGreaterThanOrEqual(5);
     }
   });
 
