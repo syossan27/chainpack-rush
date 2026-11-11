@@ -19,7 +19,7 @@ Read together with `docs/i18n-glossary.md`. Every key's source location is in
 | `自動\|refill` | tiny mark under an empty consumable slot: it is refilled automatically ("Auto") |
 | `売却\|sold` | stamp on a looted item that was auto-sold ("Sold") |
 | `・\|sep` | separator between list items. en/pt/es/de/fr/id: `, ` ; zh-Hant: `、` ; ko: `, ` |
-| `　\|sep` (full-width space) | wide gap between two facts on one line. Latin: `  ·  ` ; zh-Hant: `　` ; ko: `  ·  ` |
+| `　\|sep` (full-width space) | wide gap between two facts on one line: `  ·  ` in every language (a value of only spaces counts as empty) |
 | `{first}{second}\|name` | ranking name = first word + second word. Set order/spacing (see glossary rule 11) |
 
 ## Other keys worth knowing
