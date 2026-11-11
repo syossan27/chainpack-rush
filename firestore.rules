@@ -1,0 +1,22 @@
+rules_version = '2';
+// ゲームから直接書き込めるものはない（すべて Cloud Functions から）。
+// 読めるのは、上位の表と、自分のプレイヤー情報・報酬だけ。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /seasons/{season}/board/{doc} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /players/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+      match /rewards/{season} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
