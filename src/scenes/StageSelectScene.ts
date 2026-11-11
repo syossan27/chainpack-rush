@@ -69,7 +69,9 @@ export class StageSelectScene extends Phaser.Scene {
       icon: 'bag',
     });
     const block = sortieBlock(save);
-    const go = new Button(this, W - 140, H - 80, '出撃！', () => this.scene.start('Run'), {
+    // Shared by the button and the tutorial's action step
+    const sortie = () => this.scene.start('Run');
+    const go = new Button(this, W - 140, H - 80, '出撃！', sortie, {
       width: 240,
       height: 100,
       fontSize: 38,
@@ -103,7 +105,7 @@ export class StageSelectScene extends Phaser.Scene {
         rect: { x: W - 140, y: H - 80, w: 256, h: 112 },
         text: block ? '準備ができたら「出撃！」' : '「出撃！」を押して、冒険に出よう！',
         // Only make it an action when sortie is actually possible
-        ...(block ? {} : { onTap: () => this.scene.start('Run') }),
+        ...(block ? {} : { onTap: sortie }),
       },
     ]);
   }

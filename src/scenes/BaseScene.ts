@@ -246,6 +246,11 @@ export class BaseScene extends Phaser.Scene {
     this.render();
   }
 
+  /** Home "出撃" (shared by the button and the tutorial's action step) */
+  private goSortie(): void {
+    this.scene.start('StageSelect');
+  }
+
   private showToast(msg: string, warn = false): void {
     this.toast?.destroy();
     this.toast = this.add
@@ -423,7 +428,7 @@ export class BaseScene extends Phaser.Scene {
     this.root.add(new RoundButton(this, W - 70, 620, 96, 'crown', '図鑑', () => this.go('techs')));
 
     // 出撃
-    const sortie = new Button(this, W / 2, 760, '出撃', () => this.scene.start('StageSelect'), {
+    const sortie = new Button(this, W / 2, 760, '出撃', () => this.goSortie(), {
       width: 460,
       height: 116,
       fontSize: 48,
@@ -1149,7 +1154,7 @@ export class BaseScene extends Phaser.Scene {
         {
           rect: { x: W / 2, y: 760, w: 476, h: 132 },
           text: 'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！',
-          onTap: () => this.scene.start('StageSelect'),
+          onTap: () => this.goSortie(),
         },
       ]);
       // After the first own run: guide to the loadout tab to place the loot
