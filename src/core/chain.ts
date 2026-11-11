@@ -1,4 +1,5 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
+import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, RARITY } from '../config/balance';
@@ -17,7 +18,7 @@ const DIR_DELTA: Record<Dir, readonly [number, number]> = {
 const MS = 1000;
 
 export function chainMultiplier(step: number, cap: number = CHAIN.multCap): number {
-  return Math.min(cap, Math.pow(CHAIN.multBase, step - 1));
+  return Math.min(cap, ipow(CHAIN.multBase, Math.max(0, step - 1)));
 }
 
 export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number | null {

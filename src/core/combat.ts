@@ -30,7 +30,7 @@ import { chainMultiplier, planChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
-import { Rng } from './rng';
+import { Rng, ipow } from './rng';
 import type {
   Area,
   ChainPlan,
@@ -215,7 +215,15 @@ export interface RunResult {
   drops: ItemInstance[];
   stats: RunStats;
   ticks: number;
+  /** プレイヤーの操作（ランキングでサーバーが同じランを再生するのに使う） */
+  inputs?: RunInput[];
 }
+
+/** プレイヤーの操作。t はその操作をしたときの tick（その tick の step の前に行う） */
+export type RunInput =
+  | { t: number; k: 'use'; slot: number }
+  | { t: number; k: 'retreat' }
+  | { t: number; k: 'revive'; s: number };
 
 interface ExecInfo {
   eff: number; // 実際の段数（狙いが変わると1に戻る）
@@ -302,6 +310,7 @@ export class Combat {
   private readonly cfg: RunConfig;
   private readonly origins: string[];
   private events: CombatEvent[] = [];
+  private readonly inputs: RunInput[] = [];
   private nextEnemyId = 1;
   private nextDropId = 1;
   private summonTimer = 0;
@@ -424,6 +433,7 @@ export class Combat {
       drops: this.drops.slice(),
       stats: { ...this.stats, bossesDefeated: this.bossesDefeated },
       ticks: this.tick,
+      inputs: this.inputs.slice(),
     };
   }
 
@@ -452,6 +462,7 @@ export class Combat {
     if (effect === 'rally' && (this.chain || this.origins.length === 0)) return false;
     this.consumables[slot] = null;
     this.usedConsumables.push(uid);
+    this.inputs.push({ t: this.tick, k: 'use', slot });
     this.emit({ type: 'consumable', tick: this.tick, uid, defId: def.id, effect });
     switch (effect) {
       case 'rally':
@@ -572,6 +583,7 @@ export class Combat {
     if (this.mode !== 'run' || this.ended !== 'dead' || this.revived) return false;
     this.ended = null;
     this.revived = true;
+    this.inputs.push({ t: this.tick, k: 'revive', s: seconds });
     this.hp = this.maxHp;
     this.maxTicks += secToTicks(seconds);
     this.emit({ type: 'revive', tick: this.tick });
@@ -583,7 +595,8 @@ export class Combat {
 
   /** プレイヤーの撤退。ここまでの戦利品を持ち帰って終わる */
   retreat(): void {
-    if (this.mode !== 'run') return;
+    if (this.mode !== 'run' || this.ended) return;
+    this.inputs.push({ t: this.tick, k: 'retreat' });
     this.end('retreat');
   }
 
@@ -653,7 +666,7 @@ export class Combat {
     const el = elite ? ELITES[elite] : null;
     // 地域の強さ × 周回の伸び × 精鋭
     const maxHp =
-      def.hp * this.region.power.hp * Math.pow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
+      def.hp * this.region.power.hp * ipow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
     const e: EnemyState = {
       id: this.nextEnemyId++,
       defId,
@@ -661,7 +674,7 @@ export class Combat {
       x,
       hp: maxHp,
       maxHp,
-      atk: def.atk * this.region.power.atk * Math.pow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
+      atk: def.atk * this.region.power.atk * ipow(LOOP_SCALING.atk, scaleLoop) * (el?.atk ?? 1),
       interval: def.interval * (el?.interval ?? 1),
       // 攻撃のタイミングはシードで少しずらす（同じシードなら同じ結果）
       attackTimer: def.boss ? 0 : this.rng.next() * def.interval * FIELD.attackPhaseJitter,

@@ -41,8 +41,14 @@ export function totalStars(save: SaveData): number {
 }
 
 export function heroStats(save: SaveData): HeroStats {
-  const u = save.upgrades;
-  const stars = totalStars(save);
+  return heroFrom(save.upgrades, totalStars(save));
+}
+
+/** 強化の段と★の数から、勇者の強さ（ランキングでサーバーも同じ計算をする） */
+export function heroFrom(
+  u: Pick<SaveData['upgrades'], 'maxHp' | 'atb' | 'attack' | 'runTime'>,
+  stars: number,
+): HeroStats {
   return {
     maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp + PROGRESS.starHp * stars,
     atbTime: Math.max(HERO.minAtbTime, HERO.atbTime - UPGRADES.atb.effect * u.atb),
