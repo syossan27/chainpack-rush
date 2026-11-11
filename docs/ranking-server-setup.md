@@ -137,3 +137,14 @@
    ```
 4. 試遊版で、挑戦・エンドレスの記録が送られて、ランキングに出るかを確かめる。
 5. App Check を設定したら、`functions/src/index.ts` の `ENFORCE_APP_CHECK` を `true` にして、もう一度反映する。
+
+## 6. 手元での通し確認（Firebase エミュレーター）
+
+本物のサーバーに反映する前に、手元の偽のサーバー（エミュレーター）で、送信 → 記録 → 順位 → 不正な記録の拒否までを確かめられる（Java が必要）。
+
+```bash
+cd functions && npm install && npm run build && cd ..
+npx firebase emulators:exec --only functions,firestore,auth --project demo-chainpack-rush "npx tsx tools/rankingE2E.ts"
+```
+
+`ALL OK` と出れば通っている。5分ごとの上位表と毎日の報酬配布は、エミュレーターでは動かない（スケジュール実行のため）ので、反映後に確かめる。
