@@ -28,6 +28,9 @@ import { Button, ink, panel, ribbon } from '../ui/kit/widgets';
 import { ChestReveal } from '../ui/chestReveal';
 import { showItemDetail } from '../ui/itemInfo';
 import { COLORS, H, W, textStyle } from '../ui/theme';
+import { buildShareImage, shareImage } from '../ui/shareCard';
+import { shareText, type ShareSummary } from '../core/shareText';
+import { itemMap } from '../core/economy';
 
 const ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 /** 戦利品を並べる枠（宝箱の箱の中）。数が多いほどアイコンを小さく、列を増やして収める */
@@ -59,6 +62,21 @@ export class ResultScene extends Phaser.Scene {
   }
 
   /** 「NEW RECORD!」のはんこ: ぽんと押されて、少し傾いたまま残る */
+  /** 画面の下に一言 */
+  private flash(msg: string): void {
+    const t = this.add
+      .text(W / 2, H - 200, msg, textStyle(24, COLORS.gold))
+      .setOrigin(0.5)
+      .setDepth(2000);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      delay: 1500,
+      duration: 500,
+      onComplete: () => t.destroy(),
+    });
+  }
+
   private stamp(x: number, y: number, text: string, delay: number, size = 20): void {
     const t = this.add
       .text(x, y, text, {
@@ -146,6 +164,37 @@ export class ResultScene extends Phaser.Scene {
     );
     title.setScale(0.3).setAngle(-8);
     this.tweens.add({ targets: title, scale: 1, angle: 0, duration: 380, ease: 'Back.easeOut' });
+    // 結果を画像にして共有（体験ランは借りた装備なので出さない）
+    if (!demo) {
+      const summary: ShareSummary = {
+        regionName: getRegion(regionId).name,
+        reachedLoop: result.reachedLoop,
+        maxStep: result.stats.maxStep,
+        maxDamage: result.stats.maxDamage,
+        totalDamage: result.stats.totalDamage,
+        ...(challenge ? { challengeName: challenge.name } : {}),
+        endless: regionId === 'endless',
+      };
+      let sharing = false;
+      new Button(
+        this,
+        W - 72,
+        110,
+        'シェア',
+        () => {
+          if (sharing) return;
+          sharing = true;
+          void (async () => {
+            const blob = await buildShareImage(this, summary, save.loadout, itemMap(save));
+            const res = blob ? await shareImage(blob, shareText(summary)) : 'failed';
+            sharing = false;
+            if (res === 'saved') this.flash('画像を保存しました（文はコピー済み）');
+            else if (res === 'failed' && !blob) this.flash('画像を作れませんでした');
+          })();
+        },
+        { width: 120, height: 60, fontSize: 22, skin: 'blue' },
+      );
+    }
     this.add
       .text(
         W / 2,
