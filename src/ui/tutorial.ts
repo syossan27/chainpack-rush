@@ -1,7 +1,7 @@
 // 初めて遊ぶ人向けの案内（各画面で1回だけ）。説明したい場所だけ明るく残し、矢印と吹き出しで示す。
 // 画面のどこかをタップすると次へ。「スキップ」で以降の案内をすべて出さない。
-// 最後のステップに onTap があれば「やってみよう」の案内: 光っている場所をタップしたときだけ進み、
-// そのボタンを押したのと同じことをする（ホーム → 地域 → 体験ラン → 結果 → 配置 と順に導く）。
+// If the last step has onTap, it is a "try it" step: it advances only when the highlighted area is
+// tapped and then does what that button does (guides home → region → demo run → result → loadout).
 import Phaser from 'phaser';
 import { getSave, persist } from '../platform/store';
 import { sfx } from '../audio/sfx';

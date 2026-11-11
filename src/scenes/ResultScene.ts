@@ -474,8 +474,8 @@ export class ResultScene extends Phaser.Scene {
       },
       {
         rect: { x: W / 2 - 170, y: H - 110, w: 312, h: 112 },
-        text: '拾った装備は、バックパックに置くと\n強くなるよ。まずは「拠点へ」戻ろう',
-        onTap: () => this.scene.start('Base'),
+        // Not an action step: the player should still be able to inspect the loot here
+        text: '拾った装備は、拠点の「配置」で\nバックパックに置くと強くなるよ',
       },
     ]);
   }
