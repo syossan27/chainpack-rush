@@ -687,4 +687,22 @@ export const UI: Dict = {
   '光っているところをタップ（{n}/{total}）': 'Tippe auf die leuchtende Stelle ({n}/{total})',
   'タップで次へ（{n}/{total}）': 'Tippen zum Fortfahren ({n}/{total})',
   'スキップ ›': 'Überspringen ›',
+  // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
+  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
+    'Das ist dein Lager. Hier liegen Ausrüstung und Verbrauchsitems, die nicht in deinem Rucksack sind.',
+  '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
+    'Ungenutzte Ausrüstung machst du mit „Auswahl verkaufen“ oder „Massenverkauf“ zu Gold.',
+  '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
+    'Tippe auf einen Gegenstand, um seine Werte und Knöpfe wie „Verkaufen“ zu sehen. Probier es aus!',
+  '「{upgrade}」を強化してみよう！\n強化は、ずっと残るよ。\n押してみてね':
+    'Trainiere „{upgrade}“!\nTraining bleibt für immer. Tippe auf den Knopf!',
+  '拾った装備は「倉庫」に入るよ。\n使わない装備は、売ってゴールドにできる。\n「倉庫」を押してね':
+    'Gefundene Ausrüstung kommt ins „Lager“. Ungenutzte Ausrüstung kannst du für Gold verkaufen. Tippe auf „Lager“!',
+  'ゴールドが貯まったね！\n「鍛冶屋」で、装備の出口の向きを\n変えられるよ。「鍛冶屋」を押してね':
+    'Du hast Gold gesammelt!\nIn der „Schmiede“ kannst du die Ausgänge eines Gegenstands neu ausrichten. Tippe auf „Schmiede“!',
+  'ゴールドが貯まったね！\n「強化」で、勇者をずっと強くできるよ。\n「強化」を押してね':
+    'Du hast Gold gesammelt!\nMit „Training“ machst du deinen Helden dauerhaft stärker. Tippe auf „Training“!',
+  '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
+    '„Neu würfeln“ dreht die Ausgänge in zufällige Richtungen. Mit „Gezielt“ wählst du die Richtungen selbst.',
+  'この装備をタップして、選んでみよう': 'Tippe auf diesen Gegenstand, um ihn auszuwählen.',
 };

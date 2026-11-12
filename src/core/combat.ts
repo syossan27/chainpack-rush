@@ -71,6 +71,8 @@ export interface RunConfig {
   demo?: boolean;
   /** 装備とゴールドを落とさない（挑戦。エンドレスは地域で決まる） */
   noLoot?: boolean;
+  /** First own run after the demo: the first enemy killed always drops an equipment piece */
+  firstRun?: boolean;
 }
 
 export interface EnemyState {
@@ -1141,7 +1143,9 @@ export class Combat {
     // エンドレスは装備を落とさない
     if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot) {
       const roll = this.rng.next();
-      if (roll < e.def.dropRate || e.elite === 'golden') {
+      // The first own run never ends empty-handed (the roll is still drawn, as in any run)
+      const promised = !!this.cfg.firstRun && this.drops.length === 0;
+      if (roll < e.def.dropRate || e.elite === 'golden' || promised) {
         const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
         const rareOrBetter = e.def.boss || e.elite === 'golden';
         for (let k = 0; k < count; k++) {
@@ -1151,6 +1155,7 @@ export class Combat {
             `drop-${this.nextDropId++}`,
             rareOrBetter,
             this.region.loot,
+            promised,
           );
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });

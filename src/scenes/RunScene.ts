@@ -180,6 +180,7 @@ export class RunScene extends Phaser.Scene {
       noLoot: !!this.challenge,
       consumableSlots: demo ? 0 : consumableSlots(save),
       demo: this.demo,
+      firstRun: !this.demo && !this.challenge && save.stats.runs === 0,
     };
     this.combat = new Combat(this.cfg);
     // ランキングのシーズン（出撃した時点で決める）

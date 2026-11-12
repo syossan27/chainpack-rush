@@ -129,6 +129,8 @@ export function rollLoot(
   uid: string,
   rareOrBetter = false,
   region: RegionLoot = { rarityShift: 0, artifactMult: 1 },
+  /** Never a consumable (the first own run's promised drop goes into the backpack) */
+  equipOnly = false,
 ): ItemInstance {
   // ごくまれにアーティファクト
   const artifactChance =
@@ -137,7 +139,7 @@ export function rollLoot(
     return createItem(rng, rng.pick(ARTIFACT_DEFS).id, 'legendary', uid);
   let kind = rollKind(rng);
   // 消耗品にはレアリティがないので、レア以上確定のときは装備から選ぶ
-  if (rareOrBetter && kind === 'consumable') kind = 'attack';
+  if ((rareOrBetter || equipOnly) && kind === 'consumable') kind = 'attack';
   // レアリティを先に決め、そのレアリティで出る装備から選ぶ（系統）
   const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift);
   const defs = ITEM_DEFS.filter(

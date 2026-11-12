@@ -9,20 +9,9 @@ import { t } from '../i18n';
 import { COLORS, inkStyle, textStyle } from './theme';
 import { fitText, panel } from './kit/widgets';
 
-/** 案内の種類（各画面で1回） */
-export const TUTORIAL_KEYS = [
-  'home',
-  'stage',
-  'run',
-  'demoEnd',
-  'result',
-  'loadoutGo',
-  'loadout',
-  'smith',
-] as const;
+import { DEMO_KEY, SKIP_ALL, TUTORIAL_KEYS, type TutorialKey } from '../core/tutorialKeys';
 
-/** 最初の出撃の体験ラン（伝説の装備を借りて遊ぶ）。済んだら tutorialSeen に入る。スキップでは飛ばさない */
-export const DEMO_KEY = 'demo';
+export { DEMO_KEY, TUTORIAL_KEYS, type TutorialKey };
 
 export function demoPending(): boolean {
   return !getSave().tutorialSeen.includes(DEMO_KEY);
@@ -31,7 +20,6 @@ export function demoPending(): boolean {
 export function markDemoDone(): void {
   markSeen([DEMO_KEY]);
 }
-export type TutorialKey = (typeof TUTORIAL_KEYS)[number];
 
 export interface CoachStep {
   /** 明るく残す場所（中心と大きさ）。null なら画面全体を薄暗くするだけ */
@@ -51,7 +39,8 @@ export interface CoachOptions {
 }
 
 export function tutorialSeen(key: TutorialKey): boolean {
-  return getSave().tutorialSeen.includes(key);
+  const seen = getSave().tutorialSeen;
+  return seen.includes(key) || seen.includes(SKIP_ALL);
 }
 
 function markSeen(keys: readonly string[]): void {
@@ -62,6 +51,11 @@ function markSeen(keys: readonly string[]): void {
 
 /** Tutorials currently on screen */
 const open = new Set<string>();
+
+/** A guide is on screen (screens that chain guides wait until it closes) */
+export function tutorialOpen(): boolean {
+  return open.size > 0;
+}
 
 /** まだ見ていなければ案内を出す。出したら true */
 export function runTutorial(
@@ -85,7 +79,7 @@ export function runTutorial(
     if (closed) return;
     closed = true;
     open.delete(key);
-    markSeen(skipAll ? TUTORIAL_KEYS : [key]);
+    markSeen(skipAll ? [...TUTORIAL_KEYS, SKIP_ALL] : [key]);
     root.destroy();
     opts.onDone?.();
   };

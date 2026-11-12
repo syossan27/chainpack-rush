@@ -687,4 +687,22 @@ export const UI: Dict = {
   '光っているところをタップ（{n}/{total}）': 'Toca lo que brilla ({n}/{total})',
   'タップで次へ（{n}/{total}）': 'Toca para seguir ({n}/{total})',
   'スキップ ›': 'Saltar ›',
+  // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
+  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
+    'Este es el Almacén. Aquí se guardan el equipo y los consumibles que no están en tu mochila.',
+  '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
+    'Convierte en oro el equipo que no uses con "Elegir y vender" o "Venta masiva".',
+  '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
+    'Toca un objeto para ver sus estadísticas y botones como "Vender". ¡Pruébalo!',
+  '「{upgrade}」を強化してみよう！\n強化は、ずっと残るよ。\n押してみてね':
+    '¡Prueba a mejorar "{upgrade}"!\nLas mejoras son permanentes. ¡Toca el botón!',
+  '拾った装備は「倉庫」に入るよ。\n使わない装備は、売ってゴールドにできる。\n「倉庫」を押してね':
+    'El equipo que recoges va al "Almacén". Puedes vender el que no uses para conseguir oro. ¡Toca "Almacén"!',
+  'ゴールドが貯まったね！\n「鍛冶屋」で、装備の出口の向きを\n変えられるよ。「鍛冶屋」を押してね':
+    '¡Ya tienes oro!\nEn la "Herrería" puedes cambiar la dirección de las salidas de un objeto. ¡Toca "Herrería"!',
+  'ゴールドが貯まったね！\n「強化」で、勇者をずっと強くできるよ。\n「強化」を押してね':
+    '¡Ya tienes oro!\nCon "Mejorar" haces a tu héroe más fuerte para siempre. ¡Toca "Mejorar"!',
+  '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
+    '"Nueva tirada" cambia las salidas a direcciones al azar. Con "A medida" eliges tú las direcciones.',
+  'この装備をタップして、選んでみよう': 'Toca este objeto para seleccionarlo.',
 };

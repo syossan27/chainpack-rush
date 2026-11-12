@@ -37,7 +37,7 @@ import { applySettings, getSave, persist } from '../platform/store';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
-import { resetTutorials, runTutorial, tutorialSeen } from '../ui/tutorial';
+import { resetTutorials, runTutorial, tutorialOpen, tutorialSeen } from '../ui/tutorial';
 import { showAchievements } from '../ui/achievementToast';
 import { checkAchievements } from '../core/achievements';
 import { ACHIEVEMENTS } from '../data/achievements';
@@ -137,6 +137,10 @@ const UPGRADE_ICON: Record<UpgradeId, IconName> = {
 
 const CONTENT_TOP = TOP_BAR_H + 8;
 const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
+/** Center y of an upgrade row (7 rows of 128px fit one screen) */
+const upgradeRowY = (i: number): number => CONTENT_TOP + 132 + i * 128;
+/** A bottom tab's tile (0 = storage … 4 = loadout), for guides */
+const tabRect = (i: number) => ({ x: (W / 5) * (i + 0.5), y: H - TAB_BAR_H + 56, w: 128, h: 116 });
 
 /** 拠点の勇者を地面の帯へ沈める量（論理px。勇者は×3表示なので 4ドット分） */
 const HOME_HERO_SINK = 12;
@@ -845,7 +849,32 @@ export class BaseScene extends Phaser.Scene {
           skin: 'red',
         }),
       );
+      this.storageTutorial(list, openDetail);
     }
+  }
+
+  /** Storage guide: what is here, how to sell, then "tap an item" (opens its card; never sells) */
+  private storageTutorial(list: ItemList, openDetail: (it: ItemInstance) => void): void {
+    if (tutorialOpen()) return;
+    const uid = list.firstUid();
+    const it = getSave().inventory.find((i) => i.uid === uid);
+    const cell = uid ? list.cellRect(uid) : null;
+    if (!it || !cell) return;
+    runTutorial(this, 'storage', [
+      {
+        rect: { x: W / 2, y: (CONTENT_TOP + 84 + 900) / 2, w: W - 12, h: 900 - CONTENT_TOP - 74 },
+        text: t('ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ'),
+      },
+      {
+        rect: { x: W / 2, y: 1060, w: W - 16, h: 88 },
+        text: t('使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ'),
+      },
+      {
+        rect: cell,
+        text: t('装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう'),
+        onTap: () => openDetail(it),
+      },
+    ]);
   }
 
   // ---- 鍛冶屋（向きの付け直し） ----
@@ -897,9 +926,7 @@ export class BaseScene extends Phaser.Scene {
             this.showToast(t('この装備は向きを付け直せません'), true);
             return;
           }
-          this.selected = it.uid;
-          this.specify = it.exits.slice();
-          this.render();
+          this.smithSelect(it);
         },
         onLongPress: (it) => showItemDetail(this, it),
       },
@@ -912,6 +939,7 @@ export class BaseScene extends Phaser.Scene {
     const py = 640;
     this.root.add(panel(this, W / 2, py + 220, W - 30, 450, 'paper'));
     const it = save.inventory.find((i) => i.uid === this.selected);
+    this.smithTutorial(list, it ?? null, py);
     if (!it) {
       this.root.add(
         this.add
@@ -1096,7 +1124,7 @@ export class BaseScene extends Phaser.Scene {
       const max = upgradeMaxLevel(save, id);
       const cost = upgradeCost(id, lv, max);
       // 7項目を1画面に収める（1行 128px）
-      const y = CONTENT_TOP + 132 + i * 128;
+      const y = upgradeRowY(i);
       this.root.add(panel(this, W / 2, y, W - 30, 120, 'panel'));
       this.root.add(new RoundButton(this, 80, y, 84, UPGRADE_ICON[id], null, () => undefined));
       // Name and value end before the buy button (its left edge is at x = W - 220)
@@ -1122,15 +1150,7 @@ export class BaseScene extends Phaser.Scene {
           W - 130,
           y,
           cost === null ? t('最大') : `${cost}`,
-          () => {
-            if (!buyUpgrade(save, id)) {
-              this.showToast(t('ゴールドが足りません'), true);
-              return;
-            }
-            persist();
-            sfx('openEpic');
-            this.render();
-          },
+          () => this.buyUpgradeNow(id),
           {
             width: 180,
             height: 76,
@@ -1141,6 +1161,46 @@ export class BaseScene extends Phaser.Scene {
         ),
       );
     });
+    this.upgradeTutorial();
+  }
+
+  private buyUpgradeNow(id: UpgradeId): void {
+    if (!buyUpgrade(getSave(), id)) {
+      this.showToast(t('ゴールドが足りません'), true);
+      return;
+    }
+    persist();
+    sfx('openEpic');
+    this.render();
+  }
+
+  /** The upgrade to try first: the cheapest one the player can buy now (only before any upgrade) */
+  private upgradeToTry(): { id: UpgradeId; row: number } | null {
+    const save = getSave();
+    if (Object.values(save.upgrades).some((lv) => lv > 0)) return null;
+    let best: { id: UpgradeId; row: number; cost: number } | null = null;
+    (Object.keys(UPGRADES) as UpgradeId[]).forEach((id, row) => {
+      const cost = upgradeCost(id, save.upgrades[id], upgradeMaxLevel(save, id));
+      if (cost !== null && cost <= save.gold && (!best || cost < best.cost))
+        best = { id, row, cost };
+    });
+    return best;
+  }
+
+  /** Upgrade guide: press the buy button of the cheapest upgrade (always a gain) */
+  private upgradeTutorial(): void {
+    if (tutorialOpen()) return;
+    const target = this.upgradeToTry();
+    if (!target) return;
+    runTutorial(this, 'upgrade', [
+      {
+        rect: { x: W - 130, y: upgradeRowY(target.row), w: 196, h: 92 },
+        text: t('「{upgrade}」を強化してみよう！\n強化は、ずっと残るよ。\n押してみてね', {
+          upgrade: t(UPGRADES[target.id].name),
+        }),
+        onTap: () => this.buyUpgradeNow(target.id),
+      },
+    ]);
   }
 
   // ---- 設定 ----
@@ -1367,7 +1427,8 @@ export class BaseScene extends Phaser.Scene {
 
   /** 初めての人向けの案内（拠点・鍛冶屋） */
   private maybeTutorial(): void {
-    if (this.page === 'home') {
+    if (this.page !== 'home' || tutorialOpen()) return;
+    if (
       runTutorial(this, 'home', [
         {
           rect: { x: W / 2, y: 760, w: 476, h: 132 },
@@ -1376,28 +1437,129 @@ export class BaseScene extends Phaser.Scene {
           ),
           onTap: () => this.goSortie(),
         },
-      ]);
-      // After the first own run: guide to the loadout tab to place the loot
-      if (tutorialSeen('result') && !tutorialSeen('loadout'))
+      ])
+    )
+      return;
+    // After the first own run: guide to the loadout tab to place the loot
+    if (!tutorialSeen('loadout')) {
+      if (tutorialSeen('result'))
         runTutorial(this, 'loadoutGo', [
           {
-            rect: { x: (W / 5) * 4.5, y: H - TAB_BAR_H + 56, w: 128, h: 116 },
+            rect: tabRect(4),
             text: t(
               '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね',
             ),
             onTap: () => goTab(this, 'loadout'),
           },
         ]);
+      return;
     }
-    if (this.page === 'smith')
-      runTutorial(this, 'smith', [
+    // Then the other tabs, one at a time, each once the player can actually use it
+    const save = getSave();
+    const eq = equippedUids(save);
+    if (
+      save.stats.runs >= 2 &&
+      !tutorialSeen('storage') &&
+      save.inventory.some((i) => !eq.has(i.uid)) &&
+      runTutorial(this, 'storageGo', [
+        {
+          rect: tabRect(0),
+          text: t(
+            '拾った装備は「倉庫」に入るよ。\n使わない装備は、売ってゴールドにできる。\n「倉庫」を押してね',
+          ),
+          onTap: () => goTab(this, 'storage'),
+        },
+      ])
+    )
+      return;
+    if (
+      !tutorialSeen('smithTry') &&
+      this.smithCandidate() &&
+      runTutorial(this, 'smithGo', [
+        {
+          rect: tabRect(1),
+          text: t(
+            'ゴールドが貯まったね！\n「鍛冶屋」で、装備の出口の向きを\n変えられるよ。「鍛冶屋」を押してね',
+          ),
+          onTap: () => goTab(this, 'smith'),
+        },
+      ])
+    )
+      return;
+    if (!tutorialSeen('upgrade') && this.upgradeToTry())
+      runTutorial(this, 'upgradeGo', [
+        {
+          rect: tabRect(3),
+          text: t(
+            'ゴールドが貯まったね！\n「強化」で、勇者をずっと強くできるよ。\n「強化」を押してね',
+          ),
+          onTap: () => goTab(this, 'upgrade'),
+        },
+      ]);
+  }
+
+  // ---- 鍛冶屋の案内 ----
+  private smithSelect(it: ItemInstance): void {
+    this.selected = it.uid;
+    this.specify = it.exits.slice();
+    this.render();
+  }
+
+  /** An item to try the smith on: in storage, not in any preset, and its reroll is affordable */
+  private smithCandidate(): ItemInstance | null {
+    const save = getSave();
+    if (save.inventory.some((i) => i.rerollCount > 0)) return null;
+    const eq = equippedUids(save);
+    const uses = otherPresetUse(save);
+    return (
+      save.inventory.find(
+        (i) =>
+          !eq.has(i.uid) &&
+          !uses.has(i.uid) &&
+          canReorient(i) &&
+          rerollCost(i, 'reroll') <= save.gold,
+      ) ?? null
+    );
+  }
+
+  /** Smith guides: what it does → pick an item (free) → what the two buttons do */
+  private smithTutorial(list: ItemList, selected: ItemInstance | null, py: number): void {
+    if (tutorialOpen()) return;
+    const intro = runTutorial(
+      this,
+      'smith',
+      [
         {
           rect: { x: W / 2, y: CONTENT_TOP + 40, w: W - 20, h: 80 },
           text: t(
             '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ',
           ),
         },
-      ]);
+      ],
+      // The next guide needs this one closed first
+      { onDone: () => this.render() },
+    );
+    if (intro) return;
+    if (selected) {
+      if (canReorient(selected))
+        runTutorial(this, 'smithHow', [
+          {
+            rect: { x: W / 2, y: py + 210, w: W - 40, h: 96 },
+            text: t('「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ'),
+          },
+        ]);
+      return;
+    }
+    const it = this.smithCandidate();
+    const cell = it ? list.cellRect(it.uid) : null;
+    if (!it || !cell) return;
+    runTutorial(this, 'smithTry', [
+      {
+        rect: cell,
+        text: t('この装備をタップして、選んでみよう'),
+        onTap: () => this.smithSelect(it),
+      },
+    ]);
   }
 
   // ---- 合成 ----

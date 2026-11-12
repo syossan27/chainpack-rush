@@ -4,6 +4,7 @@ import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
+import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
@@ -290,7 +291,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       tutorialSeen: Array.isArray(data.tutorialSeen)
         ? data.tutorialSeen.filter((t): t is string => typeof t === 'string')
         : isObj(data.stats) && isNum(data.stats.runs) && data.stats.runs > 0
-          ? ['home', 'stage', 'run', 'demoEnd', 'result', 'loadout', 'smith', 'demo']
+          ? [...TUTORIAL_KEYS, DEMO_KEY]
           : [],
       endless:
         isObj(data.endless) && isNum(data.endless.bestLoop) && isNum(data.endless.bestDamage)

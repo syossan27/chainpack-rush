@@ -694,4 +694,22 @@ export const UI: Dict = {
   '光っているところをタップ（{n}/{total}）': "Touche l'endroit lumineux ({n}/{total})",
   'タップで次へ（{n}/{total}）': 'Touche pour continuer ({n}/{total})',
   'スキップ ›': 'Passer ›',
+  // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
+  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
+    "Voici ta Réserve. L'équipement et les consommables qui ne sont pas dans ton sac à dos sont rangés ici.",
+  '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
+    "Transforme l'équipement inutile en or avec « Vente au choix » ou « Vente groupée ».",
+  '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
+    'Touche un objet pour voir ses stats et des boutons comme « Vendre ». Essaie !',
+  '「{upgrade}」を強化してみよう！\n強化は、ずっと残るよ。\n押してみてね':
+    "Essaie d'améliorer « {upgrade} » !\nLes améliorations sont permanentes. Touche le bouton !",
+  '拾った装備は「倉庫」に入るよ。\n使わない装備は、売ってゴールドにできる。\n「倉庫」を押してね':
+    "L'équipement ramassé va dans la « Réserve ». Tu peux vendre celui que tu n'utilises pas contre de l'or. Touche « Réserve » !",
+  'ゴールドが貯まったね！\n「鍛冶屋」で、装備の出口の向きを\n変えられるよ。「鍛冶屋」を押してね':
+    "Tu as de l'or !\nÀ la « Forge », tu peux changer le sens des sorties d'un objet. Touche « Forge » !",
+  'ゴールドが貯まったね！\n「強化」で、勇者をずっと強くできるよ。\n「強化」を押してね':
+    "Tu as de l'or !\nAvec « Améliorer », ton héros devient plus fort pour de bon. Touche « Améliorer » !",
+  '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
+    '« Relancer » tourne les sorties dans des sens au hasard. Avec « Au choix », tu choisis toi-même les sens.',
+  'この装備をタップして、選んでみよう': 'Touche cet objet pour le sélectionner.',
 };

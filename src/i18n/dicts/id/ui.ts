@@ -689,4 +689,22 @@ export const UI: Dict = {
   '光っているところをタップ（{n}/{total}）': 'Ketuk bagian yang menyala ({n}/{total})',
   'タップで次へ（{n}/{total}）': 'Ketuk untuk lanjut ({n}/{total})',
   'スキップ ›': 'Lewati ›',
+  // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
+  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
+    'Ini Gudang. Perlengkapan dan item sekali pakai yang tidak ada di ransel disimpan di sini.',
+  '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
+    'Ubah perlengkapan yang tidak terpakai jadi emas dengan "Pilih & Jual" atau "Jual Massal".',
+  '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
+    'Ketuk item untuk melihat statistiknya dan tombol seperti "Jual". Coba ketuk!',
+  '「{upgrade}」を強化してみよう！\n強化は、ずっと残るよ。\n押してみてね':
+    'Coba tingkatkan "{upgrade}"!\nPeningkatan berlaku selamanya. Ketuk tombolnya!',
+  '拾った装備は「倉庫」に入るよ。\n使わない装備は、売ってゴールドにできる。\n「倉庫」を押してね':
+    'Perlengkapan yang kamu pungut masuk ke "Gudang". Perlengkapan yang tidak terpakai bisa dijual jadi emas. Ketuk "Gudang"!',
+  'ゴールドが貯まったね！\n「鍛冶屋」で、装備の出口の向きを\n変えられるよ。「鍛冶屋」を押してね':
+    'Emasmu sudah terkumpul!\nDi "Pandai Besi", kamu bisa mengubah arah jalur item. Ketuk "Pandai Besi"!',
+  'ゴールドが貯まったね！\n「強化」で、勇者をずっと強くできるよ。\n「強化」を押してね':
+    'Emasmu sudah terkumpul!\nDengan "Tingkatkan", pahlawanmu jadi lebih kuat selamanya. Ketuk "Tingkatkan"!',
+  '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
+    '"Acak Ulang" mengubah arah jalur secara acak. Dengan "Atur", kamu memilih arahnya sendiri.',
+  'この装備をタップして、選んでみよう': 'Ketuk item ini untuk memilihnya.',
 };

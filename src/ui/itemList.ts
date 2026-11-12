@@ -200,6 +200,28 @@ export class ItemList extends Phaser.GameObjects.Container {
     this.clampScroll();
   }
 
+  /** The item shown first (top left) */
+  firstUid(): string | null {
+    return this.filtered()[0]?.uid ?? null;
+  }
+
+  /** Screen rect of an item's cell (null if filtered out or scrolled out of view). For guides */
+  cellRect(uid: string): { x: number; y: number; w: number; h: number } | null {
+    const i = this.filtered().findIndex((it) => it.uid === uid);
+    if (i < 0) return null;
+    const left = (W - this.cols * this.cellSize) / 2;
+    const x = left + (i % this.cols) * this.cellSize + this.cellSize / 2;
+    const y =
+      this.viewTop -
+      this.scrollY +
+      Math.floor(i / this.cols) * this.cellSize +
+      this.cellSize / 2 +
+      6;
+    const half = this.cellSize / 2;
+    if (y - half < this.viewTop || y + half > this.viewTop + this.viewHeight) return null;
+    return { x, y, w: this.cellSize, h: this.cellSize };
+  }
+
   private clampScroll(): void {
     const max = Math.max(0, this.contentHeight - this.viewHeight);
     this.scrollY = Phaser.Math.Clamp(this.scrollY, 0, max);
