@@ -1454,11 +1454,11 @@ export class BaseScene extends Phaser.Scene {
         ]);
       return;
     }
-    // Then the other tabs, one at a time, each once the player can actually use it
+    // Then the other tabs (from the 2nd run on), one at a time, each once the player can use it
     const save = getSave();
+    if (save.stats.runs < 2) return;
     const eq = equippedUids(save);
     if (
-      save.stats.runs >= 2 &&
       !tutorialSeen('storage') &&
       save.inventory.some((i) => !eq.has(i.uid)) &&
       runTutorial(this, 'storageGo', [
