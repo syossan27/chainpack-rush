@@ -1,6 +1,7 @@
 // 倉庫の一覧（スクロール、種類・レアリティで絞り込み、タップ・長押し・ドラッグ）
 import { bindTap } from './kit/widgets';
 import Phaser from 'phaser';
+import { listGesture } from '../core/listGesture';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
@@ -31,7 +32,6 @@ const KIND_LABEL: Record<KindFilter, string> = {
 
 const LONG_PRESS_MS = 450;
 const FILTER_H = 58;
-const HOLD_TO_DRAG_MS = 150; // これだけ押さえてから動かすとドラッグ（素早い払いはスクロール）
 const DRAG_THRESHOLD = 14;
 const RARITY_ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -270,9 +270,16 @@ export class ItemList extends Phaser.GameObjects.Container {
         timer?.remove();
         // 少し押さえてから動かした、または横へ動かした → ドラッグ。素早く縦に払った → スクロール
         // 押してからの時間は入力イベント自体の時刻で測る（フレームが遅くても判定がぶれない）
-        const held = p.moveTime - start.time >= HOLD_TO_DRAG_MS;
+        // When the list is too short to scroll, any move from an item drags it
         const wantsDrag =
-          pressed && this.handlers.onDragStart && (held || Math.abs(dx) > Math.abs(dy));
+          this.handlers.onDragStart !== undefined &&
+          listGesture({
+            onItem: pressed !== null,
+            canScroll: this.contentHeight > this.viewHeight,
+            heldMs: p.moveTime - start.time,
+            dx,
+            dy,
+          }) === 'drag';
         mode = wantsDrag ? 'drag' : 'scroll';
         if (mode === 'drag' && pressed) {
           this.handlers.onDragStart?.(pressed, p);
