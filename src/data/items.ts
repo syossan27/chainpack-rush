@@ -359,7 +359,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'single',
     atk: 6,
     hits: 2,
-    description: '1段で2回斬る。',
+    description: '2回斬る（連鎖数は1つ）。',
   },
   {
     id: 'bow',
@@ -525,7 +525,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     stepBoost: 1,
     relayDelay: 0.1,
     description:
-      'この羽のあとに続く装備は、段数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。',
+      'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。',
   },
   {
     id: 'abyss_chalice',

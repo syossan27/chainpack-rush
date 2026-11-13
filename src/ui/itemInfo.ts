@@ -71,7 +71,7 @@ export function describeItem(it: ItemInstance): string[] {
     );
     if (def.relayDelay && def.relayDelay !== CHAIN.relayDelay)
       lines.push(t('次への伝達 {s}秒', { s: def.relayDelay }));
-    if (def.hits && def.hits > 1) lines.push(t('1段で{n}回攻撃', { n: def.hits }));
+    if (def.hits && def.hits > 1) lines.push(t('{n}回攻撃（連鎖数は1つ）', { n: def.hits }));
     if (def.critBonus) lines.push(t('会心率 +{pct}%', { pct: Math.round(def.critBonus * 100) }));
     if (def.applies) {
       const partner = COMBOS.find((c) => c.status === def.applies);
@@ -104,10 +104,10 @@ export function describeItem(it: ItemInstance): string[] {
     }
   } else if (def.kind === 'defense') {
     lines.push(
-      t('防御値 +{n}（連鎖が通ると終了時に加算、段数に数えない）', { n: (def.defense ?? 0) * r }),
+      t('防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）', { n: (def.defense ?? 0) * r }),
     );
   } else if (def.kind === 'origin') {
-    lines.push(t('連鎖の始まり。攻撃せず、段数にも数えない'));
+    lines.push(t('連鎖の始まり。攻撃せず、連鎖数にも数えない'));
   }
   lines.push(t(def.description));
   if (it.rerollCount > 0) lines.push(t('付け直し {n}回', { n: it.rerollCount }));
@@ -286,7 +286,8 @@ export function showItemDetail(
     if (def.area === 'all') rows.push([t('全体攻撃'), t('威力 ×{x}', { x: AREA.allMult })]);
     if (def.pierce)
       rows.push([t('貫通'), t('狙いの後ろ {n}体にも同じダメージ', { n: def.pierce })]);
-    if (def.hits && def.hits > 1) rows.push([t('連撃'), t('1段で{n}回攻撃', { n: def.hits })]);
+    if (def.hits && def.hits > 1)
+      rows.push([t('連撃'), t('{n}回攻撃（連鎖数は1つ）', { n: def.hits })]);
     if (def.critBonus) rows.push([t('会心率'), `+${Math.round(def.critBonus * 100)}%`]);
     if (def.multCap)
       rows.push([t('連鎖倍率の上限'), `×${def.multCap.toFixed(1)}`, t('この環を通る連鎖すべて')]);
@@ -296,7 +297,8 @@ export function showItemDetail(
         t('吸血'),
         t('与えたダメージの{pct}%を回復', { pct: Math.round(def.lifesteal * 100) }),
       ]);
-    if (def.stepBoost) rows.push([t('疾風'), t('このあとの装備は段数+{n}', { n: def.stepBoost })]);
+    if (def.stepBoost)
+      rows.push([t('疾風'), t('このあとの装備は連鎖数+{n}', { n: def.stepBoost })]);
     if (def.applies === 'poison') rows.push([t('毒'), t('5秒間、一撃の30%を毎秒')]);
     if (def.appliesAll) rows.push([t('付与'), t('濡れ・油・凍結をまとめて')]);
     rows.push([t('次への伝達'), t('{s}秒', { s: def.relayDelay ?? CHAIN.relayDelay })]);
@@ -304,17 +306,6 @@ export function showItemDetail(
     rows.push([t('防御値'), `+${fmt((def.defense ?? 0) * r)}`, t('連鎖終了時に加算')]);
     if (def.guardAll)
       rows.push([t('守り'), t('連鎖中も無防備にならない'), t('バックパックにある限り')]);
-  } else if (def.kind === 'origin') {
-    rows.push([
-      t('出口'),
-      t('{n}方向', { n: it.exits.length }),
-      t(def.artifact ? '出口の数は固定' : 'レアリティで出口の数が決まる'),
-    ]);
-    rows.push([
-      t('シンクロ'),
-      t('同じ段数でシンクロさせるとボーナス'),
-      t('シンクロの先は長い方の段数でつづく'),
-    ]);
   }
   for (const a of it.affixes ?? []) rows.push([`✦ ${t(AFFIXES[a.id].name)}`, affixEffect(a)]);
   if (opts.context !== undefined && def.kind !== 'consumable') {
@@ -334,7 +325,7 @@ export function showItemDetail(
       const bonus = Math.round(ctx.mergeBonus);
       rows.push([
         t('この配置'),
-        t('起点{origin}の{step}段目 ×{mult}', {
+        t('起点{origin}の{step}連鎖目 ×{mult}', {
           origin: ctx.origin,
           step: ctx.step,
           mult: ctx.mult.toFixed(2),
@@ -347,7 +338,7 @@ export function showItemDetail(
       rows.push([
         t('この配置'),
         t('起点{origin}の連鎖', { origin: ctx.origin }),
-        def.kind === 'defense' ? t('段数に数えない') : undefined,
+        def.kind === 'defense' ? t('連鎖数に数えない') : undefined,
       ]);
   }
   if (rows.length) {

@@ -28,9 +28,9 @@ export const DATA: Dict = {
   会心: 'Kritikal',
   '会心率 +{v}%': 'Peluang kritikal +{v}%',
   先駆け: 'Pelopor',
-  '3段目までなら ダメージ +{v}%': 'Damage +{v}% di 3 mata rantai pertama',
+  '3連鎖目までなら ダメージ +{v}%': 'Damage +{v}% di 3 mata rantai pertama',
   締め: 'Penutup',
-  '6段目以降なら ダメージ +{v}%': 'Damage +{v}% mulai mata rantai ke-6',
+  '6連鎖目以降なら ダメージ +{v}%': 'Damage +{v}% mulai mata rantai ke-6',
   弱点突き: 'Titik Lemah',
   '状態がついた敵に ダメージ +{v}%': 'Damage +{v}% ke musuh yang terkena efek status',
   ボス特効: 'Pembasmi Bos',
@@ -42,7 +42,7 @@ export const DATA: Dict = {
   速攻: 'Sigap',
   'この連鎖のあとの待ち -{v}%': 'Jeda setelah rantai ini -{v}%',
   初撃: 'Pukulan Awal',
-  '連鎖の1段目 ダメージ +{v}%': 'Damage +{v}% di mata rantai ke-1',
+  '1連鎖目 ダメージ +{v}%': 'Damage +{v}% di mata rantai ke-1',
 
   // src/core/names.ts
   はやての: 'Kilat',
@@ -104,13 +104,13 @@ export const DATA: Dict = {
   歴戦の勇者: 'Pahlawan Kawakan',
   ランを50回終える: 'Selesaikan 50 ekspedisi',
   つながる力: 'Saling Terhubung',
-  '6段の連鎖を決める': 'Sambung rantai sampai 6 mata rantai',
+  '6連鎖を決める': 'Sambung rantai sampai 6 mata rantai',
   連鎖使い: 'Pawang Rantai',
-  '10段の連鎖を決める': 'Sambung rantai sampai 10 mata rantai',
+  '10連鎖を決める': 'Sambung rantai sampai 10 mata rantai',
   連鎖の達人: 'Master Rantai',
-  '14段の連鎖を決める': 'Sambung rantai sampai 14 mata rantai',
+  '14連鎖を決める': 'Sambung rantai sampai 14 mata rantai',
   終わらない連鎖: 'Rantai Tanpa Akhir',
-  '18段の連鎖を決める': 'Sambung rantai sampai 18 mata rantai',
+  '18連鎖を決める': 'Sambung rantai sampai 18 mata rantai',
   重い一撃: 'Pukulan Berat',
   '1回の攻撃で200ダメージ': 'Beri 200 damage dalam sekali serang',
   会心の一撃: 'Pukulan Dahsyat',
@@ -329,7 +329,7 @@ export const DATA: Dict = {
   '軽い一撃。次の装備へすぐ伝わる。':
     'Serangan ringan. Cepat meneruskan rantai ke item berikutnya.',
   双剣: 'Pedang Kembar',
-  '1段で2回斬る。': 'Menebas 2 kali dalam satu mata rantai.',
+  '2回斬る（連鎖数は1つ）。': 'Menebas 2 kali dalam satu mata rantai.',
   弓: 'Busur',
   '狙いの後ろ2体まで射抜く。': 'Menembus hingga 2 musuh di belakang target.',
   大斧: 'Kapak Besar',
@@ -369,7 +369,7 @@ export const DATA: Dict = {
   '与えたダメージの8%だけ、勇者のHPが回復する。':
     'Memulihkan HP pahlawan sebesar 8% dari damage yang diberikan.',
   疾風の羽: 'Bulu Badai',
-  'この羽のあとに続く装備は、段数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
+  'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
     'Item setelah bulu ini dihitung 1 mata rantai lebih jauh (pengganda rantai naik lebih cepat). Cepat meneruskan rantai.',
   深淵の杯: 'Cawan Kegelapan',
   '当てた敵を毒にし、与えたダメージの15%だけHPが回復する。':

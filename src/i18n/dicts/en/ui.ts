@@ -31,18 +31,18 @@ export const UI: Dict = {
   '必殺技の並びがそろう！': 'Completes a Special Move sequence!',
   '何か特別なことが起きそうな並び…': 'Something special might happen with this order…',
   状態異常のコンボが増える: 'More status combos',
-  '連鎖が{n}段まで長くなる': 'Chain grows to {n} links',
+  '{n}連鎖までのびる': 'Chain grows to {n} links',
   'もっと強い装備（レアリティ・攻撃力）に替える': 'Swaps in stronger gear (rarity, Attack)',
   空いているマスも連鎖に使う: 'Puts empty cells to use in the chain',
-  '強い装備が後ろの段（倍率が高い）に来る': 'Moves strong gear to later links (higher multiplier)',
+  '強い装備が後ろ（倍率が高い）に来る': 'Moves strong gear to later links (higher multiplier)',
   '「{a}」と「{b}」を入れ替える': 'Swap "{a}" and "{b}"',
   '「{a}」を倉庫の「{b}」に置きかえる': 'Replace "{a}" with "{b}" from Storage',
   '空いているマスに「{item}」を置く': 'Place "{item}" in an empty cell',
   'どの起点からも届いていない装備が{n}個': 'Items no Origin reaches: {n}',
   '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
     'Follow the arrows from the Origins and move these so they connect (glowing cells)',
-  '起点{n}の連鎖が{step}段で止まっている': "Origin {n}'s chain stops at link {step}",
-  '長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
+  '起点{n}が{step}連鎖で止まっている': "Origin {n}'s chain stops at link {step}",
+  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
     'Longer chains give later links bigger multipliers. You can also change exit directions at the Smith.',
 
   // src/core/economy.ts
@@ -70,7 +70,7 @@ export const UI: Dict = {
   '挑戦「{name}」でスコア {score}！': 'Scored {score} in the "{name}" Challenge!',
   'エンドレスで{loop}周目に到達！': 'Reached Loop {loop} in Endless!',
   '{region}で{loop}周目に到達！': 'Reached Loop {loop} in {region}!',
-  '最大連鎖 {step}段・最大ダメージ {damage}': 'Max chain {step} · Max damage {damage}',
+  '最大{step}連鎖・最大ダメージ {damage}': 'Max chain {step} · Max damage {damage}',
 
   // src/platform/monetization.ts
   '広告（テスト表示）': 'Ad (test)',
@@ -89,7 +89,7 @@ export const UI: Dict = {
     'Attack × Rarity × Chain multiplier × Combo × Upgrades × Bonuses × Critical (±10% variance)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
     '• Rarity: Common ×1, Rare ×1.5, Epic ×2.5, Legendary ×4',
-  '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）':
+  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Chain multiplier: ×1.2 per link, capped at ×2.5 by link 6 (cap ×4.0 through the Ouroboros Ring)',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos: Wet + Thunder = Shock ×3, Oil + Fire = Explosion ×2 (hits nearby enemies too), Frozen + Blunt = Shatter ×2.5. Even without a combo, enemies with a status take ×1.2',
@@ -103,13 +103,13 @@ export const UI: Dict = {
     '• Make combos. Link the matching element (Thunder, Fire, Blunt) after a status item (Water Dragon Flask, Raincloud Staff, Oil Flask, Ice Sword, Frost Staff). Statuses wear off after 5 seconds.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Link Light and Dark in turn to keep the combos going: Purify (heals the hero) and Seal (slows enemy attacks). Wind stacks Poison on Poisoned enemies; at 5 layers, Venom Burst.',
-  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
     "• Sync the lines from 2 Origins at the same link count to get a bonus from there on. An Origin Stone's type only affects the lines that start from it.",
-  '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
+  '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Put your strongest gear late in the chain (link 6 and beyond). Use early links for light gear and status items.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• Rarity matters most. Deeper regions drop Rare or better more often.',
-  '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。':
+  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
     "• The ✦ at an item's bottom left marks a bonus. Vanguard (strong up to link 3) suits short chains; Finisher (strong from link 6) suits long chains.",
   必殺技: 'Special Moves',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
@@ -117,11 +117,11 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Special Moves to find: {n}. The first time you pull one off, you\'ll see "Special Move found!" and its recipe goes into the "Codex" at Base. For moves you haven\'t found yet, the Codex shows only a hint.',
   短い連鎖と長い連鎖: 'Short vs. Long Chains',
-  '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• The wait before the next firing grows with the length of the last chain. Short chains cycle fast; long chains hit big.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。':
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
     "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded through link 3.",
-  '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
+  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• A big hit while unguarded leaves you "Staggered!" and cuts off the rest of the chain. Hold out with defense gear, or place the Aegis Gate to prevent it.',
   地域と敵: 'Regions & Enemies',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
@@ -164,7 +164,7 @@ export const UI: Dict = {
   '出撃|stat': 'Runs',
   '{n}回': '{n}',
   最大連鎖: 'Max Chain',
-  '{n}段': '{n}',
+  '{n}連鎖': '{n}',
   最大ダメージ: 'Max Damage',
   開放した地域: 'Regions Unlocked',
   '{region} {n}周': '{region} Loop {n}',
@@ -392,15 +392,15 @@ export const UI: Dict = {
   挑戦へ: 'Challenge',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
     'Your Storage is below. Press and hold an item for a moment, then drag it into the backpack.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！':
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
     'Starting from an Origin (the numbered stone), linked items attack in turn along the arrows. Later links hit harder!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'The bigger the "~" number, the stronger the layout. Try out different ideas!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     '"~" numbers are estimated damage against one enemy (combos and crits included)',
-  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sync 2 lines at the same link count! The longer they are, the bigger the bonus.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
     'Origins fire one at a time, in turn. A sync cell shows the links and the bonus, like "4+4 +30%".',
   '起点が0個です。出撃できません': "No Origin placed. You can't start a run.",
   '倉庫があふれています（タップで売却）': 'Storage is full (tap to sell)',
@@ -410,11 +410,11 @@ export const UI: Dict = {
   番号を選ぶと表示に戻す: 'Pick a number to show the lines again',
   起点を置いてください: 'Place an Origin',
   '合計 約{n}': 'Total ~{n}',
-  '約{n}・{step}段・{tech}': '~{n} · Chain {step} · {tech}',
+  '約{n}・{step}連鎖・{tech}': '~{n} · Chain {step} · {tech}',
   '必殺技|fallback': 'Special Move',
-  '約{n}・{step}段・コンボ{combo}': '~{n} · Chain {step} · Combos {combo}',
-  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Chain {step} · Sync +{bonus}%',
-  '約{n}・{step}段': '~{n} · Chain {step}',
+  '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Chain {step} · Combos {combo}',
+  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Chain {step} · Sync +{bonus}%',
+  '約{n}・{step}連鎖': '~{n} · Chain {step}',
   診断: 'Advice',
   配置の診断: 'Loadout Advice',
   'いまの推定ダメージ 合計 約{n}': 'Current estimate: ~{n} total',
@@ -492,7 +492,7 @@ export const UI: Dict = {
   もう一度: 'Play Again',
   倉庫があふれています: 'Storage is full',
   起点がありません: 'No Origin',
-  'これが伝説の装備の力！\n最大{step}段の連鎖、{damage}ダメージ！':
+  'これが伝説の装備の力！\n最大{step}連鎖、{damage}ダメージ！':
     "That's the power of legendary gear!\nA {step}-link chain and {damage} damage!",
   'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！':
     "From here on, adventure with your own gear. Collect and arrange gear, and someday you'll be this strong!",
@@ -535,8 +535,8 @@ export const UI: Dict = {
   '{region}　{loop}周目': '{region}  Loop {loop}',
   '防御 {n}': 'Defense {n}',
   '連鎖中！': 'Chaining!',
-  '{step}段・{sec}秒': 'Chain {step} · {sec}s',
-  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Chain {step} · {sec}s · Sync +{bonus}%',
+  '{step}連鎖・{sec}秒': 'Chain {step} · {sec}s',
+  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Chain {step} · {sec}s · Sync +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  enemies {enemies}  particles {particles}  numbers {numbers}  seed {seed}',
   '時間 +{sec}': 'Time +{sec}',
@@ -591,8 +591,8 @@ export const UI: Dict = {
   '実績達成！': 'Achievement Unlocked!',
 
   // src/ui/backpackView.ts
-  '必殺 {step}段': 'Special #{step}',
-  '{step}段 ×{mult}': '#{step} ×{mult}',
+  '必殺 {step}連鎖': 'Special #{step}',
+  '{step}連鎖 ×{mult}': '#{step} ×{mult}',
 
   // src/ui/chestReveal.ts
   '売却|sold': 'Sold',
@@ -615,16 +615,16 @@ export const UI: Dict = {
   'なし（末端）': 'None (end of chain)',
   '攻撃力 {atk}（{element}・{area}）': 'Attack {atk} ({element}, {area})',
   '次への伝達 {s}秒': 'Relay time {s}s',
-  '1段で{n}回攻撃': 'Hits ×{n} per link',
+  '{n}回攻撃（連鎖数は1つ）': 'Hits ×{n} per link',
   '会心率 +{pct}%': 'Critical rate +{pct}%',
   '付与: {status} → {element}で{combo}': 'Applies: {status} → {combo} with {element}',
   '付与: {status}': 'Applies: {status}',
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Uses up {status} for {combo} (×{x}, spreads to an area)',
   '{status}を消費して{combo}（×{x}）': 'Uses up {status} for {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、段数に数えない）':
+  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
     "Defense +{n} (added when a chain through it ends; doesn't count as a link)",
-  '連鎖の始まり。攻撃せず、段数にも数えない':
+  '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     "Starts a chain. Doesn't attack and doesn't count as a link.",
   '付け直し {n}回': 'Reforged ×{n}',
   '売却 {price}G': 'Sells for {price}G',
@@ -645,7 +645,7 @@ export const UI: Dict = {
   吸血: 'Lifesteal',
   '与えたダメージの{pct}%を回復': 'Heals {pct}% of damage dealt',
   疾風: 'Gale',
-  'このあとの装備は段数+{n}': 'Later items count as link +{n}',
+  'このあとの装備は連鎖数+{n}': 'Later items count as link +{n}',
   '5秒間、一撃の30%を毎秒': '30% of the hit per second for 5s',
   付与: 'Applies',
   '濡れ・油・凍結をまとめて': 'Wet, Oil and Frozen at once',
@@ -656,19 +656,13 @@ export const UI: Dict = {
   守り: 'Guard',
   連鎖中も無防備にならない: 'Never unguarded in chains',
   バックパックにある限り: 'While in your backpack',
-  '{n}方向': '{n}',
-  出口の数は固定: 'Fixed number of exits',
-  レアリティで出口の数が決まる: 'Rarity sets the number of exits',
-  シンクロ: 'Sync',
-  同じ段数でシンクロさせるとボーナス: 'Bonus for syncing at the same link count',
-  シンクロの先は長い方の段数でつづく: 'After the sync, links go on from the longer line',
   この配置: 'This Layout',
   どの起点からも届きません: 'No Origin reaches it',
-  '起点{origin}の{step}段目 ×{mult}': 'Origin {origin}, link {step} ×{mult}',
+  '起点{origin}の{step}連鎖目 ×{mult}': 'Origin {origin}, link {step} ×{mult}',
   '1ヒット 約{n}': '~{n} per hit',
   '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} per hit · Sync +{bonus}%',
   '起点{origin}の連鎖': "Origin {origin}'s chain",
-  段数に数えない: "Doesn't count as a link",
+  連鎖数に数えない: "Doesn't count as a link",
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':
     'Applies {status} → {element} attacks trigger {combo} (×{x})',
   '{status}を付ける': 'Applies {status}',
@@ -692,7 +686,7 @@ export const UI: Dict = {
 
   // src/ui/shareCard.ts
   '{loop}周目に到達': 'Reached Loop {loop}',
-  '最大連鎖 {step}段': 'Max Chain {step}',
+  '最大{step}連鎖': 'Max Chain {step}',
   '最大ダメージ {damage}': 'Max Damage {damage}',
 
   // src/ui/tutorial.ts

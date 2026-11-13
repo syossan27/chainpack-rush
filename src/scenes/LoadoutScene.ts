@@ -227,7 +227,7 @@ export class LoadoutScene extends Phaser.Scene {
           h: this.view.gridHeight + 16,
         },
         text: t(
-          '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！',
+          '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！',
         ),
       },
       {
@@ -251,12 +251,12 @@ export class LoadoutScene extends Phaser.Scene {
           w: W - 120,
           h: this.view.gridHeight + 16,
         },
-        text: t('2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ'),
+        text: t('2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ'),
       },
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
         text: t(
-          '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る',
+          '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る',
         ),
       },
     ]);
@@ -432,15 +432,15 @@ export class LoadoutScene extends Phaser.Scene {
       const bonus = Math.round(maxMergeBonus(p));
       return {
         text: knownTech
-          ? t('約{n}・{step}段・{tech}', {
+          ? t('約{n}・{step}連鎖・{tech}', {
               ...params,
               tech: tech ? t(tech.name) : t('必殺技|fallback'),
             })
           : bonus > 0
-            ? t('約{n}・{step}段・シンクロ+{bonus}%', { ...params, bonus })
+            ? t('約{n}・{step}連鎖・シンクロ+{bonus}%', { ...params, bonus })
             : e.combos > 0
-              ? t('約{n}・{step}段・コンボ{combo}', { ...params, combo: e.combos })
-              : t('約{n}・{step}段', params),
+              ? t('約{n}・{step}連鎖・コンボ{combo}', { ...params, combo: e.combos })
+              : t('約{n}・{step}連鎖', params),
         color: routeCss(this.focus),
       };
     })();

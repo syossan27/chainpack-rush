@@ -21,7 +21,7 @@ export function shareText(s: ShareSummary): string {
     : s.endless
       ? t('エンドレスで{loop}周目に到達！', { loop: s.reachedLoop })
       : t('{region}で{loop}周目に到達！', { region: t(s.regionName), loop: s.reachedLoop });
-  const stats = t('最大連鎖 {step}段・最大ダメージ {damage}', {
+  const stats = t('最大{step}連鎖・最大ダメージ {damage}', {
     step: s.maxStep,
     damage: num(s.maxDamage),
   });

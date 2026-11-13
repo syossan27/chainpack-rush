@@ -28,9 +28,9 @@ export const DATA: Dict = {
   会心: 'Crítico',
   '会心率 +{v}%': 'Prob. de crítico +{v}%',
   先駆け: 'Vanguardia',
-  '3段目までなら ダメージ +{v}%': 'Daño +{v}% en los 3 primeros eslabones',
+  '3連鎖目までなら ダメージ +{v}%': 'Daño +{v}% en los 3 primeros eslabones',
   締め: 'Remate',
-  '6段目以降なら ダメージ +{v}%': 'Daño +{v}% desde el eslabón 6',
+  '6連鎖目以降なら ダメージ +{v}%': 'Daño +{v}% desde el eslabón 6',
   弱点突き: 'Punto Débil',
   '状態がついた敵に ダメージ +{v}%': 'Daño +{v}% a enemigos con estado',
   ボス特効: 'Matajefes',
@@ -42,7 +42,7 @@ export const DATA: Dict = {
   速攻: 'Rapidez',
   'この連鎖のあとの待ち -{v}%': 'Espera tras esta cadena -{v}%',
   初撃: 'Primer Golpe',
-  '連鎖の1段目 ダメージ +{v}%': 'Daño +{v}% en el eslabón 1',
+  '1連鎖目 ダメージ +{v}%': 'Daño +{v}% en el eslabón 1',
 
   // src/core/names.ts
   はやての: 'Veloz',
@@ -104,13 +104,13 @@ export const DATA: Dict = {
   歴戦の勇者: 'Héroe Veterano',
   ランを50回終える: 'Termina 50 expediciones',
   つながる力: 'Poder Encadenado',
-  '6段の連鎖を決める': 'Logra una cadena de 6 eslabones',
+  '6連鎖を決める': 'Logra una cadena de 6 eslabones',
   連鎖使い: 'As de las Cadenas',
-  '10段の連鎖を決める': 'Logra una cadena de 10 eslabones',
+  '10連鎖を決める': 'Logra una cadena de 10 eslabones',
   連鎖の達人: 'Cadena Maestra',
-  '14段の連鎖を決める': 'Logra una cadena de 14 eslabones',
+  '14連鎖を決める': 'Logra una cadena de 14 eslabones',
   終わらない連鎖: 'Cadena sin Fin',
-  '18段の連鎖を決める': 'Logra una cadena de 18 eslabones',
+  '18連鎖を決める': 'Logra una cadena de 18 eslabones',
   重い一撃: 'Golpe Pesado',
   '1回の攻撃で200ダメージ': 'Haz 200 de daño en un solo golpe',
   会心の一撃: 'Golpe Certero',
@@ -328,7 +328,7 @@ export const DATA: Dict = {
   '軽い一撃。次の装備へすぐ伝わる。':
     'Un golpe ligero. Pasa la cadena al siguiente objeto rápidamente.',
   双剣: 'Espadas Gemelas',
-  '1段で2回斬る。': 'Corta dos veces en un eslabón.',
+  '2回斬る（連鎖数は1つ）。': 'Corta dos veces en un eslabón.',
   弓: 'Arco',
   '狙いの後ろ2体まで射抜く。': 'Atraviesa hasta 2 enemigos detrás del objetivo.',
   大斧: 'Gran Hacha',
@@ -368,7 +368,7 @@ export const DATA: Dict = {
   '与えたダメージの8%だけ、勇者のHPが回復する。':
     'El héroe recupera HP igual al 8% del daño causado.',
   疾風の羽: 'Pluma del Vendaval',
-  'この羽のあとに続く装備は、段数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
+  'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
     'Los objetos después de esta pluma cuentan como un eslabón más adelante (el multiplicador de cadena sube más rápido). Pasa la cadena rápido.',
   深淵の杯: 'Cáliz del Abismo',
   '当てた敵を毒にし、与えたダメージの15%だけHPが回復する。':

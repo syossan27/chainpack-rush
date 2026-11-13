@@ -28,9 +28,9 @@ export const DATA: Dict = {
   会心: 'Kritisch',
   '会心率 +{v}%': 'Krit-Chance +{v}%',
   先駆け: 'Vorhut',
-  '3段目までなら ダメージ +{v}%': 'Schaden +{v}% in Glied 1–3',
+  '3連鎖目までなら ダメージ +{v}%': 'Schaden +{v}% in Glied 1–3',
   締め: 'Finale',
-  '6段目以降なら ダメージ +{v}%': 'Schaden +{v}% ab Glied 6',
+  '6連鎖目以降なら ダメージ +{v}%': 'Schaden +{v}% ab Glied 6',
   弱点突き: 'Schwachpunkt',
   '状態がついた敵に ダメージ +{v}%': 'Schaden +{v}% gegen Gegner mit Status',
   ボス特効: 'Bossjäger',
@@ -42,7 +42,7 @@ export const DATA: Dict = {
   速攻: 'Tempo',
   'この連鎖のあとの待ち -{v}%': 'Wartezeit nach dieser Kette -{v}%',
   初撃: 'Erstschlag',
-  '連鎖の1段目 ダメージ +{v}%': 'Schaden +{v}% in Glied 1',
+  '1連鎖目 ダメージ +{v}%': 'Schaden +{v}% in Glied 1',
 
   // src/core/names.ts
   はやての: 'des Sturms',
@@ -104,13 +104,13 @@ export const DATA: Dict = {
   歴戦の勇者: 'Kampferprobter Held',
   ランを50回終える: 'Beende 50 Expeditionen',
   つながる力: 'Kettenkraft',
-  '6段の連鎖を決める': 'Schaffe eine Kette aus 6 Gliedern',
+  '6連鎖を決める': 'Schaffe eine Kette aus 6 Gliedern',
   連鎖使い: 'Kettenkünstler',
-  '10段の連鎖を決める': 'Schaffe eine Kette aus 10 Gliedern',
+  '10連鎖を決める': 'Schaffe eine Kette aus 10 Gliedern',
   連鎖の達人: 'Kettenmeister',
-  '14段の連鎖を決める': 'Schaffe eine Kette aus 14 Gliedern',
+  '14連鎖を決める': 'Schaffe eine Kette aus 14 Gliedern',
   終わらない連鎖: 'Endlose Kette',
-  '18段の連鎖を決める': 'Schaffe eine Kette aus 18 Gliedern',
+  '18連鎖を決める': 'Schaffe eine Kette aus 18 Gliedern',
   重い一撃: 'Schwerer Schlag',
   '1回の攻撃で200ダメージ': '200 Schaden mit einem Treffer',
   会心の一撃: 'Volltreffer',
@@ -326,7 +326,7 @@ export const DATA: Dict = {
   '軽い一撃。次の装備へすぐ伝わる。':
     'Ein leichter Treffer. Gibt die Kette schnell an den nächsten Gegenstand weiter.',
   双剣: 'Doppelklinge',
-  '1段で2回斬る。': 'Schlägt 2× pro Glied zu.',
+  '2回斬る（連鎖数は1つ）。': 'Schlägt 2× pro Glied zu.',
   弓: 'Bogen',
   '狙いの後ろ2体まで射抜く。': 'Durchbohrt bis zu 2 Gegner hinter dem Ziel.',
   大斧: 'Streitaxt',
@@ -367,7 +367,7 @@ export const DATA: Dict = {
   '与えたダメージの8%だけ、勇者のHPが回復する。':
     'Heilt den Helden um 8% des verursachten Schadens.',
   疾風の羽: 'Sturmfeder',
-  'この羽のあとに続く装備は、段数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
+  'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
     'Gegenstände nach dieser Feder zählen ein Glied weiter (der Kettenmultiplikator steigt schneller). Gibt die Kette schnell weiter.',
   深淵の杯: 'Abgrundkelch',
   '当てた敵を毒にし、与えたダメージの15%だけHPが回復する。':

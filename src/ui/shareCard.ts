@@ -76,7 +76,7 @@ export async function buildShareImage(
   );
   // Two stats side by side. If either runs past its half (long translations), each gets half the
   // card and shrinks to fit
-  const stepStat = t('最大連鎖 {step}段', { step: s.maxStep });
+  const stepStat = t('最大{step}連鎖', { step: s.maxStep });
   const damageStat = t('最大ダメージ {damage}', { damage: num(s.maxDamage) });
   const sw = measure(stepStat, 28);
   const dw = measure(damageStat, 28);

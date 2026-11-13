@@ -32,11 +32,11 @@ export const UI: Dict = {
   '必殺技の並びがそろう！': 'Completa a sequência de um Golpe Especial!',
   '何か特別なことが起きそうな並び…': 'Algo especial pode acontecer com esta ordem…',
   状態異常のコンボが増える: 'Mais combos de efeito',
-  '連鎖が{n}段まで長くなる': 'A corrente cresce até o elo {n}',
+  '{n}連鎖までのびる': 'A corrente cresce até o elo {n}',
   'もっと強い装備（レアリティ・攻撃力）に替える':
     'Troca por equipamento mais forte (raridade, Ataque)',
   空いているマスも連鎖に使う: 'Usa as casas vazias na corrente',
-  '強い装備が後ろの段（倍率が高い）に来る':
+  '強い装備が後ろ（倍率が高い）に来る':
     'Leva o equipamento forte para os últimos elos (multiplicador maior)',
   '「{a}」と「{b}」を入れ替える': 'Troque "{a}" e "{b}" de lugar',
   '「{a}」を倉庫の「{b}」に置きかえる': 'Substitua "{a}" por "{b}" do Armazém',
@@ -44,8 +44,8 @@ export const UI: Dict = {
   'どの起点からも届いていない装備が{n}個': 'Itens que nenhuma Origem alcança: {n}',
   '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
     'Siga as setas a partir das Origens e reposicione esses itens para que se conectem (casas brilhando)',
-  '起点{n}の連鎖が{step}段で止まっている': 'A corrente da Origem {n} termina no elo {step}',
-  '長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
+  '起点{n}が{step}連鎖で止まっている': 'A corrente da Origem {n} termina no elo {step}',
+  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
     'Correntes mais longas dão multiplicadores maiores aos últimos elos. Você também pode mudar a direção das saídas no Ferreiro.',
 
   // src/core/economy.ts
@@ -74,7 +74,7 @@ export const UI: Dict = {
   '挑戦「{name}」でスコア {score}！': 'Fiz {score} pontos no Desafio "{name}"!',
   'エンドレスで{loop}周目に到達！': 'Cheguei à Volta {loop} no Infinito!',
   '{region}で{loop}周目に到達！': '{region}: cheguei à Volta {loop}!',
-  '最大連鎖 {step}段・最大ダメージ {damage}': 'Corrente máx. {step} · Dano máx. {damage}',
+  '最大{step}連鎖・最大ダメージ {damage}': 'Corrente máx. {step} · Dano máx. {damage}',
 
   // src/platform/monetization.ts
   '広告（テスト表示）': 'Anúncio (teste)',
@@ -93,7 +93,7 @@ export const UI: Dict = {
     'Ataque × Raridade × Multiplicador de corrente × Combo × Melhorias × Bônus × Crítico (variação de ±10%)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
     '• Raridade: Comum ×1, Raro ×1.5, Épico ×2.5, Lendário ×4',
-  '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）':
+  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Multiplicador de corrente: ×1.2 por elo, até o limite de ×2.5 no 6º elo (limite de ×4.0 passando pelo Anel Ouroboros)',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos: Molhado + Raio = Choque ×3, Óleo + Fogo = Explosão ×2 (atinge também os inimigos próximos), Congelado + Impacto = Estilhaço ×2.5. Mesmo sem combo, inimigos com efeito recebem ×1.2',
@@ -107,13 +107,13 @@ export const UI: Dict = {
     '• Faça combos. Ligue o elemento certo (Raio, Fogo, Impacto) depois de um item de efeito (Frasco do Dragão de Água, Cajado da Chuva, Frasco de Óleo, Espada de Gelo, Cajado de Gelo). Os efeitos somem após 5 segundos.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Alterne Luz e Sombra para manter os combos: Purificação (cura o herói) e Selo (deixa os ataques inimigos mais lentos). O Vento acumula Veneno em inimigos envenenados; com 5 camadas, Estouro Tóxico.',
-  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
     '• Sincronize as linhas de 2 Origens com o mesmo número de elos para ganhar um bônus dali em diante. O tipo de uma Pedra de Origem só vale para as linhas que saem dela.',
-  '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
+  '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Coloque seus itens mais fortes no fim da corrente (do 6º elo em diante). Use os primeiros elos para itens leves e itens de efeito.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• A raridade é o que mais importa. Regiões mais avançadas dão itens Raros ou melhores com mais frequência.',
-  '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。':
+  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
     '• O ✦ no canto inferior esquerdo de um item indica um bônus. Vanguarda (forte até o 3º elo) combina com correntes curtas; Arremate (forte do 6º elo em diante), com correntes longas.',
   必殺技: 'Golpes Especiais',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
@@ -121,11 +121,11 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Golpes Especiais para descobrir: {n}. Na primeira vez que você fizer um, aparece "Golpe Especial descoberto!" e a receita vai para o "Compêndio" na Base. Para os que você ainda não descobriu, o Compêndio mostra só uma dica.',
   短い連鎖と長い連鎖: 'Correntes Curtas e Longas',
-  '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• A espera até o próximo disparo cresce com o tamanho da última corrente. Correntes curtas giram rápido; correntes longas batem forte.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。':
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
     '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até o 3º elo.',
-  '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
+  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Um golpe forte enquanto você está desprotegido faz você cambalear ("Cambaleou!") e corta o resto da corrente. Aguente com itens de defesa ou coloque o Portão Inabalável para evitar isso.',
   地域と敵: 'Regiões e Inimigos',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
@@ -168,7 +168,7 @@ export const UI: Dict = {
   '出撃|stat': 'Expedições',
   '{n}回': '{n}',
   最大連鎖: 'Corrente Máx.',
-  '{n}段': '{n}',
+  '{n}連鎖': '{n}',
   最大ダメージ: 'Dano Máx.',
   開放した地域: 'Regiões Desbloqueadas',
   '{region} {n}周': '{region} (volta {n})',
@@ -397,15 +397,15 @@ export const UI: Dict = {
   挑戦へ: 'Desafio',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
     'Abaixo fica o Armazém. Segure um item por um instante e arraste para a mochila.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！':
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
     'A partir de uma Origem (a pedra numerada), os itens conectados atacam em ordem seguindo as setas. Os últimos elos causam mais dano!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'Quanto maior o número "~", mais forte a organização. Teste várias ideias!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Os números "~" são o dano estimado contra um inimigo (com combos e críticos)',
-  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sincronize 2 linhas com o mesmo número de elos! Quanto mais longas, maior o bônus.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
     'As Origens disparam uma de cada vez, em ordem. A casa da sincronia mostra os elos e o bônus, como "4+4 +30%".',
   '起点が0個です。出撃できません': 'Nenhuma Origem colocada. Não dá para partir.',
   '倉庫があふれています（タップで売却）': 'Armazém lotado (toque para vender)',
@@ -415,11 +415,11 @@ export const UI: Dict = {
   番号を選ぶと表示に戻す: 'Escolha um número para mostrar as linhas de novo',
   起点を置いてください: 'Coloque uma Origem',
   '合計 約{n}': 'Total ~{n}',
-  '約{n}・{step}段・{tech}': '~{n} · Corrente {step} · {tech}',
+  '約{n}・{step}連鎖・{tech}': '~{n} · Corrente {step} · {tech}',
   '必殺技|fallback': 'Golpe Especial',
-  '約{n}・{step}段・コンボ{combo}': '~{n} · Corrente {step} · Combos {combo}',
-  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Corrente {step} · Sincronia +{bonus}%',
-  '約{n}・{step}段': '~{n} · Corrente {step}',
+  '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Corrente {step} · Combos {combo}',
+  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Corrente {step} · Sincronia +{bonus}%',
+  '約{n}・{step}連鎖': '~{n} · Corrente {step}',
   診断: 'Análise',
   配置の診断: 'Análise da Mochila',
   'いまの推定ダメージ 合計 約{n}': 'Estimativa atual: ~{n} no total',
@@ -498,7 +498,7 @@ export const UI: Dict = {
   もう一度: 'Jogar de Novo',
   倉庫があふれています: 'Armazém lotado',
   起点がありません: 'Sem Origem',
-  'これが伝説の装備の力！\n最大{step}段の連鎖、{damage}ダメージ！':
+  'これが伝説の装備の力！\n最大{step}連鎖、{damage}ダメージ！':
     'Esse é o poder do equipamento lendário!\nCorrente de até {step} elos e {damage} de dano!',
   'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！':
     'Daqui em diante, aventure-se com seu próprio equipamento. Junte e organize itens, e um dia você vai ficar forte assim!',
@@ -541,8 +541,8 @@ export const UI: Dict = {
   '{region}　{loop}周目': '{region}  Volta {loop}',
   '防御 {n}': 'Defesa {n}',
   '連鎖中！': 'Encadeando!',
-  '{step}段・{sec}秒': 'Corrente {step} · {sec}s',
-  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Corrente {step} · {sec}s · Sincronia +{bonus}%',
+  '{step}連鎖・{sec}秒': 'Corrente {step} · {sec}s',
+  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Corrente {step} · {sec}s · Sincronia +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  inimigos {enemies}  partículas {particles}  números {numbers}  seed {seed}',
   '時間 +{sec}': 'Tempo +{sec}',
@@ -598,8 +598,8 @@ export const UI: Dict = {
   '実績達成！': 'Conquista Desbloqueada!',
 
   // src/ui/backpackView.ts
-  '必殺 {step}段': 'Especial #{step}',
-  '{step}段 ×{mult}': '#{step} ×{mult}',
+  '必殺 {step}連鎖': 'Especial #{step}',
+  '{step}連鎖 ×{mult}': '#{step} ×{mult}',
 
   // src/ui/chestReveal.ts
   '売却|sold': 'Vendido',
@@ -623,16 +623,16 @@ export const UI: Dict = {
   'なし（末端）': 'Nenhuma (fim da corrente)',
   '攻撃力 {atk}（{element}・{area}）': 'Ataque {atk} ({element}, {area})',
   '次への伝達 {s}秒': 'Tempo de repasse {s}s',
-  '1段で{n}回攻撃': 'Golpes ×{n} por elo',
+  '{n}回攻撃（連鎖数は1つ）': 'Golpes ×{n} por elo',
   '会心率 +{pct}%': 'Taxa crítica +{pct}%',
   '付与: {status} → {element}で{combo}': 'Aplica: {status} → {combo} com {element}',
   '付与: {status}': 'Aplica: {status}',
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Consome o efeito {status}: {combo} (×{x}, se espalha numa área)',
   '{status}を消費して{combo}（×{x}）': 'Consome o efeito {status}: {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、段数に数えない）':
+  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
     'Defesa +{n} (somada quando termina uma corrente que passa por aqui; não conta como elo)',
-  '連鎖の始まり。攻撃せず、段数にも数えない':
+  '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     'Começa uma corrente. Não ataca e não conta como elo.',
   '付け直し {n}回': 'Reforjado ×{n}',
   '売却 {price}G': 'Vende por {price}G',
@@ -653,7 +653,7 @@ export const UI: Dict = {
   吸血: 'Roubo de Vida',
   '与えたダメージの{pct}%を回復': 'Cura {pct}% do dano causado',
   疾風: 'Vendaval',
-  'このあとの装備は段数+{n}': 'Itens seguintes contam como elo +{n}',
+  'このあとの装備は連鎖数+{n}': 'Itens seguintes contam como elo +{n}',
   '5秒間、一撃の30%を毎秒': '30% do golpe por segundo, durante 5s',
   付与: 'Aplica',
   '濡れ・油・凍結をまとめて': 'Molhado, Óleo e Congelado de uma vez',
@@ -664,19 +664,13 @@ export const UI: Dict = {
   守り: 'Guarda',
   連鎖中も無防備にならない: 'Nunca desprotegido nas correntes',
   バックパックにある限り: 'Enquanto estiver na mochila',
-  '{n}方向': '{n}',
-  出口の数は固定: 'Número de saídas fixo',
-  レアリティで出口の数が決まる: 'A raridade define o número de saídas',
-  シンクロ: 'Sincronia',
-  同じ段数でシンクロさせるとボーナス: 'Bônus ao sincronizar no mesmo número de elos',
-  シンクロの先は長い方の段数でつづく: 'Após a sincronia, os elos seguem a linha mais longa',
   この配置: 'Nesta Mochila',
   どの起点からも届きません: 'Nenhuma Origem alcança',
-  '起点{origin}の{step}段目 ×{mult}': 'Origem {origin}, elo {step} ×{mult}',
+  '起点{origin}の{step}連鎖目 ×{mult}': 'Origem {origin}, elo {step} ×{mult}',
   '1ヒット 約{n}': '~{n} por golpe',
   '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} por golpe · Sincronia +{bonus}%',
   '起点{origin}の連鎖': 'Corrente da Origem {origin}',
-  段数に数えない: 'Não conta como elo',
+  連鎖数に数えない: 'Não conta como elo',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':
     'Aplica {status} → ataques de {element} causam {combo} (×{x})',
   '{status}を付ける': 'Aplica {status}',
@@ -700,7 +694,7 @@ export const UI: Dict = {
 
   // src/ui/shareCard.ts
   '{loop}周目に到達': 'Chegou à Volta {loop}',
-  '最大連鎖 {step}段': 'Corrente Máx. {step}',
+  '最大{step}連鎖': 'Corrente Máx. {step}',
   '最大ダメージ {damage}': 'Dano Máx. {damage}',
 
   // src/ui/tutorial.ts

@@ -270,7 +270,7 @@ export class ResultScene extends Phaser.Scene {
       },
       {
         label: t('最大連鎖'),
-        value: t('{n}段', { n: result.stats.maxStep }),
+        value: t('{n}連鎖', { n: result.stats.maxStep }),
         isNew: comparable && result.stats.maxStep > prev.step,
       },
       {
@@ -537,7 +537,7 @@ export class ResultScene extends Phaser.Scene {
       runTutorial(this, 'demoEnd', [
         {
           rect: { x: W / 2, y: 408, w: W - 50, h: 216 },
-          text: t('これが伝説の装備の力！\n最大{step}段の連鎖、{damage}ダメージ！', {
+          text: t('これが伝説の装備の力！\n最大{step}連鎖、{damage}ダメージ！', {
             step: result.stats.maxStep,
             damage: Math.round(result.stats.maxDamage),
           }),

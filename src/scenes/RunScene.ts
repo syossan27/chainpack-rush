@@ -630,8 +630,8 @@ export class RunScene extends Phaser.Scene {
             c.chain
               ? t('連鎖中！')
               : bonus > 0
-                ? t('{step}段・{sec}秒・シンクロ+{bonus}%', { ...params, bonus })
-                : t('{step}段・{sec}秒', params),
+                ? t('{step}連鎖・{sec}秒・シンクロ+{bonus}%', { ...params, bonus })
+                : t('{step}連鎖・{sec}秒', params),
           ),
         164,
       );

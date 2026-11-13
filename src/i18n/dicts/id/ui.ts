@@ -32,11 +32,11 @@ export const UI: Dict = {
   '必殺技の並びがそろう！': 'Melengkapi urutan Jurus Spesial!',
   '何か特別なことが起きそうな並び…': 'Sepertinya urutan ini bisa memicu sesuatu yang spesial…',
   状態異常のコンボが増える: 'Kombo efek status bertambah',
-  '連鎖が{n}段まで長くなる': 'Rantai memanjang sampai {n} mata rantai',
+  '{n}連鎖までのびる': 'Rantai memanjang sampai {n} mata rantai',
   'もっと強い装備（レアリティ・攻撃力）に替える':
     'Ganti dengan perlengkapan lebih kuat (kelangkaan, Serangan)',
   空いているマスも連鎖に使う: 'Kotak kosong ikut dipakai dalam rantai',
-  '強い装備が後ろの段（倍率が高い）に来る':
+  '強い装備が後ろ（倍率が高い）に来る':
     'Perlengkapan kuat pindah ke mata rantai akhir (pengganda lebih tinggi)',
   '「{a}」と「{b}」を入れ替える': 'Tukar "{a}" dan "{b}"',
   '「{a}」を倉庫の「{b}」に置きかえる': 'Ganti "{a}" dengan "{b}" dari Gudang',
@@ -44,8 +44,8 @@ export const UI: Dict = {
   'どの起点からも届いていない装備が{n}個': 'Item yang tak terjangkau Asal mana pun: {n}',
   '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
     'Ikuti panah dari Asal dan pindahkan item ini agar tersambung (kotak yang menyala)',
-  '起点{n}の連鎖が{step}段で止まっている': 'Rantai Asal {n} berhenti di mata rantai ke-{step}',
-  '長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
+  '起点{n}が{step}連鎖で止まっている': 'Rantai Asal {n} berhenti di mata rantai ke-{step}',
+  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
     'Makin panjang rantainya, makin besar pengganda mata rantai akhir. Kamu juga bisa mengubah arah jalur di Pandai Besi.',
 
   // src/core/economy.ts
@@ -73,7 +73,7 @@ export const UI: Dict = {
   '挑戦「{name}」でスコア {score}！': 'Skor {score} di Tantangan "{name}"!',
   'エンドレスで{loop}周目に到達！': 'Mencapai Putaran {loop} di mode Tanpa Batas!',
   '{region}で{loop}周目に到達！': 'Mencapai Putaran {loop} di {region}!',
-  '最大連鎖 {step}段・最大ダメージ {damage}': 'Rantai maks. {step} · Damage maks. {damage}',
+  '最大{step}連鎖・最大ダメージ {damage}': 'Rantai maks. {step} · Damage maks. {damage}',
 
   // src/platform/monetization.ts
   '広告（テスト表示）': 'Iklan (tes)',
@@ -92,7 +92,7 @@ export const UI: Dict = {
     'Serangan × Kelangkaan × Pengganda rantai × Kombo × Peningkatan × Bonus × Kritikal (variasi ±10%)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
     '• Kelangkaan: Biasa ×1, Langka ×1.5, Epik ×2.5, Legendaris ×4',
-  '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）':
+  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Pengganda rantai: ×1.2 per mata rantai, maksimal ×2.5 di mata rantai ke-6 (maks. ×4.0 lewat Cincin Siklus)',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Kombo: Basah + Petir = Setrum ×3, Minyak + Api = Ledakan ×2 (musuh di sekitar ikut kena), Beku + Hantam = Hancur ×2.5. Meski bukan kombo, musuh yang terkena efek status menerima ×1.2',
@@ -106,13 +106,13 @@ export const UI: Dict = {
     '• Buat kombo. Sambungkan elemen pasangannya (Petir, Api, Hantam) setelah item pemberi status (Botol Naga Air, Tongkat Mendung, Botol Minyak, Pedang Es, Tongkat Es). Efek status hilang setelah 5 detik.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Sambungkan Cahaya dan Kegelapan berselang-seling agar kombo terus berlanjut: Penyucian (memulihkan HP pahlawan) dan Segel (serangan musuh jadi lambat). Angin menumpuk Racun pada musuh keracunan; di 5 lapis, Ledakan Racun.',
-  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
     '• Sinkronkan garis dari 2 Asal di jumlah mata rantai yang sama untuk dapat bonus mulai dari situ. Jenis Batu Asal hanya berlaku pada garis yang berawal darinya.',
-  '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
+  '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Taruh perlengkapan terkuatmu di akhir rantai (mata rantai ke-6 dan seterusnya). Pakai mata rantai awal untuk perlengkapan ringan dan item pemberi status.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• Kelangkaan paling berpengaruh. Makin dalam wilayahnya, makin sering item Langka ke atas jatuh.',
-  '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。':
+  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
     '• ✦ di kiri bawah item menandakan bonus. Pelopor (kuat sampai mata rantai ke-3) cocok untuk rantai pendek; Penutup (kuat mulai mata rantai ke-6) cocok untuk rantai panjang.',
   必殺技: 'Jurus Spesial',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
@@ -120,11 +120,11 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Jurus Spesial yang bisa ditemukan: {n}. Saat pertama kali kamu mengeluarkannya, muncul "Jurus Spesial ditemukan!" dan resepnya masuk ke "Ensiklopedia" di Markas. Untuk jurus yang belum ditemukan, Ensiklopedia hanya menampilkan petunjuk.',
   短い連鎖と長い連鎖: 'Rantai Pendek vs. Panjang',
-  '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• Jeda sebelum pemicuan berikutnya sebanding dengan panjang rantai sebelumnya. Rantai pendek berputar cepat; rantai panjang menghantam keras.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。':
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
     '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai mata rantai ke-3.',
-  '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
+  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Kena serangan besar saat lengah membuatmu "Terhuyung!" dan sisa rantai terputus. Bertahanlah dengan perlengkapan pertahanan, atau pasang Gerbang Kebal untuk mencegahnya.',
   地域と敵: 'Wilayah & Musuh',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
@@ -167,7 +167,7 @@ export const UI: Dict = {
   '出撃|stat': 'Ekspedisi',
   '{n}回': '{n}',
   最大連鎖: 'Rantai Maks',
-  '{n}段': '{n}',
+  '{n}連鎖': '{n}',
   最大ダメージ: 'Damage Maks',
   開放した地域: 'Wilayah Terbuka',
   '{region} {n}周': '{region} Putaran {n}',
@@ -396,15 +396,15 @@ export const UI: Dict = {
   挑戦へ: 'Tantangan',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
     'Gudangmu ada di bawah. Tahan sebentar sebuah item, lalu seret ke ransel.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！':
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
     'Mulai dari Asal (batu bernomor), item yang tersambung menyerang bergiliran mengikuti panah. Makin belakang mata rantainya, makin besar damage-nya!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'Makin besar angka "~", makin kuat susunannya. Coba macam-macam ide!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Angka "~" adalah perkiraan damage ke satu musuh (termasuk kombo dan kritikal)',
-  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sinkronkan 2 garis di jumlah mata rantai yang sama! Makin panjang, makin besar bonusnya.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
     'Asal terpicu satu per satu, bergiliran. Kotak sinkron menampilkan mata rantai dan bonus, seperti "4+4 +30%".',
   '起点が0個です。出撃できません': 'Belum ada Asal. Kamu tak bisa berangkat.',
   '倉庫があふれています（タップで売却）': 'Gudang penuh (ketuk untuk menjual)',
@@ -414,11 +414,11 @@ export const UI: Dict = {
   番号を選ぶと表示に戻す: 'Pilih nomor untuk menampilkan garis lagi',
   起点を置いてください: 'Taruh sebuah Asal',
   '合計 約{n}': 'Total ~{n}',
-  '約{n}・{step}段・{tech}': '~{n} · Rantai {step} · {tech}',
+  '約{n}・{step}連鎖・{tech}': '~{n} · Rantai {step} · {tech}',
   '必殺技|fallback': 'Jurus Spesial',
-  '約{n}・{step}段・コンボ{combo}': '~{n} · Rantai {step} · Kombo {combo}',
-  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Rantai {step} · Sinkron +{bonus}%',
-  '約{n}・{step}段': '~{n} · Rantai {step}',
+  '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Rantai {step} · Kombo {combo}',
+  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Rantai {step} · Sinkron +{bonus}%',
+  '約{n}・{step}連鎖': '~{n} · Rantai {step}',
   診断: 'Saran',
   配置の診断: 'Saran Susunan',
   'いまの推定ダメージ 合計 約{n}': 'Perkiraan sekarang: total ~{n}',
@@ -499,7 +499,7 @@ export const UI: Dict = {
   もう一度: 'Main Lagi',
   倉庫があふれています: 'Gudang penuh',
   起点がありません: 'Tidak ada Asal',
-  'これが伝説の装備の力！\n最大{step}段の連鎖、{damage}ダメージ！':
+  'これが伝説の装備の力！\n最大{step}連鎖、{damage}ダメージ！':
     'Inilah kekuatan perlengkapan legendaris!\nRantai sampai {step} mata rantai dan {damage} damage!',
   'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！':
     'Mulai sekarang, bertualanglah dengan perlengkapanmu sendiri. Kumpulkan dan susun perlengkapan, suatu hari kamu akan sekuat ini!',
@@ -542,8 +542,8 @@ export const UI: Dict = {
   '{region}　{loop}周目': '{region}  Putaran {loop}',
   '防御 {n}': 'Pertahanan {n}',
   '連鎖中！': 'Rantai Aktif!',
-  '{step}段・{sec}秒': 'Rantai {step} · {sec} dtk',
-  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Rantai {step} · {sec} dtk · Sinkron +{bonus}%',
+  '{step}連鎖・{sec}秒': 'Rantai {step} · {sec} dtk',
+  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Rantai {step} · {sec} dtk · Sinkron +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  musuh {enemies}  partikel {particles}  angka {numbers}  seed {seed}',
   '時間 +{sec}': 'Waktu +{sec}',
@@ -599,8 +599,8 @@ export const UI: Dict = {
   '実績達成！': 'Pencapaian Terbuka!',
 
   // src/ui/backpackView.ts
-  '必殺 {step}段': 'Spesial #{step}',
-  '{step}段 ×{mult}': '#{step} ×{mult}',
+  '必殺 {step}連鎖': 'Spesial #{step}',
+  '{step}連鎖 ×{mult}': '#{step} ×{mult}',
 
   // src/ui/chestReveal.ts
   '売却|sold': 'Terjual',
@@ -623,16 +623,16 @@ export const UI: Dict = {
   'なし（末端）': 'Tidak ada (ujung rantai)',
   '攻撃力 {atk}（{element}・{area}）': 'Serangan {atk} ({element}, {area})',
   '次への伝達 {s}秒': 'Waktu oper {s} dtk',
-  '1段で{n}回攻撃': 'Serang ×{n} per mata rantai',
+  '{n}回攻撃（連鎖数は1つ）': 'Serang ×{n} per mata rantai',
   '会心率 +{pct}%': 'Peluang kritikal +{pct}%',
   '付与: {status} → {element}で{combo}': 'Memberi: {status} → {combo} dengan {element}',
   '付与: {status}': 'Memberi: {status}',
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Menghabiskan {status} untuk {combo} (×{x}, menyebar ke area)',
   '{status}を消費して{combo}（×{x}）': 'Menghabiskan {status} untuk {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、段数に数えない）':
+  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
     'Pertahanan +{n} (ditambahkan saat rantai yang lewat berakhir; tidak dihitung sebagai mata rantai)',
-  '連鎖の始まり。攻撃せず、段数にも数えない':
+  '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     'Awal rantai. Tidak menyerang dan tidak dihitung sebagai mata rantai.',
   '付け直し {n}回': 'Ditempa ulang ×{n}',
   '売却 {price}G': 'Harga jual {price}G',
@@ -653,7 +653,7 @@ export const UI: Dict = {
   吸血: 'Serap Darah',
   '与えたダメージの{pct}%を回復': 'Memulihkan {pct}% dari damage yang diberikan',
   疾風: 'Badai',
-  'このあとの装備は段数+{n}': 'Item setelahnya dihitung mata rantai +{n}',
+  'このあとの装備は連鎖数+{n}': 'Item setelahnya dihitung mata rantai +{n}',
   '5秒間、一撃の30%を毎秒': '30% damage serangan tiap detik selama 5 detik',
   付与: 'Memberi',
   '濡れ・油・凍結をまとめて': 'Basah, Minyak, dan Beku sekaligus',
@@ -664,20 +664,13 @@ export const UI: Dict = {
   守り: 'Perlindungan',
   連鎖中も無防備にならない: 'Tak pernah lengah saat rantai berjalan',
   バックパックにある限り: 'Selama ada di ranselmu',
-  '{n}方向': '{n}',
-  出口の数は固定: 'Jumlah jalur tetap',
-  レアリティで出口の数が決まる: 'Kelangkaan menentukan jumlah jalur',
-  シンクロ: 'Sinkron',
-  同じ段数でシンクロさせるとボーナス: 'Bonus jika sinkron di jumlah mata rantai yang sama',
-  シンクロの先は長い方の段数でつづく:
-    'Setelah sinkron, mata rantai berlanjut dari garis yang lebih panjang',
   この配置: 'Susunan Ini',
   どの起点からも届きません: 'Tak terjangkau Asal mana pun',
-  '起点{origin}の{step}段目 ×{mult}': 'Asal {origin}, mata rantai ke-{step} ×{mult}',
+  '起点{origin}の{step}連鎖目 ×{mult}': 'Asal {origin}, mata rantai ke-{step} ×{mult}',
   '1ヒット 約{n}': '~{n} per serangan',
   '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} per serangan · Sinkron +{bonus}%',
   '起点{origin}の連鎖': 'Rantai Asal {origin}',
-  段数に数えない: 'Tidak dihitung sebagai mata rantai',
+  連鎖数に数えない: 'Tidak dihitung sebagai mata rantai',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':
     'Memberi {status} → serangan {element} memicu {combo} (×{x})',
   '{status}を付ける': 'Memberi {status}',
@@ -701,7 +694,7 @@ export const UI: Dict = {
 
   // src/ui/shareCard.ts
   '{loop}周目に到達': 'Mencapai Putaran {loop}',
-  '最大連鎖 {step}段': 'Rantai Maks {step}',
+  '最大{step}連鎖': 'Rantai Maks {step}',
   '最大ダメージ {damage}': 'Damage Maks {damage}',
 
   // src/ui/tutorial.ts

@@ -75,10 +75,10 @@ function explain(before: Score, after: Score, knownTech: boolean, kind: AdviceKi
   if (after.techs > before.techs)
     return t(knownTech ? '必殺技の並びがそろう！' : '何か特別なことが起きそうな並び…');
   if (after.combos > before.combos) return t('状態異常のコンボが増える');
-  if (after.maxStep > before.maxStep) return t('連鎖が{n}段まで長くなる', { n: after.maxStep });
+  if (after.maxStep > before.maxStep) return t('{n}連鎖までのびる', { n: after.maxStep });
   if (kind === 'replace') return t('もっと強い装備（レアリティ・攻撃力）に替える');
   if (kind === 'place') return t('空いているマスも連鎖に使う');
-  return t('強い装備が後ろの段（倍率が高い）に来る');
+  return t('強い装備が後ろ（倍率が高い）に来る');
 }
 
 export function diagnose(
@@ -191,11 +191,11 @@ export function diagnose(
   if (short >= 0 && preview.plans.length > 1)
     advices.push({
       kind: 'short',
-      title: t('起点{n}の連鎖が{step}段で止まっている', {
+      title: t('起点{n}が{step}連鎖で止まっている', {
         n: short + 1,
         step: preview.plans[short]!.maxStep,
       }),
-      reason: t('長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手'),
+      reason: t('長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手'),
       gain: 0,
       apply: null,
       cells: [],

@@ -32,11 +32,11 @@ export const UI: Dict = {
   '必殺技の並びがそろう！': "Complète l'ordre d'un coup spécial !",
   '何か特別なことが起きそうな並び…': 'Cet ordre pourrait déclencher quelque chose de spécial…',
   状態異常のコンボが増える: "Plus de combos d'altération",
-  '連鎖が{n}段まで長くなる': "La chaîne s'allonge jusqu'au maillon {n}",
+  '{n}連鎖までのびる': "La chaîne s'allonge jusqu'au maillon {n}",
   'もっと強い装備（レアリティ・攻撃力）に替える':
     'Remplace par un objet plus fort (rareté, Attaque)',
   空いているマスも連鎖に使う: 'Utilise les cases vides dans la chaîne',
-  '強い装備が後ろの段（倍率が高い）に来る':
+  '強い装備が後ろ（倍率が高い）に来る':
     'Place les objets forts sur les derniers maillons (multiplicateur plus élevé)',
   '「{a}」と「{b}」を入れ替える': 'Échange « {a} » et « {b} »',
   '「{a}」を倉庫の「{b}」に置きかえる': 'Remplace « {a} » par « {b} » de la Réserve',
@@ -44,8 +44,8 @@ export const UI: Dict = {
   'どの起点からも届いていない装備が{n}個': "Objets qu'aucune Origine n'atteint : {n}",
   '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
     'Suis les flèches depuis les Origines et replace ces objets pour les relier (cases lumineuses)',
-  '起点{n}の連鎖が{step}段で止まっている': "La chaîne de l'Origine {n} s'arrête au maillon {step}",
-  '長くつなぐほど後ろの段の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
+  '起点{n}が{step}連鎖で止まっている': "La chaîne de l'Origine {n} s'arrête au maillon {step}",
+  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
     'Plus la chaîne est longue, plus le multiplicateur des derniers maillons grimpe. Tu peux aussi changer le sens des sorties à la Forge.',
 
   // src/core/economy.ts
@@ -74,7 +74,7 @@ export const UI: Dict = {
   '挑戦「{name}」でスコア {score}！': 'Score de {score} au Défi « {name} » !',
   'エンドレスで{loop}周目に到達！': 'Tour {loop} atteint en mode Infini !',
   '{region}で{loop}周目に到達！': '{region} : tour {loop} atteint !',
-  '最大連鎖 {step}段・最大ダメージ {damage}': 'Chaîne max {step} · Dégâts max {damage}',
+  '最大{step}連鎖・最大ダメージ {damage}': 'Chaîne max {step} · Dégâts max {damage}',
 
   // src/platform/monetization.ts
   '広告（テスト表示）': 'Pub (test)',
@@ -93,7 +93,7 @@ export const UI: Dict = {
     'Attaque × Rareté × Multiplicateur de chaîne × Combo × Améliorations × Bonus × Critique (±10% de variation)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
     '• Rareté : Commun ×1, Rare ×1.5, Épique ×2.5, Légendaire ×4',
-  '・連鎖倍率：1段ごとに×1.2、6段目で上限×2.5（循環の環を通ると上限×4.0）':
+  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     "• Multiplicateur de chaîne : ×1.2 par maillon, plafonné à ×2.5 au 6e maillon (plafond ×4.0 en passant par l'Anneau d'Ouroboros)",
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos : Mouillé + Foudre = Électrochoc ×3, Huile + Feu = Explosion ×2 (touche aussi les ennemis proches), Gelé + Contondant = Fracas ×2.5. Même sans combo, les ennemis avec une altération subissent ×1.2',
@@ -107,13 +107,13 @@ export const UI: Dict = {
     "• Crée des combos. Relie l'élément associé (Foudre, Feu, Contondant) après un objet qui inflige une altération (Fiole du Dragon d’eau, Bâton de pluie, Fiole d'huile, Épée de glace, Bâton de givre). Les altérations disparaissent au bout de 5 secondes.",
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Alterne Lumière et Ténèbres pour enchaîner les combos : Purification (soigne le héros) et Scellé (ralentit les attaques ennemies). Le Vent ajoute des couches de Poison aux ennemis empoisonnés ; à 5 couches, Venin explosif.',
-  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
     "• Synchronise les lignes de 2 Origines au même nombre de maillons pour obtenir un bonus à partir de là. Le type d'une Pierre d'origine n'agit que sur les lignes qui en partent.",
-  '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
+  '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Place tes objets les plus forts en fin de chaîne (6e maillon et au-delà). Garde les premiers maillons pour les objets légers et ceux qui infligent des altérations.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     "• C'est la rareté qui compte le plus. Les régions lointaines donnent plus souvent du Rare ou mieux.",
-  '・装備の左下の✦は追加効果。先駆け（3段目まで強い）は短い連鎖に、締め（6段目以降強い）は長い連鎖に向きます。':
+  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
     "• Le ✦ en bas à gauche d'un objet indique un bonus. Avant-garde (fort jusqu'au 3e maillon) convient aux chaînes courtes ; Finisseur (fort dès le 6e maillon) aux chaînes longues.",
   必殺技: 'Coups spéciaux',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
@@ -121,11 +121,11 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     "• Coups spéciaux à trouver : {n}. La première fois que tu en réussis un, tu verras « Coup spécial découvert ! » et sa recette s'ajoute au « Codex » de la Base. Pour les coups pas encore trouvés, le Codex n'affiche qu'un indice.",
   短い連鎖と長い連鎖: 'Chaînes courtes ou longues',
-  '・次の発火までの待ちは、直前の連鎖の段数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     "• L'attente avant le prochain déclenchement dépend de la longueur de la dernière chaîne. Les chaînes courtes tournent vite ; les longues frappent fort.",
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3段目までは守りが残ります。':
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
     "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'au 3e maillon.",
-  '・無防備中に大きく被弾すると「よろめき」、残りの段が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
+  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     "• Un gros coup reçu à découvert te laisse « Sonné ! » et coupe le reste de la chaîne. Tiens bon avec de l'équipement défensif, ou place la Porte imprenable pour l'éviter.",
   地域と敵: 'Régions et ennemis',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
@@ -168,7 +168,7 @@ export const UI: Dict = {
   '出撃|stat': 'Expéditions',
   '{n}回': '{n}',
   最大連鎖: 'Chaîne max',
-  '{n}段': '{n}',
+  '{n}連鎖': '{n}',
   最大ダメージ: 'Dégâts max',
   開放した地域: 'Régions débloquées',
   '{region} {n}周': '{region} (tour {n})',
@@ -400,15 +400,15 @@ export const UI: Dict = {
   挑戦へ: 'Défi',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
     "En bas, c'est ta Réserve. Maintiens un objet un instant, puis fais-le glisser dans le sac à dos.",
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの段ほどダメージが大きい！':
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
     'Depuis une Origine (la pierre numérotée), les objets reliés attaquent tour à tour en suivant les flèches. Les derniers maillons frappent plus fort !',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     "Plus le nombre « ~ » est grand, plus la disposition est forte. Essaie plein d'idées !",
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Les nombres « ~ » sont les dégâts estimés sur un seul ennemi (combos et critiques inclus)',
-  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
     'Synchronise 2 lignes au même nombre de maillons ! Plus elles sont longues, plus le bonus est grand.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
     'Les Origines se déclenchent une par une, à tour de rôle. La case de synchro affiche les maillons et le bonus, comme « 4+4 +30% ».',
   '起点が0個です。出撃できません': 'Aucune Origine placée. Impossible de partir.',
   '倉庫があふれています（タップで売却）': 'La Réserve est pleine (touche pour vendre)',
@@ -418,11 +418,11 @@ export const UI: Dict = {
   番号を選ぶと表示に戻す: 'Choisis un numéro pour réafficher les lignes',
   起点を置いてください: 'Place une Origine',
   '合計 約{n}': 'Total ~{n}',
-  '約{n}・{step}段・{tech}': '~{n} · Chaîne {step} · {tech}',
+  '約{n}・{step}連鎖・{tech}': '~{n} · Chaîne {step} · {tech}',
   '必殺技|fallback': 'Coup spécial',
-  '約{n}・{step}段・コンボ{combo}': '~{n} · Chaîne {step} · Combos {combo}',
-  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Chaîne {step} · Synchro +{bonus}%',
-  '約{n}・{step}段': '~{n} · Chaîne {step}',
+  '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Chaîne {step} · Combos {combo}',
+  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Chaîne {step} · Synchro +{bonus}%',
+  '約{n}・{step}連鎖': '~{n} · Chaîne {step}',
   診断: 'Conseils',
   配置の診断: 'Conseils de disposition',
   'いまの推定ダメージ 合計 約{n}': 'Estimation actuelle : ~{n} au total',
@@ -503,7 +503,7 @@ export const UI: Dict = {
   もう一度: 'Rejouer',
   倉庫があふれています: 'Réserve pleine',
   起点がありません: 'Aucune Origine',
-  'これが伝説の装備の力！\n最大{step}段の連鎖、{damage}ダメージ！':
+  'これが伝説の装備の力！\n最大{step}連鎖、{damage}ダメージ！':
     "Voilà la puissance de l'équipement légendaire !\nChaîne max : {step} · Dégâts : {damage} !",
   'ここからは自分の装備で冒険しよう。\n装備を集めて並べて、\nいつかこの姿に！':
     "Maintenant, pars à l'aventure avec ton propre équipement. Collectionne et dispose tes objets, et un jour tu seras aussi fort !",
@@ -547,8 +547,8 @@ export const UI: Dict = {
   '{region}　{loop}周目': '{region}  Tour {loop}',
   '防御 {n}': 'Défense {n}',
   '連鎖中！': 'Enchaînement !',
-  '{step}段・{sec}秒': 'Chaîne {step} · {sec} s',
-  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Chaîne {step} · {sec} s · Synchro +{bonus}%',
+  '{step}連鎖・{sec}秒': 'Chaîne {step} · {sec} s',
+  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Chaîne {step} · {sec} s · Synchro +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  ennemis {enemies}  particules {particles}  nombres {numbers}  seed {seed}',
   '時間 +{sec}': 'Temps +{sec}',
@@ -604,8 +604,8 @@ export const UI: Dict = {
   '実績達成！': 'Succès débloqué !',
 
   // src/ui/backpackView.ts
-  '必殺 {step}段': 'Spécial #{step}',
-  '{step}段 ×{mult}': '#{step} ×{mult}',
+  '必殺 {step}連鎖': 'Spécial #{step}',
+  '{step}連鎖 ×{mult}': '#{step} ×{mult}',
 
   // src/ui/chestReveal.ts
   '売却|sold': 'Vendu',
@@ -628,16 +628,16 @@ export const UI: Dict = {
   'なし（末端）': 'Aucune (fin de chaîne)',
   '攻撃力 {atk}（{element}・{area}）': 'Attaque {atk} ({element}, {area})',
   '次への伝達 {s}秒': 'Relais {s} s',
-  '1段で{n}回攻撃': 'Coups par maillon : ×{n}',
+  '{n}回攻撃（連鎖数は1つ）': 'Coups par maillon : ×{n}',
   '会心率 +{pct}%': 'Taux critique +{pct}%',
   '付与: {status} → {element}で{combo}': 'Applique : {status} → {combo} avec {element}',
   '付与: {status}': 'Applique : {status}',
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     "Consomme {status} → {combo} (×{x}, s'étend à une zone)",
   '{status}を消費して{combo}（×{x}）': 'Consomme {status} → {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、段数に数えない）':
+  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
     'Défense +{n} (ajoutée à la fin de chaque chaîne qui le traverse ; ne compte pas comme maillon)',
-  '連鎖の始まり。攻撃せず、段数にも数えない':
+  '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     "Début de chaîne. N'attaque pas et ne compte pas comme maillon.",
   '付け直し {n}回': 'Reforgé ×{n}',
   '売却 {price}G': 'Revente : {price}G',
@@ -658,7 +658,7 @@ export const UI: Dict = {
   吸血: 'Vol de vie',
   '与えたダメージの{pct}%を回復': 'Soigne {pct}% des dégâts infligés',
   疾風: 'Rafale',
-  'このあとの装備は段数+{n}': 'Objets suivants : maillon +{n}',
+  'このあとの装備は連鎖数+{n}': 'Objets suivants : maillon +{n}',
   '5秒間、一撃の30%を毎秒': '30% du coup par seconde pendant 5 s',
   付与: 'Applique',
   '濡れ・油・凍結をまとめて': "Mouillé, Huile et Gelé d'un coup",
@@ -669,20 +669,13 @@ export const UI: Dict = {
   守り: 'Protection',
   連鎖中も無防備にならない: 'Jamais à découvert en chaîne',
   バックパックにある限り: 'Effet actif dans le sac à dos',
-  '{n}方向': '{n}',
-  出口の数は固定: 'Nombre de sorties fixe',
-  レアリティで出口の数が決まる: 'La rareté fixe le nombre de sorties',
-  シンクロ: 'Synchro',
-  同じ段数でシンクロさせるとボーナス: 'Bonus pour une synchro au même nombre de maillons',
-  シンクロの先は長い方の段数でつづく:
-    'Après la synchro, les maillons suivent la ligne la plus longue',
   この配置: 'Cette disposition',
   どの起点からも届きません: "Aucune Origine ne l'atteint",
-  '起点{origin}の{step}段目 ×{mult}': 'Origine {origin}, maillon {step} ×{mult}',
+  '起点{origin}の{step}連鎖目 ×{mult}': 'Origine {origin}, maillon {step} ×{mult}',
   '1ヒット 約{n}': '~{n} par coup',
   '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} par coup · Synchro +{bonus}%',
   '起点{origin}の連鎖': "Chaîne de l'Origine {origin}",
-  段数に数えない: 'Ne compte pas comme maillon',
+  連鎖数に数えない: 'Ne compte pas comme maillon',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':
     'Applique {status} → {combo} avec les attaques {element} (×{x})',
   '{status}を付ける': 'Applique {status}',
@@ -706,7 +699,7 @@ export const UI: Dict = {
 
   // src/ui/shareCard.ts
   '{loop}周目に到達': 'Tour {loop} atteint',
-  '最大連鎖 {step}段': 'Chaîne max {step}',
+  '最大{step}連鎖': 'Chaîne max {step}',
   '最大ダメージ {damage}': 'Dégâts max {damage}',
 
   // src/ui/tutorial.ts
