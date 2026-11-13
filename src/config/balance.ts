@@ -42,6 +42,17 @@ export const CHAIN = {
   multBase: 1.2,
   multCap: 2.5, // 連鎖倍率の上限（1.2^5≒2.49 まで＝6段目までは仕様どおり）
   tailDelay: 0.2, // 最後の発動から連鎖終了まで
+  minRelay: 0.05, // 速の起点石などで縮めても、これより速くは伝わらない
+} as const;
+
+/**
+ * 合流: 線がつながった起点は1回の発火で一緒に撃つ。2本以上の線が届くマスは、全部が届いてから
+ * 段数の合計で発動し、そこから先の本流に合流ボーナスがかかる。
+ * ボーナス = 届いた線の段数の合計 ×（いちばん短い線 ÷ いちばん長い線）× perPoint %（上限 cap %）
+ */
+export const MERGE = {
+  perPoint: 2,
+  cap: 30,
 } as const;
 
 /**
@@ -90,6 +101,15 @@ export const POISON = {
   dpsRatio: 0.3,
   /** ダメージを表示する間隔（秒） */
   tickEvery: 0.5,
+  /**
+   * 風: 毒の敵に当てると毒が1重ふえる（毎秒ダメージ×重ねた数、毒の時間も延びる）。
+   * maxLayers 重の敵に当てると、残りの毒をまとめて与える（毒爆）。仮の値
+   */
+  maxLayers: 5,
+  /** 毒爆のダメージ = 残りの毒（毎秒×重ね数×残り秒）× burstMult */
+  burstMult: 1.5,
+  burstName: 'venom',
+  burstLabel: '毒爆！',
 } as const;
 
 export const STATUS = {
@@ -132,7 +152,36 @@ export const COMBOS: readonly ComboRule[] = [
     mult: 2.5,
     expandToSplash: false,
   },
+  // 光と闇: 倍率は低いが、交互につなぐと毎回コンボになる（光は灼光、闇は呪縛を付け直すため）
+  {
+    status: 'bound',
+    element: 'light',
+    name: 'purify',
+    label: '浄化！',
+    mult: 1.5,
+    expandToSplash: false,
+  },
+  {
+    status: 'radiant',
+    element: 'dark',
+    name: 'seal',
+    label: '封印！',
+    mult: 1.5,
+    expandToSplash: false,
+  },
 ];
+
+/**
+ * 光と闇のコンボの追加効果（仮の値）。
+ * 浄化: 勇者のHPを最大HPの purifyHeal 回復。封印: 敵の攻撃のたまり方を sealSlow 倍に（sealSeconds 秒）。
+ * 呪縛が付いている敵の攻撃力は boundAtkDown だけ下がる
+ */
+export const LIGHT_DARK = {
+  purifyHeal: 0.01,
+  sealSlow: 0.7,
+  sealSeconds: 4,
+  boundAtkDown: 0.2,
+} as const;
 
 export const LOOP_SCALING = {
   hp: 1.4, // 装備の追加効果・新装備で強くなりやすくなったぶん 1.3 から上げた
@@ -190,6 +239,7 @@ export const BOSS = {
   enrageAt: 0.5, // ゴーレム: HPがこの割合を切ると
   enrageInterval: 0.6, // 攻撃間隔×0.6
   enrageAtk: 1.3, // 攻撃力×1.3
+  guardBreakSeconds: 5, // 粉砕を受けると、この秒数だけ「一撃○○未満を無効」が効かない（仮の値）
 } as const;
 
 /** ラン中の時間延長（基本の出撃時間は SIM.runDuration） */
@@ -283,6 +333,8 @@ export const LOOT = {
   originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
   /** 起点石はレアリティ＝出口の数（コモン1・レア2・エピック3・レジェンダリー4）。ATK を持たないので、違いを出口の数で出す */
   originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
+  /** 起点石が出るとき、ふつうの起点石の割合（残りを種類つきで等分。仮の値） */
+  plainOriginShare: 0.5,
 } as const;
 
 /**

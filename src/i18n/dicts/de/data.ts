@@ -7,6 +7,9 @@ export const DATA: Dict = {
   '感電！': 'Schock!',
   '爆発！': 'Explosion!',
   '粉砕！': 'Zertrümmern!',
+  '毒爆！': 'Giftausbruch!',
+  '浄化！': 'Reinigen!',
+  '封印！': 'Versiegeln!',
   硬い: 'Zäh',
   速い: 'Flink',
   金ぴか: 'Golden',
@@ -225,6 +228,39 @@ export const DATA: Dict = {
   起点石: 'Ursprungsstein',
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
     'Hier beginnt eine Kette. Kein Angriff. Die Seltenheit bestimmt die Zahl der Ausgänge (Gewöhnlich 1, Selten 2, Episch 3, Legendär 4).',
+  速の起点石: 'Flinker Ursprungsstein',
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'Linien ab diesem Ursprung geben die Kette 0.05 s schneller weiter, dafür machen ihre Angriffe -10% Schaden.',
+  重い起点石: 'Schwerer Ursprungsstein',
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Angriffe auf Linien ab diesem Ursprung machen +20% Schaden, dafür wird die Kette 0.05 s langsamer weitergegeben.',
+  炎の起点石: 'Feuer-Ursprungsstein',
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Feuer +15% Schaden.',
+  雷の起点石: 'Blitz-Ursprungsstein',
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Blitz +15% Schaden.',
+  打撃の起点石: 'Wucht-Ursprungsstein',
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Wucht +15% Schaden.',
+  盾の起点石: 'Schild-Ursprungsstein',
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'Auf Linien ab diesem Ursprung geben Rüstungsgegenstände +25% Verteidigung.',
+  毒の起点石: 'Gift-Ursprungsstein',
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'Auf Linien ab diesem Ursprung macht Gift +60% Schaden pro Sekunde.',
+  吸血の起点石: 'Vampir-Ursprungsstein',
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'Auf Linien ab diesem Ursprung: Heilung durch Lebensraub +50%.',
+  風の起点石: 'Wind-Ursprungsstein',
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Wind +15% Schaden.',
+  光の起点石: 'Licht-Ursprungsstein',
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Licht +15% Schaden.',
+  闇の起点石: 'Schatten-Ursprungsstein',
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Schatten +15% Schaden.',
   剣: 'Schwert',
   '基本の単体攻撃。': 'Ein einfacher Einzelangriff.',
   大剣: 'Großschwert',
@@ -252,7 +288,7 @@ export const DATA: Dict = {
     'Blitz auf alle Gegner im Bild (Stärke ×0.4). Schockt nasse Gegner.',
   氷の剣: 'Eisschwert',
   '狙いを凍結させる。打撃で粉砕できる。': 'Friert das Ziel ein. Wucht kann es zertrümmern.',
-  水筒: 'Wasserflasche',
+  水竜の瓶: 'Wasserdrachen-Flasche',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Macht das Ziel nass, damit Blitz es schocken kann. Gegner mit Status erleiden ×1.2 Schaden.',
   雨雲の杖: 'Regenstab',
@@ -261,6 +297,24 @@ export const DATA: Dict = {
   油瓶: 'Ölflasche',
   '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
     'Übergießt das Ziel mit Öl, damit Feuer es explodieren lässt. Gegner mit Status erleiden ×1.2 Schaden.',
+  風の剣: 'Windschwert',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    'Wind. Treffer auf vergiftete Gegner stapeln das Gift (bis zu 5-fach). Ein Treffer bei 5-fachem Gift verursacht das ganze restliche Gift auf einmal (Giftausbruch).',
+  嵐の杖: 'Sturmstab',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'Ein Schwung mit Wind. Stapelt das Gift bei allen getroffenen vergifteten Gegnern; bei 5-fach: Giftausbruch.',
+  光の剣: 'Lichtschwert',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Licht. Belegt das Ziel mit Strahlend. Reinigt gebannte Gegner und heilt den Helden.',
+  太陽の杖: 'Sonnenstab',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Flächenangriff mit Licht. Belegt mit Strahlend, reinigt gebannte Gegner und heilt den Helden.',
+  闇の剣: 'Schattenschwert',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Schatten. Belegt das Ziel mit Gebannt (senkt seinen Angriff). Versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
+  闇の杖: 'Schattenstab',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Flächenangriff mit Schatten. Belegt mit Gebannt, versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
   木の盾: 'Holzschild',
   '連鎖が通ると、終了時に防御値+8。': '+8 Verteidigung am Ende jeder Kette, die hindurchläuft.',
   鎖帷子: 'Kettenhemd',
@@ -349,6 +403,9 @@ export const DATA: Dict = {
   氷: 'Eis',
   水: 'Wasser',
   油: 'Öl',
+  風: 'Wind',
+  光: 'Licht',
+  闇: 'Schatten',
   単体: 'Einzel',
   薙ぎ払い: 'Schwung',
   範囲: 'Fläche',
@@ -356,6 +413,8 @@ export const DATA: Dict = {
   濡れ: 'Nass',
   凍結: 'Gefroren',
   毒: 'Gift',
+  灼光: 'Strahlend',
+  呪縛: 'Gebannt',
   コモン: 'Gewöhnlich',
   レア: 'Selten',
   エピック: 'Episch',
@@ -393,8 +452,8 @@ export const DATA: Dict = {
   '油瓶 → 松明か炎の杖 → 炎の杖': 'Ölflasche → Fackel/Feuerstab → Feuerstab',
   '油と炎の気配がする…': 'Du spürst Öl und Feuer…',
   'トライ・サンダー': 'Dreifachblitz',
-  '水筒か雨雲の杖 → 雷の装備 → 雷の装備':
-    'Wasserflasche/Regenstab → Blitz-Gegenstand → Blitz-Gegenstand',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Wasserdrachen-Flasche/Regenstab → Blitz-Gegenstand → Blitz-Gegenstand',
   '水と雷の気配がする…': 'Du spürst Wasser und Donner…',
   'フロスト・ブレイカー': 'Frostbrecher',
   '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':

@@ -102,8 +102,12 @@ export const UI: Dict = {
   ダメージを伸ばすコツ: 'Tips Damage Lebih Besar',
   '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。':
     '• Susun ulang sambil melihat angka "~" di layar Susun. Pilih nomor rute untuk melihat perkiraan damage rute itu saja.',
-  '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
-    '• Buat kombo. Sambungkan elemen pasangannya (Petir, Api, Hantam) setelah item pemberi status (Botol Air, Tongkat Mendung, Botol Minyak, Pedang Es, Tongkat Es). Efek status hilang setelah 5 detik.',
+  '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
+    '• Buat kombo. Sambungkan elemen pasangannya (Petir, Api, Hantam) setelah item pemberi status (Botol Naga Air, Tongkat Mendung, Botol Minyak, Pedang Es, Tongkat Es). Efek status hilang setelah 5 detik.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Sambungkan Cahaya dan Kegelapan berselang-seling agar kombo terus berlanjut: Penyucian (memulihkan HP pahlawan) dan Segel (serangan musuh jadi lambat). Angin menumpuk Racun pada musuh keracunan; di 5 lapis, Ledakan Racun.',
+  '・2つの起点の線を同じ段数で合流させると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+    '• Gabungkan garis dari 2 Asal di jumlah mata rantai yang sama untuk dapat bonus mulai dari situ. Jenis Batu Asal hanya berlaku pada garis yang berawal darinya.',
   '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
     '• Taruh perlengkapan terkuatmu di akhir rantai (mata rantai ke-6 dan seterusnya). Pakai mata rantai awal untuk perlengkapan ringan dan item pemberi status.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -383,6 +387,7 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Durasi (lengah) {sec} dtk',
   '防御値 +{n}': 'Pertahanan +{n}',
   'コンボ {list}': 'Kombo {list}',
+  '合流ボーナス +{n}%': 'Bonus gabung +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Urungkan',
@@ -397,6 +402,10 @@ export const UI: Dict = {
     'Makin besar angka "~", makin kuat susunannya. Coba macam-macam ide!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Angka "~" adalah perkiraan damage ke satu musuh (termasuk kombo dan kritikal)',
+  '2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ':
+    'Gabungkan 2 garis di jumlah mata rantai yang sama! Makin panjang, makin besar bonusnya.',
+  '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Asal yang garisnya tersambung terpicu bersamaan. Kotak gabungan menampilkan mata rantai dan bonus, seperti "4+4 +16%".',
   '起点が0個です。出撃できません': 'Belum ada Asal. Kamu tak bisa berangkat.',
   '倉庫があふれています（タップで売却）': 'Gudang penuh (ketuk untuk menjual)',
   全部: 'Semua',
@@ -408,6 +417,7 @@ export const UI: Dict = {
   '約{n}・{step}段・{tech}': '~{n} · Rantai {step} · {tech}',
   '必殺技|fallback': 'Jurus Spesial',
   '約{n}・{step}段・コンボ{combo}': '~{n} · Rantai {step} · Kombo {combo}',
+  '約{n}・{step}段・合流+{bonus}%': '~{n} · Rantai {step} · Gabung +{bonus}%',
   '約{n}・{step}段': '~{n} · Rantai {step}',
   診断: 'Saran',
   配置の診断: 'Saran Susunan',
@@ -511,8 +521,8 @@ export const UI: Dict = {
     'Item di ranselmu menyerang bergiliran, mulai dari Asal (batu bernomor) mengikuti panah. Itulah "rantai"!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Mulai dari Asal (batu bernomor), item menyerang bergiliran mengikuti panah. Itulah "rantai"! Makin panjang rantainya, makin besar damage-nya.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Setiap kali bar di bawah pahlawan penuh, satu Asal terpicu bergiliran: ①→②→①… Asal yang terpicu berikutnya ditampilkan di "Rantai Berikutnya".',
+  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
+    'Setiap kali bar di bawah pahlawan penuh, Asal terpicu bergiliran: ①→②→①… Asal yang terpicu berikutnya ditampilkan di "Rantai Berikutnya".',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Pahlawanmu maju dan bertarung otomatis. Habisi satu kawanan sekaligus atau kalahkan bos untuk menambah waktu!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -533,6 +543,7 @@ export const UI: Dict = {
   '防御 {n}': 'Pertahanan {n}',
   '連鎖中！': 'Rantai Aktif!',
   '{step}段・{sec}秒': 'Rantai {step} · {sec} dtk',
+  '{step}段・{sec}秒・合流+{bonus}%': 'Rantai {step} · {sec} dtk · Gabung +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  musuh {enemies}  partikel {particles}  angka {numbers}  seed {seed}',
   '時間 +{sec}': 'Waktu +{sec}',
@@ -546,6 +557,9 @@ export const UI: Dict = {
   'よろめき！': 'Terhuyung!',
   '一網打尽！': 'Sapu Bersih!',
   'ボス撃破！': 'Bos Tumbang!',
+  'ぴったり合流！ +{bonus}%': 'Gabung Sempurna! +{bonus}%',
+  '合流！ +{bonus}%': 'Gabung! +{bonus}%',
+  '合流！': 'Gabung!',
   '復活！': 'Bangkit!',
   '再開する（HP全回復・+{sec}秒）': 'Bangkit (HP penuh, +{sec} dtk)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Tonton Iklan & Bangkit (HP penuh, +{sec} dtk)',
@@ -653,10 +667,14 @@ export const UI: Dict = {
   '{n}方向': '{n}',
   出口の数は固定: 'Jumlah jalur tetap',
   レアリティで出口の数が決まる: 'Kelangkaan menentukan jumlah jalur',
+  合流: 'Gabung',
+  同じ段数で合流させるとボーナス: 'Bonus jika bergabung di jumlah mata rantai yang sama',
+  線がつながった起点はいっしょに発火: 'Asal yang tersambung terpicu bersamaan',
   この配置: 'Susunan Ini',
   どの起点からも届きません: 'Tak terjangkau Asal mana pun',
   '起点{origin}の{step}段目 ×{mult}': 'Asal {origin}, mata rantai ke-{step} ×{mult}',
   '1ヒット 約{n}': '~{n} per serangan',
+  '1ヒット 約{n}・合流+{bonus}%': '~{n} per serangan · Gabung +{bonus}%',
   '起点{origin}の連鎖': 'Rantai Asal {origin}',
   段数に数えない: 'Tidak dihitung sebagai mata rantai',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

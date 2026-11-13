@@ -7,6 +7,9 @@ export const DATA: Dict = {
   '感電！': 'Électrochoc !',
   '爆発！': 'Explosion !',
   '粉砕！': 'Fracas !',
+  '毒爆！': 'Venin explosif !',
+  '浄化！': 'Purification !',
+  '封印！': 'Scellé !',
   硬い: 'Coriace',
   速い: 'Rapide',
   金ぴか: 'Doré',
@@ -225,6 +228,39 @@ export const DATA: Dict = {
   起点石: "Pierre d'origine",
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
     "Le début d'une chaîne. Pas d'Attaque. Sa rareté fixe le nombre de sorties (Commun 1, Rare 2, Épique 3, Légendaire 4).",
+  速の起点石: "Pierre d'origine rapide",
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'Les lignes de cette Origine passent la chaîne 0.05 s plus vite, mais leurs attaques infligent -10% de dégâts.',
+  重い起点石: "Pierre d'origine lourde",
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Les attaques sur les lignes de cette Origine infligent +20% de dégâts, mais la chaîne passe 0.05 s plus lentement.',
+  炎の起点石: "Pierre d'origine de feu",
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques de Feu infligent +15% de dégâts.',
+  雷の起点石: "Pierre d'origine de foudre",
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques de Foudre infligent +15% de dégâts.',
+  打撃の起点石: "Pierre d'origine contondante",
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques contondantes infligent +15% de dégâts.',
+  盾の起点石: "Pierre d'origine de bouclier",
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'Sur les lignes de cette Origine, les objets de défense donnent +25% de Défense.',
+  毒の起点石: "Pierre d'origine de poison",
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'Sur les lignes de cette Origine, le Poison inflige +60% de dégâts par seconde.',
+  吸血の起点石: "Pierre d'origine vampire",
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'Sur les lignes de cette Origine, le Vol de vie soigne +50%.',
+  風の起点石: "Pierre d'origine de vent",
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques de Vent infligent +15% de dégâts.',
+  光の起点石: "Pierre d'origine de lumière",
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques de Lumière infligent +15% de dégâts.',
+  闇の起点石: "Pierre d'origine des ténèbres",
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'Sur les lignes de cette Origine, les attaques de Ténèbres infligent +15% de dégâts.',
   剣: 'Épée',
   '基本の単体攻撃。': 'Une attaque de base sur une seule cible.',
   大剣: 'Grande épée',
@@ -254,7 +290,7 @@ export const DATA: Dict = {
   氷の剣: 'Épée de glace',
   '狙いを凍結させる。打撃で粉砕できる。':
     'Gèle la cible. Les attaques contondantes peuvent la fracasser.',
-  水筒: 'Gourde',
+  水竜の瓶: 'Fiole du Dragon d’eau',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     "Mouille la cible : la Foudre peut alors l'électrocuter. Les ennemis avec une altération subissent ×1.2 dégâts.",
   雨雲の杖: 'Bâton de pluie',
@@ -263,6 +299,24 @@ export const DATA: Dict = {
   油瓶: "Fiole d'huile",
   '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
     "Couvre la cible d'Huile : le Feu peut alors la faire exploser. Les ennemis avec une altération subissent ×1.2 dégâts.",
+  風の剣: 'Épée de vent',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    "Vent. Toucher un ennemi empoisonné ajoute une couche de Poison (jusqu'à 5). Toucher un ennemi à 5 couches inflige tout le Poison restant d'un coup (Venin explosif).",
+  嵐の杖: 'Bâton de tempête',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'Un Balayage de Vent. Ajoute une couche de Poison à chaque ennemi empoisonné touché ; à 5 couches, Venin explosif.',
+  光の剣: 'Épée de lumière',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Lumière. Rend la cible Éblouie. Purifie les ennemis Envoûtés et soigne le héros.',
+  太陽の杖: 'Bâton solaire',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Attaque de zone de Lumière. Éblouit, purifie les ennemis Envoûtés et soigne le héros.',
+  闇の剣: 'Épée des ténèbres',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Ténèbres. Rend la cible Envoûtée (baisse son Attaque). Scelle les ennemis Éblouis et ralentit leurs attaques.',
+  闇の杖: 'Bâton des ténèbres',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Attaque de zone de Ténèbres. Envoûte, scelle les ennemis Éblouis et ralentit leurs attaques.',
   木の盾: 'Bouclier en bois',
   '連鎖が通ると、終了時に防御値+8。': '+8 de Défense à la fin de chaque chaîne qui le traverse.',
   鎖帷子: 'Cotte de mailles',
@@ -349,6 +403,9 @@ export const DATA: Dict = {
   氷: 'Glace',
   水: 'Eau',
   油: 'Huile',
+  風: 'Vent',
+  光: 'Lumière',
+  闇: 'Ténèbres',
   単体: 'Unique',
   薙ぎ払い: 'Balayage',
   範囲: 'Zone',
@@ -356,6 +413,8 @@ export const DATA: Dict = {
   濡れ: 'Mouillé',
   凍結: 'Gelé',
   毒: 'Poison',
+  灼光: 'Ébloui',
+  呪縛: 'Envoûté',
   コモン: 'Commun',
   レア: 'Rare',
   エピック: 'Épique',
@@ -394,7 +453,8 @@ export const DATA: Dict = {
   '油瓶 → 松明か炎の杖 → 炎の杖': "Fiole d'huile → Torche/Bâton de feu → Bâton de feu",
   '油と炎の気配がする…': "On sent l'huile et le feu…",
   'トライ・サンダー': 'Triple tonnerre',
-  '水筒か雨雲の杖 → 雷の装備 → 雷の装備': 'Gourde/Bâton de pluie → objet Foudre → objet Foudre',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Fiole du Dragon d’eau/Bâton de pluie → objet Foudre → objet Foudre',
   '水と雷の気配がする…': "On sent l'eau et la foudre…",
   'フロスト・ブレイカー': 'Brise-givre',
   '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':

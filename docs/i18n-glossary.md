@@ -79,6 +79,10 @@ Source language: Japanese (the dictionary keys). Target files: `src/i18n/dicts/<
 | 感電 | Shock | 感電 | 감전 | Choque | Descarga | Schock | Électrochoc | Setrum |
 | 爆発 | Explosion | 爆炸 | 폭발 | Explosão | Explosión | Explosion | Explosion | Ledakan |
 | 粉砕 | Shatter | 粉碎 | 분쇄 | Estilhaço | Destrozo | Zertrümmern | Fracas | Hancur |
+| 合流 (lines of linked origins meeting) | Merge | 合流 | 합류 | Junção | Unión | Vereinigung | Jonction | Gabung |
+| 灼光 / 呪縛 (statuses) | Radiance / Binding | 灼光 / 咒縛 | 광채 / 속박 | Radiante / Amaldiçoado | Radiante / Hechizado | Strahlend / Gebannt | Ébloui / Envoûté | Silau / Terikat |
+| 浄化 / 封印 / 毒爆 (combos) | Purify / Seal / Venom Burst | 淨化 / 封印 / 毒爆 | 정화 / 봉인 / 독폭발 | Purificação / Selo / Estouro Tóxico | Purificación / Sello / Estallido tóxico | Reinigen / Versiegeln / Giftausbruch | Purification / Scellé / Venin explosif | Penyucian / Segel / Ledakan Racun |
+| 風 / 光 / 闇 | Wind / Light / Dark | 風 / 光 / 暗 | 바람 / 빛 / 어둠 | Vento / Luz / Sombra | Viento / Luz / Oscuridad | Wind / Licht / Schatten | Vent / Lumière / Ténèbres | Angin / Cahaya / Kegelapan |
 | 物理 / 打撃 | Physical / Blunt | 物理 / 打擊 | 물리 / 타격 | Físico / Impacto | Físico / Contundente | Physisch / Wucht | Physique / Contondant | Fisik / Hantam |
 | 炎 / 雷 / 氷 / 水 | Fire / Thunder / Ice / Water | 火 / 雷 / 冰 / 水 | 불 / 번개 / 얼음 / 물 | Fogo / Raio / Gelo / Água | Fuego / Rayo / Hielo / Agua | Feuer / Blitz / Eis / Wasser | Feu / Foudre / Glace / Eau | Api / Petir / Es / Air |
 | 単体 / 薙ぎ払い / 範囲 / 全体 | Single / Sweep / Area / All | 單體 / 橫掃 / 範圍 / 全體 | 단일 / 휩쓸기 / 범위 / 전체 | Único / Varredura / Área / Todos | Único / Barrido / Área / Todos | Einzel / Schwung / Fläche / Alle | Unique / Balayage / Zone / Tous | Tunggal / Sapuan / Area / Semua |

@@ -38,6 +38,11 @@ export function devChallengeOpen(): number | undefined {
   return d.getTime();
 }
 
+/** Development only: ?rage=1 makes the training dummy angry, to check the angry boss look (never in production builds) */
+export function devRage(): boolean {
+  return import.meta.env.DEV && params.get('rage') === '1';
+}
+
 /** Development only: ?cosmetics=all lets you wear every challenge cosmetic (never in production builds) */
 export function devAllCosmetics(): boolean {
   return import.meta.env.DEV && params.get('cosmetics') === 'all';

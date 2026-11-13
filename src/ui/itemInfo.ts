@@ -8,7 +8,7 @@ import { heroStats, sellPrice, toggleLock } from '../core/economy';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { k, t } from '../i18n';
 import { getSave, persist } from '../platform/store';
-import { originLabel } from './backpackView';
+import { unitLabel } from './backpackView';
 import type { IconName } from './kit/icons';
 import type { ButtonSkin } from './kit/skin';
 import { Button, fitText, panel } from './kit/widgets';
@@ -117,9 +117,14 @@ export function describeItem(it: ItemInstance): string[] {
 
 /** この配置の中での位置（どの起点の何段目か） */
 export interface ChainContext {
-  originIndex: number;
+  /** 届いている起点の番号（合流した先なら ①② のように並ぶ） */
+  origin: string;
   step: number | null; // 攻撃装備の段数。防御・起点は null
   mult: number;
+  /** 合流ボーナス（%）。合流していなければ 0 */
+  mergeBonus: number;
+  /** 起点石の種類によるダメージ倍率（1 は効果なし） */
+  lineDamage: number;
 }
 
 /** 配置の中でアイテムが連鎖のどこにいるか。どの起点からも届かなければ null */
@@ -129,9 +134,19 @@ export function chainContext(
   uid: string,
 ): ChainContext | null {
   const preview = simulateChain(loadout, items);
-  for (const [i, plan] of preview.plans.entries()) {
-    const s = plan.steps.find((x) => x.uid === uid);
-    if (s) return { originIndex: i, step: s.step, mult: s.mult };
+  for (const plan of preview.plans) {
+    const index = plan.steps.findIndex((x) => x.uid === uid);
+    if (index < 0) continue;
+    const s = plan.steps[index]!;
+    // An origin stone names everything it fires with; other items name the lines that reach them
+    const origin = unitLabel(loadout, s.parentIndex < 0 ? plan.originUids : (s.origins ?? []));
+    return {
+      origin,
+      step: s.step,
+      mult: s.mult,
+      mergeBonus: s.mergeBonus ?? 0,
+      lineDamage: s.line?.damage ?? 1,
+    };
   }
   return null;
 }
@@ -295,32 +310,43 @@ export function showItemDetail(
       t('{n}方向', { n: it.exits.length }),
       t(def.artifact ? '出口の数は固定' : 'レアリティで出口の数が決まる'),
     ]);
+    rows.push([
+      t('合流'),
+      t('同じ段数で合流させるとボーナス'),
+      t('線がつながった起点はいっしょに発火'),
+    ]);
   }
   for (const a of it.affixes ?? []) rows.push([`✦ ${t(AFFIXES[a.id].name)}`, affixEffect(a)]);
   if (opts.context !== undefined && def.kind !== 'consumable') {
     const ctx = opts.context;
     if (!ctx) rows.push([t('この配置'), t('どの起点からも届きません')]);
     else if (ctx.step !== null && def.kind === 'attack') {
-      const hit = computeDamage({
-        atk: def.atk ?? 0,
-        rarity: it.rarity,
-        step: ctx.step,
-        upgradeMult: u,
-        area: def.area === 'all' ? 'all' : undefined,
-      });
+      const hit =
+        computeDamage({
+          atk: def.atk ?? 0,
+          rarity: it.rarity,
+          step: ctx.step,
+          upgradeMult: u,
+          area: def.area === 'all' ? 'all' : undefined,
+        }) *
+        (1 + ctx.mergeBonus / 100) *
+        ctx.lineDamage;
+      const bonus = Math.round(ctx.mergeBonus);
       rows.push([
         t('この配置'),
         t('起点{origin}の{step}段目 ×{mult}', {
-          origin: originLabel(ctx.originIndex),
+          origin: ctx.origin,
           step: ctx.step,
           mult: ctx.mult.toFixed(2),
         }),
-        t('1ヒット 約{n}', { n: fmt(hit) }),
+        bonus > 0
+          ? t('1ヒット 約{n}・合流+{bonus}%', { n: fmt(hit), bonus })
+          : t('1ヒット 約{n}', { n: fmt(hit) }),
       ]);
     } else
       rows.push([
         t('この配置'),
-        t('起点{origin}の連鎖', { origin: originLabel(ctx.originIndex) }),
+        t('起点{origin}の連鎖', { origin: ctx.origin }),
         def.kind === 'defense' ? t('段数に数えない') : undefined,
       ]);
   }

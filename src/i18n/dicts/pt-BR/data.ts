@@ -7,6 +7,9 @@ export const DATA: Dict = {
   '感電！': 'Choque!',
   '爆発！': 'Explosão!',
   '粉砕！': 'Estilhaço!',
+  '毒爆！': 'Estouro Tóxico!',
+  '浄化！': 'Purificação!',
+  '封印！': 'Selo!',
   硬い: 'Resistente',
   速い: 'Veloz',
   金ぴか: 'Dourado',
@@ -226,6 +229,39 @@ export const DATA: Dict = {
   起点石: 'Pedra de Origem',
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
     'Onde a corrente começa. Sem Ataque. A raridade define o número de saídas (Comum 1, Raro 2, Épico 3, Lendário 4).',
+  速の起点石: 'Pedra de Origem Veloz',
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'As linhas desta Origem passam a corrente 0.05s mais rápido, mas seus ataques causam -10% de dano.',
+  重い起点石: 'Pedra de Origem Pesada',
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Os ataques nas linhas desta Origem causam +20% de dano, mas a corrente passa 0.05s mais devagar.',
+  炎の起点石: 'Pedra de Origem de Fogo',
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Fogo causam +15% de dano.',
+  雷の起点石: 'Pedra de Origem de Raio',
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Raio causam +15% de dano.',
+  打撃の起点石: 'Pedra de Origem de Impacto',
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Impacto causam +15% de dano.',
+  盾の起点石: 'Pedra de Origem de Escudo',
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'Nas linhas desta Origem, itens de defesa dão +25% de Defesa.',
+  毒の起点石: 'Pedra de Origem de Veneno',
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'Nas linhas desta Origem, o Veneno causa +60% de dano por segundo.',
+  吸血の起点石: 'Pedra de Origem Vampírica',
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'Nas linhas desta Origem, o Roubo de Vida cura +50%.',
+  風の起点石: 'Pedra de Origem do Vento',
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Vento causam +15% de dano.',
+  光の起点石: 'Pedra de Origem de Luz',
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Luz causam +15% de dano.',
+  闇の起点石: 'Pedra de Origem Sombria',
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'Nas linhas desta Origem, ataques de Sombra causam +15% de dano.',
   剣: 'Espada',
   '基本の単体攻撃。': 'Um ataque básico em alvo único.',
   大剣: 'Espadão',
@@ -253,7 +289,7 @@ export const DATA: Dict = {
     'Raio em todos os inimigos na tela (poder ×0.4). Dá Choque em inimigos Molhados.',
   氷の剣: 'Espada de Gelo',
   '狙いを凍結させる。打撃で粉砕できる。': 'Congela o alvo. Ataques de Impacto podem Estilhaçá-lo.',
-  水筒: 'Cantil',
+  水竜の瓶: 'Frasco do Dragão de Água',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Deixa o alvo Molhado, para o Raio dar Choque. Inimigos com efeito recebem ×1.2 de dano.',
   雨雲の杖: 'Cajado da Chuva',
@@ -262,6 +298,24 @@ export const DATA: Dict = {
   油瓶: 'Frasco de Óleo',
   '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
     'Cobre o alvo de Óleo, para o Fogo fazê-lo explodir. Inimigos com efeito recebem ×1.2 de dano.',
+  風の剣: 'Espada do Vento',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    'Vento. Acertar um inimigo com Veneno acumula mais Veneno (até 5 camadas). Acertar um com 5 camadas causa todo o Veneno restante de uma vez (Estouro Tóxico).',
+  嵐の杖: 'Cajado da Tempestade',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'Uma Varredura de Vento. Acumula Veneno em todos os inimigos envenenados atingidos; com 5 camadas, Estouro Tóxico.',
+  光の剣: 'Espada de Luz',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Luz. Aplica Radiante no alvo. Purifica inimigos Amaldiçoados e cura o herói.',
+  太陽の杖: 'Cajado Solar',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Ataque em área de Luz. Aplica Radiante, purifica inimigos Amaldiçoados e cura o herói.',
+  闇の剣: 'Espada Sombria',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Sombra. Aplica Amaldiçoado no alvo (reduz o Ataque dele). Sela inimigos Radiantes, deixando seus ataques mais lentos.',
+  闇の杖: 'Cajado Sombrio',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Ataque em área de Sombra. Aplica Amaldiçoado, sela inimigos Radiantes e deixa seus ataques mais lentos.',
   木の盾: 'Escudo de Madeira',
   '連鎖が通ると、終了時に防御値+8。': '+8 de Defesa no fim de cada corrente que passa por aqui.',
   鎖帷子: 'Cota de Malha',
@@ -347,6 +401,9 @@ export const DATA: Dict = {
   氷: 'Gelo',
   水: 'Água',
   油: 'Óleo',
+  風: 'Vento',
+  光: 'Luz',
+  闇: 'Sombra',
   単体: 'Único',
   薙ぎ払い: 'Varredura',
   範囲: 'Área',
@@ -354,6 +411,8 @@ export const DATA: Dict = {
   濡れ: 'Molhado',
   凍結: 'Congelado',
   毒: 'Veneno',
+  灼光: 'Radiante',
+  呪縛: 'Amaldiçoado',
   コモン: 'Comum',
   レア: 'Raro',
   エピック: 'Épico',
@@ -391,7 +450,8 @@ export const DATA: Dict = {
   '油瓶 → 松明か炎の杖 → 炎の杖': 'Frasco de Óleo → Tocha/Cajado de Fogo → Cajado de Fogo',
   '油と炎の気配がする…': 'Você sente óleo e fogo no ar…',
   'トライ・サンダー': 'Trovão Triplo',
-  '水筒か雨雲の杖 → 雷の装備 → 雷の装備': 'Cantil/Cajado da Chuva → item de Raio → item de Raio',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Frasco do Dragão de Água/Cajado da Chuva → item de Raio → item de Raio',
   '水と雷の気配がする…': 'Você sente água e raios no ar…',
   'フロスト・ブレイカー': 'Quebra-Gelo',
   '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':

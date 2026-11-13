@@ -3,7 +3,7 @@ import { LOOT, RARITY } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
 import type { Rng } from './rng';
 import { rollAffixes } from './affixes';
-import type { Dir, ItemInstance, ItemKind, Rarity } from './types';
+import type { Dir, ItemDef, ItemInstance, ItemKind, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
 /** 周回ごとにコモンの確率を下げ、その分をレア以上へ元の比率で振り分ける */
@@ -92,6 +92,21 @@ export function rollKind(rng: Rng): ItemKind {
   ]);
 }
 
+/**
+ * 候補から1つ選ぶ。起点石は種類が増えても合わせて1つ分の重みで、そのうち plainOriginShare が
+ * ふつうの起点石（ほかの装備の出やすさは種類を足す前と同じ）
+ */
+export function pickDef(rng: Rng, defs: readonly ItemDef[]): ItemDef {
+  const typed = defs.filter((d) => d.kind === 'origin' && d.line).length;
+  const plain = defs.some((d) => d.kind === 'origin' && !d.line);
+  const weight = (d: ItemDef): number => {
+    if (d.kind !== 'origin' || typed === 0) return 1;
+    if (!plain) return 1 / typed;
+    return d.line ? (1 - LOOT.plainOriginShare) / typed : LOOT.plainOriginShare;
+  };
+  return rng.weighted(defs.map((d) => [d, weight(d)] as const));
+}
+
 export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string): ItemInstance {
   const def = getItemDef(defId);
   // アーティファクト: 常にレジェンダリー、出口は決まった形で出る（向きは鍛冶屋で変えられる）、追加効果なし
@@ -145,6 +160,6 @@ export function rollLoot(
   const defs = ITEM_DEFS.filter(
     (d) => d.kind === kind && !d.artifact && (kind === 'consumable' || allowsRarity(d.id, rarity)),
   );
-  const def = rng.pick(defs);
+  const def = pickDef(rng, defs);
   return createItem(rng, def.id, rarity, uid);
 }

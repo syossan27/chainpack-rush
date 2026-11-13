@@ -35,7 +35,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       ['thunder_staff', 'thunder_spear', 'thunder_bell'],
     ],
     element: 'thunder',
-    hint: '水筒か雨雲の杖 → 雷の装備 → 雷の装備',
+    hint: '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備',
     teaser: '水と雷の気配がする…',
   },
   {

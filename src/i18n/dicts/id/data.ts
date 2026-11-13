@@ -7,6 +7,9 @@ export const DATA: Dict = {
   '感電！': 'Setrum!',
   '爆発！': 'Ledakan!',
   '粉砕！': 'Hancur!',
+  '毒爆！': 'Ledakan Racun!',
+  '浄化！': 'Penyucian!',
+  '封印！': 'Segel!',
   硬い: 'Tangguh',
   速い: 'Gesit',
   金ぴか: 'Keemasan',
@@ -226,6 +229,39 @@ export const DATA: Dict = {
   起点石: 'Batu Asal',
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
     'Awal sebuah rantai. Tanpa Serangan. Kelangkaannya menentukan jumlah jalur (Biasa 1, Langka 2, Epik 3, Legendaris 4).',
+  速の起点石: 'Batu Asal Gesit',
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'Garis dari Asal ini meneruskan rantai 0.05 detik lebih cepat, tapi serangannya memberi damage -10%.',
+  重い起点石: 'Batu Asal Berat',
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Serangan di garis dari Asal ini memberi damage +20%, tapi rantai diteruskan 0.05 detik lebih lambat.',
+  炎の起点石: 'Batu Asal Api',
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Api memberi damage +15%.',
+  雷の起点石: 'Batu Asal Petir',
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Petir memberi damage +15%.',
+  打撃の起点石: 'Batu Asal Hantam',
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Hantam memberi damage +15%.',
+  盾の起点石: 'Batu Asal Perisai',
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'Di garis dari Asal ini, item pertahanan memberi Pertahanan +25%.',
+  毒の起点石: 'Batu Asal Racun',
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'Di garis dari Asal ini, damage Racun per detik +60%.',
+  吸血の起点石: 'Batu Asal Vampir',
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'Di garis dari Asal ini, pemulihan Serap Darah +50%.',
+  風の起点石: 'Batu Asal Angin',
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Angin memberi damage +15%.',
+  光の起点石: 'Batu Asal Cahaya',
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Cahaya memberi damage +15%.',
+  闇の起点石: 'Batu Asal Kegelapan',
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'Di garis dari Asal ini, serangan Kegelapan memberi damage +15%.',
   剣: 'Pedang',
   '基本の単体攻撃。': 'Serangan tunggal dasar.',
   大剣: 'Pedang Besar',
@@ -255,7 +291,7 @@ export const DATA: Dict = {
   氷の剣: 'Pedang Es',
   '狙いを凍結させる。打撃で粉砕できる。':
     'Membekukan target. Serangan Hantam bisa menghancurkannya.',
-  水筒: 'Botol Air',
+  水竜の瓶: 'Botol Naga Air',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Membuat target Basah, jadi Petir bisa menyetrumnya. Musuh yang terkena efek status menerima damage ×1.2.',
   雨雲の杖: 'Tongkat Mendung',
@@ -264,6 +300,24 @@ export const DATA: Dict = {
   油瓶: 'Botol Minyak',
   '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
     'Melumuri target dengan Minyak, jadi Api bisa meledakkannya. Musuh yang terkena efek status menerima damage ×1.2.',
+  風の剣: 'Pedang Angin',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    'Angin. Mengenai musuh yang keracunan menumpuk Racunnya (maks. 5 lapis). Mengenai musuh dengan 5 lapis memberi semua sisa Racun sekaligus (Ledakan Racun).',
+  嵐の杖: 'Tongkat Badai',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'Sapuan Angin. Menumpuk Racun pada semua musuh keracunan yang terkena; di 5 lapis, Ledakan Racun.',
+  光の剣: 'Pedang Cahaya',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Cahaya. Memberi efek Silau ke target. Menyucikan musuh Terikat dan memulihkan HP pahlawan.',
+  太陽の杖: 'Tongkat Matahari',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Serangan area Cahaya. Memberi efek Silau, menyucikan musuh Terikat, dan memulihkan HP pahlawan.',
+  闇の剣: 'Pedang Kegelapan',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Kegelapan. Memberi efek Terikat ke target (Serangannya turun). Menyegel musuh Silau dan memperlambat serangannya.',
+  闇の杖: 'Tongkat Kegelapan',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Serangan area Kegelapan. Memberi efek Terikat, menyegel musuh Silau, dan memperlambat serangannya.',
   木の盾: 'Perisai Kayu',
   '連鎖が通ると、終了時に防御値+8。': 'Pertahanan +8 di akhir setiap rantai yang melewatinya.',
   鎖帷子: 'Baju Rantai',
@@ -351,6 +405,9 @@ export const DATA: Dict = {
   氷: 'Es',
   水: 'Air',
   油: 'Minyak',
+  風: 'Angin',
+  光: 'Cahaya',
+  闇: 'Kegelapan',
   単体: 'Tunggal',
   薙ぎ払い: 'Sapuan',
   範囲: 'Area',
@@ -358,6 +415,8 @@ export const DATA: Dict = {
   濡れ: 'Basah',
   凍結: 'Beku',
   毒: 'Racun',
+  灼光: 'Silau',
+  呪縛: 'Terikat',
   コモン: 'Biasa',
   レア: 'Langka',
   エピック: 'Epik',
@@ -395,7 +454,8 @@ export const DATA: Dict = {
   '油瓶 → 松明か炎の杖 → 炎の杖': 'Botol Minyak → Obor/Tongkat Api → Tongkat Api',
   '油と炎の気配がする…': 'Terasa hawa minyak dan api…',
   'トライ・サンダー': 'Tri Petir',
-  '水筒か雨雲の杖 → 雷の装備 → 雷の装備': 'Botol Air/Tongkat Mendung → item Petir → item Petir',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Botol Naga Air/Tongkat Mendung → item Petir → item Petir',
   '水と雷の気配がする…': 'Terasa hawa air dan petir…',
   'フロスト・ブレイカー': 'Penghancur Es',
   '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':

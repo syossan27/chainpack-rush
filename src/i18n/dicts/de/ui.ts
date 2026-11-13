@@ -102,8 +102,12 @@ export const UI: Dict = {
   ダメージを伸ばすコツ: 'Tipps für mehr Schaden',
   '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。':
     '• Ordne um und achte dabei auf die „~“-Zahlen unter „Packen“. Wählst du die Nummer einer Route, siehst du den geschätzten Schaden nur dieser Route.',
-  '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
-    '• Bau Kombos: Hänge das passende Element (Blitz, Feuer, Wucht) hinter einen Status-Gegenstand (Wasserflasche, Regenstab, Ölflasche, Eisschwert, Froststab). Ein Status hält 5 Sekunden.',
+  '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
+    '• Bau Kombos: Hänge das passende Element (Blitz, Feuer, Wucht) hinter einen Status-Gegenstand (Wasserdrachen-Flasche, Regenstab, Ölflasche, Eisschwert, Froststab). Ein Status hält 5 Sekunden.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Wechsle Licht und Schatten ab, dann reißen die Kombos nicht ab: Reinigen (heilt den Helden) und Versiegeln (verlangsamt gegnerische Angriffe). Wind stapelt Gift auf vergifteten Gegnern; bei 5-fach: Giftausbruch.',
+  '・2つの起点の線を同じ段数で合流させると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+    '• Vereinige die Linien von 2 Ursprüngen bei gleicher Gliederzahl, dann gibt es ab dort einen Bonus. Die Art eines Ursprungssteins wirkt nur auf die Linien, die von ihm ausgehen.',
   '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
     '• Setz deine stärkste Ausrüstung ans Ende der Kette (ab Glied 6). Nutze die ersten Glieder für leichte Ausrüstung und Status-Gegenstände.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -384,6 +388,7 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Dauer (ungeschützt) {sec}s',
   '防御値 +{n}': 'Verteidigung +{n}',
   'コンボ {list}': 'Kombos {list}',
+  '合流ボーナス +{n}%': 'Vereinigungsbonus +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Zurück',
@@ -398,6 +403,10 @@ export const UI: Dict = {
     'Je größer die „~“-Zahl, desto stärker die Anordnung. Probier verschiedene Ideen aus!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     '„~“-Zahlen sind der geschätzte Schaden gegen einen Gegner (inkl. Kombos und Krits)',
+  '2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ':
+    'Vereinige 2 Linien bei gleicher Gliederzahl! Je länger sie sind, desto größer der Bonus.',
+  '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Ursprünge mit verbundenen Linien zünden zusammen. Das Feld der Vereinigung zeigt Glieder und Bonus, wie „4+4 +16%“.',
   '起点が0個です。出撃できません': 'Kein Ursprung platziert. Du kannst nicht losziehen.',
   '倉庫があふれています（タップで売却）': 'Lager voll (tippen zum Verkaufen)',
   全部: 'Alle',
@@ -409,6 +418,7 @@ export const UI: Dict = {
   '約{n}・{step}段・{tech}': '~{n} · Kette {step} · {tech}',
   '必殺技|fallback': 'Spezialangriff',
   '約{n}・{step}段・コンボ{combo}': '~{n} · Kette {step} · Kombos {combo}',
+  '約{n}・{step}段・合流+{bonus}%': '~{n} · Kette {step} · Vereinigung +{bonus}%',
   '約{n}・{step}段': '~{n} · Kette {step}',
   診断: 'Analyse',
   配置の診断: 'Rucksack-Analyse',
@@ -510,8 +520,8 @@ export const UI: Dict = {
     'Die Gegenstände im Rucksack greifen der Reihe nach an – ab einem Ursprung (dem nummerierten Stein) entlang der Pfeile. Das ist eine „Kette“!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Ab einem Ursprung (dem nummerierten Stein) greifen Gegenstände der Reihe nach entlang der Pfeile an. Das ist eine „Kette“! Je länger die Kette, desto größer der Schaden.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zündet ein Ursprung, einer nach dem anderen: ①→②→①… Welcher als Nächstes zündet, steht unter „Nächste Kette“.',
+  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
+    'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zünden die Ursprünge der Reihe nach: ①→②→①… Welcher als Nächstes zündet, steht unter „Nächste Kette“.',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Dein Held läuft und kämpft automatisch. Besiege eine ganze Gruppe auf einmal oder einen Boss, um mehr Zeit zu bekommen!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -532,6 +542,7 @@ export const UI: Dict = {
   '防御 {n}': 'Verteidigung {n}',
   '連鎖中！': 'Kette läuft!',
   '{step}段・{sec}秒': 'Kette {step} · {sec}s',
+  '{step}段・{sec}秒・合流+{bonus}%': 'Kette {step} · {sec}s · Vereinigung +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  Gegner {enemies}  Partikel {particles}  Zahlen {numbers}  Seed {seed}',
   '時間 +{sec}': 'Zeit +{sec}',
@@ -545,6 +556,9 @@ export const UI: Dict = {
   'よろめき！': 'Taumelt!',
   '一網打尽！': 'Gruppen-K.o.!',
   'ボス撃破！': 'Boss besiegt!',
+  'ぴったり合流！ +{bonus}%': 'Perfekte Vereinigung! +{bonus}%',
+  '合流！ +{bonus}%': 'Vereinigung! +{bonus}%',
+  '合流！': 'Vereinigung!',
   '復活！': 'Wiederbelebt!',
   '再開する（HP全回復・+{sec}秒）': 'Wiederbeleben (volle HP, +{sec}s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Werbung: Wiederbeleben (volle HP, +{sec}s)',
@@ -651,10 +665,14 @@ export const UI: Dict = {
   '{n}方向': '{n}',
   出口の数は固定: 'Feste Zahl an Ausgängen',
   レアリティで出口の数が決まる: 'Seltenheit bestimmt die Zahl der Ausgänge',
+  合流: 'Vereinigung',
+  同じ段数で合流させるとボーナス: 'Bonus bei gleicher Gliederzahl',
+  線がつながった起点はいっしょに発火: 'Verbundene Ursprünge zünden zusammen',
   この配置: 'Diese Anordnung',
   どの起点からも届きません: 'Von keinem Ursprung erreicht',
   '起点{origin}の{step}段目 ×{mult}': 'Ursprung {origin}, Glied {step} ×{mult}',
   '1ヒット 約{n}': '~{n} pro Treffer',
+  '1ヒット 約{n}・合流+{bonus}%': '~{n} pro Treffer · Vereinigung +{bonus}%',
   '起点{origin}の連鎖': 'Kette von Ursprung {origin}',
   段数に数えない: 'Zählt nicht als Glied',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

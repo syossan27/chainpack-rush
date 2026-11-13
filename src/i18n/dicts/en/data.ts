@@ -7,6 +7,9 @@ export const DATA: Dict = {
   '感電！': 'Shock!',
   '爆発！': 'Explosion!',
   '粉砕！': 'Shatter!',
+  '毒爆！': 'Venom Burst!',
+  '浄化！': 'Purify!',
+  '封印！': 'Seal!',
   硬い: 'Tough',
   速い: 'Swift',
   金ぴか: 'Golden',
@@ -223,6 +226,39 @@ export const DATA: Dict = {
   起点石: 'Origin Stone',
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
     'Where a chain begins. No Attack. Its rarity sets the number of exits (Common 1, Rare 2, Epic 3, Legendary 4).',
+  速の起点石: 'Swift Origin Stone',
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'Lines from this Origin pass the chain on 0.05s faster, but their attacks deal -10% damage.',
+  重い起点石: 'Heavy Origin Stone',
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Attacks on lines from this Origin deal +20% damage, but the chain passes on 0.05s slower.',
+  炎の起点石: 'Fire Origin Stone',
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'On lines from this Origin, Fire attacks deal +15% damage.',
+  雷の起点石: 'Thunder Origin Stone',
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'On lines from this Origin, Thunder attacks deal +15% damage.',
+  打撃の起点石: 'Blunt Origin Stone',
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'On lines from this Origin, Blunt attacks deal +15% damage.',
+  盾の起点石: 'Shield Origin Stone',
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'On lines from this Origin, defense items give +25% Defense.',
+  毒の起点石: 'Poison Origin Stone',
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'On lines from this Origin, Poison deals +60% damage per second.',
+  吸血の起点石: 'Vampire Origin Stone',
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'On lines from this Origin, Lifesteal heals +50% more.',
+  風の起点石: 'Wind Origin Stone',
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'On lines from this Origin, Wind attacks deal +15% damage.',
+  光の起点石: 'Light Origin Stone',
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'On lines from this Origin, Light attacks deal +15% damage.',
+  闇の起点石: 'Dark Origin Stone',
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'On lines from this Origin, Dark attacks deal +15% damage.',
   剣: 'Sword',
   '基本の単体攻撃。': 'A basic single-target attack.',
   大剣: 'Greatsword',
@@ -250,7 +286,7 @@ export const DATA: Dict = {
     'Thunder on every enemy on screen (power ×0.4). Shocks Wet enemies.',
   氷の剣: 'Ice Sword',
   '狙いを凍結させる。打撃で粉砕できる。': 'Freezes the target. Blunt attacks can Shatter it.',
-  水筒: 'Water Flask',
+  水竜の瓶: 'Water Dragon Flask',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Makes the target Wet, so Thunder can Shock it. Enemies with a status take ×1.2 damage.',
   雨雲の杖: 'Raincloud Staff',
@@ -259,6 +295,24 @@ export const DATA: Dict = {
   油瓶: 'Oil Flask',
   '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
     'Covers the target in Oil, so Fire can make it explode. Enemies with a status take ×1.2 damage.',
+  風の剣: 'Wind Sword',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    'Wind. Hitting a Poisoned enemy stacks its Poison (up to 5 layers). Hitting one with 5 layers deals all its remaining Poison at once (Venom Burst).',
+  嵐の杖: 'Storm Staff',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'A Wind sweep. Stacks Poison on every Poisoned enemy it hits; at 5 layers, Venom Burst.',
+  光の剣: 'Light Sword',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Light. Puts Radiance on the target. Purifies enemies with Binding and heals the hero.',
+  太陽の杖: 'Sun Staff',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Light area attack. Applies Radiance, and Purifies enemies with Binding to heal the hero.',
+  闇の剣: 'Dark Sword',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Dark. Puts Binding on the target (lowers its Attack). Seals enemies with Radiance, slowing their attacks.',
+  闇の杖: 'Dark Staff',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Dark area attack. Applies Binding, and Seals enemies with Radiance to slow their attacks.',
   木の盾: 'Wooden Shield',
   '連鎖が通ると、終了時に防御値+8。': '+8 Defense at the end of each chain that passes through.',
   鎖帷子: 'Chainmail',
@@ -344,6 +398,9 @@ export const DATA: Dict = {
   氷: 'Ice',
   水: 'Water',
   油: 'Oil',
+  風: 'Wind',
+  光: 'Light',
+  闇: 'Dark',
   単体: 'Single',
   薙ぎ払い: 'Sweep',
   範囲: 'Area',
@@ -351,6 +408,8 @@ export const DATA: Dict = {
   濡れ: 'Wet',
   凍結: 'Frozen',
   毒: 'Poison',
+  灼光: 'Radiance',
+  呪縛: 'Binding',
   コモン: 'Common',
   レア: 'Rare',
   エピック: 'Epic',
@@ -387,8 +446,8 @@ export const DATA: Dict = {
   '油瓶 → 松明か炎の杖 → 炎の杖': 'Oil Flask → Torch/Flame Staff → Flame Staff',
   '油と炎の気配がする…': 'You sense oil and fire…',
   'トライ・サンダー': 'Tri-Thunder',
-  '水筒か雨雲の杖 → 雷の装備 → 雷の装備':
-    'Water Flask/Raincloud Staff → Thunder item → Thunder item',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Water Dragon Flask/Raincloud Staff → Thunder item → Thunder item',
   '水と雷の気配がする…': 'You sense water and thunder…',
   'フロスト・ブレイカー': 'Frost Breaker',
   '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':

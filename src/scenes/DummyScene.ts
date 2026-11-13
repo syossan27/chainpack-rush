@@ -6,12 +6,13 @@ import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { heroStats, itemMap } from '../core/economy';
 import type { ItemInstance } from '../core/types';
 import { REGIONS } from '../data/regions';
-import { sfx, sfxChainStep } from '../audio/sfx';
+import { sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
+import { devRage } from '../platform/debug';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
-import { BackpackView, originLabel } from '../ui/backpackView';
+import { BackpackView, unitLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
@@ -34,6 +35,7 @@ export class DummyScene extends Phaser.Scene {
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
+  private mergeBonus = 0;
 
   constructor() {
     super('Dummy');
@@ -51,6 +53,8 @@ export class DummyScene extends Phaser.Scene {
       hero: save ? heroStats(save) : BASE_HERO_STATS,
       mode: 'dummy',
     });
+    // Development only: an angry dummy, to check the angry boss look
+    if (devRage()) for (const e of this.combat.enemies) e.enraged = true;
     this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id);
     this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
@@ -104,7 +108,7 @@ export class DummyScene extends Phaser.Scene {
       this.handle(this.combat.drainEvents());
     }
     this.field.update(this.combat, now, speed);
-    this.view.setBlinkOrigin(this.combat.chain ? null : this.combat.nextOriginUid);
+    this.view.setBlinkOrigin(this.combat.chain ? null : (this.combat.nextUnit ?? null));
     this.view.tick(now);
     this.numbers.update((delta / 1000) * speed);
     this.effects.update((delta / 1000) * speed);
@@ -131,8 +135,16 @@ export class DummyScene extends Phaser.Scene {
     for (const ev of events) {
       if (ev.type === 'chainStart') {
         this.comboLabel = [];
+        this.mergeBonus = 0;
         sfx('fire');
-        this.stats.setText(t('起点{origin} 発火中…', { origin: originLabel(ev.originIndex) }));
+        this.stats.setText(
+          t('起点{origin} 発火中…', { origin: unitLabel(getSave().loadout, ev.plan.originUids) }),
+        );
+      } else if (ev.type === 'merge') {
+        this.mergeBonus = Math.max(this.mergeBonus, ev.bonus);
+        for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, 0xa8f0ff);
+        this.view.glow(ev.cell, 0xa8f0ff, now, 700);
+        sfx('merge');
       } else if (ev.type === 'step') {
         this.view.glow(ev.cell, ev.step === null ? COLORS.accent : COLORS.chainLine, now, 450);
         if (ev.fromCell !== null) this.view.flashLine(ev.fromCell, ev.cell, COLORS.chainLine);
@@ -176,7 +188,7 @@ export class DummyScene extends Phaser.Scene {
         sfx('explode');
       } else if (ev.type === 'combo') {
         this.comboLabel.push(t(ev.label));
-        sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');
+        sfxCombo(ev.name);
         hapticMedium();
       } else if (ev.type === 'chainEnd') {
         this.stats.setText(
@@ -185,6 +197,7 @@ export class DummyScene extends Phaser.Scene {
             t('持続（無防備） {sec}秒', { sec: ev.duration.toFixed(1) }),
             t('防御値 +{n}', { n: Math.round(ev.defenseGain) }),
             this.comboLabel.length ? t('コンボ {list}', { list: this.comboLabel.join(' ') }) : '',
+            this.mergeBonus > 0 ? t('合流ボーナス +{n}%', { n: Math.round(this.mergeBonus) }) : '',
           ]
             .filter(Boolean)
             .join('\n'),

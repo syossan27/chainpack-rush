@@ -103,8 +103,12 @@ export const UI: Dict = {
   ダメージを伸ばすコツ: 'Astuces pour plus de dégâts',
   '・配置画面の「約」の数字を見ながら並べ替える。ルートの番号を選ぶと、そのルート1本の推定ダメージが出ます。':
     "• Réorganise en surveillant les nombres « ~ » de l'écran Équiper. Choisis un numéro de route pour voir les dégâts estimés de cette route seule.",
-  '・コンボを作る。状態を付ける装備（水筒・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
-    "• Crée des combos. Relie l'élément associé (Foudre, Feu, Contondant) après un objet qui inflige une altération (Gourde, Bâton de pluie, Fiole d'huile, Épée de glace, Bâton de givre). Les altérations disparaissent au bout de 5 secondes.",
+  '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
+    "• Crée des combos. Relie l'élément associé (Foudre, Feu, Contondant) après un objet qui inflige une altération (Fiole du Dragon d’eau, Bâton de pluie, Fiole d'huile, Épée de glace, Bâton de givre). Les altérations disparaissent au bout de 5 secondes.",
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Alterne Lumière et Ténèbres pour enchaîner les combos : Purification (soigne le héros) et Scellé (ralentit les attaques ennemies). Le Vent ajoute des couches de Poison aux ennemis empoisonnés ; à 5 couches, Venin explosif.',
+  '・2つの起点の線を同じ段数で合流させると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+    "• Fais se rejoindre les lignes de 2 Origines au même nombre de maillons pour obtenir un bonus à partir de là. Le type d'une Pierre d'origine n'agit que sur les lignes qui en partent.",
   '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
     '• Place tes objets les plus forts en fin de chaîne (6e maillon et au-delà). Garde les premiers maillons pour les objets légers et ceux qui infligent des altérations.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -387,6 +391,7 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Durée à découvert : {sec} s',
   '防御値 +{n}': 'Défense +{n}',
   'コンボ {list}': 'Combos {list}',
+  '合流ボーナス +{n}%': 'Bonus de jonction +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Annuler',
@@ -401,6 +406,10 @@ export const UI: Dict = {
     "Plus le nombre « ~ » est grand, plus la disposition est forte. Essaie plein d'idées !",
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Les nombres « ~ » sont les dégâts estimés sur un seul ennemi (combos et critiques inclus)',
+  '2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ':
+    'Fais se rejoindre 2 lignes au même nombre de maillons ! Plus elles sont longues, plus le bonus est grand.',
+  '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Les Origines aux lignes reliées se déclenchent ensemble. La case de jonction affiche les maillons et le bonus, comme « 4+4 +16% ».',
   '起点が0個です。出撃できません': 'Aucune Origine placée. Impossible de partir.',
   '倉庫があふれています（タップで売却）': 'La Réserve est pleine (touche pour vendre)',
   全部: 'Tout',
@@ -412,6 +421,7 @@ export const UI: Dict = {
   '約{n}・{step}段・{tech}': '~{n} · Chaîne {step} · {tech}',
   '必殺技|fallback': 'Coup spécial',
   '約{n}・{step}段・コンボ{combo}': '~{n} · Chaîne {step} · Combos {combo}',
+  '約{n}・{step}段・合流+{bonus}%': '~{n} · Chaîne {step} · Jonction +{bonus}%',
   '約{n}・{step}段': '~{n} · Chaîne {step}',
   診断: 'Conseils',
   配置の診断: 'Conseils de disposition',
@@ -515,8 +525,8 @@ export const UI: Dict = {
     "Les objets du sac à dos attaquent tour à tour, en partant d'une Origine (la pierre numérotée) et en suivant les flèches. C'est une « chaîne » !",
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     "Depuis une Origine (la pierre numérotée), les objets attaquent tour à tour en suivant les flèches. C'est une « chaîne » ! Plus la chaîne est longue, plus les dégâts sont gros.",
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Chaque fois que la jauge sous le héros se remplit, une Origine se déclenche, une à la fois : ①→②→①… La prochaine est indiquée sous « Chaîne suivante ».',
+  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
+    "Chaque fois que la jauge sous le héros se remplit, les Origines se déclenchent dans l'ordre : ①→②→①… La prochaine est indiquée sous « Chaîne suivante ».",
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Ton héros avance et combat tout seul. Élimine tout un groupe ou vaincs un boss pour gagner du temps !',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -538,6 +548,7 @@ export const UI: Dict = {
   '防御 {n}': 'Défense {n}',
   '連鎖中！': 'Enchaînement !',
   '{step}段・{sec}秒': 'Chaîne {step} · {sec} s',
+  '{step}段・{sec}秒・合流+{bonus}%': 'Chaîne {step} · {sec} s · Jonction +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  ennemis {enemies}  particules {particles}  nombres {numbers}  seed {seed}',
   '時間 +{sec}': 'Temps +{sec}',
@@ -551,6 +562,9 @@ export const UI: Dict = {
   'よろめき！': 'Sonné !',
   '一網打尽！': 'Coup de filet !',
   'ボス撃破！': 'Boss vaincu !',
+  'ぴったり合流！ +{bonus}%': 'Jonction parfaite ! +{bonus}%',
+  '合流！ +{bonus}%': 'Jonction ! +{bonus}%',
+  '合流！': 'Jonction !',
   '復活！': 'Ressuscité !',
   '再開する（HP全回復・+{sec}秒）': 'Ressusciter (HP max, +{sec} s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Pub : ressusciter (HP max, +{sec} s)',
@@ -658,10 +672,14 @@ export const UI: Dict = {
   '{n}方向': '{n}',
   出口の数は固定: 'Nombre de sorties fixe',
   レアリティで出口の数が決まる: 'La rareté fixe le nombre de sorties',
+  合流: 'Jonction',
+  同じ段数で合流させるとボーナス: 'Bonus pour une jonction au même nombre de maillons',
+  線がつながった起点はいっしょに発火: 'Les Origines reliées se déclenchent ensemble',
   この配置: 'Cette disposition',
   どの起点からも届きません: "Aucune Origine ne l'atteint",
   '起点{origin}の{step}段目 ×{mult}': 'Origine {origin}, maillon {step} ×{mult}',
   '1ヒット 約{n}': '~{n} par coup',
+  '1ヒット 約{n}・合流+{bonus}%': '~{n} par coup · Jonction +{bonus}%',
   '起点{origin}の連鎖': "Chaîne de l'Origine {origin}",
   段数に数えない: 'Ne compte pas comme maillon',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

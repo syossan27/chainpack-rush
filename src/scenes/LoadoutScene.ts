@@ -1,7 +1,7 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
-import { runTutorial } from '../ui/tutorial';
+import { runTutorial, tutorialSeen } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { simulateChain, type ChainPreview } from '../core/chain';
+import { maxMergeBonus, simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
 import { diagnose } from '../core/diagnose';
 import { getTechnique } from '../data/techniques';
@@ -207,6 +207,8 @@ export class LoadoutScene extends Phaser.Scene {
 
     this.setupGridInput();
     this.refresh();
+    // The merge guide waits for a later visit, so it never follows the first loadout guide
+    if (tutorialSeen('loadout')) this.maybeMergeGuide();
     runTutorial(this, 'loadout', [
       {
         rect: {
@@ -231,6 +233,31 @@ export class LoadoutScene extends Phaser.Scene {
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
         text: t('「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！'),
+      },
+    ]);
+  }
+
+  /** 起点石を2つ置いている人に、合流を一度だけ教える（出撃2回目以降） */
+  private maybeMergeGuide(): void {
+    const save = getSave();
+    if (this.challenge || save.stats.runs < 2) return;
+    const placed = save.loadout.originOrder.filter((u) => save.loadout.cells.includes(u));
+    if (placed.length < 2) return;
+    runTutorial(this, 'merge', [
+      {
+        rect: {
+          x: W / 2,
+          y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
+          w: W - 120,
+          h: this.view.gridHeight + 16,
+        },
+        text: t('2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ'),
+      },
+      {
+        rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
+        text: t(
+          '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る',
+        ),
       },
     ]);
   }
@@ -338,19 +365,29 @@ export class LoadoutScene extends Phaser.Scene {
       ),
     );
     x += 78;
-    preview.plans.forEach((_, i) => {
-      chip(x, 50, shown && this.focus === i, () =>
+    const order = getSave().loadout.originOrder;
+    preview.plans.forEach((p, i) => {
+      // Linked origins fire together, so one chip carries all their numbers (e.g. 1+3)
+      const label = p.originUids.map((u) => `${order.indexOf(u) + 1}`).join('+');
+      const extra = (p.originUids.length - 1) * 22;
+      chip(x, 50 + extra, shown && this.focus === i, () =>
         this.setFocus(shown && this.focus === i ? null : i),
       );
-      bar.add(this.add.circle(x + 25, -1, 14, routeColor(i)).setStrokeStyle(3, 0x0c0a12));
+      const cx = x + 25 + extra / 2;
+      const pill = this.add.graphics();
+      pill.fillStyle(routeColor(i), 1);
+      pill.fillRoundedRect(cx - 14 - extra / 2, -15, 28 + extra, 28, 14);
+      pill.lineStyle(3, 0x0c0a12, 1);
+      pill.strokeRoundedRect(cx - 14 - extra / 2, -15, 28 + extra, 28, 14);
+      bar.add(pill);
       bar.add(
         this.add
-          .text(x + 25, -2, `${i + 1}`, textStyle(16, '#1a1424'))
+          .text(cx, -2, label, textStyle(16, '#1a1424'))
           .setOrigin(0.5)
           .setStroke('#fff6d0', 2)
           .setShadow(0, 0, '#000', 0),
       );
-      x += 54;
+      x += 54 + extra;
     });
     // ルートの線・段数を消す／出す
     chip(x, 76, !shown, () => {
@@ -393,15 +430,18 @@ export class LoadoutScene extends Phaser.Scene {
       const knownTech = e.techs.find((id) => save.discoveredTechs.includes(id));
       const tech = knownTech ? getTechnique(knownTech) : undefined;
       const params = { n: num(e.total), step: p.maxStep };
+      const bonus = Math.round(maxMergeBonus(p));
       return {
         text: knownTech
           ? t('約{n}・{step}段・{tech}', {
               ...params,
               tech: tech ? t(tech.name) : t('必殺技|fallback'),
             })
-          : e.combos > 0
-            ? t('約{n}・{step}段・コンボ{combo}', { ...params, combo: e.combos })
-            : t('約{n}・{step}段', params),
+          : bonus > 0
+            ? t('約{n}・{step}段・合流+{bonus}%', { ...params, bonus })
+            : e.combos > 0
+              ? t('約{n}・{step}段・コンボ{combo}', { ...params, combo: e.combos })
+              : t('約{n}・{step}段', params),
         color: routeCss(this.focus),
       };
     })();

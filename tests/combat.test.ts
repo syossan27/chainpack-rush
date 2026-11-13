@@ -557,9 +557,15 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
     while (c.chain && !c.unguarded) c.step();
     c.drainEvents();
     const hit = (
-      c as unknown as { damageHero(e: { id: number; atk: number }): void }
+      c as unknown as {
+        damageHero(e: { id: number; atk: number; statuses: Map<string, number> }): void;
+      }
     ).damageHero.bind(c);
-    hit({ id: -1, atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1 });
+    hit({
+      id: -1,
+      atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1,
+      statuses: new Map(),
+    });
     const evs: CombatEvent[] = [];
     while (c.chain) {
       c.step();

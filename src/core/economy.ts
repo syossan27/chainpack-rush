@@ -20,7 +20,7 @@ import { t } from '../i18n';
 import { ENDLESS, REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { allowsRarity, createItem, lineItemFor, rerollExits, rollLoot } from './loot';
+import { allowsRarity, createItem, lineItemFor, pickDef, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
@@ -416,7 +416,7 @@ export function synthesize(save: SaveData, uid: string, rng: Rng): SynthResult |
     const pool = ITEM_DEFS.filter(
       (d) => d.kind !== 'consumable' && !d.artifact && allowsRarity(d.id, from),
     );
-    item = createItem(rng, rng.pick(pool).id, from, newUid);
+    item = createItem(rng, pickDef(rng, pool).id, from, newUid);
   }
   save.inventory.push(item);
   return { item, success };

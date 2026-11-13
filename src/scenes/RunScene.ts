@@ -2,7 +2,7 @@
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
-import { planChain } from '../core/chain';
+import { maxMergeBonus, planUnit } from '../core/chain';
 import { addPet } from '../ui/cosmeticsView';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
@@ -17,7 +17,7 @@ import { randomSeed } from '../core/rng';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
-import { setAudioSuspended, sfx, sfxChainStep } from '../audio/sfx';
+import { setAudioSuspended, sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
 import {
   challengeLoadoutOf,
   enterChallengeEdit,
@@ -59,12 +59,21 @@ const COMBO_COLOR: Record<string, string> = {
   shock: '#fff060',
   explode: '#ff8030',
   shatter: '#c8f0ff',
+  purify: '#fff4b0',
+  seal: '#c0a0ff',
+  venom: '#a8f060',
 };
 const COMBO_TINT: Record<string, number> = {
   shock: 0xfff060,
   explode: 0xff8030,
   shatter: 0xc8f0ff,
+  purify: 0xfff4b0,
+  seal: 0xb080ff,
+  venom: 0x8ae04a,
 };
+
+/** 合流の光の色（ぴったりのときは金） */
+const MERGE_TINT = 0xa8f0ff;
 
 /** 時間延長の表示位置（周回ゲージ y=140 の下、帯 y=250 の上） */
 const TIME_BONUS_Y = 188;
@@ -110,6 +119,8 @@ export class RunScene extends Phaser.Scene {
   private hitStopUntil = 0;
   private slowUntil = 0;
   private chainText!: Phaser.GameObjects.Text;
+  /** 合流の知らせ（連鎖カウンターの下。コンボの帯に消されない） */
+  private mergeText!: Phaser.GameObjects.Text;
   private totalText!: Phaser.GameObjects.Text;
   private ending = false;
   private seed = 0;
@@ -224,6 +235,11 @@ export class RunScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDepth(65)
       .setAlpha(0);
+    this.mergeText = this.add
+      .text(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY - 160, '', textStyle(30))
+      .setOrigin(0.5)
+      .setDepth(65)
+      .setAlpha(0);
     this.totalText = this.add
       .text(W / 2 + 80, 360, '', textStyle(52))
       .setOrigin(0.5)
@@ -275,7 +291,7 @@ export class RunScene extends Phaser.Scene {
         {
           rect: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.footY - 20, w: 200, h: 110 },
           text: t(
-            '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に1つずつ発火するよ。\n次に動く起点は「次の連鎖」に出る',
+            '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る',
           ),
         },
         {
@@ -600,23 +616,29 @@ export class RunScene extends Phaser.Scene {
     // Inside the HP plate (right edge x=326)
     fitText(this.hud.defText.setScale(1).setText(t('防御 {n}', { n: Math.round(c.defense) })), 190);
     const nextUid = c.nextOriginUid;
-    if (nextUid) {
-      const plan = planChain(this.loadout, this.items, nextUid);
-      const idx = c.originOrder.indexOf(nextUid);
-      this.hud.nextBadge.setText(originLabel(idx));
+    const unit = c.nextUnit;
+    if (nextUid && unit) {
+      const plan = planUnit(this.loadout, this.items, unit);
+      // Linked origins fire together: show all their numbers (e.g. ①②)
+      this.hud.nextBadge.setText(unit.map((u) => originLabel(c.originOrder.indexOf(u))).join(''));
       // Inside the "next chain" panel (right edge x=630)
+      const bonus = Math.round(maxMergeBonus(plan));
+      const params = { step: plan.maxStep, sec: plan.duration.toFixed(1) };
       fitText(
         this.hud.next
           .setScale(1)
           .setText(
             c.chain
               ? t('連鎖中！')
-              : t('{step}段・{sec}秒', { step: plan.maxStep, sec: plan.duration.toFixed(1) }),
+              : bonus > 0
+                ? t('{step}段・{sec}秒・合流+{bonus}%', { ...params, bonus })
+                : t('{step}段・{sec}秒', params),
           ),
         164,
       );
     }
-    this.view.setBlinkOrigin(c.chain ? null : nextUid);
+    // Linked origins fire together, so they all blink
+    this.view.setBlinkOrigin(c.chain ? null : (unit ?? null));
     this.hud.loot.setValue(`${c.drops.length}`);
     this.drawTrack();
     if (this.hud.fps) {
@@ -652,6 +674,16 @@ export class RunScene extends Phaser.Scene {
       .setScale(1.5)
       .setAngle(-4 + Math.random() * 8);
     this.tweens.add({ targets: txt, scale: 1, angle: 0, duration: 160, ease: 'Back.easeOut' });
+  }
+
+  private showMerge(text: string, color: string): void {
+    const txt = this.mergeText;
+    this.tweens.killTweensOf(txt);
+    txt.setText(text).setColor(color).setAlpha(1).setScale(1.4);
+    // Keep a long translation on screen
+    const fit = Math.min(1, (W - 40) / (txt.width || 1));
+    this.tweens.add({ targets: txt, scale: fit, duration: 180, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: txt, alpha: 0, delay: 900, duration: 300 });
   }
 
   /** 連鎖の終わり: カウンターを消し、合計ダメージを大きく出す */
@@ -918,6 +950,26 @@ export class RunScene extends Phaser.Scene {
           sfx('explode');
           break;
         }
+        case 'merge': {
+          // Lines meeting with the same steps get a gold "exact" call-out
+          const bonus = Math.round(ev.bonus);
+          const exact = bonus > 0 && ev.arrived.every((n) => n === ev.arrived[0]);
+          this.showMerge(
+            exact
+              ? t('ぴったり合流！ +{bonus}%', { bonus })
+              : bonus > 0
+                ? t('合流！ +{bonus}%', { bonus })
+                : t('合流！'),
+            exact ? '#ffe27a' : '#a8f0ff',
+          );
+          for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, MERGE_TINT);
+          this.view.glow(ev.cell, exact ? 0xffe27a : MERGE_TINT, now, 700);
+          const p = ev.enemyId !== null ? this.enemyPos(ev.enemyId) : null;
+          if (p) this.effects.burst(p.x, p.y - 30, exact ? 0xffe27a : MERGE_TINT, 18, 260);
+          sfx('merge');
+          if (exact) hapticMedium();
+          break;
+        }
         case 'enrage':
           this.showBanner(t('激昂！'), COLORS.textWarn);
           if (this.shake) this.cameras.main.shake(260, 0.01);
@@ -926,15 +978,8 @@ export class RunScene extends Phaser.Scene {
         case 'combo': {
           const p = this.enemyPos(ev.enemyId);
           this.showBanner(t(ev.label), COMBO_COLOR[ev.name] ?? '#ffffff');
-          if (p)
-            this.effects.burst(
-              p.x,
-              p.y,
-              ev.name === 'explode' ? 0xff8030 : ev.name === 'shock' ? 0xfff060 : 0xc8f0ff,
-              24,
-              320,
-            );
-          sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');
+          if (p) this.effects.burst(p.x, p.y, COMBO_TINT[ev.name] ?? 0xffffff, 24, 320);
+          sfxCombo(ev.name);
           hapticMedium();
           this.hitStop(JUICE.hitStopMs.combo);
           if (p) this.effects.flash(p.x, p.y, COMBO_TINT[ev.name] ?? 0xffffff, 4, 0.3);

@@ -2176,6 +2176,23 @@ interface IconSpec {
 
 export const ITEM_ICONS: Record<string, IconSpec> = {
   origin_stone: { shape: 'stone', A: 'c', S: 't', L: 'W' },
+  origin_swift: { shape: 'stone', A: 'W', S: 'g', L: 'W' },
+  origin_heavy: { shape: 'stone', A: 'G', S: 'D', L: 'g' },
+  origin_fire: { shape: 'stone', A: 'r', S: 'R', L: 'o' },
+  origin_thunder: { shape: 'stone', A: 'y', S: 'o', L: 'W' },
+  origin_blunt: { shape: 'stone', A: 'b', S: 'B', L: 'n' },
+  origin_shield: { shape: 'stone', A: 'u', S: 'U', L: 'l' },
+  origin_poison: { shape: 'stone', A: 'e', S: 'E', L: 'W' },
+  origin_vamp: { shape: 'stone', A: 'R', S: 'k', L: 'r' },
+  origin_wind: { shape: 'stone', A: 'e', S: 't', L: 'W' },
+  origin_light: { shape: 'stone', A: 'W', S: 'y', L: 'W' },
+  origin_dark: { shape: 'stone', A: 'V', S: 'k', L: 'v' },
+  wind_sword: { shape: 'sword', A: 'e', S: 'E', L: 'W' },
+  storm_staff: { shape: 'staff', A: 'e', S: 'F', L: 'W' },
+  light_sword: { shape: 'sword', A: 'y', S: 'o', L: 'W' },
+  sun_staff: { shape: 'staff', A: 'W', S: 'y', L: 'y' },
+  dark_sword: { shape: 'sword', A: 'v', S: 'V', L: 'm' },
+  dark_staff: { shape: 'staff', A: 'V', S: 'k', L: 'v' },
   sword: { shape: 'sword', A: 'h', S: 'H', L: 'W' },
   greatsword: { shape: 'greatsword', A: 'h', S: 'H', L: 'W' },
   spear: { shape: 'spear', A: 'h', S: 'H', L: 'W' },
@@ -2221,6 +2238,30 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   sky_hammer: { shape: 'hammer', A: 'y', S: 'u', L: 'W' },
   sage_stone: { shape: 'stone', A: 'r', S: 'm', L: 'y' },
   aegis_gate: { shape: 'kiteShield', A: 'y', S: 'o', L: 'W' },
+};
+
+/**
+ * 本素材がまだない装備: 別の装備の本素材を、この色に塗り直して使う（起点石の種類）。
+ * 暗い輪郭は暗いまま、明るいハイライトは白のまま残る
+ */
+export const ICON_RECOLOR: Record<string, { from: string; color: number }> = {
+  origin_swift: { from: 'origin_stone', color: 0xff88c8 },
+  origin_heavy: { from: 'origin_stone', color: 0x6a6a7c },
+  origin_fire: { from: 'origin_stone', color: 0xf05a28 },
+  origin_thunder: { from: 'origin_stone', color: 0xf8d040 },
+  origin_blunt: { from: 'origin_stone', color: 0xa87448 },
+  origin_shield: { from: 'origin_stone', color: 0x3c70d8 },
+  origin_poison: { from: 'origin_stone', color: 0x7ac030 },
+  origin_vamp: { from: 'origin_stone', color: 0xb01830 },
+  origin_wind: { from: 'origin_stone', color: 0x50e0b0 },
+  origin_light: { from: 'origin_stone', color: 0xfff0b0 },
+  origin_dark: { from: 'origin_stone', color: 0x7a48c8 },
+  wind_sword: { from: 'sword', color: 0x50e0b0 },
+  storm_staff: { from: 'frost_staff', color: 0x50e0b0 },
+  light_sword: { from: 'sword', color: 0xffe070 },
+  sun_staff: { from: 'flame_staff', color: 0xffe070 },
+  dark_sword: { from: 'sword', color: 0x7a48c8 },
+  dark_staff: { from: 'flame_staff', color: 0x7a48c8 },
 };
 
 export function iconPixels(defId: string): string[] {

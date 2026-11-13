@@ -34,6 +34,26 @@ const TONES = {
     { wave: 'triangle', freq: 1600, to: 800, dur: 0.12, gain: 0.2 },
     { wave: 'triangle', freq: 2000, to: 1000, dur: 0.12, gain: 0.15, delay: 0.06 },
   ],
+  // 合流: 2本の線が出会う（2つの音が寄って重なる）
+  merge: [
+    { wave: 'triangle', freq: 523, to: 784, dur: 0.14, gain: 0.18 },
+    { wave: 'triangle', freq: 1046, to: 784, dur: 0.14, gain: 0.16 },
+    { wave: 'square', freq: 784, dur: 0.22, gain: 0.14, delay: 0.14 },
+  ],
+  // 浄化: 澄んだ音が上る / 封印: 低く沈む / 毒爆: 泡がはじける
+  purify: [
+    { wave: 'sine', freq: 660, to: 1320, dur: 0.18, gain: 0.18 },
+    { wave: 'triangle', freq: 990, to: 1760, dur: 0.2, gain: 0.12, delay: 0.06 },
+  ],
+  seal: [
+    { wave: 'sawtooth', freq: 300, to: 110, dur: 0.28, gain: 0.16 },
+    { wave: 'square', freq: 150, to: 80, dur: 0.24, gain: 0.1, delay: 0.05 },
+  ],
+  venom: [
+    { wave: 'square', freq: 220, to: 520, dur: 0.08, gain: 0.16 },
+    { wave: 'square', freq: 260, to: 640, dur: 0.08, gain: 0.14, delay: 0.07 },
+    { wave: 'sawtooth', freq: 140, to: 50, dur: 0.3, gain: 0.2, delay: 0.12 },
+  ],
   enemyDown: [{ wave: 'square', freq: 400, to: 120, dur: 0.1, gain: 0.1 }],
   bossDown: [
     { wave: 'square', freq: 262, dur: 0.12, gain: 0.2 },
@@ -138,6 +158,19 @@ function playTones(tones: readonly Tone[]): void {
 
 export function sfx(name: SfxName): void {
   playTones(TONES[name]);
+}
+
+/** コンボの音（名前は COMBOS の name、毒爆は POISON.burstName） */
+export function sfxCombo(name: string): void {
+  const map: Record<string, SfxName> = {
+    shock: 'shock',
+    explode: 'explode',
+    shatter: 'shatter',
+    purify: 'purify',
+    seal: 'seal',
+    venom: 'venom',
+  };
+  sfx(map[name] ?? 'shatter');
 }
 
 export function sfxChainStep(step: number): void {
