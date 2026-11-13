@@ -208,21 +208,13 @@ export function planUnit(
 }
 
 /**
- * Steps each line brings to a merge cell, as shown on the cell (e.g. 3+3).
- * `feeders` are the steps of the cells that lead into it. When the cell is a step of its own
- * (an attack), it is the next step of the shortest line, so that line counts one more:
- * joining a line's 3rd step from another line's 3rd step reads 3+3.
- * A line with no step yet (its origin stone right next to the cell) is not counted up.
+ * Which step a merge cell is on each route, as shown on the cell (e.g. 3+4; equal = exact sync).
+ * `feeders` are the steps of the cells that lead into it. A cell without a step of its own
+ * (a shield) keeps the routes' steps as they are. A route with nothing before the cell
+ * (its origin stone right next to it) shows 0, so it gives no bonus.
  */
 export function mergeArrivals(feeders: readonly number[], isStep: boolean): number[] {
-  const out = [...feeders];
-  if (!isStep || feeders.length < 2) return out;
-  let shortest = -1;
-  feeders.forEach((n, i) => {
-    if (n > 0 && (shortest < 0 || n < feeders[shortest]!)) shortest = i;
-  });
-  if (shortest >= 0) out[shortest] = feeders[shortest]! + 1;
-  return out;
+  return feeders.map((n) => (isStep && n > 0 ? n + 1 : n));
 }
 
 /** 合流ボーナス（%）: 段数の合計 ×（短い線 ÷ 長い線）。線の一本が段数0なら出ない */
@@ -354,7 +346,14 @@ function spreadLinked(
       defenseGain += defenseValue(inst, boost);
     }
     // 合流ボーナスはここで決まり、この先の本流へ引き継ぐ（いちばん大きいもの）
-    const arrived = mergeArrivals(feeders, def.kind === 'attack');
+    // Shown in route order (①, ②…), so the tag reads like the route chip "1+2"
+    const byRoute = parents
+      .map((p, i) => ({ route: Math.min(...lines[p]!), n: feeders[i]! }))
+      .sort((a, b) => a.route - b.route);
+    const arrived = mergeArrivals(
+      byRoute.map((r) => r.n),
+      def.kind === 'attack',
+    );
     const inherited = Math.max(0, ...parents.map((p) => steps[p]!.mergeBonus ?? 0));
     const mergeBonus = Math.max(inherited, parents.length > 1 ? mergeBonusOf(arrived) : 0);
     const main = parents[0]!;

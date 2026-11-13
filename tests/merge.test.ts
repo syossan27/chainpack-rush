@@ -40,7 +40,7 @@ function yShape(secondLine: 'long' | 'none' = 'long') {
 }
 
 /**
- * The case from play: the second line's 3rd sword joins the first line's 3rd sword (J).
+ * The case from play: J is the first route's 3rd step and the second route's 4th step.
  *   o1 a b J e
  *   o2 c d g
  */
@@ -79,18 +79,18 @@ describe('合流', () => {
     expect(linkedGroups(apart.loadout, apart.items, ['o1', 'o2'])).toEqual([['o1'], ['o2']]);
   });
 
-  it('N段目のマスに、別の線のN段目からつなぐと、ぴったりシンクロ。合流点は長い方の線の続きの段', () => {
+  it('合流点には、それぞれのルートで何段目かを出す（ルートの順）。合流点は大きい方の段', () => {
     const { loadout, items } = tJoin();
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const j = stepOf(plan, 'J');
     expect(j.mergeParents).toHaveLength(2);
-    // J is the first line's 3rd step, and the second line joins from its 3rd step: 3+3
-    expect([...j.mergeArrived!].sort()).toEqual([3, 3]);
-    // The chain goes on from the longer line: 3 → 4
+    // Route ① reaches J as its 3rd step, route ② as its 4th: 3+4, not an exact sync
+    expect(j.mergeArrived).toEqual([3, 4]);
+    // The chain goes on from the larger: J is the 4th step, then 5
     expect(j.step).toBe(4);
     expect(stepOf(plan, 'e').step).toBe(5);
-    expect(j.mergeBonus).toBeCloseTo(mergeBonusOf([3, 3]));
-    expect(stepOf(plan, 'e').mergeBonus).toBeCloseTo(mergeBonusOf([3, 3]));
+    expect(j.mergeBonus).toBeCloseTo(mergeBonusOf([3, 4]));
+    expect(stepOf(plan, 'e').mergeBonus).toBeCloseTo(mergeBonusOf([3, 4]));
   });
 
   it('合流点は両方の線が届いてから発動し、その先の本流にボーナスがかかる', () => {
@@ -98,11 +98,11 @@ describe('合流', () => {
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const j = stepOf(plan, 'J');
     expect(j.mergeParents).toHaveLength(2);
-    // Two 2-step lines into a new cell: it is one line's 3rd step, the other joins from its 2nd
-    expect(j.mergeArrived).toEqual([3, 2]);
+    // Two 2-step routes into a new cell: it is the 3rd step of both, an exact sync
+    expect(j.mergeArrived).toEqual([3, 3]);
     expect(j.step).toBe(3);
     expect(stepOf(plan, 'e').step).toBe(4);
-    const bonus = mergeBonusOf([3, 2]);
+    const bonus = mergeBonusOf([3, 3]);
     expect(bonus).toBeGreaterThan(0);
     expect(j.mergeBonus).toBeCloseTo(bonus);
     expect(stepOf(plan, 'f').mergeBonus).toBeCloseTo(bonus);
@@ -114,16 +114,14 @@ describe('合流', () => {
       expect(plan.steps[i]!.t).toBeGreaterThanOrEqual(plan.steps[i - 1]!.t);
   });
 
-  it('シンクロの段数: いちばん短い線は合流点を次の段と数え、ほかの線は入る直前の段数', () => {
-    expect(mergeArrivals([3, 2], true)).toEqual([3, 3]);
-    expect(mergeArrivals([2, 2], true)).toEqual([3, 2]);
-    // A line with no step (its origin stone right next to the cell) is not counted up
+  it('シンクロの段数: 合流点がそれぞれのルートで何段目か', () => {
+    expect(mergeArrivals([2, 3], true)).toEqual([3, 4]);
+    expect(mergeArrivals([2, 2], true)).toEqual([3, 3]);
+    // A route with nothing before the cell (its origin stone right next to it) shows 0: no bonus
     expect(mergeArrivals([2, 0], true)).toEqual([3, 0]);
     expect(mergeArrivals([0, 0], true)).toEqual([0, 0]);
-    // So merging on the cell right next to an origin stone gives no bonus, even from a 1st step
-    expect(mergeArrivals([1, 0], true)).toEqual([2, 0]);
-    expect(mergeBonusOf(mergeArrivals([1, 0], true))).toBe(0);
-    // A cell without a step of its own (a shield): both lines bring their steps as they are
+    expect(mergeBonusOf(mergeArrivals([0, 0], true))).toBe(0);
+    // A cell without a step of its own (a shield): the routes bring their steps as they are
     expect(mergeArrivals([2, 2], false)).toEqual([2, 2]);
   });
 
@@ -160,8 +158,8 @@ describe('合流', () => {
     }
     expect(c.stats.fires).toBe(1);
     const merge = evs.find((e) => e.type === 'merge');
-    const bonus = mergeBonusOf([3, 2]);
-    expect(merge?.type === 'merge' && merge.arrived).toEqual([3, 2]);
+    const bonus = mergeBonusOf([3, 3]);
+    expect(merge?.type === 'merge' && merge.arrived).toEqual([3, 3]);
     expect(merge?.type === 'merge' && merge.bonus).toBeCloseTo(bonus);
     const hits = evs.filter((e) => e.type === 'hit');
     // J: sword 10 × 1.2^2 (3rd step) × (1 + bonus)
@@ -247,7 +245,7 @@ describe('合流', () => {
     const { loadout, items } = yShape();
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const crit = 1 + LUCK.critChance * (LUCK.critMult - 1);
-    const b = 1 + mergeBonusOf([3, 2]) / 100;
+    const b = 1 + mergeBonusOf([3, 3]) / 100;
     const expected = 10 * crit * (1 + 1 + 1.2 + 1.2 + (1.2 ** 2 + 1.2 ** 3 + 1.2 ** 4) * b);
     expect(estimateRoute(plan, items, 1).total).toBeCloseTo(expected);
   });

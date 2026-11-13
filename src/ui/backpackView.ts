@@ -268,7 +268,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
         fitText(label, this.cell + 6);
         this.labelLayer.add(label);
       }
-      // Merge cells: the steps each line arrived with, and the bonus from here on (e.g. 4+4 +24%)
+      // Merge cells: the steps each line arrived with, and the bonus from here on (e.g. 4+4 +16%)
       for (const s of plan.steps) {
         if (!s.mergeArrived) continue;
         const c = this.cellCenter(s.cell);

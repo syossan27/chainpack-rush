@@ -400,8 +400,8 @@ export const UI: Dict = {
     '"~" numbers are estimated damage against one enemy (combos and crits included)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sync 2 lines at the same link count! The longer they are, the bigger the bonus.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +24%」のように\n段数とボーナスが出る':
-    'Origins whose lines are connected fire together. A sync cell shows the links and the bonus, like "4+4 +24%".',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Origins whose lines are connected fire together. A sync cell shows the links and the bonus, like "4+4 +16%".',
   '起点が0個です。出撃できません': "No Origin placed. You can't start a run.",
   '倉庫があふれています（タップで売却）': 'Storage is full (tap to sell)',
   全部: 'All',

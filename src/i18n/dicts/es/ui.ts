@@ -406,8 +406,8 @@ export const UI: Dict = {
     'Los números "~" son el daño estimado contra un enemigo (con combos y críticos)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     '¡Sincroniza 2 líneas con el mismo número de eslabones! Cuanto más largas, mayor el bono.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +24%」のように\n段数とボーナスが出る':
-    'Los Orígenes con líneas conectadas se activan a la vez. La casilla de sincronía muestra los eslabones y el bono, como "4+4 +24%".',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Los Orígenes con líneas conectadas se activan a la vez. La casilla de sincronía muestra los eslabones y el bono, como "4+4 +16%".',
   '起点が0個です。出撃できません': 'No hay ningún Origen. No puedes salir.',
   '倉庫があふれています（タップで売却）': 'El Almacén está lleno (toca para vender)',
   全部: 'Todo',
