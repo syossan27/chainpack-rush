@@ -46,13 +46,15 @@ export const CHAIN = {
 } as const;
 
 /**
- * 合流: 線がつながった起点は1回の発火で一緒に撃つ。2本以上の線が届くマスは、全部が届いてから
- * 段数の合計で発動し、そこから先の本流に合流ボーナスがかかる。
- * ボーナス = 届いた線の段数の合計 ×（いちばん短い線 ÷ いちばん長い線）× perPoint %（上限 cap %）
+ * Merge: linked origins fire together in one firing. A cell reached by 2+ lines waits for all,
+ * then fires as the next step of the longest line, and the merge bonus applies from there on.
+ * Each line's steps: the shortest line counts the merge cell as its next step, the others count
+ * the step they join from (joining a line's Nth step from another line's Nth step reads N+N).
+ * Bonus = sum of the lines' steps × (shortest ÷ longest) × perPoint % (up to cap %)
  */
 export const MERGE = {
-  perPoint: 2,
-  cap: 30,
+  perPoint: 3,
+  cap: 45, // reached at a sum of 15 steps, as 2% / 30% was before
 } as const;
 
 /**

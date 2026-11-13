@@ -207,6 +207,24 @@ export function planUnit(
     : planMerged(loadout, items, originUids);
 }
 
+/**
+ * Steps each line brings to a merge cell, as shown on the cell (e.g. 3+3).
+ * `feeders` are the steps of the cells that lead into it. When the cell is a step of its own
+ * (an attack), it is the next step of the shortest line, so that line counts one more:
+ * joining a line's 3rd step from another line's 3rd step reads 3+3.
+ * A line with no step yet (its origin stone right next to the cell) is not counted up.
+ */
+export function mergeArrivals(feeders: readonly number[], isStep: boolean): number[] {
+  const out = [...feeders];
+  if (!isStep || feeders.length < 2) return out;
+  let shortest = -1;
+  feeders.forEach((n, i) => {
+    if (n > 0 && (shortest < 0 || n < feeders[shortest]!)) shortest = i;
+  });
+  if (shortest >= 0) out[shortest] = feeders[shortest]! + 1;
+  return out;
+}
+
 /** 合流ボーナス（%）: 段数の合計 ×（短い線 ÷ 長い線）。線の一本が段数0なら出ない */
 export function mergeBonusOf(arrived: readonly number[]): number {
   if (arrived.length < 2) return 0;
@@ -230,8 +248,9 @@ interface MergePending {
 }
 
 /**
- * 複数の起点から同時に連鎖を広げる。merge が与えられたら、そのマスは書かれた線が全部届くまで待ち、
- * 届いた線の段数の合計で発動する（1回目の展開でどの線がどこへ届くかを調べ、2回目で待たせる）
+ * Spread the chain from several origins at once. With `merge`, a listed cell waits until all its
+ * lines arrive, then fires as the next step of the longest line
+ * (the first pass finds where each line reaches, the second waits)
  */
 function spreadLinked(
   loadout: Loadout,
@@ -315,8 +334,9 @@ function spreadLinked(
     const uid = loadout.cells[cell]!;
     const inst = items.get(uid)!;
     const def = getItemDef(inst.defId);
-    const arrived = parents.map((p) => counts[p]!);
-    const base = arrived.reduce((a, b) => a + b, 0);
+    const feeders = parents.map((p) => counts[p]!);
+    // The chain goes on from the longest line (merging does not add the lines' steps)
+    const base = Math.max(...feeders);
     // A line that passes through another origin stone of this firing also takes that stone's effect
     const self = def.kind === 'origin' ? originUids.indexOf(uid) : -1;
     const myLines = [
@@ -334,6 +354,7 @@ function spreadLinked(
       defenseGain += defenseValue(inst, boost);
     }
     // 合流ボーナスはここで決まり、この先の本流へ引き継ぐ（いちばん大きいもの）
+    const arrived = mergeArrivals(feeders, def.kind === 'attack');
     const inherited = Math.max(0, ...parents.map((p) => steps[p]!.mergeBonus ?? 0));
     const mergeBonus = Math.max(inherited, parents.length > 1 ? mergeBonusOf(arrived) : 0);
     const main = parents[0]!;
@@ -449,7 +470,7 @@ function spreadLinked(
   };
 }
 
-/** つながった起点の連鎖（合流つき）。2本以上の線が届くマスは、全部が届いてから段数の合計で発動する */
+/** Linked origins' chain with merges: a cell reached by 2+ lines waits for all, then fires as the next step of the longest */
 export function planMerged(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { LUCK, MERGE, SIM } from '../src/config/balance';
-import { linkedGroups, mergeBonusOf, planUnit, simulateChain } from '../src/core/chain';
+import {
+  linkedGroups,
+  mergeArrivals,
+  mergeBonusOf,
+  planUnit,
+  simulateChain,
+} from '../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
 import { build, type Placed } from './helpers';
@@ -33,6 +39,25 @@ function yShape(secondLine: 'long' | 'none' = 'long') {
   return build(5, 3, placed);
 }
 
+/**
+ * The case from play: the second line's 3rd sword joins the first line's 3rd sword (J).
+ *   o1 a b J e
+ *   o2 c d g
+ */
+function tJoin() {
+  return build(5, 2, [
+    { uid: 'o1', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+    { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+    { uid: 'b', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+    { uid: 'J', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+    { uid: 'e', defId: 'sword', x: 4, y: 0, exits: [] },
+    { uid: 'o2', defId: 'origin_stone', x: 0, y: 1, exits: ['right'] },
+    { uid: 'c', defId: 'sword', x: 1, y: 1, exits: ['right'] },
+    { uid: 'd', defId: 'sword', x: 2, y: 1, exits: ['right'] },
+    { uid: 'g', defId: 'sword', x: 3, y: 1, exits: ['up'] },
+  ]);
+}
+
 function stepOf(plan: ReturnType<typeof planUnit>, uid: string) {
   return plan.steps.find((s) => s.uid === uid)!;
 }
@@ -54,16 +79,31 @@ describe('合流', () => {
     expect(linkedGroups(apart.loadout, apart.items, ['o1', 'o2'])).toEqual([['o1'], ['o2']]);
   });
 
-  it('合流点は両方の線が届いてから、段数の合計で発動し、その先の本流にボーナスがかかる', () => {
+  it('N段目のマスに、別の線のN段目からつなぐと、ぴったりシンクロ。合流点は長い方の線の続きの段', () => {
+    const { loadout, items } = tJoin();
+    const plan = planUnit(loadout, items, ['o1', 'o2']);
+    const j = stepOf(plan, 'J');
+    expect(j.mergeParents).toHaveLength(2);
+    // J is the first line's 3rd step, and the second line joins from its 3rd step: 3+3
+    expect([...j.mergeArrived!].sort()).toEqual([3, 3]);
+    // The chain goes on from the longer line: 3 → 4
+    expect(j.step).toBe(4);
+    expect(stepOf(plan, 'e').step).toBe(5);
+    expect(j.mergeBonus).toBeCloseTo(mergeBonusOf([3, 3]));
+    expect(stepOf(plan, 'e').mergeBonus).toBeCloseTo(mergeBonusOf([3, 3]));
+  });
+
+  it('合流点は両方の線が届いてから発動し、その先の本流にボーナスがかかる', () => {
     const { loadout, items } = yShape();
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const j = stepOf(plan, 'J');
     expect(j.mergeParents).toHaveLength(2);
-    // 2段 + 2段 → 5段目
-    expect(j.step).toBe(5);
-    expect(stepOf(plan, 'e').step).toBe(6);
-    // (2 + 2) × (2 ÷ 2) × 2% = 8%
-    const bonus = 4 * MERGE.perPoint;
+    // Two 2-step lines into a new cell: it is one line's 3rd step, the other joins from its 2nd
+    expect(j.mergeArrived).toEqual([3, 2]);
+    expect(j.step).toBe(3);
+    expect(stepOf(plan, 'e').step).toBe(4);
+    const bonus = mergeBonusOf([3, 2]);
+    expect(bonus).toBeGreaterThan(0);
     expect(j.mergeBonus).toBeCloseTo(bonus);
     expect(stepOf(plan, 'f').mergeBonus).toBeCloseTo(bonus);
     // Before the merge there is no bonus
@@ -74,8 +114,21 @@ describe('合流', () => {
       expect(plan.steps[i]!.t).toBeGreaterThanOrEqual(plan.steps[i - 1]!.t);
   });
 
+  it('シンクロの段数: いちばん短い線は合流点を次の段と数え、ほかの線は入る直前の段数', () => {
+    expect(mergeArrivals([3, 2], true)).toEqual([3, 3]);
+    expect(mergeArrivals([2, 2], true)).toEqual([3, 2]);
+    // A line with no step (its origin stone right next to the cell) is not counted up
+    expect(mergeArrivals([2, 0], true)).toEqual([3, 0]);
+    expect(mergeArrivals([0, 0], true)).toEqual([0, 0]);
+    // So merging on the cell right next to an origin stone gives no bonus, even from a 1st step
+    expect(mergeArrivals([1, 0], true)).toEqual([2, 0]);
+    expect(mergeBonusOf(mergeArrivals([1, 0], true))).toBe(0);
+    // A cell without a step of its own (a shield): both lines bring their steps as they are
+    expect(mergeArrivals([2, 2], false)).toEqual([2, 2]);
+  });
+
   it('ボーナスは「合計 ×（短い線 ÷ 長い線）」。起点を合流点の隣に置くだけでは出ない', () => {
-    expect(mergeBonusOf([6, 6])).toBeCloseTo(12 * MERGE.perPoint);
+    expect(mergeBonusOf([6, 6])).toBeCloseTo(Math.min(MERGE.cap, 12 * MERGE.perPoint));
     expect(mergeBonusOf([6, 2])).toBeCloseTo(8 * (2 / 6) * MERGE.perPoint);
     expect(mergeBonusOf([8, 0])).toBe(0);
     expect(mergeBonusOf([30, 30])).toBe(MERGE.cap);
@@ -84,6 +137,7 @@ describe('合流', () => {
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const j = stepOf(plan, 'J');
     expect(j.step).toBe(3);
+    expect(j.mergeArrived).toEqual([3, 0]);
     expect(j.mergeBonus).toBeUndefined();
   });
 
@@ -106,13 +160,14 @@ describe('合流', () => {
     }
     expect(c.stats.fires).toBe(1);
     const merge = evs.find((e) => e.type === 'merge');
-    expect(merge?.type === 'merge' && merge.arrived).toEqual([2, 2]);
-    expect(merge?.type === 'merge' && merge.bonus).toBeCloseTo(4 * MERGE.perPoint);
+    const bonus = mergeBonusOf([3, 2]);
+    expect(merge?.type === 'merge' && merge.arrived).toEqual([3, 2]);
+    expect(merge?.type === 'merge' && merge.bonus).toBeCloseTo(bonus);
     const hits = evs.filter((e) => e.type === 'hit');
-    // J: sword 10 × 1.2^4 × (1 + 8%)
+    // J: sword 10 × 1.2^2 (3rd step) × (1 + bonus)
     const jHit = hits.find((e) => e.type === 'hit' && e.itemUid === 'J');
-    expect(jHit?.type === 'hit' && jHit.damage).toBeCloseTo(10 * 1.2 ** 4 * 1.08, 1);
-    expect(jHit?.type === 'hit' && jHit.step).toBe(5);
+    expect(jHit?.type === 'hit' && jHit.damage).toBeCloseTo(10 * 1.2 ** 2 * (1 + bonus / 100), 1);
+    expect(jHit?.type === 'hit' && jHit.step).toBe(3);
   });
 
   it('戦闘: 待ちは起点を除いた装備の数で決まり、守りが残る段数も起点の数に左右されない', () => {
@@ -192,8 +247,8 @@ describe('合流', () => {
     const { loadout, items } = yShape();
     const plan = planUnit(loadout, items, ['o1', 'o2']);
     const crit = 1 + LUCK.critChance * (LUCK.critMult - 1);
-    const b = 1 + (4 * MERGE.perPoint) / 100;
-    const expected = 10 * crit * (1 + 1 + 1.2 + 1.2 + (1.2 ** 4 + 1.2 ** 5 + 2.5) * b);
+    const b = 1 + mergeBonusOf([3, 2]) / 100;
+    const expected = 10 * crit * (1 + 1 + 1.2 + 1.2 + (1.2 ** 2 + 1.2 ** 3 + 1.2 ** 4) * b);
     expect(estimateRoute(plan, items, 1).total).toBeCloseTo(expected);
   });
 });

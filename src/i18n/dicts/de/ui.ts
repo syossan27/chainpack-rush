@@ -405,8 +405,8 @@ export const UI: Dict = {
     '„~“-Zahlen sind der geschätzte Schaden gegen einen Gegner (inkl. Kombos und Krits)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Synchronisiere 2 Linien bei gleicher Gliederzahl! Je länger sie sind, desto größer der Bonus.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Ursprünge mit verbundenen Linien zünden zusammen. Das Synchro-Feld zeigt Glieder und Bonus, wie „4+4 +16%“.',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +24%」のように\n段数とボーナスが出る':
+    'Ursprünge mit verbundenen Linien zünden zusammen. Das Synchro-Feld zeigt Glieder und Bonus, wie „4+4 +24%“.',
   '起点が0個です。出撃できません': 'Kein Ursprung platziert. Du kannst nicht losziehen.',
   '倉庫があふれています（タップで売却）': 'Lager voll (tippen zum Verkaufen)',
   全部: 'Alle',

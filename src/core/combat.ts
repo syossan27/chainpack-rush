@@ -713,8 +713,7 @@ export class Combat {
     const scaleLoop = this.loop - 1;
     const el = elite ? ELITES[elite] : null;
     // 地域の強さ × 周回の伸び × 精鋭
-    const maxHp =
-      def.hp * this.region.power.hp * ipow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
+    const maxHp = def.hp * this.region.power.hp * ipow(LOOP_SCALING.hp, scaleLoop) * (el?.hp ?? 1);
     const e: EnemyState = {
       id: this.nextEnemyId++,
       defId,
@@ -961,10 +960,11 @@ export class Combat {
 
     const merged = s.mergeParents;
     if (def.kind !== 'attack') {
-      // 起点・防御装備: 段数を数えず、親の段数と狙いを引き継ぐ（合流点なら、届いた線の段数の合計）
+      // 起点・防御装備: 段数を数えず、親の段数と狙いを引き継ぐ
+      // (a merge cell goes on from the longest line that reached it)
       const aim = parent ? parent.aim : (this.targetOrder()[0]?.id ?? null);
       const eff = merged
-        ? merged.reduce((sum, i) => sum + (c.exec[i]?.eff ?? 0), 0)
+        ? Math.max(0, ...merged.map((i) => c.exec[i]?.eff ?? 0))
         : parent
           ? parent.eff
           : 0;
@@ -994,12 +994,16 @@ export class Combat {
       return;
     }
     const aimId = aim.id;
-    // 合流点: 同じ敵を狙ってきた線の段数を合計する（狙いが変わった線は数えない）
+    // Merge cell: goes on from the longest line that aimed at the same enemy
+    // (a line whose target changed does not count)
     const eff = merged
-      ? merged.reduce((sum, i) => {
-          const e = c.exec[i];
-          return e && e.aim === aimId ? sum + e.eff : sum;
-        }, 0) + 1
+      ? Math.max(
+          0,
+          ...merged.map((i) => {
+            const e = c.exec[i];
+            return e && e.aim === aimId ? e.eff : 0;
+          }),
+        ) + 1
       : parent && parent.aim === aimId
         ? parent.eff + 1
         : 1;

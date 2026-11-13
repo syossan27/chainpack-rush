@@ -404,8 +404,8 @@ export const UI: Dict = {
     'Angka "~" adalah perkiraan damage ke satu musuh (termasuk kombo dan kritikal)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sinkronkan 2 garis di jumlah mata rantai yang sama! Makin panjang, makin besar bonusnya.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Asal yang garisnya tersambung terpicu bersamaan. Kotak sinkron menampilkan mata rantai dan bonus, seperti "4+4 +16%".',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +24%」のように\n段数とボーナスが出る':
+    'Asal yang garisnya tersambung terpicu bersamaan. Kotak sinkron menampilkan mata rantai dan bonus, seperti "4+4 +24%".',
   '起点が0個です。出撃できません': 'Belum ada Asal. Kamu tak bisa berangkat.',
   '倉庫があふれています（タップで売却）': 'Gudang penuh (ketuk untuk menjual)',
   全部: 'Semua',
