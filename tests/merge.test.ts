@@ -143,6 +143,29 @@ describe('シンクロ（合流）', () => {
     expect(mergeArrivals([2, 2], false)).toEqual([2, 2]);
   });
 
+  it('シンクロしたあとの本流に別のルートがつながっても、本流は1本として数える', () => {
+    // ① o1 a J t K u / ② o2 b↑J (J: 2+2) / ③ o3 c↑K. K is met by the trunk and ③: 4+2, not 4+4+2
+    const { loadout, items } = build(7, 3, [
+      { uid: 'o1', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'J', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+      { uid: 't', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 'K', defId: 'sword', x: 4, y: 0, exits: ['right'] },
+      { uid: 'u', defId: 'sword', x: 5, y: 0, exits: [] },
+      { uid: 'o2', defId: 'origin_stone', x: 1, y: 1, exits: ['right'] },
+      { uid: 'b', defId: 'sword', x: 2, y: 1, exits: ['up'] },
+      { uid: 'o3', defId: 'origin_stone', x: 4, y: 2, exits: ['up'] },
+      { uid: 'c', defId: 'sword', x: 4, y: 1, exits: ['up'] },
+    ]);
+    const sync = syncPoints(loadout, items);
+    expect(sync.get(2)!.arrived).toEqual([2, 2]);
+    const k = sync.get(4)!;
+    expect(k.arrived).toEqual([4, 2]);
+    expect(k.from.sort((x, y) => x - y)).toEqual([3, 11]);
+    expect(k.bonus).toBeCloseTo(mergeBonusOf([4, 2]));
+    for (const p of simulateChain(loadout, items).plans) expect(stepOf(p, 'K').step).toBe(4);
+  });
+
   it('ボーナスは「合計 ×（短い線 ÷ 長い線）− 引く分」。起点を合流マスの隣に置くだけでは出ない', () => {
     const pts = (p: number) => Math.min(MERGE.cap, Math.max(0, p - MERGE.offset) * MERGE.perPoint);
     expect(mergeBonusOf([4, 4])).toBeCloseTo(pts(8));

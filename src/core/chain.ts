@@ -334,6 +334,7 @@ function spread(
 /**
  * Sync points of a layout: cells (not origin stones) that routes from 2+ origins reach from
  * different cells. A route's count can depend on a sync point upstream, so repeat until stable
+ * (counts only grow and are bounded, so this settles within a pass per sync point)
  */
 export function syncPoints(
   loadout: Loadout,
@@ -345,18 +346,24 @@ export function syncPoints(
   const originCells = new Set(origins.map((o) => loadout.cells.indexOf(o)));
   const key = (m: ReadonlyMap<number, SyncPoint>) =>
     JSON.stringify([...m.entries()].sort((a, b) => a[0] - b[0]));
-  for (let round = 0; round < 8; round++) {
+  for (let round = 0; round <= loadout.cells.length; round++) {
     const reaches = origins.map((o) => spread(loadout, items, o, sync).reach);
     const cells = new Set(reaches.flatMap((r) => [...r.keys()]));
     const next = new Map<number, SyncPoint>();
     for (const cell of cells) {
       if (originCells.has(cell)) continue;
       const here = reaches.map((r) => r.get(cell)).filter((x): x is Reach => x !== undefined);
-      const from = [...new Set(here.map((x) => x.parentCell))];
-      // Routes that already share the way in (the trunk after a sync point) do not meet here
-      if (here.length < 2 || from.length < 2) continue;
+      // One way in per cell it comes from: routes that already share it (the trunk after a
+      // sync point) count once, with the longest of them, in firing order
+      const ways = new Map<number, Reach>();
+      for (const x of here) {
+        const w = ways.get(x.parentCell);
+        if (!w || x.feeder > w.feeder) ways.set(x.parentCell, x);
+      }
+      if (ways.size < 2) continue;
+      const from = [...ways.keys()];
       const arrived = mergeArrivals(
-        here.map((x) => x.feeder),
+        [...ways.values()].map((x) => x.feeder),
         here[0]!.isStep,
       );
       next.set(cell, {
