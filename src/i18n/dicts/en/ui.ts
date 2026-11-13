@@ -103,8 +103,8 @@ export const UI: Dict = {
     '• Make combos. Link the matching element (Thunder, Fire, Blunt) after a status item (Water Dragon Flask, Raincloud Staff, Oil Flask, Ice Sword, Frost Staff). Statuses wear off after 5 seconds.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Link Light and Dark in turn to keep the combos going: Purify (heals the hero) and Seal (slows enemy attacks). Wind stacks Poison on Poisoned enemies; at 5 layers, Venom Burst.',
-  '・2つの起点の線を同じ段数で合流させると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
-    "• Merge the lines from 2 Origins at the same link count to get a bonus from there on. An Origin Stone's type only affects the lines that start from it.",
+  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+    "• Sync the lines from 2 Origins at the same link count to get a bonus from there on. An Origin Stone's type only affects the lines that start from it.",
   '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
     '• Put your strongest gear late in the chain (link 6 and beyond). Use early links for light gear and status items.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -383,7 +383,7 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Duration (unguarded) {sec}s',
   '防御値 +{n}': 'Defense +{n}',
   'コンボ {list}': 'Combos {list}',
-  '合流ボーナス +{n}%': 'Merge bonus +{n}%',
+  'シンクロボーナス +{n}%': 'Sync bonus +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Undo',
@@ -398,10 +398,10 @@ export const UI: Dict = {
     'The bigger the "~" number, the stronger the layout. Try out different ideas!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     '"~" numbers are estimated damage against one enemy (combos and crits included)',
-  '2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ':
-    'Merge 2 lines at the same link count! The longer they are, the bigger the bonus.',
-  '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Origins whose lines are connected fire together. A merge cell shows the links and the bonus, like "4+4 +16%".',
+  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+    'Sync 2 lines at the same link count! The longer they are, the bigger the bonus.',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Origins whose lines are connected fire together. A sync cell shows the links and the bonus, like "4+4 +16%".',
   '起点が0個です。出撃できません': "No Origin placed. You can't start a run.",
   '倉庫があふれています（タップで売却）': 'Storage is full (tap to sell)',
   全部: 'All',
@@ -413,7 +413,7 @@ export const UI: Dict = {
   '約{n}・{step}段・{tech}': '~{n} · Chain {step} · {tech}',
   '必殺技|fallback': 'Special Move',
   '約{n}・{step}段・コンボ{combo}': '~{n} · Chain {step} · Combos {combo}',
-  '約{n}・{step}段・合流+{bonus}%': '~{n} · Chain {step} · Merge +{bonus}%',
+  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Chain {step} · Sync +{bonus}%',
   '約{n}・{step}段': '~{n} · Chain {step}',
   診断: 'Advice',
   配置の診断: 'Loadout Advice',
@@ -536,7 +536,7 @@ export const UI: Dict = {
   '防御 {n}': 'Defense {n}',
   '連鎖中！': 'Chaining!',
   '{step}段・{sec}秒': 'Chain {step} · {sec}s',
-  '{step}段・{sec}秒・合流+{bonus}%': 'Chain {step} · {sec}s · Merge +{bonus}%',
+  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Chain {step} · {sec}s · Sync +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  enemies {enemies}  particles {particles}  numbers {numbers}  seed {seed}',
   '時間 +{sec}': 'Time +{sec}',
@@ -550,9 +550,9 @@ export const UI: Dict = {
   'よろめき！': 'Staggered!',
   '一網打尽！': 'Wipeout!',
   'ボス撃破！': 'Boss Down!',
-  'ぴったり合流！ +{bonus}%': 'Perfect Merge! +{bonus}%',
-  '合流！ +{bonus}%': 'Merge! +{bonus}%',
-  '合流！': 'Merge!',
+  'ぴったりシンクロ！ +{bonus}%': 'Perfect Sync! +{bonus}%',
+  'シンクロ！ +{bonus}%': 'Sync! +{bonus}%',
+  'シンクロ！': 'Sync!',
   '復活！': 'Revived!',
   '再開する（HP全回復・+{sec}秒）': 'Revive (full HP, +{sec}s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Watch Ad to Revive (full HP, +{sec}s)',
@@ -659,14 +659,14 @@ export const UI: Dict = {
   '{n}方向': '{n}',
   出口の数は固定: 'Fixed number of exits',
   レアリティで出口の数が決まる: 'Rarity sets the number of exits',
-  合流: 'Merge',
-  同じ段数で合流させるとボーナス: 'Bonus for merging at the same link count',
+  シンクロ: 'Sync',
+  同じ段数でシンクロさせるとボーナス: 'Bonus for syncing at the same link count',
   線がつながった起点はいっしょに発火: 'Linked Origins fire together',
   この配置: 'This Layout',
   どの起点からも届きません: 'No Origin reaches it',
   '起点{origin}の{step}段目 ×{mult}': 'Origin {origin}, link {step} ×{mult}',
   '1ヒット 約{n}': '~{n} per hit',
-  '1ヒット 約{n}・合流+{bonus}%': '~{n} per hit · Merge +{bonus}%',
+  '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} per hit · Sync +{bonus}%',
   '起点{origin}の連鎖': "Origin {origin}'s chain",
   段数に数えない: "Doesn't count as a link",
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

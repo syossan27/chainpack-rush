@@ -311,8 +311,8 @@ export function showItemDetail(
       t(def.artifact ? '出口の数は固定' : 'レアリティで出口の数が決まる'),
     ]);
     rows.push([
-      t('合流'),
-      t('同じ段数で合流させるとボーナス'),
+      t('シンクロ'),
+      t('同じ段数でシンクロさせるとボーナス'),
       t('線がつながった起点はいっしょに発火'),
     ]);
   }
@@ -340,7 +340,7 @@ export function showItemDetail(
           mult: ctx.mult.toFixed(2),
         }),
         bonus > 0
-          ? t('1ヒット 約{n}・合流+{bonus}%', { n: fmt(hit), bonus })
+          ? t('1ヒット 約{n}・シンクロ+{bonus}%', { n: fmt(hit), bonus })
           : t('1ヒット 約{n}', { n: fmt(hit) }),
       ]);
     } else

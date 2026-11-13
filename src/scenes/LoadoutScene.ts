@@ -251,12 +251,12 @@ export class LoadoutScene extends Phaser.Scene {
           w: W - 120,
           h: this.view.gridHeight + 16,
         },
-        text: t('2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ'),
+        text: t('2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ'),
       },
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
         text: t(
-          '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る',
+          '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る',
         ),
       },
     ]);
@@ -438,7 +438,7 @@ export class LoadoutScene extends Phaser.Scene {
               tech: tech ? t(tech.name) : t('必殺技|fallback'),
             })
           : bonus > 0
-            ? t('約{n}・{step}段・合流+{bonus}%', { ...params, bonus })
+            ? t('約{n}・{step}段・シンクロ+{bonus}%', { ...params, bonus })
             : e.combos > 0
               ? t('約{n}・{step}段・コンボ{combo}', { ...params, combo: e.combos })
               : t('約{n}・{step}段', params),

@@ -107,8 +107,8 @@ export const UI: Dict = {
     '• Faça combos. Ligue o elemento certo (Raio, Fogo, Impacto) depois de um item de efeito (Frasco do Dragão de Água, Cajado da Chuva, Frasco de Óleo, Espada de Gelo, Cajado de Gelo). Os efeitos somem após 5 segundos.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Alterne Luz e Sombra para manter os combos: Purificação (cura o herói) e Selo (deixa os ataques inimigos mais lentos). O Vento acumula Veneno em inimigos envenenados; com 5 camadas, Estouro Tóxico.',
-  '・2つの起点の線を同じ段数で合流させると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
-    '• Junte as linhas de 2 Origens com o mesmo número de elos para ganhar um bônus dali em diante. O tipo de uma Pedra de Origem só vale para as linhas que saem dela.',
+  '・2つの起点の線を同じ段数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
+    '• Sincronize as linhas de 2 Origens com o mesmo número de elos para ganhar um bônus dali em diante. O tipo de uma Pedra de Origem só vale para as linhas que saem dela.',
   '・強い装備ほど後ろ（6段目以降）に置く。前の段は軽い装備や状態付与に。':
     '• Coloque seus itens mais fortes no fim da corrente (do 6º elo em diante). Use os primeiros elos para itens leves e itens de efeito.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -388,7 +388,7 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Duração (desprotegido) {sec}s',
   '防御値 +{n}': 'Defesa +{n}',
   'コンボ {list}': 'Combos {list}',
-  '合流ボーナス +{n}%': 'Bônus de junção +{n}%',
+  'シンクロボーナス +{n}%': 'Bônus de sincronia +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Desfazer',
@@ -403,10 +403,10 @@ export const UI: Dict = {
     'Quanto maior o número "~", mais forte a organização. Teste várias ideias!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Os números "~" são o dano estimado contra um inimigo (com combos e críticos)',
-  '2本の線を、同じ段数で合流させよう！\n長いほどボーナスアップ':
-    'Junte 2 linhas com o mesmo número de elos! Quanto mais longas, maior o bônus.',
-  '線がつながった起点は、いっしょに発火するよ。\n合流したマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Origens com linhas ligadas disparam juntas. A casa da junção mostra os elos e o bônus, como "4+4 +16%".',
+  '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
+    'Sincronize 2 linhas com o mesmo número de elos! Quanto mais longas, maior o bônus.',
+  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
+    'Origens com linhas ligadas disparam juntas. A casa da sincronia mostra os elos e o bônus, como "4+4 +16%".',
   '起点が0個です。出撃できません': 'Nenhuma Origem colocada. Não dá para partir.',
   '倉庫があふれています（タップで売却）': 'Armazém lotado (toque para vender)',
   全部: 'Tudo',
@@ -418,7 +418,7 @@ export const UI: Dict = {
   '約{n}・{step}段・{tech}': '~{n} · Corrente {step} · {tech}',
   '必殺技|fallback': 'Golpe Especial',
   '約{n}・{step}段・コンボ{combo}': '~{n} · Corrente {step} · Combos {combo}',
-  '約{n}・{step}段・合流+{bonus}%': '~{n} · Corrente {step} · Junção +{bonus}%',
+  '約{n}・{step}段・シンクロ+{bonus}%': '~{n} · Corrente {step} · Sincronia +{bonus}%',
   '約{n}・{step}段': '~{n} · Corrente {step}',
   診断: 'Análise',
   配置の診断: 'Análise da Mochila',
@@ -542,7 +542,7 @@ export const UI: Dict = {
   '防御 {n}': 'Defesa {n}',
   '連鎖中！': 'Encadeando!',
   '{step}段・{sec}秒': 'Corrente {step} · {sec}s',
-  '{step}段・{sec}秒・合流+{bonus}%': 'Corrente {step} · {sec}s · Junção +{bonus}%',
+  '{step}段・{sec}秒・シンクロ+{bonus}%': 'Corrente {step} · {sec}s · Sincronia +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  inimigos {enemies}  partículas {particles}  números {numbers}  seed {seed}',
   '時間 +{sec}': 'Tempo +{sec}',
@@ -556,9 +556,9 @@ export const UI: Dict = {
   'よろめき！': 'Cambaleou!',
   '一網打尽！': 'Faxina!',
   'ボス撃破！': 'Chefe Derrotado!',
-  'ぴったり合流！ +{bonus}%': 'Junção Perfeita! +{bonus}%',
-  '合流！ +{bonus}%': 'Junção! +{bonus}%',
-  '合流！': 'Junção!',
+  'ぴったりシンクロ！ +{bonus}%': 'Sincronia Perfeita! +{bonus}%',
+  'シンクロ！ +{bonus}%': 'Sincronia! +{bonus}%',
+  'シンクロ！': 'Sincronia!',
   '復活！': 'Reviveu!',
   '再開する（HP全回復・+{sec}秒）': 'Reviver (HP cheio, +{sec}s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Ver Anúncio: Reviver (HP cheio, +{sec}s)',
@@ -667,14 +667,14 @@ export const UI: Dict = {
   '{n}方向': '{n}',
   出口の数は固定: 'Número de saídas fixo',
   レアリティで出口の数が決まる: 'A raridade define o número de saídas',
-  合流: 'Junção',
-  同じ段数で合流させるとボーナス: 'Bônus ao juntar no mesmo número de elos',
+  シンクロ: 'Sincronia',
+  同じ段数でシンクロさせるとボーナス: 'Bônus ao sincronizar no mesmo número de elos',
   線がつながった起点はいっしょに発火: 'Origens ligadas disparam juntas',
   この配置: 'Nesta Mochila',
   どの起点からも届きません: 'Nenhuma Origem alcança',
   '起点{origin}の{step}段目 ×{mult}': 'Origem {origin}, elo {step} ×{mult}',
   '1ヒット 約{n}': '~{n} por golpe',
-  '1ヒット 約{n}・合流+{bonus}%': '~{n} por golpe · Junção +{bonus}%',
+  '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} por golpe · Sincronia +{bonus}%',
   '起点{origin}の連鎖': 'Corrente da Origem {origin}',
   段数に数えない: 'Não conta como elo',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

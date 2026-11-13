@@ -197,7 +197,9 @@ export class DummyScene extends Phaser.Scene {
             t('持続（無防備） {sec}秒', { sec: ev.duration.toFixed(1) }),
             t('防御値 +{n}', { n: Math.round(ev.defenseGain) }),
             this.comboLabel.length ? t('コンボ {list}', { list: this.comboLabel.join(' ') }) : '',
-            this.mergeBonus > 0 ? t('合流ボーナス +{n}%', { n: Math.round(this.mergeBonus) }) : '',
+            this.mergeBonus > 0
+              ? t('シンクロボーナス +{n}%', { n: Math.round(this.mergeBonus) })
+              : '',
           ]
             .filter(Boolean)
             .join('\n'),

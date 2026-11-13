@@ -79,7 +79,7 @@ Source language: Japanese (the dictionary keys). Target files: `src/i18n/dicts/<
 | 感電 | Shock | 感電 | 감전 | Choque | Descarga | Schock | Électrochoc | Setrum |
 | 爆発 | Explosion | 爆炸 | 폭발 | Explosão | Explosión | Explosion | Explosion | Ledakan |
 | 粉砕 | Shatter | 粉碎 | 분쇄 | Estilhaço | Destrozo | Zertrümmern | Fracas | Hancur |
-| 合流 (lines of linked origins meeting) | Merge | 合流 | 합류 | Junção | Unión | Vereinigung | Jonction | Gabung |
+| シンクロ (lines of linked origins meeting; internal name 合流 / merge) | Sync | 同步 | 싱크로 | Sincronia | Sincronía | Synchro | Synchro | Sinkron |
 | 灼光 / 呪縛 (statuses) | Radiance / Binding | 灼光 / 咒縛 | 광채 / 속박 | Radiante / Amaldiçoado | Radiante / Hechizado | Strahlend / Gebannt | Ébloui / Envoûté | Silau / Terikat |
 | 浄化 / 封印 / 毒爆 (combos) | Purify / Seal / Venom Burst | 淨化 / 封印 / 毒爆 | 정화 / 봉인 / 독폭발 | Purificação / Selo / Estouro Tóxico | Purificación / Sello / Estallido tóxico | Reinigen / Versiegeln / Giftausbruch | Purification / Scellé / Venin explosif | Penyucian / Segel / Ledakan Racun |
 | 風 / 光 / 闇 | Wind / Light / Dark | 風 / 光 / 暗 | 바람 / 빛 / 어둠 | Vento / Luz / Sombra | Viento / Luz / Oscuridad | Wind / Licht / Schatten | Vent / Lumière / Ténèbres | Angin / Cahaya / Kegelapan |

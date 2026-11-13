@@ -631,7 +631,7 @@ export class RunScene extends Phaser.Scene {
             c.chain
               ? t('連鎖中！')
               : bonus > 0
-                ? t('{step}段・{sec}秒・合流+{bonus}%', { ...params, bonus })
+                ? t('{step}段・{sec}秒・シンクロ+{bonus}%', { ...params, bonus })
                 : t('{step}段・{sec}秒', params),
           ),
         164,
@@ -956,10 +956,10 @@ export class RunScene extends Phaser.Scene {
           const exact = bonus > 0 && ev.arrived.every((n) => n === ev.arrived[0]);
           this.showMerge(
             exact
-              ? t('ぴったり合流！ +{bonus}%', { bonus })
+              ? t('ぴったりシンクロ！ +{bonus}%', { bonus })
               : bonus > 0
-                ? t('合流！ +{bonus}%', { bonus })
-                : t('合流！'),
+                ? t('シンクロ！ +{bonus}%', { bonus })
+                : t('シンクロ！'),
             exact ? '#ffe27a' : '#a8f0ff',
           );
           for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, MERGE_TINT);
