@@ -2241,28 +2241,10 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
 };
 
 /**
- * 本素材がまだない装備: 別の装備の本素材を、この色に塗り直して使う（起点石の種類）。
- * 暗い輪郭は暗いまま、明るいハイライトは白のまま残る
+ * 本素材がまだない装備: 別の装備の本素材を、この色に塗り直して使う（例: `{ from: 'origin_stone', color: 0xff88c8 }`）。
+ * 暗い輪郭は暗いまま、明るいハイライトは白のまま残る。本素材が入ったら外す（いまは全部本素材）
  */
-export const ICON_RECOLOR: Record<string, { from: string; color: number }> = {
-  origin_swift: { from: 'origin_stone', color: 0xff88c8 },
-  origin_heavy: { from: 'origin_stone', color: 0x6a6a7c },
-  origin_fire: { from: 'origin_stone', color: 0xf05a28 },
-  origin_thunder: { from: 'origin_stone', color: 0xf8d040 },
-  origin_blunt: { from: 'origin_stone', color: 0xa87448 },
-  origin_shield: { from: 'origin_stone', color: 0x3c70d8 },
-  origin_poison: { from: 'origin_stone', color: 0x7ac030 },
-  origin_vamp: { from: 'origin_stone', color: 0xb01830 },
-  origin_wind: { from: 'origin_stone', color: 0x50e0b0 },
-  origin_light: { from: 'origin_stone', color: 0xfff0b0 },
-  origin_dark: { from: 'origin_stone', color: 0x7a48c8 },
-  wind_sword: { from: 'sword', color: 0x50e0b0 },
-  storm_staff: { from: 'frost_staff', color: 0x50e0b0 },
-  light_sword: { from: 'sword', color: 0xffe070 },
-  sun_staff: { from: 'flame_staff', color: 0xffe070 },
-  dark_sword: { from: 'sword', color: 0x7a48c8 },
-  dark_staff: { from: 'flame_staff', color: 0x7a48c8 },
-};
+export const ICON_RECOLOR: Record<string, { from: string; color: number }> = {};
 
 export function iconPixels(defId: string): string[] {
   const spec = ITEM_ICONS[defId];
