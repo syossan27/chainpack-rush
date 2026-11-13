@@ -405,8 +405,8 @@ export const UI: Dict = {
     '„~“-Zahlen sind der geschätzte Schaden gegen einen Gegner (inkl. Kombos und Krits)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Synchronisiere 2 Linien bei gleicher Gliederzahl! Je länger sie sind, desto größer der Bonus.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Ursprünge mit verbundenen Linien zünden zusammen. Das Synchro-Feld zeigt Glieder und Bonus, wie „4+4 +16%“.',
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+    'Ursprünge zünden einzeln nacheinander. Das Synchro-Feld zeigt Glieder und Bonus, wie „4+4 +30%“.',
   '起点が0個です。出撃できません': 'Kein Ursprung platziert. Du kannst nicht losziehen.',
   '倉庫があふれています（タップで売却）': 'Lager voll (tippen zum Verkaufen)',
   全部: 'Alle',
@@ -667,7 +667,8 @@ export const UI: Dict = {
   レアリティで出口の数が決まる: 'Seltenheit bestimmt die Zahl der Ausgänge',
   シンクロ: 'Synchro',
   同じ段数でシンクロさせるとボーナス: 'Bonus bei gleicher Gliederzahl',
-  線がつながった起点はいっしょに発火: 'Verbundene Ursprünge zünden zusammen',
+  シンクロの先は長い方の段数でつづく:
+    'Nach der Synchro zählen die Glieder von der längeren Linie weiter',
   この配置: 'Diese Anordnung',
   どの起点からも届きません: 'Von keinem Ursprung erreicht',
   '起点{origin}の{step}段目 ×{mult}': 'Ursprung {origin}, Glied {step} ×{mult}',

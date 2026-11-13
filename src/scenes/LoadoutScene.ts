@@ -256,7 +256,7 @@ export class LoadoutScene extends Phaser.Scene {
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
         text: t(
-          '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る',
+          '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る',
         ),
       },
     ]);
@@ -367,18 +367,17 @@ export class LoadoutScene extends Phaser.Scene {
     x += 78;
     const order = getSave().loadout.originOrder;
     preview.plans.forEach((p, i) => {
-      // Linked origins fire together, so one chip carries all their numbers (e.g. 1+3)
-      const label = p.originUids.map((u) => `${order.indexOf(u) + 1}`).join('+');
-      const extra = (p.originUids.length - 1) * 22;
-      chip(x, 50 + extra, shown && this.focus === i, () =>
+      // One chip per origin (origins fire one at a time)
+      const label = `${order.indexOf(p.originUid) + 1}`;
+      chip(x, 50, shown && this.focus === i, () =>
         this.setFocus(shown && this.focus === i ? null : i),
       );
-      const cx = x + 25 + extra / 2;
+      const cx = x + 25;
       const pill = this.add.graphics();
       pill.fillStyle(routeColor(i), 1);
-      pill.fillRoundedRect(cx - 14 - extra / 2, -15, 28 + extra, 28, 14);
+      pill.fillRoundedRect(cx - 14, -15, 28, 28, 14);
       pill.lineStyle(3, 0x0c0a12, 1);
-      pill.strokeRoundedRect(cx - 14 - extra / 2, -15, 28 + extra, 28, 14);
+      pill.strokeRoundedRect(cx - 14, -15, 28, 28, 14);
       bar.add(pill);
       bar.add(
         this.add
@@ -387,7 +386,7 @@ export class LoadoutScene extends Phaser.Scene {
           .setStroke('#fff6d0', 2)
           .setShadow(0, 0, '#000', 0),
       );
-      x += 54 + extra;
+      x += 54;
     });
     // ルートの線・段数を消す／出す
     chip(x, 76, !shown, () => {

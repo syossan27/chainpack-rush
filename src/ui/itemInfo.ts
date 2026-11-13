@@ -313,7 +313,7 @@ export function showItemDetail(
     rows.push([
       t('シンクロ'),
       t('同じ段数でシンクロさせるとボーナス'),
-      t('線がつながった起点はいっしょに発火'),
+      t('シンクロの先は長い方の段数でつづく'),
     ]);
   }
   for (const a of it.affixes ?? []) rows.push([`✦ ${t(AFFIXES[a.id].name)}`, affixEffect(a)]);

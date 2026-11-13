@@ -112,10 +112,12 @@ export interface ChainStep {
   cell: number; // マス番号（行優先）
   /** この一撃が必殺技になる（data/techniques.ts の id） */
   tech?: string;
-  /** 合流: ここで出会った線の親（steps の添字）。段数はこの親たちの合計 */
-  mergeParents?: number[];
-  /** 合流: それぞれの線が届いたときの段数（mergeParents と同じ順） */
+  /** Sync point: which step this cell is on each route, in firing order (e.g. [3, 4]) */
   mergeArrived?: number[];
+  /** Sync point: the count every route goes on from here (the longer route's) */
+  mergeCount?: number;
+  /** Sync point: the cells the routes come in from */
+  mergeFrom?: number[];
   /** 合流ボーナス（%）。合流したマスから先の本流にかかる */
   mergeBonus?: number;
   /** この段に線が届いている起点（発火順） */
@@ -125,9 +127,9 @@ export interface ChainStep {
 }
 
 export interface ChainPlan {
-  /** 先頭の起点（線がつながった起点を一緒に撃つときは、発火順でいちばん前） */
+  /** The origin that fires */
   originUid: string;
-  /** この発火で一緒に撃つ起点（発火順）。ふつうは1つ */
+  /** The origins of this firing (always just the one; origins fire one at a time) */
   originUids: string[];
   steps: ChainStep[];
   duration: number; // 無防備の長さ

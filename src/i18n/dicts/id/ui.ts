@@ -404,8 +404,8 @@ export const UI: Dict = {
     'Angka "~" adalah perkiraan damage ke satu musuh (termasuk kombo dan kritikal)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sinkronkan 2 garis di jumlah mata rantai yang sama! Makin panjang, makin besar bonusnya.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Asal yang garisnya tersambung terpicu bersamaan. Kotak sinkron menampilkan mata rantai dan bonus, seperti "4+4 +16%".',
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+    'Asal terpicu satu per satu, bergiliran. Kotak sinkron menampilkan mata rantai dan bonus, seperti "4+4 +30%".',
   '起点が0個です。出撃できません': 'Belum ada Asal. Kamu tak bisa berangkat.',
   '倉庫があふれています（タップで売却）': 'Gudang penuh (ketuk untuk menjual)',
   全部: 'Semua',
@@ -669,7 +669,8 @@ export const UI: Dict = {
   レアリティで出口の数が決まる: 'Kelangkaan menentukan jumlah jalur',
   シンクロ: 'Sinkron',
   同じ段数でシンクロさせるとボーナス: 'Bonus jika sinkron di jumlah mata rantai yang sama',
-  線がつながった起点はいっしょに発火: 'Asal yang tersambung terpicu bersamaan',
+  シンクロの先は長い方の段数でつづく:
+    'Setelah sinkron, mata rantai berlanjut dari garis yang lebih panjang',
   この配置: 'Susunan Ini',
   どの起点からも届きません: 'Tak terjangkau Asal mana pun',
   '起点{origin}の{step}段目 ×{mult}': 'Asal {origin}, mata rantai ke-{step} ×{mult}',

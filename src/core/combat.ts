@@ -26,7 +26,7 @@ import { getItemDef } from '../data/items';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
 import { rollLoop, type LoopLayout } from './layout';
-import { chainMultiplier, defenseValue, lineOrigin, linkedGroups, planUnit } from './chain';
+import { chainMultiplier, defenseValue, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
@@ -249,6 +249,8 @@ export type RunInput =
 interface ExecInfo {
   eff: number; // 実際の段数（狙いが変わると1に戻る）
   aim: number | null;
+  /** The count fell below the plan on this branch (a kill restarted it) */
+  reset: boolean;
 }
 
 interface ActiveChain {
@@ -341,8 +343,10 @@ export class Combat {
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
   private readonly origins: string[];
-  /** 1回の発火で撃つ単位（線がつながった起点はまとめて1つ。発火順） */
+  /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
   private readonly units: string[][];
+  /** Each origin's chain (the layout does not change during a run) */
+  private readonly plans = new Map<string, ChainPlan>();
   private events: CombatEvent[] = [];
   private readonly inputs: RunInput[] = [];
   private nextEnemyId = 1;
@@ -371,7 +375,9 @@ export class Combat {
         ? Number.POSITIVE_INFINITY
         : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
     this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
-    this.units = linkedGroups(cfg.loadout, cfg.items, this.origins);
+    // Origins fire one at a time, even when their routes sync
+    this.units = this.origins.map((o) => [o]);
+    for (const p of simulateChain(cfg.loadout, cfg.items).plans) this.plans.set(p.originUid, p);
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
       .slice(0, slots)
@@ -426,7 +432,7 @@ export class Combat {
     return this.origins;
   }
 
-  /** 1回の発火で撃つ単位（線がつながった起点はまとめて1つ） */
+  /** 1回の発火で撃つ単位（起点は1つずつ） */
   get fireUnits(): readonly (readonly string[])[] {
     return this.units;
   }
@@ -439,6 +445,11 @@ export class Combat {
   /** 次に撃つ単位の先頭の起点 */
   get nextOriginUid(): string | null {
     return this.nextUnit?.[0] ?? null;
+  }
+
+  /** The chain this origin fires (computed once per run) */
+  planOf(originUid: string): ChainPlan | undefined {
+    return this.plans.get(originUid);
   }
 
   get timeStopped(): boolean {
@@ -852,7 +863,7 @@ export class Combat {
     const originUid = unit[0]!;
     const originIndex = this.nextUnitIndex % this.units.length;
     this.nextUnitIndex = (this.nextUnitIndex + 1) % this.units.length;
-    const plan = planUnit(this.cfg.loadout, this.cfg.items, unit);
+    const plan = this.plans.get(originUid)!;
     const aim = this.targetOrder()[0] ?? null;
     this.chain = {
       plan,
@@ -934,7 +945,7 @@ export class Combat {
       const steps = fired.filter(
         (s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind !== 'origin',
       ).length;
-      // 速攻: 一緒に撃った起点のうち、いちばん大きいもの（重ねない）
+      // 速攻: この発火の起点の値
       const quick =
         Math.max(
           0,
@@ -958,18 +969,15 @@ export class Combat {
     const parent = s.parentIndex >= 0 ? c.exec[s.parentIndex]! : null;
     const fromCell = s.parentIndex >= 0 ? c.plan.steps[s.parentIndex]!.cell : null;
 
-    const merged = s.mergeParents;
+    // Sync point: the count goes on from the longer route, unless a kill already restarted it
+    const sync = s.mergeArrived !== undefined;
+    const lift = parent?.reset ? 0 : (s.mergeCount ?? 0);
     if (def.kind !== 'attack') {
       // 起点・防御装備: 段数を数えず、親の段数と狙いを引き継ぐ
-      // (a merge cell goes on from the longest line that reached it)
       const aim = parent ? parent.aim : (this.targetOrder()[0]?.id ?? null);
-      const eff = merged
-        ? Math.max(0, ...merged.map((i) => c.exec[i]?.eff ?? 0))
-        : parent
-          ? parent.eff
-          : 0;
-      c.exec[index] = { eff, aim };
-      if (merged) this.emitMerge(c, s, aim);
+      const eff = Math.max(parent ? parent.eff : 0, lift);
+      c.exec[index] = { eff, aim, reset: parent?.reset ?? false };
+      if (sync) this.emitMerge(s, aim);
       this.emit({
         type: 'step',
         tick: this.tick,
@@ -994,22 +1002,15 @@ export class Combat {
       return;
     }
     const aimId = aim.id;
-    // Merge cell: goes on from the longest line that aimed at the same enemy
-    // (a line whose target changed does not count)
-    const eff = merged
-      ? Math.max(
-          0,
-          ...merged.map((i) => {
-            const e = c.exec[i];
-            return e && e.aim === aimId ? e.eff : 0;
-          }),
-        ) + 1
-      : parent && parent.aim === aimId
-        ? parent.eff + 1
-        : 1;
-    if (merged) this.emitMerge(c, s, aimId);
+    // The branch keeps counting while it aims at the same enemy
+    const eff = parent && parent.aim === aimId ? Math.max(parent.eff + 1, lift) : 1;
+    if (sync) this.emitMerge(s, aimId);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
-    c.exec[index] = { eff: eff + (def.stepBoost ?? 0), aim: aimId };
+    c.exec[index] = {
+      eff: eff + (def.stepBoost ?? 0),
+      aim: aimId,
+      reset: eff < (s.step ?? 0),
+    };
     const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
     this.emit({
@@ -1046,12 +1047,12 @@ export class Combat {
   }
 
   /** 合流の演出用イベント（届いた線の段数とボーナス） */
-  private emitMerge(c: ActiveChain, s: ChainStep, aimId: number | null): void {
+  private emitMerge(s: ChainStep, aimId: number | null): void {
     this.emit({
       type: 'merge',
       tick: this.tick,
       cell: s.cell,
-      fromCells: (s.mergeParents ?? []).map((i) => c.plan.steps[i]!.cell),
+      fromCells: s.mergeFrom ?? [],
       enemyId: aimId,
       // The planned steps, so the call-out matches the tag on the cell
       arrived: s.mergeArrived ?? [],
@@ -1171,7 +1172,7 @@ export class Combat {
     if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
     if (t.def.boss)
       m *= (1 + affixValue(inst, 'slayer') / 100) * (getItemDef(inst.defId).bossMult ?? 1);
-    // 初撃: その線の起点の効果（一緒に撃つ起点が複数でも、線ごとに自分の起点）
+    // 初撃: この発火の起点の効果
     if (eff === 1) {
       const origin = this.cfg.items.get(originUid);
       if (origin) m *= 1 + affixValue(origin, 'spark') / 100;

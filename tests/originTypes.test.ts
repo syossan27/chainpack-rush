@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { POISON, STATUS } from '../src/config/balance';
-import { defenseValue, planChain, planUnit } from '../src/core/chain';
+import { defenseValue, planChain } from '../src/core/chain';
+import type { ChainPlan } from '../src/core/types';
 import { BASE_HERO_STATS, Combat } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
 import { pickDef } from '../src/core/loot';
@@ -29,37 +30,37 @@ function yShape(o1: string, o2: string, item: string, trunk = item) {
   return build(5, 3, placed);
 }
 
-const stepOf = (plan: ReturnType<typeof planUnit>, uid: string) =>
-  plan.steps.find((s) => s.uid === uid)!;
+const stepOf = (plan: ChainPlan, uid: string) => plan.steps.find((s) => s.uid === uid)!;
 
 describe('起点石の種類', () => {
-  it('効くのはその起点の線だけ。合流した本流には両方の線の効果がかかる', () => {
+  it('効くのは、その発火の起点の線だけ（合流の先も、発火した起点の分だけ）', () => {
     const { loadout, items } = yShape('origin_fire', 'origin_heavy', 'torch');
-    const plan = planUnit(loadout, items, ['o1', 'o2']);
+    const p1 = planChain(loadout, items, 'o1');
+    const p2 = planChain(loadout, items, 'o2');
     // Fire stone line: fire items +15%; heavy stone line: +20%
-    expect(stepOf(plan, 'a').line?.damage).toBeCloseTo(1.15);
-    expect(stepOf(plan, 'c').line?.damage).toBeCloseTo(1.2);
-    // The trunk after the merge gets both
-    expect(stepOf(plan, 'J').line?.damage).toBeCloseTo(1.15 * 1.2);
-    expect(stepOf(plan, 'f').line?.damage).toBeCloseTo(1.15 * 1.2);
-    expect(stepOf(plan, 'J').origins).toEqual(['o1', 'o2']);
-    expect(stepOf(plan, 'a').origins).toEqual(['o1']);
+    expect(stepOf(p1, 'a').line?.damage).toBeCloseTo(1.15);
+    expect(stepOf(p2, 'c').line?.damage).toBeCloseTo(1.2);
+    // Origins fire one at a time, so the shared part takes the firing origin's stone only
+    expect(stepOf(p1, 'J').line?.damage).toBeCloseTo(1.15);
+    expect(stepOf(p1, 'f').line?.damage).toBeCloseTo(1.15);
+    expect(stepOf(p2, 'J').line?.damage).toBeCloseTo(1.2);
+    expect(stepOf(p1, 'J').origins).toEqual(['o1']);
   });
 
   it('属性の起点石は、その属性の装備だけに効く', () => {
     const { loadout, items } = yShape('origin_fire', 'origin_stone', 'sword');
-    const plan = planUnit(loadout, items, ['o1', 'o2']);
+    const plan = planChain(loadout, items, 'o1');
     expect(stepOf(plan, 'a').line).toBeUndefined();
     expect(stepOf(plan, 'J').line).toBeUndefined();
   });
 
-  it('同じ種類の起点石が合流しても、効果は1回分', () => {
+  it('同じ種類の起点石どうしが合流しても、効果は1回分', () => {
     const { loadout, items } = yShape('origin_fire', 'origin_fire', 'torch');
-    const plan = planUnit(loadout, items, ['o1', 'o2']);
-    expect(stepOf(plan, 'J').line?.damage).toBeCloseTo(1.15);
+    for (const o of ['o1', 'o2'])
+      expect(stepOf(planChain(loadout, items, o), 'J').line?.damage).toBeCloseTo(1.15);
   });
 
-  it('速の起点石は伝わるのが速く、重い起点石は遅い。両方が合流した本流では打ち消し合う', () => {
+  it('速の起点石は伝わるのが速く、重い起点石は遅い。合流の先も、その発火の起点石の速さ', () => {
     const swift = yShape('origin_swift', 'origin_stone', 'sword');
     const p1 = planChain(swift.loadout, swift.items, 'o1');
     expect(stepOf(p1, 'a').t).toBeCloseTo(0.15);
@@ -68,12 +69,14 @@ describe('起点石の種類', () => {
     const heavy = yShape('origin_heavy', 'origin_stone', 'sword');
     expect(stepOf(planChain(heavy.loadout, heavy.items, 'o1'), 'a').t).toBeCloseTo(0.25);
 
-    // Swift and heavy lines meet at J: from there the relay is the plain 0.2s again
+    // Swift and heavy routes meet at J: each firing keeps its own stone's speed after it
     const both = yShape('origin_swift', 'origin_heavy', 'sword');
-    const plan = planUnit(both.loadout, both.items, ['o1', 'o2']);
-    const j = stepOf(plan, 'J');
-    expect(stepOf(plan, 'e').t - j.t).toBeCloseTo(0.2);
-    expect(j.line?.damage).toBeCloseTo(0.9 * 1.2);
+    const s1 = planChain(both.loadout, both.items, 'o1');
+    const s2 = planChain(both.loadout, both.items, 'o2');
+    expect(stepOf(s1, 'e').t - stepOf(s1, 'J').t).toBeCloseTo(0.15);
+    expect(stepOf(s2, 'e').t - stepOf(s2, 'J').t).toBeCloseTo(0.25);
+    expect(stepOf(s1, 'J').line?.damage).toBeCloseTo(0.9);
+    expect(stepOf(s2, 'J').line?.damage).toBeCloseTo(1.2);
   });
 
   it('盾の起点石: 線の防御装備の防御値が上がる（連鎖が途中で切れても、通った分にかかる）', () => {

@@ -408,8 +408,8 @@ export const UI: Dict = {
     'Les nombres « ~ » sont les dégâts estimés sur un seul ennemi (combos et critiques inclus)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Synchronise 2 lignes au même nombre de maillons ! Plus elles sont longues, plus le bonus est grand.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Les Origines aux lignes reliées se déclenchent ensemble. La case de synchro affiche les maillons et le bonus, comme « 4+4 +16% ».',
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+    'Les Origines se déclenchent une par une, à tour de rôle. La case de synchro affiche les maillons et le bonus, comme « 4+4 +30% ».',
   '起点が0個です。出撃できません': 'Aucune Origine placée. Impossible de partir.',
   '倉庫があふれています（タップで売却）': 'La Réserve est pleine (touche pour vendre)',
   全部: 'Tout',
@@ -674,7 +674,8 @@ export const UI: Dict = {
   レアリティで出口の数が決まる: 'La rareté fixe le nombre de sorties',
   シンクロ: 'Synchro',
   同じ段数でシンクロさせるとボーナス: 'Bonus pour une synchro au même nombre de maillons',
-  線がつながった起点はいっしょに発火: 'Les Origines reliées se déclenchent ensemble',
+  シンクロの先は長い方の段数でつづく:
+    'Après la synchro, les maillons suivent la ligne la plus longue',
   この配置: 'Cette disposition',
   どの起点からも届きません: "Aucune Origine ne l'atteint",
   '起点{origin}の{step}段目 ×{mult}': 'Origine {origin}, maillon {step} ×{mult}',

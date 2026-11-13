@@ -405,8 +405,8 @@ export const UI: Dict = {
     'Os números "~" são o dano estimado contra um inimigo (com combos e críticos)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     'Sincronize 2 linhas com o mesmo número de elos! Quanto mais longas, maior o bônus.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Origens com linhas ligadas disparam juntas. A casa da sincronia mostra os elos e o bônus, como "4+4 +16%".',
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+    'As Origens disparam uma de cada vez, em ordem. A casa da sincronia mostra os elos e o bônus, como "4+4 +30%".',
   '起点が0個です。出撃できません': 'Nenhuma Origem colocada. Não dá para partir.',
   '倉庫があふれています（タップで売却）': 'Armazém lotado (toque para vender)',
   全部: 'Tudo',
@@ -669,7 +669,7 @@ export const UI: Dict = {
   レアリティで出口の数が決まる: 'A raridade define o número de saídas',
   シンクロ: 'Sincronia',
   同じ段数でシンクロさせるとボーナス: 'Bônus ao sincronizar no mesmo número de elos',
-  線がつながった起点はいっしょに発火: 'Origens ligadas disparam juntas',
+  シンクロの先は長い方の段数でつづく: 'Após a sincronia, os elos seguem a linha mais longa',
   この配置: 'Nesta Mochila',
   どの起点からも届きません: 'Nenhuma Origem alcança',
   '起点{origin}の{step}段目 ×{mult}': 'Origem {origin}, elo {step} ×{mult}',

@@ -94,6 +94,8 @@ export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number |
  * - 1回の連鎖で各アイテムは1回だけ発動。先に届いた枝が優先、同時なら上→右→下→左
  * - 攻撃装備で段数+1、防御装備は通すが数えない
  * - 起点同士がつながっている場合、後ろの起点は「通すだけ」のマスとして扱う
+ * - Origins fire one at a time. At a sync point (where routes from other origins meet) the count
+ *   goes on from the longer route, and the sync bonus applies from there on
  */
 export function planChain(
   loadout: Loadout,
@@ -110,101 +112,14 @@ export function planChain(
       maxStep: 0,
       multCap: CHAIN.multCap,
     };
-  // One origin is the merged planner with a single line and no merge cells
-  return spreadLinked(loadout, items, [originUid], null).plan;
+  return spread(loadout, items, originUid, syncPoints(loadout, items)).plan;
 }
 
-// ---- 合流: 線がつながった起点を一緒に撃つ ----
-/** その段がどの起点の線か（いちばん段数の高い親をたどった先の起点） */
+/** その段がどの起点の線か（発火した起点） */
 export function lineOrigin(plan: ChainPlan, index: number): string {
   let i = index;
   while (plan.steps[i]!.parentIndex >= 0) i = plan.steps[i]!.parentIndex;
   return plan.steps[i]!.uid;
-}
-
-/**
- * 線がつながった起点をまとめる（発火順）。ある起点の線が通るマスを、別の起点の線も通れば同じまとまり。
- * まとまりは1回の発火で一緒に撃つ（待ちは1回分、線は並んで走る）
- */
-export function linkedGroups(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  origins: readonly string[],
-): string[][] {
-  const cellsOf = origins.map(
-    (o) =>
-      new Set(
-        planChain(loadout, items, o)
-          .steps.slice(1)
-          .map((s) => s.cell),
-      ),
-  );
-  const root = origins.map((_, i) => i);
-  const find = (i: number): number => {
-    while (root[i] !== i) i = root[i]!;
-    return i;
-  };
-  for (let a = 0; a < origins.length; a++)
-    for (let b = a + 1; b < origins.length; b++) {
-      const ra = find(a);
-      const rb = find(b);
-      if (ra === rb) continue;
-      for (const c of cellsOf[a]!)
-        if (cellsOf[b]!.has(c)) {
-          root[Math.max(ra, rb)] = Math.min(ra, rb);
-          break;
-        }
-    }
-  const groups = new Map<number, string[]>();
-  origins.forEach((o, i) => {
-    const r = find(i);
-    groups.set(r, [...(groups.get(r) ?? []), o]);
-  });
-  return [...groups.values()];
-}
-
-/**
- * 一緒に撃つ起点のうち、t=0 に線を出す起点（発火順）。ほかの起点の線が届く起点は「通すだけ」のマスで、
- * 届いた線の段数をそのまま先へ渡す。届き合っているだけの起点（輪）は、発火順で先の起点から出す
- */
-export function unitHeads(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  originUids: readonly string[],
-): string[] {
-  if (originUids.length <= 1) return originUids.slice();
-  const reach = new Map(
-    originUids.map((o) => [
-      o,
-      new Set(
-        planChain(loadout, items, o)
-          .steps.slice(1)
-          .map((s) => s.cell),
-      ),
-    ]),
-  );
-  const cellOf = (o: string) => loadout.cells.indexOf(o);
-  const fed = (o: string) => originUids.some((x) => x !== o && reach.get(x)!.has(cellOf(o)));
-  const heads = originUids.filter((o) => !fed(o));
-  const covered = new Set<number>();
-  for (const h of heads) for (const c of [cellOf(h), ...reach.get(h)!]) covered.add(c);
-  for (const o of originUids) {
-    if (heads.includes(o) || covered.has(cellOf(o))) continue;
-    heads.push(o);
-    for (const c of [cellOf(o), ...reach.get(o)!]) covered.add(c);
-  }
-  return originUids.filter((o) => heads.includes(o));
-}
-
-/** 1回の発火で撃つ連鎖（起点が1つなら planChain、つながった起点が複数なら合流つき） */
-export function planUnit(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  originUids: readonly string[],
-): ChainPlan {
-  return originUids.length <= 1
-    ? planChain(loadout, items, originUids[0] ?? '')
-    : planMerged(loadout, items, originUids);
 }
 
 /**
@@ -217,13 +132,14 @@ export function mergeArrivals(feeders: readonly number[], isStep: boolean): numb
   return feeders.map((n) => (isStep && n > 0 ? n + 1 : n));
 }
 
-/** 合流ボーナス（%）: 段数の合計 ×（短い線 ÷ 長い線）。線の一本が段数0なら出ない */
+/** 合流ボーナス（%）: 段数の合計 ×（短い線 ÷ 長い線）から MERGE.offset を引いた分。線の一本が段数0なら出ない */
 export function mergeBonusOf(arrived: readonly number[]): number {
   if (arrived.length < 2) return 0;
   const longest = Math.max(...arrived);
   if (longest <= 0) return 0;
   const sum = arrived.reduce((a, b) => a + b, 0);
-  return Math.min(MERGE.cap, sum * (Math.min(...arrived) / longest) * MERGE.perPoint);
+  const points = sum * (Math.min(...arrived) / longest);
+  return Math.min(MERGE.cap, Math.max(0, points - MERGE.offset) * MERGE.perPoint);
 }
 
 /** The largest merge bonus (%) anywhere in this firing (0 when no lines merge) */
@@ -231,7 +147,27 @@ export function maxMergeBonus(plan: ChainPlan): number {
   return plan.steps.reduce((m, s) => Math.max(m, s.mergeBonus ?? 0), 0);
 }
 
-interface MergePending {
+/** A sync point: a cell where routes from different origins meet (never an origin stone) */
+export interface SyncPoint {
+  /** Which step the cell is on each route, in firing order (e.g. [3, 4]; equal = exact sync) */
+  arrived: number[];
+  /** Every route goes on from the larger count here (the step, for an attack) */
+  count: number;
+  /** The cells the routes come in from */
+  from: number[];
+  /** Sync bonus (%) from here on */
+  bonus: number;
+}
+
+/** How one route reaches a cell, before a sync point lifts its count */
+interface Reach {
+  own: number;
+  feeder: number;
+  parentCell: number;
+  isStep: boolean;
+}
+
+interface Pending {
   tMs: number;
   seq: number;
   cell: number;
@@ -239,40 +175,31 @@ interface MergePending {
   branch: number;
 }
 
-/**
- * Spread the chain from several origins at once. With `merge`, a listed cell waits until all its
- * lines arrive, then fires as the next step of the longest line
- * (the first pass finds where each line reaches, the second waits)
- */
-function spreadLinked(
+/** One origin's chain, with the sync points of the whole layout */
+function spread(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
-  originUids: readonly string[],
-  merge: Map<number, number[][]> | null,
-): { plan: ChainPlan; arrivals: Map<number, number[][]> } {
+  originUid: string,
+  sync: ReadonlyMap<number, SyncPoint>,
+): { plan: ChainPlan; reach: Map<number, Reach> } {
   const steps: ChainStep[] = [];
-  const lines: number[][] = []; // 各ステップに届いた線（originUids の添字）
+  const lines: string[][] = []; // origin stones on the line up to each step
   const counts: number[] = []; // 各ステップ時点の段数（子へ渡す数）
   const visited = new Set<number>();
-  const arrivals = new Map<number, number[][]>();
-  const held = new Map<number, MergePending[]>();
-  const queue: MergePending[] = [];
+  const reach = new Map<number, Reach>();
+  const queue: Pending[] = [];
   let seq = 0;
   let nextBranch = 0;
   let defenseGain = 0;
   let lastMs = 0;
-  let nowMs = 0;
   let maxStep = 0;
-  // Origin stone effects for each set of lines (same set → same effects)
+  // Origin stone effects for each set of stones on the line (same set → same effects)
   const fxCache = new Map<string, LineEffect[]>();
-  const effectsOf = (ls: readonly number[]): LineEffect[] => {
+  const effectsOf = (ls: readonly string[]): LineEffect[] => {
     const key = ls.join(',');
     let fx = fxCache.get(key);
     if (!fx) {
-      fx = lineEffects(
-        items,
-        ls.map((k) => originUids[k]!),
-      );
+      fx = lineEffects(items, ls);
       fxCache.set(key, fx);
     }
     return fx;
@@ -297,84 +224,68 @@ function spreadLinked(
     }
   };
 
-  const originCells = new Set<number>();
-  const heads = new Set(unitHeads(loadout, items, originUids));
-  originUids.forEach((uid, k) => {
-    const cell = loadout.cells.indexOf(uid);
-    if (cell < 0 || !heads.has(uid)) return;
-    visited.add(cell);
-    originCells.add(cell);
-    steps.push({
-      t: 0,
-      uid,
-      step: null,
-      branch: nextBranch++,
-      mult: 1,
-      from: null,
-      parentIndex: -1,
-      cell,
-      origins: [uid],
-    });
-    lines.push([k]);
-    counts.push(0);
+  const originCell = loadout.cells.indexOf(originUid);
+  visited.add(originCell);
+  steps.push({
+    t: 0,
+    uid: originUid,
+    step: null,
+    branch: nextBranch++,
+    mult: 1,
+    from: null,
+    parentIndex: -1,
+    cell: originCell,
+    origins: [originUid],
   });
-  const originSteps = steps.length;
-  for (let i = 0; i < originSteps; i++) expand(i, 0);
+  lines.push([originUid]);
+  counts.push(0);
+  expand(0, 0);
 
-  const fire = (cell: number, tMs: number, parents: number[], branch: number): void => {
+  const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
     const uid = loadout.cells[cell]!;
     const inst = items.get(uid)!;
     const def = getItemDef(inst.defId);
-    const feeders = parents.map((p) => counts[p]!);
-    // The chain goes on from the longest line (merging does not add the lines' steps)
-    const base = Math.max(...feeders);
-    // A line that passes through another origin stone of this firing also takes that stone's effect
-    const self = def.kind === 'origin' ? originUids.indexOf(uid) : -1;
-    const myLines = [
-      ...new Set([...parents.flatMap((p) => lines[p]!), ...(self >= 0 ? [self] : [])]),
-    ].sort((a, b) => a - b);
-    // Origin stone types: every line that reaches this cell brings its stone's effect
+    const feeder = counts[parent]!;
+    const isStep = def.kind === 'attack';
+    const own = feeder + (isStep ? 1 : 0);
+    reach.set(cell, { own, feeder, parentCell: steps[parent]!.cell, isStep });
+    // Sync point: every route goes on from the longer one
+    const sp = sync.get(cell);
+    const count = sp ? Math.max(own, sp.count) : own;
+    // A line that passes through another origin stone also takes that stone's effect
+    const myLines =
+      def.kind === 'origin' && !lines[parent]!.includes(uid)
+        ? [...lines[parent]!, uid]
+        : lines[parent]!;
     const boost = lineBoost(def, effectsOf(myLines));
     let step: number | null = null;
-    let count = base;
-    if (def.kind === 'attack') {
-      count = base + 1;
+    if (isStep) {
       step = count;
       if (count > maxStep) maxStep = count;
     } else if (def.kind === 'defense') {
       defenseGain += defenseValue(inst, boost);
     }
-    // 合流ボーナスはここで決まり、この先の本流へ引き継ぐ（いちばん大きいもの）
-    // Shown in route order (①, ②…), so the tag reads like the route chip "1+2"
-    const byRoute = parents
-      .map((p, i) => ({ route: Math.min(...lines[p]!), n: feeders[i]! }))
-      .sort((a, b) => a.route - b.route);
-    const arrived = mergeArrivals(
-      byRoute.map((r) => r.n),
-      def.kind === 'attack',
-    );
-    const inherited = Math.max(0, ...parents.map((p) => steps[p]!.mergeBonus ?? 0));
-    const mergeBonus = Math.max(inherited, parents.length > 1 ? mergeBonusOf(arrived) : 0);
-    const main = parents[0]!;
+    // 合流ボーナスはここで決まり、この先へ引き継ぐ（いちばん大きいもの）
+    const mergeBonus = Math.max(steps[parent]!.mergeBonus ?? 0, sp?.bonus ?? 0);
     steps.push({
       t: tMs / MS,
       uid,
       step,
       branch,
       mult: step === null ? 1 : chainMultiplier(step),
-      from: steps[main]!.uid,
-      parentIndex: main,
+      from: steps[parent]!.uid,
+      parentIndex: parent,
       cell,
-      ...(parents.length > 1 ? { mergeParents: parents, mergeArrived: arrived } : {}),
+      ...(sp ? { mergeArrived: sp.arrived, mergeCount: sp.count, mergeFrom: sp.from } : {}),
       ...(mergeBonus > 0 ? { mergeBonus } : {}),
-      origins: myLines.map((k) => originUids[k]!),
+      origins: myLines.slice(),
       ...(boost ? { line: boost } : {}),
     });
     lines.push(myLines);
-    counts.push(count + (def.kind === 'attack' ? (def.stepBoost ?? 0) : 0));
-    // 必殺技: いちばん段数の高い線をたどった並びで判定する
-    if (def.kind === 'attack') {
+    counts.push(count + (isStep ? (def.stepBoost ?? 0) : 0));
+    // 必殺技: 3つの並びで判定する
+    if (isStep) {
       const me = steps[steps.length - 1]!;
       const p1 = steps[me.parentIndex];
       const p2 = p1 ? steps[p1.parentIndex] : undefined;
@@ -388,36 +299,7 @@ function spreadLinked(
     expand(steps.length - 1, tMs);
   };
 
-  // 届いた線から、起点の重ならないものを1本ずつ（段数の高い順に）選ぶ
-  const pick = (list: MergePending[]): MergePending[] => {
-    const sorted = [...list].sort((a, b) => counts[b.parentIndex]! - counts[a.parentIndex]!);
-    const used = new Set<number>();
-    const out: MergePending[] = [];
-    for (const a of sorted) {
-      const ls = lines[a.parentIndex]!;
-      if (ls.some((x) => used.has(x))) continue;
-      for (const x of ls) used.add(x);
-      out.push(a);
-    }
-    return out;
-  };
-
-  while (queue.length > 0 || held.size > 0) {
-    if (queue.length === 0) {
-      // 待っていた線が来なかった（途中を別の線に取られた）: 届いた線だけで、いま発動する
-      const [cell, list] = [...held.entries()].sort(
-        (a, b) => Math.max(...a[1].map((x) => x.tMs)) - Math.max(...b[1].map((x) => x.tMs)),
-      )[0]!;
-      held.delete(cell);
-      const got = pick(list);
-      fire(
-        cell,
-        Math.max(nowMs, ...got.map((x) => x.tMs)),
-        got.map((x) => x.parentIndex),
-        got[0]!.branch,
-      );
-      continue;
-    }
+  while (queue.length > 0) {
     let best = 0;
     for (let i = 1; i < queue.length; i++) {
       const a = queue[i]!;
@@ -425,28 +307,8 @@ function spreadLinked(
       if (a.tMs < b.tMs || (a.tMs === b.tMs && a.seq < b.seq)) best = i;
     }
     const p = queue.splice(best, 1)[0]!;
-    nowMs = p.tMs;
-    if (!originCells.has(p.cell))
-      arrivals.set(p.cell, [...(arrivals.get(p.cell) ?? []), lines[p.parentIndex]!]);
     if (visited.has(p.cell)) continue;
-    const need = merge?.get(p.cell);
-    if (!need) {
-      fire(p.cell, p.tMs, [p.parentIndex], p.branch);
-      continue;
-    }
-    const list = [...(held.get(p.cell) ?? []), p];
-    held.set(p.cell, list);
-    const got = new Set(list.flatMap((x) => lines[x.parentIndex]!));
-    if (need.every((g) => g.every((x) => got.has(x)))) {
-      held.delete(p.cell);
-      const ps = pick(list);
-      fire(
-        p.cell,
-        p.tMs,
-        ps.map((x) => x.parentIndex),
-        ps[0]!.branch,
-      );
-    }
+    fire(p.cell, p.tMs, p.parentIndex, p.branch);
   }
 
   const multCap = Math.max(
@@ -457,39 +319,62 @@ function spreadLinked(
     for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, multCap);
   return {
     plan: {
-      originUid: originUids[0]!,
-      originUids: originUids.slice(),
+      originUid,
+      originUids: [originUid],
       steps,
       duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
       defenseGain,
       maxStep,
       multCap,
     },
-    arrivals,
+    reach,
   };
 }
 
-/** Linked origins' chain with merges: a cell reached by 2+ lines waits for all, then fires as the next step of the longest */
-export function planMerged(
+/**
+ * Sync points of a layout: cells (not origin stones) that routes from 2+ origins reach from
+ * different cells. A route's count can depend on a sync point upstream, so repeat until stable
+ */
+export function syncPoints(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
-  originUids: readonly string[],
-): ChainPlan {
-  const first = spreadLinked(loadout, items, originUids, null);
-  // 起点の重ならない線が2本以上届くマスが合流点
-  const merge = new Map<number, number[][]>();
-  for (const [cell, list] of first.arrivals) {
-    const separate: number[][] = [];
-    for (const ls of list)
-      if (separate.every((g) => !g.some((x) => ls.includes(x)))) separate.push(ls);
-    if (separate.length >= 2) merge.set(cell, separate);
+): Map<number, SyncPoint> {
+  const origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
+  let sync = new Map<number, SyncPoint>();
+  if (origins.length < 2) return sync;
+  const originCells = new Set(origins.map((o) => loadout.cells.indexOf(o)));
+  const key = (m: ReadonlyMap<number, SyncPoint>) =>
+    JSON.stringify([...m.entries()].sort((a, b) => a[0] - b[0]));
+  for (let round = 0; round < 8; round++) {
+    const reaches = origins.map((o) => spread(loadout, items, o, sync).reach);
+    const cells = new Set(reaches.flatMap((r) => [...r.keys()]));
+    const next = new Map<number, SyncPoint>();
+    for (const cell of cells) {
+      if (originCells.has(cell)) continue;
+      const here = reaches.map((r) => r.get(cell)).filter((x): x is Reach => x !== undefined);
+      const from = [...new Set(here.map((x) => x.parentCell))];
+      // Routes that already share the way in (the trunk after a sync point) do not meet here
+      if (here.length < 2 || from.length < 2) continue;
+      const arrived = mergeArrivals(
+        here.map((x) => x.feeder),
+        here[0]!.isStep,
+      );
+      next.set(cell, {
+        arrived,
+        count: Math.max(...here.map((x) => x.own)),
+        from,
+        bonus: mergeBonusOf(arrived),
+      });
+    }
+    if (key(next) === key(sync)) return next;
+    sync = next;
   }
-  return spreadLinked(loadout, items, originUids, merge).plan;
+  return sync;
 }
 
-/** 配置画面用: 1回の発火で撃つ単位ごとに連鎖を計算し、どの起点からも届かないマスを返す */
+/** 配置画面用: 起点ごとに連鎖を計算し、どの起点からも届かないマスを返す */
 export interface ChainPreview {
-  /** 発火する単位ごと（線がつながった起点はまとめて1つ）。plan.originUids でどの起点か分かる */
+  /** 起点ごと（発火順）。plan.originUids でどの起点か分かる */
   plans: ChainPlan[];
   reachable: Set<number>;
   unreachable: Set<number>;
@@ -500,7 +385,8 @@ export function simulateChain(
   items: ReadonlyMap<string, ItemInstance>,
 ): ChainPreview {
   const origins = loadout.originOrder.filter((uid) => loadout.cells.includes(uid));
-  const plans = linkedGroups(loadout, items, origins).map((g) => planUnit(loadout, items, g));
+  const sync = syncPoints(loadout, items);
+  const plans = origins.map((o) => spread(loadout, items, o, sync).plan);
   const reachable = new Set<number>();
   for (const p of plans) for (const s of p.steps) reachable.add(s.cell);
   const unreachable = new Set<number>();

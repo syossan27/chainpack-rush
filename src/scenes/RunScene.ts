@@ -2,7 +2,7 @@
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, SIM } from '../config/balance';
-import { maxMergeBonus, planUnit } from '../core/chain';
+import { maxMergeBonus } from '../core/chain';
 import { addPet } from '../ui/cosmeticsView';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
@@ -617,9 +617,8 @@ export class RunScene extends Phaser.Scene {
     fitText(this.hud.defText.setScale(1).setText(t('防御 {n}', { n: Math.round(c.defense) })), 190);
     const nextUid = c.nextOriginUid;
     const unit = c.nextUnit;
-    if (nextUid && unit) {
-      const plan = planUnit(this.loadout, this.items, unit);
-      // Linked origins fire together: show all their numbers (e.g. ①②)
+    const plan = nextUid ? c.planOf(nextUid) : undefined;
+    if (unit && plan) {
       this.hud.nextBadge.setText(unit.map((u) => originLabel(c.originOrder.indexOf(u))).join(''));
       // Inside the "next chain" panel (right edge x=630)
       const bonus = Math.round(maxMergeBonus(plan));
@@ -637,7 +636,7 @@ export class RunScene extends Phaser.Scene {
         164,
       );
     }
-    // Linked origins fire together, so they all blink
+    // The origin that fires next blinks
     this.view.setBlinkOrigin(c.chain ? null : (unit ?? null));
     this.hud.loot.setValue(`${c.drops.length}`);
     this.drawTrack();

@@ -1,7 +1,7 @@
 // バックパックの描画（配置画面・ラン・カカシで共用）
 // レイヤー: マス → アイコン（出口矢印・レアリティ枠つき）→ 連鎖の線 → 光 → 段数・倍率・起点番号
 import Phaser from 'phaser';
-import { linkedGroups, type ChainPreview } from '../core/chain';
+import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { t } from '../i18n';
@@ -29,20 +29,9 @@ export function originLabel(index: number): string {
   return CIRCLED[index] ?? `${index + 1}`;
 }
 
-/** Numbers of the origins that fire together (e.g. ①②) */
+/** Number(s) of the origin(s), e.g. ① (a firing has one origin; a line can pass several) */
 export function unitLabel(loadout: Loadout, originUids: readonly string[]): string {
   return originUids.map((u) => originLabel(loadout.originOrder.indexOf(u))).join('');
-}
-
-/** For each placed origin: the index of the unit it fires with (linked origins share a color) */
-export function unitIndexOf(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-): Map<string, number> {
-  const origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
-  const out = new Map<string, number>();
-  linkedGroups(loadout, items, origins).forEach((g, i) => g.forEach((u) => out.set(u, i)));
-  return out;
 }
 
 export class BackpackView extends Phaser.GameObjects.Container {
@@ -169,8 +158,6 @@ export class BackpackView extends Phaser.GameObjects.Container {
   }
 
   private drawOriginBadges(): void {
-    // Linked origins fire together, so they share their unit's color
-    const unitOf = unitIndexOf(this.loadout, this.items);
     this.loadout.originOrder.forEach((uid, idx) => {
       const cell = this.loadout.cells.indexOf(uid);
       if (cell < 0) return;
@@ -179,9 +166,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
       const bx = c.x - this.cell / 2 + 16;
       const by = c.y - this.cell / 2 + 16;
       this.labelLayer.add(
-        this.scene.add
-          .circle(bx, by, 15, routeColor(unitOf.get(uid) ?? idx))
-          .setStrokeStyle(3, 0x0c0a12),
+        this.scene.add.circle(bx, by, 15, routeColor(idx)).setStrokeStyle(3, 0x0c0a12),
       );
       this.labelLayer.add(
         this.scene.add
@@ -214,6 +199,9 @@ export class BackpackView extends Phaser.GameObjects.Container {
       icon.setDimmed(p.unreachable.has(cell));
       if (focused && !onRoute.has(cell)) icon.setAlpha(0.35);
     }
+    // Routes share the cells after a sync point (with the same numbers): label each cell once
+    const labeled = new Set<number>();
+    const tagged = new Set<number>();
     p.plans.forEach((plan, pi) => {
       if (focused && plan !== focused) return;
       const color = routeColor(pi);
@@ -235,21 +223,19 @@ export class BackpackView extends Phaser.GameObjects.Container {
       for (const s of plan.steps) {
         if (s.parentIndex < 0) continue;
         const b = this.cellCenter(s.cell);
-        // A merge cell is reached by several lines: draw each of them
-        for (const pIndex of s.mergeParents ?? [s.parentIndex]) {
-          const parent = plan.steps[pIndex]!;
-          const a = this.cellCenter(parent.cell);
-          this.lineG.lineStyle(width + 4, 0x0c0a12, 0.6);
-          this.lineG.lineBetween(a.x, a.y, b.x, b.y);
-          this.lineG.lineStyle(width, color, 0.95);
-          this.lineG.lineBetween(a.x, a.y, b.x, b.y);
-          if (focused) this.flowEdges.push({ a, b, t0: parent.t, t1: s.t });
-        }
+        const parent = plan.steps[s.parentIndex]!;
+        const a = this.cellCenter(parent.cell);
+        this.lineG.lineStyle(width + 4, 0x0c0a12, 0.6);
+        this.lineG.lineBetween(a.x, a.y, b.x, b.y);
+        this.lineG.lineStyle(width, color, 0.95);
+        this.lineG.lineBetween(a.x, a.y, b.x, b.y);
+        if (focused) this.flowEdges.push({ a, b, t0: parent.t, t1: s.t });
         this.lineG.fillStyle(color, 1);
         this.lineG.fillCircle(b.x, b.y, focused ? 7 : 5);
       }
       for (const s of plan.steps) {
-        if (s.step === null) continue;
+        if (s.step === null || labeled.has(s.cell)) continue;
+        labeled.add(s.cell);
         const c = this.cellCenter(s.cell);
         const label = this.scene.add
           .text(
@@ -268,9 +254,10 @@ export class BackpackView extends Phaser.GameObjects.Container {
         fitText(label, this.cell + 6);
         this.labelLayer.add(label);
       }
-      // Merge cells: the steps each line arrived with, and the bonus from here on (e.g. 4+4 +16%)
+      // Sync points: which step the cell is on each route, and the bonus from here on (4+4 +30%)
       for (const s of plan.steps) {
-        if (!s.mergeArrived) continue;
+        if (!s.mergeArrived || tagged.has(s.cell)) continue;
+        tagged.add(s.cell);
         const c = this.cellCenter(s.cell);
         const bonus = Math.round(s.mergeBonus ?? 0);
         const text = `${s.mergeArrived.join('+')}${bonus > 0 ? ` +${bonus}%` : ''}`;
@@ -331,7 +318,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     });
   }
 
-  /** Blink the origin(s) that fire next (linked origins blink together) */
+  /** Blink the origin that fires next */
   setBlinkOrigin(uids: string | readonly string[] | null): void {
     this.blinkUids = uids === null ? [] : typeof uids === 'string' ? [uids] : uids;
   }

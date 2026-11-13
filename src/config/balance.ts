@@ -46,14 +46,17 @@ export const CHAIN = {
 } as const;
 
 /**
- * Merge: linked origins fire together in one firing. A cell reached by 2+ lines waits for all,
- * then fires as the next step of the longest route, and the merge bonus applies from there on.
+ * Merge (sync): origins still fire one at a time. At a cell where routes from 2+ origins meet,
+ * every route goes on from the longer route's step, and the merge bonus applies from there on.
  * Each route's steps: which step the merge cell is on that route (3+4; equal = exact sync).
- * Bonus = sum of the routes' steps × (shortest ÷ longest) × perPoint % (up to cap %)
+ * Points = sum of the routes' steps × (shortest ÷ longest).
+ * Bonus = (points − offset) × perPoint % (up to cap %). The offset keeps a tiny sync (2+2) from
+ * paying almost as much as a real one.
  */
 export const MERGE = {
-  perPoint: 2,
-  cap: 30,
+  perPoint: 6,
+  offset: 3,
+  cap: 40,
 } as const;
 
 /**

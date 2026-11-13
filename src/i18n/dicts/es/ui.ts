@@ -406,8 +406,8 @@ export const UI: Dict = {
     'Los números "~" son el daño estimado contra un enemigo (con combos y críticos)',
   '2本の線を、同じ段数でシンクロさせよう！\n長いほどボーナスアップ':
     '¡Sincroniza 2 líneas con el mismo número de eslabones! Cuanto más largas, mayor el bono.',
-  '線がつながった起点は、いっしょに発火するよ。\nシンクロしたマスには「4+4 +16%」のように\n段数とボーナスが出る':
-    'Los Orígenes con líneas conectadas se activan a la vez. La casilla de sincronía muestra los eslabones y el bono, como "4+4 +16%".',
+  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n段数とボーナスが出る':
+    'Los Orígenes se activan de uno en uno, por turnos. La casilla de sincronía muestra los eslabones y el bono, como "4+4 +30%".',
   '起点が0個です。出撃できません': 'No hay ningún Origen. No puedes salir.',
   '倉庫があふれています（タップで売却）': 'El Almacén está lleno (toca para vender)',
   全部: 'Todo',
@@ -667,7 +667,7 @@ export const UI: Dict = {
   レアリティで出口の数が決まる: 'La rareza fija el número de salidas',
   シンクロ: 'Sincronía',
   同じ段数でシンクロさせるとボーナス: 'Bono al sincronizar con el mismo número de eslabones',
-  線がつながった起点はいっしょに発火: 'Los Orígenes conectados se activan a la vez',
+  シンクロの先は長い方の段数でつづく: 'Tras la sincronía, los eslabones siguen la línea más larga',
   この配置: 'Esta disposición',
   どの起点からも届きません: 'Ningún Origen llega aquí',
   '起点{origin}の{step}段目 ×{mult}': 'Origen {origin}, eslabón {step} ×{mult}',
