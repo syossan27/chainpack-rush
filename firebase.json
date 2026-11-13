@@ -5,7 +5,7 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "headers": [
       {
-        "source": "**/*.@(js|css|png|woff|woff2|mp3|ogg)",
+        "source": "/assets/**",
         "headers": [
           {
             "key": "Cache-Control",
@@ -14,7 +14,25 @@
         ]
       },
       {
-        "source": "**/*.html",
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(html|webmanifest)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/icon-*.png",
         "headers": [
           {
             "key": "Cache-Control",

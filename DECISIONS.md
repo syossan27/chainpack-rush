@@ -335,6 +335,7 @@
 
 - Claude の試遊版（Artifact）は一般公開の審査がサイズで通らないため、家族や友人に遊んでもらうのは Firebase Hosting で（`docs/web-hosting.md`）。`firebase deploy --only hosting` で `dist` を公開。試遊版のビルド（`npm run build:trial`、挑戦が開いた状態）を使う。
 - ホーム画面に追加すると全画面で開くよう、Web アプリの設定（`public/manifest.webmanifest`、アイコン）を入れた。
+- 1年キャッシュ（immutable）は、名前にハッシュが付く `/assets/` の中だけ。トップページ・manifest・アプリアイコン（`public/` から名前そのままで出る）は `no-cache` にして、毎回サーバーに確かめさせる。以前は png 全部が1年キャッシュで、アイコンを替えても端末に古いものが残った。そのとき端末に残った分を避けるため、アイコンの URL に `?v=2` を付けた。
 - Artifact の試遊版は、フォントを使う文字だけにして1つにまとめ、ドット絵をパレット形式にして、約5MB → 約2.4MB にした（見た目は同じ）。
 
 ## 最初の流れの案内（体験ラン・「押してみよう」）
