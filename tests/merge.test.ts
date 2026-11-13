@@ -143,6 +143,31 @@ describe('シンクロ（合流）', () => {
     expect(mergeArrivals([2, 2], false)).toEqual([2, 2]);
   });
 
+  it('ルートが輪になって相手の線に戻ってくる形はシンクロしない（連鎖数が膨らまない）', () => {
+    // ① o1 a b J p↓r↓u←t←s↑X→q↑J / ② o2 c X→q↑J…: J and X lift each other around the loop
+    const { loadout, items } = build(5, 3, [
+      { uid: 'o1', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'b', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+      { uid: 'J', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 'p', defId: 'sword', x: 4, y: 0, exits: ['down'] },
+      { uid: 'o2', defId: 'origin_stone', x: 0, y: 1, exits: ['right'] },
+      { uid: 'c', defId: 'sword', x: 1, y: 1, exits: ['right'] },
+      { uid: 'X', defId: 'sword', x: 2, y: 1, exits: ['right'] },
+      { uid: 'q', defId: 'sword', x: 3, y: 1, exits: ['up'] },
+      { uid: 'r', defId: 'sword', x: 4, y: 1, exits: ['down'] },
+      { uid: 's', defId: 'sword', x: 2, y: 2, exits: ['up'] },
+      { uid: 't', defId: 'sword', x: 3, y: 2, exits: ['left'] },
+      { uid: 'u', defId: 'sword', x: 4, y: 2, exits: ['left'] },
+    ]);
+    expect(syncPoints(loadout, items).size).toBe(0);
+    const [p1, p2] = simulateChain(loadout, items).plans;
+    expect(p1!.steps.map((s) => s.step)).toEqual([null, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(p2!.steps.map((s) => s.step)).toEqual([null, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    for (const p of [p1!, p2!])
+      expect(p.steps.some((s) => s.mergeArrived || s.mergeBonus)).toBe(false);
+  });
+
   it('シンクロしたあとの本流に別のルートがつながっても、本流は1本として数える', () => {
     // ① o1 a J t K u / ② o2 b↑J (J: 2+2) / ③ o3 c↑K. K is met by the trunk and ③: 4+2, not 4+4+2
     const { loadout, items } = build(7, 3, [
@@ -177,14 +202,19 @@ describe('シンクロ（合流）', () => {
     expect(mergeBonusOf([6, 2])).toBe(0);
     expect(mergeBonusOf([8, 0])).toBe(0);
     expect(mergeBonusOf([30, 30])).toBe(MERGE.cap);
+  });
 
+  it('起点石の出口がそのまま当たるだけのマス（2+0 のような形）は、シンクロにしない', () => {
+    // o2 sits right next to J: no tag, no lift, each route counts its own steps
     const { loadout, items } = yShape('none');
-    for (const p of simulateChain(loadout, items).plans) {
-      const j = stepOf(p, 'J');
-      expect(j.mergeArrived).toEqual([3, 0]);
-      expect(j.step).toBe(3);
-      expect(j.mergeBonus).toBeUndefined();
+    expect(syncPoints(loadout, items).size).toBe(0);
+    const [p1, p2] = simulateChain(loadout, items).plans;
+    for (const p of [p1!, p2!]) {
+      expect(stepOf(p, 'J').mergeArrived).toBeUndefined();
+      expect(stepOf(p, 'J').mergeBonus).toBeUndefined();
     }
+    expect(stepOf(p1!, 'J').step).toBe(3);
+    expect(stepOf(p2!, 'J').step).toBe(1);
   });
 
   it('戦闘: 合流マスの段数とボーナスがダメージに乗る（どちらの起点の発火でも）', () => {

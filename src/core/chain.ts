@@ -333,8 +333,10 @@ function spread(
 
 /**
  * Sync points of a layout: cells (not origin stones) that routes from 2+ origins reach from
- * different cells. A route's count can depend on a sync point upstream, so repeat until stable
- * (counts only grow and are bounded, so this settles within a pass per sync point)
+ * different cells, each with at least one step before it. A sync point lifts the count of every route that passes it, so it also
+ * changes the counts arriving at the sync points further along. Sync points that lift each
+ * other in a loop (a route that comes back around into the other route) would grow without end,
+ * so they are not sync points. The rest settle in one pass per sync point.
  */
 export function syncPoints(
   loadout: Loadout,
@@ -344,15 +346,57 @@ export function syncPoints(
   let sync = new Map<number, SyncPoint>();
   if (origins.length < 2) return sync;
   const originCells = new Set(origins.map((o) => loadout.cells.indexOf(o)));
+  // Where each route goes does not depend on sync points (only its counts do)
+  const native = origins.map((o) => spread(loadout, items, o, sync).reach);
+  // The cells each candidate is reached from. A route with nothing before the cell (its
+  // origin stone's exit runs straight into it, like 2+0) is not a way in
+  const wayIn = new Map<number, Set<number>>();
+  for (const cell of new Set(native.flatMap((r) => [...r.keys()]))) {
+    if (originCells.has(cell)) continue;
+    const from = new Set(
+      native.flatMap((r) => {
+        const x = r.get(cell);
+        return x && x.feeder > 0 ? [x.parentCell] : [];
+      }),
+    );
+    if (from.size >= 2) wayIn.set(cell, from);
+  }
+  const candidates = new Set(wayIn.keys());
+  // The candidates on the way into each candidate, along every route that reaches it
+  const upstream = new Map<number, Set<number>>();
+  for (const cell of candidates) {
+    const up = new Set<number>();
+    for (const r of native) {
+      for (let x = r.get(cell); x; x = r.get(x.parentCell)) {
+        if (candidates.has(x.parentCell)) up.add(x.parentCell);
+      }
+    }
+    upstream.set(cell, up);
+  }
+  const onLoop = (start: number): boolean => {
+    const seen = new Set<number>();
+    const stack = [...upstream.get(start)!];
+    while (stack.length > 0) {
+      const c = stack.pop()!;
+      if (c === start) return true;
+      if (seen.has(c)) continue;
+      seen.add(c);
+      stack.push(...upstream.get(c)!);
+    }
+    return false;
+  };
+  const points = [...candidates].filter((c) => !onLoop(c));
   const key = (m: ReadonlyMap<number, SyncPoint>) =>
     JSON.stringify([...m.entries()].sort((a, b) => a[0] - b[0]));
-  for (let round = 0; round <= loadout.cells.length; round++) {
-    const reaches = origins.map((o) => spread(loadout, items, o, sync).reach);
-    const cells = new Set(reaches.flatMap((r) => [...r.keys()]));
+  for (let round = 0; round <= points.length; round++) {
+    const reaches =
+      round === 0 ? native : origins.map((o) => spread(loadout, items, o, sync).reach);
     const next = new Map<number, SyncPoint>();
-    for (const cell of cells) {
-      if (originCells.has(cell)) continue;
-      const here = reaches.map((r) => r.get(cell)).filter((x): x is Reach => x !== undefined);
+    for (const cell of points) {
+      const okFrom = wayIn.get(cell)!;
+      const here = reaches
+        .map((r) => r.get(cell))
+        .filter((x): x is Reach => x !== undefined && okFrom.has(x.parentCell));
       // One way in per cell it comes from: routes that already share it (the trunk after a
       // sync point) count once, with the longest of them, in firing order
       const ways = new Map<number, Reach>();
@@ -361,7 +405,6 @@ export function syncPoints(
         if (!w || x.feeder > w.feeder) ways.set(x.parentCell, x);
       }
       if (ways.size < 2) continue;
-      const from = [...ways.keys()];
       const arrived = mergeArrivals(
         [...ways.values()].map((x) => x.feeder),
         here[0]!.isStep,
@@ -369,7 +412,7 @@ export function syncPoints(
       next.set(cell, {
         arrived,
         count: Math.max(...here.map((x) => x.own)),
-        from,
+        from: [...ways.keys()],
         bonus: mergeBonusOf(arrived),
       });
     }
