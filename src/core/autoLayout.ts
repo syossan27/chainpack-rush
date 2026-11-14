@@ -65,7 +65,7 @@ function grow(
  * When it does not all fit, the strongest is used (and the best few defense items).
  * Origin stones go one at a time (more exits first, then rarity), each where its line takes the
  * most gear; the next origin starts only when gear and empty cells are left over. Consumable
- * slots stay as they are. Without an origin stone it changes nothing.
+ * slots stay as they are. Without an origin stone, or without gear, it changes nothing.
  */
 export function autoLayout(base: Loadout, items: ReadonlyMap<string, ItemInstance>): Loadout {
   const all = [...items.values()].filter((it) => getItemDef(it.defId).kind !== 'consumable');
@@ -77,8 +77,9 @@ export function autoLayout(base: Loadout, items: ReadonlyMap<string, ItemInstanc
         RARITY_RANK.indexOf(b.rarity) - RARITY_RANK.indexOf(a.rarity) ||
         byUid(a, b),
     );
-  if (origins.length === 0) return base;
   let gear = all.filter((it) => getItemDef(it.defId).kind !== 'origin');
+  // Nothing to lay out: keep the current layout instead of clearing it
+  if (origins.length === 0 || gear.length === 0) return base;
   // More gear than cells: use the strongest (and the best few defense items)
   const room = base.width * base.height - 1;
   if (gear.length > room) {

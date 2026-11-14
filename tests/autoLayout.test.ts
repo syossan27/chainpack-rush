@@ -106,6 +106,14 @@ describe('おまかせ配置', () => {
     expect(autoLayout(base, items)).toEqual(base);
   });
 
+  it('起点石しか持っていなければ、今の並べ方のまま', () => {
+    const base = empty(3, 1);
+    base.cells[1] = 'o';
+    base.originOrder = ['o'];
+    const items = owned([['o', 'origin_stone', ['right']]]);
+    expect(autoLayout(base, items)).toEqual(base);
+  });
+
   it('マスの外に置かず、置いた装備はどれも起点から届く。同じ持ち物ならいつも同じ並べ方', () => {
     const dirs: Dir[][] = [['right'], ['down'], ['left'], ['up'], ['right', 'down'], []];
     const kinds = ['sword', 'dagger', 'spear', 'axe', 'wood_shield'];
