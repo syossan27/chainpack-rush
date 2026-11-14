@@ -106,11 +106,14 @@ describe('おまかせ配置', () => {
     expect(autoLayout(base, items)).toEqual(base);
   });
 
-  it('起点石しか持っていなければ、今の並べ方のまま', () => {
-    const base = empty(3, 1);
+  it('置ける装備がなく、起点石と消耗品しか持っていなければ、今の並べ方のまま', () => {
+    const base = empty(3, 1, ['k']);
     base.cells[1] = 'o';
     base.originOrder = ['o'];
-    const items = owned([['o', 'origin_stone', ['right']]]);
+    const items = owned([
+      ['o', 'origin_stone', ['right']],
+      ['k', 'potion', []],
+    ]);
     expect(autoLayout(base, items)).toEqual(base);
   });
 
