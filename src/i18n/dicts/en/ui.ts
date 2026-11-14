@@ -87,7 +87,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'How Damage Works',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Attack × Rarity × Chain multiplier × Combo × Upgrades × Bonuses × Critical (±10% variance)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rarity: Common ×1, Rare ×1.5, Epic ×2.5, Legendary ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Chain multiplier: ×1.2 per link, capped at ×2.5 by link 6 (cap ×4.0 through the Ouroboros Ring)',
@@ -117,10 +117,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Special Moves to find: {n}. The first time you pull one off, you\'ll see "Special Move found!" and its recipe goes into the "Codex" at Base. For moves you haven\'t found yet, the Codex shows only a hint.',
   短い連鎖と長い連鎖: 'Short vs. Long Chains',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    '• The wait before the next firing grows with the length of the last chain. Short chains cycle fast; long chains hit big.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded through link 3.",
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    '• The wait before the next firing grows with how many items went off in the last chain (armor counts too). Short chains cycle fast; long chains hit big.',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded until 3 items after the origin have gone off (armor counts too).",
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• A big hit while unguarded leaves you "Staggered!" and cuts off the rest of the chain. Hold out with defense gear, or place the Aegis Gate to prevent it.',
   地域と敵: 'Regions & Enemies',
@@ -148,7 +148,7 @@ export const UI: Dict = {
     '• You can\'t start a run while Storage is overflowing. Clear space with "Bulk Sell" or "Select & Sell". Lock important gear on its details card so it can\'t be sold.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• At the Smith you can reforge exit directions (the number of exits stays the same). Higher rarities cost more.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     '• Collect 3 of the same item at the same rarity and use "Fuse" at the Smith (or on a details card in Storage) to aim for the next rarity. Success rates: Common→Rare 80% (20G), Rare→Epic 50% (100G), Epic→Legendary 25% (500G). If it fails, you get 1 random item of the same rarity. Bonuses and exit directions are rolled anew.',
   設定: 'Settings',
   ヘルプ: 'Help',
@@ -452,6 +452,7 @@ export const UI: Dict = {
   '体験おわり！': 'Demo Complete!',
   '力尽きた…': 'Defeated…',
   '撤退！': 'Retreated!',
+  '時間切れ！': "Time's up!",
   ランキングに記録しました: 'Score saved to the Ranking',
   シェア: 'Share',
   '画像を保存しました（文はコピー済み）': 'Image saved (text copied)',

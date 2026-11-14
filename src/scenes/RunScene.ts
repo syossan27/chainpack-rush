@@ -1164,7 +1164,15 @@ export class RunScene extends Phaser.Scene {
         : {}),
     };
     this.showBanner(
-      t(this.demo ? '体験おわり！' : r.reason === 'dead' ? '力尽きた…' : '撤退！'),
+      t(
+        this.demo
+          ? '体験おわり！'
+          : r.reason === 'dead'
+            ? '力尽きた…'
+            : r.reason === 'timeout'
+              ? '時間切れ！'
+              : '撤退！',
+      ),
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,
     );
     this.time.delayedCall(1300, () => this.scene.start('Result'));

@@ -164,7 +164,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'own_legendary',
     name: '金色の伝説',
-    desc: 'レジェンダリーの装備を手に入れる',
+    desc: 'レジェンドの装備を手に入れる',
     reward: 400,
     check: { kind: 'own', rarity: 'legendary' },
   },

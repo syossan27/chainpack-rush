@@ -90,7 +90,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'Cara Damage Dihitung',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Serangan × Kelangkaan × Pengganda rantai × Kombo × Peningkatan × Bonus × Kritikal (variasi ±10%)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Kelangkaan: Biasa ×1, Langka ×1.5, Epik ×2.5, Legendaris ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Pengganda rantai: ×1.2 per mata rantai, maksimal ×2.5 di mata rantai ke-6 (maks. ×4.0 lewat Cincin Siklus)',
@@ -120,10 +120,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Jurus Spesial yang bisa ditemukan: {n}. Saat pertama kali kamu mengeluarkannya, muncul "Jurus Spesial ditemukan!" dan resepnya masuk ke "Ensiklopedia" di Markas. Untuk jurus yang belum ditemukan, Ensiklopedia hanya menampilkan petunjuk.',
   短い連鎖と長い連鎖: 'Rantai Pendek vs. Panjang',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    '• Jeda sebelum pemicuan berikutnya sebanding dengan panjang rantai sebelumnya. Rantai pendek berputar cepat; rantai panjang menghantam keras.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai mata rantai ke-3.',
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    '• Jeda sebelum pemicuan berikutnya sebanding dengan jumlah item yang aktif di rantai sebelumnya (pelindung juga dihitung). Rantai pendek berputar cepat; rantai panjang menghantam keras.',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai 3 item setelah asal sudah aktif (pelindung juga dihitung).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Kena serangan besar saat lengah membuatmu "Terhuyung!" dan sisa rantai terputus. Bertahanlah dengan perlengkapan pertahanan, atau pasang Gerbang Kebal untuk mencegahnya.',
   地域と敵: 'Wilayah & Musuh',
@@ -151,7 +151,7 @@ export const UI: Dict = {
     '• Kamu tak bisa berangkat saat Gudang penuh. Kosongkan dengan "Jual Massal" atau "Pilih & Jual". Kunci perlengkapan penting di kartu detailnya agar tidak bisa dijual.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• Di Pandai Besi kamu bisa menempa ulang arah jalur (jumlahnya tetap). Makin tinggi kelangkaannya, makin mahal biayanya.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     '• Kumpulkan 3 item yang sama dengan kelangkaan yang sama, lalu pakai "Fusi" di Pandai Besi (atau di kartu detail di Gudang) untuk mencoba naik ke kelangkaan berikutnya. Peluang berhasil: Biasa→Langka 80% (20G), Langka→Epik 50% (100G), Epik→Legendaris 25% (500G). Kalau gagal, kamu dapat 1 item acak dengan kelangkaan yang sama. Bonus dan arah jalur diacak ulang.',
   設定: 'Pengaturan',
   ヘルプ: 'Bantuan',
@@ -458,6 +458,7 @@ export const UI: Dict = {
   '体験おわり！': 'Demo Selesai!',
   '力尽きた…': 'Tumbang…',
   '撤退！': 'Mundur!',
+  '時間切れ！': 'Waktu habis!',
   ランキングに記録しました: 'Skor tersimpan di Peringkat',
   シェア: 'Bagikan',
   '画像を保存しました（文はコピー済み）': 'Gambar disimpan (teks disalin)',

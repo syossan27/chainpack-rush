@@ -139,7 +139,7 @@ export const DATA: Dict = {
   紫の輝き: 'Brillo Púrpura',
   エピックの装備を手に入れる: 'Consigue un objeto Épico',
   金色の伝説: 'Leyenda Dorada',
-  レジェンダリーの装備を手に入れる: 'Consigue un objeto Legendario',
+  レジェンドの装備を手に入れる: 'Consigue un objeto Legendario',
   神話の遺物: 'Reliquia Mítica',
   アーティファクトを手に入れる: 'Consigue un Artefacto',
   魔王討伐: 'Rey Demonio Derrotado',
@@ -226,7 +226,7 @@ export const DATA: Dict = {
 
   // src/data/items.ts
   起点石: 'Piedra de Origen',
-  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
+  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Donde empieza una cadena. Sin Ataque. Su rareza fija el número de salidas (Común 1, Raro 2, Épico 3, Legendario 4).',
   速の起点石: 'Piedra de Origen Veloz',
   'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':

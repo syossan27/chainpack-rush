@@ -138,7 +138,7 @@ export const DATA: Dict = {
   紫の輝き: 'Purple Glow',
   エピックの装備を手に入れる: 'Get an Epic item',
   金色の伝説: 'Golden Legend',
-  レジェンダリーの装備を手に入れる: 'Get a Legendary item',
+  レジェンドの装備を手に入れる: 'Get a Legendary item',
   神話の遺物: 'Mythic Relic',
   アーティファクトを手に入れる: 'Get an Artifact',
   魔王討伐: 'Demon Lord Slain',
@@ -224,7 +224,7 @@ export const DATA: Dict = {
 
   // src/data/items.ts
   起点石: 'Origin Stone',
-  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
+  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Where a chain begins. No Attack. Its rarity sets the number of exits (Common 1, Rare 2, Epic 3, Legendary 4).',
   速の起点石: 'Swift Origin Stone',
   'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':

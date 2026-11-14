@@ -139,7 +139,7 @@ export const DATA: Dict = {
   紫の輝き: 'Kilau Ungu',
   エピックの装備を手に入れる: 'Dapatkan item Epik',
   金色の伝説: 'Legenda Emas',
-  レジェンダリーの装備を手に入れる: 'Dapatkan item Legendaris',
+  レジェンドの装備を手に入れる: 'Dapatkan item Legendaris',
   神話の遺物: 'Pusaka Mitos',
   アーティファクトを手に入れる: 'Dapatkan Artefak',
   魔王討伐: 'Raja Iblis Tumbang',
@@ -227,7 +227,7 @@ export const DATA: Dict = {
 
   // src/data/items.ts
   起点石: 'Batu Asal',
-  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
+  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Awal sebuah rantai. Tanpa Serangan. Kelangkaannya menentukan jumlah jalur (Biasa 1, Langka 2, Epik 3, Legendaris 4).',
   速の起点石: 'Batu Asal Gesit',
   'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':

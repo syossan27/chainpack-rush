@@ -168,7 +168,15 @@ export class ResultScene extends Phaser.Scene {
       this,
       W / 2,
       110,
-      t(demo ? '体験おわり！' : dead ? '力尽きた…' : '撤退！'),
+      t(
+        demo
+          ? '体験おわり！'
+          : dead
+            ? '力尽きた…'
+            : result.reason === 'timeout'
+              ? '時間切れ！'
+              : '撤退！',
+      ),
       420,
     );
     title.setScale(0.3).setAngle(-8);

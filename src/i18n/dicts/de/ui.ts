@@ -90,7 +90,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'So entsteht Schaden',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Angriff × Seltenheit × Kettenmultiplikator × Kombo × Training × Bonus × Kritisch (±10% Schwankung)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Seltenheit: Gewöhnlich ×1, Selten ×1.5, Episch ×2.5, Legendär ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Kettenmultiplikator: ×1.2 pro Glied, ab Glied 6 maximal ×2.5 (durch den Ouroboros-Ring maximal ×4.0)',
@@ -120,10 +120,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Spezialangriffe zum Entdecken: {n}. Beim ersten Mal erscheint „Spezialangriff entdeckt!“, und das Rezept landet im „Kompendium“ der Basis. Für unentdeckte Angriffe zeigt das Kompendium nur einen Hinweis.',
   短い連鎖と長い連鎖: 'Kurze vs. lange Ketten',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    '• Die Wartezeit bis zur nächsten Zündung wächst mit der Länge der letzten Kette. Kurze Ketten sind schnell wieder bereit, lange treffen hart.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    '• Während einer Kette bist du ungeschützt (×1.5 erlittener Schaden), bis Glied 3 aber noch geschützt.',
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    '• Die Wartezeit bis zur nächsten Zündung wächst mit der Zahl der Gegenstände, die in der letzten Kette ausgelöst haben (Rüstungen zählen mit). Kurze Ketten sind schnell wieder bereit, lange treffen hart.',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    '• Während einer Kette bist du ungeschützt (×1.5 erlittener Schaden), bleibst aber geschützt, bis nach dem Ursprung 3 Gegenstände ausgelöst haben (Rüstungen zählen mit).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Ein harter Treffer, während du ungeschützt bist, bringt dich ins Taumeln („Taumelt!“) und bricht den Rest der Kette ab. Halte mit Verteidigungsausrüstung durch oder platziere das Festungstor, um das zu verhindern.',
   地域と敵: 'Gebiete & Gegner',
@@ -151,7 +151,7 @@ export const UI: Dict = {
     '• Ist das Lager voll, kannst du keine Expedition starten. Schaff Platz mit „Massenverkauf“ oder „Auswahl verkaufen“. Sperre wichtige Ausrüstung in ihrer Detailkarte, dann wird sie nicht verkauft.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• In der Schmiede kannst du die Richtungen der Ausgänge umschmieden (ihre Anzahl bleibt gleich). Höhere Seltenheit kostet mehr.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     '• Sammle 3× denselben Gegenstand in gleicher Seltenheit und nutze „Verschmelzen“ in der Schmiede (oder „Fusion“ in der Detailkarte im Lager), um die nächste Seltenheit anzupeilen. Erfolgschance: Gewöhnlich→Selten 80% (20G), Selten→Episch 50% (100G), Episch→Legendär 25% (500G). Bei Fehlschlag bekommst du 1 zufälligen Gegenstand derselben Seltenheit. Boni und Ausgangsrichtungen werden neu ausgewürfelt.',
   設定: 'Optionen',
   ヘルプ: 'Hilfe',
@@ -458,6 +458,7 @@ export const UI: Dict = {
   '体験おわり！': 'Demo vorbei!',
   '力尽きた…': 'Besiegt…',
   '撤退！': 'Rückzug!',
+  '時間切れ！': 'Zeit abgelaufen!',
   ランキングに記録しました: 'In der Rangliste eingetragen',
   シェア: 'Teilen',
   '画像を保存しました（文はコピー済み）': 'Bild gespeichert (Text kopiert)',

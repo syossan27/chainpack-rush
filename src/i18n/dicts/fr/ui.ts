@@ -91,7 +91,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'Calcul des dégâts',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Attaque × Rareté × Multiplicateur de chaîne × Combo × Améliorations × Bonus × Critique (±10% de variation)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rareté : Commun ×1, Rare ×1.5, Épique ×2.5, Légendaire ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     "• Multiplicateur de chaîne : ×1.2 par maillon, plafonné à ×2.5 au 6e maillon (plafond ×4.0 en passant par l'Anneau d'Ouroboros)",
@@ -121,10 +121,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     "• Coups spéciaux à trouver : {n}. La première fois que tu en réussis un, tu verras « Coup spécial découvert ! » et sa recette s'ajoute au « Codex » de la Base. Pour les coups pas encore trouvés, le Codex n'affiche qu'un indice.",
   短い連鎖と長い連鎖: 'Chaînes courtes ou longues',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    "• L'attente avant le prochain déclenchement dépend de la longueur de la dernière chaîne. Les chaînes courtes tournent vite ; les longues frappent fort.",
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'au 3e maillon.",
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    "• L'attente avant le prochain déclenchement dépend du nombre d'objets déclenchés dans la dernière chaîne (les armures comptent aussi). Les chaînes courtes tournent vite ; les longues frappent fort.",
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'à ce que 3 objets se soient déclenchés après l'origine (les armures comptent aussi).",
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     "• Un gros coup reçu à découvert te laisse « Sonné ! » et coupe le reste de la chaîne. Tiens bon avec de l'équipement défensif, ou place la Porte imprenable pour l'éviter.",
   地域と敵: 'Régions et ennemis',
@@ -152,7 +152,7 @@ export const UI: Dict = {
     "• Impossible de partir en expédition si la Réserve déborde. Fais de la place avec « Vente groupée » ou « Vente au choix ». Verrouille l'équipement important sur sa fiche pour qu'il ne puisse pas être vendu.",
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• À la Forge, tu peux reforger le sens des sorties (leur nombre ne change pas). Plus la rareté est élevée, plus ça coûte cher.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     "• Réunis 3 exemplaires du même objet de même rareté et utilise « Fusionner » à la Forge (ou depuis la fiche d'un objet dans la Réserve) pour viser la rareté supérieure. Taux de réussite : Commun→Rare 80% (20G), Rare→Épique 50% (100G), Épique→Légendaire 25% (500G). En cas d'échec, tu obtiens 1 objet aléatoire de même rareté. Les bonus et le sens des sorties sont tirés à nouveau.",
   設定: 'Réglages',
   ヘルプ: 'Aide',
@@ -462,6 +462,7 @@ export const UI: Dict = {
   '体験おわり！': 'Démo terminée !',
   '力尽きた…': 'Vaincu…',
   '撤退！': 'Retraite !',
+  '時間切れ！': 'Temps écoulé !',
   ランキングに記録しました: 'Score enregistré au classement',
   シェア: 'Partager',
   '画像を保存しました（文はコピー済み）': 'Image enregistrée (texte copié)',

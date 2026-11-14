@@ -90,7 +90,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'Cómo se calcula el daño',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Ataque × Rareza × Multiplicador de cadena × Combo × Mejoras × Bonificaciones × Crítico (±10% de variación)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rareza: Común ×1, Raro ×1.5, Épico ×2.5, Legendario ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Multiplicador de cadena: ×1.2 por eslabón, hasta un máximo de ×2.5 en el eslabón 6 (máximo ×4.0 si pasa por el Anillo Uróboros)',
@@ -120,10 +120,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Golpes Especiales en total: {n}. La primera vez que hagas uno, verás "¡Golpe Especial descubierto!" y su receta se añadirá al "Compendio" de la Base. De los que aún no descubres, el Compendio solo muestra una pista.',
   短い連鎖と長い連鎖: 'Cadenas cortas y largas',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    '• La espera hasta la siguiente activación crece con la longitud de la última cadena. Las cadenas cortas van rápido; las largas pegan fuerte.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    '• Durante una cadena eres vulnerable (recibes daño ×1.5), pero mantienes la guardia hasta el eslabón 3.',
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    '• La espera hasta la siguiente activación crece con el número de objetos que se activaron en la última cadena (las armaduras también cuentan). Las cadenas cortas van rápido; las largas pegan fuerte.',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    '• Durante una cadena eres vulnerable (recibes daño ×1.5), pero mantienes la guardia hasta que se activan 3 objetos después del origen (las armaduras también cuentan).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Si recibes un golpe fuerte mientras eres vulnerable, sufres un "¡Tambaleo!" y se corta el resto de la cadena. Aguanta con equipo de defensa o coloca el Portón Invicto para evitarlo.',
   地域と敵: 'Regiones y enemigos',
@@ -151,7 +151,7 @@ export const UI: Dict = {
     '• No puedes salir de expedición si el Almacén está lleno. Haz espacio con "Venta masiva" o "Elegir y vender". Bloquea el equipo importante en su ficha de detalles para que no se pueda vender.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• En la Herrería puedes reforjar la dirección de las salidas (el número no cambia). Cuanto mayor la rareza, más cuesta.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     '• Junta 3 del mismo objeto con la misma rareza y usa "Fusionar" en la Herrería (o en su ficha de detalles del Almacén) para intentar subir de rareza. Probabilidad de éxito: Común→Raro 80% (20G), Raro→Épico 50% (100G), Épico→Legendario 25% (500G). Si falla, recibes 1 objeto aleatorio de la misma rareza. Las bonificaciones y la dirección de las salidas se sortean de nuevo.',
   設定: 'Ajustes',
   ヘルプ: 'Ayuda',
@@ -458,6 +458,7 @@ export const UI: Dict = {
   '体験おわり！': '¡Fin de la demo!',
   '力尽きた…': 'Sin fuerzas…',
   '撤退！': '¡Retirada!',
+  '時間切れ！': '¡Se acabó el tiempo!',
   ランキングに記録しました: 'Puntuación guardada en la clasificación',
   シェア: 'Compartir',
   '画像を保存しました（文はコピー済み）': 'Imagen guardada (texto copiado)',

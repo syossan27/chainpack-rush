@@ -138,7 +138,7 @@ export const DATA: Dict = {
   紫の輝き: 'Lila Glanz',
   エピックの装備を手に入れる: 'Erhalte einen epischen Gegenstand',
   金色の伝説: 'Goldene Legende',
-  レジェンダリーの装備を手に入れる: 'Erhalte einen legendären Gegenstand',
+  レジェンドの装備を手に入れる: 'Erhalte einen legendären Gegenstand',
   神話の遺物: 'Mythisches Relikt',
   アーティファクトを手に入れる: 'Erhalte ein Artefakt',
   魔王討伐: 'Dämonenkönig besiegt',
@@ -226,7 +226,7 @@ export const DATA: Dict = {
 
   // src/data/items.ts
   起点石: 'Ursprungsstein',
-  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。':
+  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Hier beginnt eine Kette. Kein Angriff. Die Seltenheit bestimmt die Zahl der Ausgänge (Gewöhnlich 1, Selten 2, Episch 3, Legendär 4).',
   速の起点石: 'Flinker Ursprungsstein',
   'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':

@@ -91,7 +91,7 @@ export const UI: Dict = {
   ダメージの決まり方: 'Como o Dano Funciona',
   '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
     'Ataque × Raridade × Multiplicador de corrente × Combo × Melhorias × Bônus × Crítico (variação de ±10%)',
-  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンダリー×4':
+  '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Raridade: Comum ×1, Raro ×1.5, Épico ×2.5, Lendário ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
     '• Multiplicador de corrente: ×1.2 por elo, até o limite de ×2.5 no 6º elo (limite de ×4.0 passando pelo Anel Ouroboros)',
@@ -121,10 +121,10 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
     '• Golpes Especiais para descobrir: {n}. Na primeira vez que você fizer um, aparece "Golpe Especial descoberto!" e a receita vai para o "Compêndio" na Base. Para os que você ainda não descobriu, o Compêndio mostra só uma dica.',
   短い連鎖と長い連鎖: 'Correntes Curtas e Longas',
-  '・次の発火までの待ちは、直前の連鎖数に比例します。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
-    '• A espera até o próximo disparo cresce com o tamanho da última corrente. Correntes curtas giram rápido; correntes longas batem forte.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし3連鎖目までは守りが残ります。':
-    '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até o 3º elo.',
+  '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
+    '• A espera até o próximo disparo cresce com o número de itens ativados na última corrente (armaduras também contam). Correntes curtas giram rápido; correntes longas batem forte.',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
+    '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até 3 itens depois da origem serem ativados (armaduras também contam).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Um golpe forte enquanto você está desprotegido faz você cambalear ("Cambaleou!") e corta o resto da corrente. Aguente com itens de defesa ou coloque o Portão Inabalável para evitar isso.',
   地域と敵: 'Regiões e Inimigos',
@@ -152,7 +152,7 @@ export const UI: Dict = {
     '• Com o Armazém lotado, você não pode partir. Libere espaço com "Venda em Lote" ou "Vender Vários". Trave os itens importantes no cartão de detalhes para que não sejam vendidos.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
     '• No Ferreiro você pode reforjar a direção das saídas (a quantidade não muda). Raridades maiores custam mais.',
-  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンダリー25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
+  '・同じ装備・同じレアリティを3つ集めると、鍛冶屋の「合成」（倉庫の詳細カードからも）で1つ上のレアリティを狙えます。成功率はコモン→レア80%（20G）、レア→エピック50%（100G）、エピック→レジェンド25%（500G）。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入ります。追加効果と出口の向きは新しく決まります。':
     '• Junte 3 do mesmo item com a mesma raridade e use "Fundir" no Ferreiro (ou no cartão de detalhes no Armazém) para tentar a próxima raridade. Chances: Comum→Raro 80% (20G), Raro→Épico 50% (100G), Épico→Lendário 25% (500G). Se falhar, você ganha 1 item aleatório da mesma raridade. Os bônus e as direções das saídas são sorteados de novo.',
   設定: 'Ajustes',
   ヘルプ: 'Ajuda',
@@ -458,6 +458,7 @@ export const UI: Dict = {
   '体験おわり！': 'Fim da Demo!',
   '力尽きた…': 'Você caiu…',
   '撤退！': 'Recuou!',
+  '時間切れ！': 'Tempo esgotado!',
   ランキングに記録しました: 'Pontuação salva no Ranking',
   シェア: 'Compartilhar',
   '画像を保存しました（文はコピー済み）': 'Imagem salva (texto copiado)',
