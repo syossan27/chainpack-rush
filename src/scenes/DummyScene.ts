@@ -6,12 +6,13 @@ import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { heroStats, itemMap } from '../core/economy';
 import type { ItemInstance } from '../core/types';
 import { REGIONS } from '../data/regions';
-import { sfx, sfxChainStep } from '../audio/sfx';
+import { sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
+import { devRage } from '../platform/debug';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
-import { BackpackView, originLabel } from '../ui/backpackView';
+import { BackpackView, unitLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
 import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
@@ -21,6 +22,7 @@ import { getTechnique } from '../data/techniques';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
+import { t } from '../i18n';
 
 export class DummyScene extends Phaser.Scene {
   private combat!: Combat;
@@ -33,6 +35,7 @@ export class DummyScene extends Phaser.Scene {
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
+  private mergeBonus = 0;
 
   constructor() {
     super('Dummy');
@@ -50,6 +53,8 @@ export class DummyScene extends Phaser.Scene {
       hero: save ? heroStats(save) : BASE_HERO_STATS,
       mode: 'dummy',
     });
+    // Development only: an angry dummy, to check the angry boss look
+    if (devRage()) for (const e of this.combat.enemies) e.enraged = true;
     this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id);
     this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
@@ -63,25 +68,27 @@ export class DummyScene extends Phaser.Scene {
       41,
     );
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
-    this.add.existing(ribbon(this, W / 2, 50, 'カカシで試し撃ち', 360).setDepth(70));
+    this.add.existing(ribbon(this, W / 2, 50, t('カカシで試し撃ち'), 360).setDepth(70));
     panel(this, 230, RUN_LAYOUT.middleTop + 86, 420, 140, 'inset').setDepth(70);
     this.stats = this.add
-      .text(40, RUN_LAYOUT.middleTop + 26, '「発火」で次の起点を撃つ', {
+      .text(40, RUN_LAYOUT.middleTop + 26, t('「発火」で次の起点を撃つ'), {
         ...textStyle(22),
         lineSpacing: 2,
+        // Stay inside the inset panel (x 20..440) when a translation is longer
+        wordWrap: { width: 390, useAdvancedWrap: true },
       })
       .setDepth(71);
     new Button(
       this,
       W - 150,
       RUN_LAYOUT.middleTop + 86,
-      '発火',
+      t('発火'),
       () => {
         if (!this.combat.fireNext()) sfx('error');
       },
       { width: 240, height: 110, fontSize: 40, skin: 'gold', icon: 'swords', silent: true },
     ).setDepth(70);
-    new Button(this, 90, 130, '配置', () => this.scene.start('Loadout'), {
+    new Button(this, 90, 130, t('配置'), () => this.scene.start('Loadout'), {
       width: 150,
       height: 64,
       skin: 'gray',
@@ -101,7 +108,7 @@ export class DummyScene extends Phaser.Scene {
       this.handle(this.combat.drainEvents());
     }
     this.field.update(this.combat, now, speed);
-    this.view.setBlinkOrigin(this.combat.chain ? null : this.combat.nextOriginUid);
+    this.view.setBlinkOrigin(this.combat.chain ? null : (this.combat.nextUnit ?? null));
     this.view.tick(now);
     this.numbers.update((delta / 1000) * speed);
     this.effects.update((delta / 1000) * speed);
@@ -128,8 +135,16 @@ export class DummyScene extends Phaser.Scene {
     for (const ev of events) {
       if (ev.type === 'chainStart') {
         this.comboLabel = [];
+        this.mergeBonus = 0;
         sfx('fire');
-        this.stats.setText(`起点${originLabel(ev.originIndex)} 発火中…`);
+        this.stats.setText(
+          t('起点{origin} 発火中…', { origin: unitLabel(getSave().loadout, ev.plan.originUids) }),
+        );
+      } else if (ev.type === 'merge') {
+        this.mergeBonus = Math.max(this.mergeBonus, ev.bonus);
+        for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, 0xa8f0ff);
+        this.view.glow(ev.cell, 0xa8f0ff, now, 700);
+        sfx('merge');
       } else if (ev.type === 'step') {
         this.view.glow(ev.cell, ev.step === null ? COLORS.accent : COLORS.chainLine, now, 450);
         if (ev.fromCell !== null) this.view.flashLine(ev.fromCell, ev.cell, COLORS.chainLine);
@@ -153,34 +168,38 @@ export class DummyScene extends Phaser.Scene {
         }
         sfx('hit');
       } else if (ev.type === 'technique') {
-        const t = getTechnique(ev.id);
+        const tech = getTechnique(ev.id);
         const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
-        const impact = this.field.heroSpecial(0xffe060, t?.id);
+        const impact = this.field.heroSpecial(0xffe060, tech?.id);
         const save = getSave();
-        if (t && !save.discoveredTechs.includes(t.id)) {
-          save.discoveredTechs.push(t.id);
+        if (tech && !save.discoveredTechs.includes(tech.id)) {
+          save.discoveredTechs.push(tech.id);
           persist();
-          showDiscovery(this, t.name, 190);
+          // showDiscovery translates the data key itself
+          showDiscovery(this, tech.name, 190);
         }
         if (e) {
           const p = this.field.enemyScreenPos(this.combat, e);
           this.time.delayedCall(impact / Math.max(0.1, gameSpeed()), () => {
-            this.elementFx.special(p.x, p.y, t?.element);
+            this.elementFx.special(p.x, p.y, tech?.element);
             this.effects.flash(p.x, p.y, 0xffffff, 4);
           });
         }
         sfx('explode');
       } else if (ev.type === 'combo') {
-        this.comboLabel.push(ev.label);
-        sfx(ev.name === 'shock' ? 'shock' : ev.name === 'explode' ? 'explode' : 'shatter');
+        this.comboLabel.push(t(ev.label));
+        sfxCombo(ev.name);
         hapticMedium();
       } else if (ev.type === 'chainEnd') {
         this.stats.setText(
           [
-            `総ダメージ ${Math.round(ev.totalDamage)}`,
-            `持続（無防備） ${ev.duration.toFixed(1)}秒`,
-            `防御値 +${Math.round(ev.defenseGain)}`,
-            this.comboLabel.length ? `コンボ ${this.comboLabel.join(' ')}` : '',
+            t('総ダメージ {n}', { n: Math.round(ev.totalDamage) }),
+            t('持続（無防備） {sec}秒', { sec: ev.duration.toFixed(1) }),
+            t('防御値 +{n}', { n: Math.round(ev.defenseGain) }),
+            this.comboLabel.length ? t('コンボ {list}', { list: this.comboLabel.join(' ') }) : '',
+            this.mergeBonus > 0
+              ? t('シンクロボーナス +{n}%', { n: Math.round(this.mergeBonus) })
+              : '',
           ]
             .filter(Boolean)
             .join('\n'),

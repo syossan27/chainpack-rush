@@ -1,6 +1,7 @@
 // UI 部品: パネル、ボタン、丸ボタン、カプセル、リボン、ゲージ
 import Phaser from 'phaser';
 import { sfx, unlockAudio } from '../../audio/sfx';
+import { t } from '../../i18n';
 import { COLORS, inkStyle, textStyle } from '../theme';
 import { iconTex, type IconName } from './icons';
 import { SKIN, SLICE, barKey, buttonKey, type BarSkin, type ButtonSkin } from './skin';
@@ -79,6 +80,7 @@ export class Button extends Phaser.GameObjects.Container {
   private readonly ic: Phaser.GameObjects.Image | null;
   private disabledState = false;
   private readonly skin: ButtonSkin;
+  private boxW = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -101,12 +103,8 @@ export class Button extends Phaser.GameObjects.Container {
     this.ic = opts.icon
       ? scene.add.image(0, -3, iconTex(opts.icon)).setScale(Math.max(2, Math.floor(h / 30)))
       : null;
-    if (this.ic) {
-      const gap = 8;
-      const total = this.ic.displayWidth + gap + this.label.width;
-      this.ic.x = -total / 2 + this.ic.displayWidth / 2;
-      this.label.x = this.ic.x + this.ic.displayWidth / 2 + gap + this.label.width / 2;
-    }
+    this.boxW = w;
+    this.layout();
     this.add(this.ic ? [this.bg, this.ic, this.label] : [this.bg, this.label]);
     this.setSize(w, h);
     this.bg.setInteractive({ useHandCursor: true });
@@ -136,10 +134,51 @@ export class Button extends Phaser.GameObjects.Container {
     return this;
   }
 
-  setText(t: string): this {
-    this.label.setText(t);
+  setText(s: string): this {
+    this.label.setText(s);
+    this.layout();
     return this;
   }
+
+  /** Place icon and label side by side, shrinking the label to fit (translations can be long) */
+  private layout(): void {
+    const gap = 8;
+    const icW = this.ic ? this.ic.displayWidth + gap : 0;
+    this.label.setScale(1);
+    fitText(this.label, this.boxW - 24 - icW);
+    const lw = this.label.displayWidth;
+    if (this.ic) {
+      const total = icW + lw;
+      this.ic.x = -total / 2 + this.ic.displayWidth / 2;
+      this.label.x = this.ic.x + this.ic.displayWidth / 2 + gap + lw / 2;
+    } else this.label.x = 0;
+  }
+}
+
+/** Shrink a text object so it is at most maxW wide (keeps its current scale if it already fits) */
+export function fitText<T extends Phaser.GameObjects.Text>(text: T, maxW: number): T {
+  if (maxW > 0 && text.displayWidth > maxW) text.setScale((text.scaleX * maxW) / text.displayWidth);
+  return text;
+}
+
+/**
+ * Fit a short label into maxW. When shrinking alone would go below minScale, split it over about
+ * maxLines lines first (never drops text) and then shrink. A label that already fits is left untouched.
+ */
+export function fitTextLines<T extends Phaser.GameObjects.Text>(
+  text: T,
+  maxW: number,
+  maxLines = 2,
+  minScale = 0.75,
+): T {
+  if (maxW <= 0 || text.displayWidth <= maxW) return text;
+  if (maxLines > 1 && text.displayWidth * minScale > maxW) {
+    const lines = Math.min(maxLines, Math.ceil((text.displayWidth * minScale) / maxW));
+    // A little wider than an even split, so a word break does not spill onto an extra line
+    text.setWordWrapWidth((text.width / lines) * 1.15, true);
+    text.setAlign(text.originX === 0.5 ? 'center' : text.originX === 1 ? 'right' : 'left');
+  }
+  return fitText(text, maxW);
 }
 
 /** 丸い枠のボタン（アイコン＋下にラベル） */
@@ -172,6 +211,7 @@ export class RoundButton extends Phaser.GameObjects.Container {
           .text(0, size / 2 + 4, label, textStyle(Math.max(16, Math.round(size / 5))))
           .setOrigin(0.5, 0)
       : null;
+    if (this.caption) fitText(this.caption, size * 1.5);
     if (this.caption) this.add(this.caption);
     this.setSize(size, size);
     this.frame.setInteractive({ useHandCursor: true });
@@ -209,6 +249,8 @@ export class RoundButton extends Phaser.GameObjects.Container {
 export class Pill extends Phaser.GameObjects.Container {
   private readonly bg: Phaser.GameObjects.NineSlice;
   private readonly text: Phaser.GameObjects.Text;
+  /** Width the value may take (translated labels can be long) */
+  private readonly textMaxW: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -227,12 +269,16 @@ export class Pill extends Phaser.GameObjects.Container {
     this.text = scene.add
       .text(iconName ? -w / 2 + 44 : 0, 0, value, textStyle(24, color))
       .setOrigin(iconName ? 0 : 0.5, 0.5);
+    // Lenient (may touch the rim) so current Japanese values are never shrunk
+    this.textMaxW = iconName ? w - 30 : w - 8;
+    fitText(this.text, this.textMaxW);
     this.add(this.text);
     scene.add.existing(this);
   }
 
   setValue(v: string, color?: string): this {
-    this.text.setText(v);
+    this.text.setText(v).setScale(1);
+    fitText(this.text, this.textMaxW);
     if (color) this.text.setColor(color);
     return this;
   }
@@ -246,11 +292,20 @@ export function ribbon(
   title: string,
   w?: number,
 ): Phaser.GameObjects.Container {
-  const t = scene.add.text(0, -4, title, textStyle(30, '#fff6d0')).setOrigin(0.5);
-  const width = w ?? Math.max(260, t.width + 120);
+  const label = scene.add.text(0, -4, title, textStyle(30, '#fff6d0')).setOrigin(0.5);
+  // Without a width the ribbon grows with the title. With one, a long (translated) title may widen
+  // it by up to 20% before the text shrinks. Never wider than the screen
+  const maxWidth = scene.scale.gameSize.width - 40;
+  const width =
+    w === undefined
+      ? Math.min(maxWidth, Math.max(260, label.width + 120))
+      : label.width + 90 <= w
+        ? w
+        : Math.max(w, Math.min(maxWidth, w * 1.2, label.width + 90));
+  fitText(label, width - 90);
   const m = SLICE.ribbon;
   const bg = scene.add.nineslice(0, 0, SKIN.ribbon, undefined, width, 64, m, m, 20, 12);
-  const c = scene.add.container(x, y, [bg, t]);
+  const c = scene.add.container(x, y, [bg, label]);
   return c;
 }
 
@@ -316,6 +371,8 @@ export function confirmDialog(
   okLabel: string,
   onOk: () => void,
   okSkin: ButtonSkin = 'red',
+  /** A third choice, shown to the left of the OK button */
+  extra?: { label: string; onTap: () => void; skin: ButtonSkin },
 ): Phaser.GameObjects.Container {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -334,26 +391,47 @@ export function confirmDialog(
   const ch = 120 + msg.height + 150;
   const top = H / 2 - ch / 2;
   const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
-  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
+  const head = fitText(
+    scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5),
+    cw - 60,
+  );
   msg.setY(top + 96);
   const by = top + ch - 70;
+  // Two buttons side by side, or three narrower ones with the extra choice
+  const bw = extra ? 180 : 230;
+  const okX = extra ? W / 2 : W / 2 - 130;
+  const cancelX = extra ? W / 2 + 200 : W / 2 + 130;
   const ok = new Button(
     scene,
-    W / 2 - 130,
+    okX,
     by,
     okLabel,
     () => {
       close();
       onOk();
     },
-    { width: 230, height: 80, skin: okSkin },
+    { width: bw, height: 80, skin: okSkin },
   );
-  const cancel = new Button(scene, W / 2 + 130, by, 'やめる', close, {
-    width: 230,
+  const cancel = new Button(scene, cancelX, by, t('やめる'), close, {
+    width: bw,
     height: 80,
     skin: 'gray',
   });
-  root.add([shade, bg, t, msg, ok, cancel]);
+  root.add([shade, bg, head, msg, ok, cancel]);
+  if (extra)
+    root.add(
+      new Button(
+        scene,
+        W / 2 - 200,
+        by,
+        extra.label,
+        () => {
+          close();
+          extra.onTap();
+        },
+        { width: bw, height: 80, skin: extra.skin },
+      ),
+    );
   return root;
 }
 
@@ -372,6 +450,8 @@ export function choiceDialog(
   note?: string,
   /** 外側や「やめる」で閉じたとき */
   onCancel?: () => void,
+  /** 必ずどれかを選ばせる（「やめる」を出さず、外側を押しても閉じない） */
+  mustChoose = false,
 ): Phaser.GameObjects.Container {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -382,14 +462,27 @@ export function choiceDialog(
     onCancel?.();
   };
   const shade = scene.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
-  shade.on('pointerup', cancel);
+  if (!mustChoose) shade.on('pointerup', cancel);
   const cw = W - 80;
   const rowH = 92;
-  const ch = 120 + choices.length * rowH + (note ? 40 : 0) + 110;
+  // The note wraps when it is too long for one line (translations), and the panel grows to fit
+  const noteText = note
+    ? scene.add.text(W / 2, 0, note, textStyle(18, COLORS.textDim, false)).setOrigin(0.5, 0)
+    : null;
+  let noteExtra = 0;
+  if (noteText && noteText.width > cw - 60) {
+    const oneLine = noteText.height;
+    noteText.setWordWrapWidth(cw - 60, true).setAlign('center');
+    noteExtra = Math.max(0, noteText.height - oneLine);
+  }
+  const ch = 120 + choices.length * rowH + (note ? 40 + noteExtra : 0) + (mustChoose ? 20 : 110);
   const top = H / 2 - ch / 2;
   const bg = panel(scene, W / 2, H / 2, cw, ch, 'panel').setInteractive();
-  const t = scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5);
-  root.add([shade, bg, t]);
+  const head = fitText(
+    scene.add.text(W / 2, top + 50, title, textStyle(34, '#ffe27a')).setOrigin(0.5),
+    cw - 60,
+  );
+  root.add([shade, bg, head]);
   choices.forEach((c, i) => {
     root.add(
       new Button(
@@ -406,14 +499,17 @@ export function choiceDialog(
     );
   });
   let y = top + 130 + choices.length * rowH;
-  if (note) {
-    root.add(
-      scene.add.text(W / 2, y - 20, note, textStyle(18, COLORS.textDim, false)).setOrigin(0.5, 0),
-    );
-    y += 40;
+  if (noteText) {
+    root.add(noteText.setY(y - 20));
+    y += 40 + noteExtra;
   }
-  root.add(
-    new Button(scene, W / 2, y + 20, 'やめる', cancel, { width: 230, height: 72, skin: 'gray' }),
-  );
+  if (!mustChoose)
+    root.add(
+      new Button(scene, W / 2, y + 20, t('やめる'), cancel, {
+        width: 230,
+        height: 72,
+        skin: 'gray',
+      }),
+    );
   return root;
 }

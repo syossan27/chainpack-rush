@@ -5,10 +5,12 @@ import Phaser from 'phaser';
 import type { ItemInstance, Rarity } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
+import { t } from '../i18n';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { ItemIcon } from './itemIcon';
 import { iconTex } from './kit/icons';
-import { bindTap } from './kit/widgets';
+import { bindTap, fitText, fitTextLines } from './kit/widgets';
+import { CONSUMABLE_CSS } from './kit/skin';
 import { rarityColor, rarityCss, textStyle } from './theme';
 
 type Tier = Rarity | 'artifact';
@@ -71,10 +73,11 @@ export class ChestReveal {
         return;
       }
       const p = opts.position(i);
-      const t = tierOf(it);
+      const tierId = tierOf(it);
       const chest = scene.add.image(p.x, p.y, iconTex('chest')).setScale(opts.iconSize / 20);
       // レア以上は宝箱の色で予告する
-      if (t !== 'common') chest.setTint(t === 'artifact' ? 0xff8ce8 : rarityColor(it.rarity));
+      if (tierId !== 'common')
+        chest.setTint(tierId === 'artifact' ? 0xff8ce8 : rarityColor(it.rarity));
       chest.setAlpha(0);
       scene.tweens.add({ targets: chest, alpha: 1, duration: 160, delay: i * 30 });
       this.chests.push(chest);
@@ -114,8 +117,8 @@ export class ChestReveal {
       return;
     }
     this.busy = true;
-    const t = TIER[tierOf(it)];
-    const hold = this.fast ? 0 : t.hold;
+    const fx = TIER[tierOf(it)];
+    const hold = this.fast ? 0 : fx.hold;
     if (hold > 0) {
       // ため: 宝箱が震えて、光がにじむ
       const glow = this.scene.add
@@ -128,7 +131,7 @@ export class ChestReveal {
       this.scene.tweens.add({ targets: glow, alpha: 0.9, scale: 3, duration: hold });
       this.scene.tweens.add({
         targets: chest,
-        x: { from: chest.x - t.shake, to: chest.x + t.shake },
+        x: { from: chest.x - fx.shake, to: chest.x + fx.shake },
         yoyo: true,
         repeat: Math.max(1, Math.floor(hold / 60)),
         duration: 30,
@@ -149,15 +152,15 @@ export class ChestReveal {
     const y = this.opts.position(i).y;
     chest?.destroy();
     const tier = tierOf(it);
-    const t = TIER[tier];
+    const fx = TIER[tier];
     const color = tier === 'artifact' ? 0xff8ce8 : rarityColor(it.rarity);
     const big = !this.fast;
 
     // 粒
-    const n = big ? t.particles : 4;
+    const n = big ? fx.particles : 4;
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2 + Math.random() * 0.3;
-      const d = 40 + Math.random() * (60 + t.particles * 2);
+      const d = 40 + Math.random() * (60 + fx.particles * 2);
       const c =
         tier === 'artifact'
           ? Phaser.Display.Color.HSVToRGB(k / n, 0.6, 1).color
@@ -178,7 +181,7 @@ export class ChestReveal {
       });
     }
     // 後光（エピック以上は残る）
-    if (t.pillar) {
+    if (fx.pillar) {
       const halo = scene.add
         .image(x, y, 'sk_glow')
         .setScale(3)
@@ -206,7 +209,7 @@ export class ChestReveal {
         });
       }
     }
-    if (big && t.pillar) {
+    if (big && fx.pillar) {
       // 光の柱
       const pillar = scene.add
         .rectangle(
@@ -238,11 +241,11 @@ export class ChestReveal {
       });
     }
     if (big && this.opts.shake) {
-      if (t.flash) {
+      if (fx.flash) {
         const c = Phaser.Display.Color.IntegerToColor(color);
         scene.cameras.main.flash(tier === 'epic' ? 140 : 260, c.red, c.green, c.blue);
       }
-      if (t.quake > 0) scene.cameras.main.shake(tier === 'epic' ? 160 : 320, t.quake);
+      if (fx.quake > 0) scene.cameras.main.shake(tier === 'epic' ? 160 : 320, fx.quake);
     }
     // 音と振動
     if (big) {
@@ -255,7 +258,7 @@ export class ChestReveal {
       } else sfx(tier === 'rare' ? 'openRare' : 'open');
     }
     this.showItem(i, it, big);
-    const gap = this.fast ? 40 : (this.opts.gap ?? 300) + (t.pillar ? 250 : 0);
+    const gap = this.fast ? 40 : (this.opts.gap ?? 300) + (fx.pillar ? 250 : 0);
     scene.time.delayedCall(gap, () => {
       this.busy = false;
       this.openNext();
@@ -279,11 +282,12 @@ export class ChestReveal {
         .text(
           x,
           y,
-          '売却',
+          t('売却|sold'),
           textStyle(Math.min(22, Math.round(this.opts.iconSize * 0.22)), '#ffe27a'),
         )
         .setOrigin(0.5)
         .setAngle(-12);
+      fitText(tag, this.opts.iconSize);
       this.root.add(tag);
     }
     if (this.opts.names === false) {
@@ -294,10 +298,19 @@ export class ChestReveal {
       .text(
         x,
         y + this.opts.iconSize / 2 + 2,
-        getItemDef(it.defId).name,
-        textStyle(16, tier === 'artifact' ? '#ff8ce8' : rarityCss(it.rarity)),
+        t(getItemDef(it.defId).name),
+        textStyle(
+          16,
+          tier === 'artifact'
+            ? '#ff8ce8'
+            : getItemDef(it.defId).kind === 'consumable'
+              ? CONSUMABLE_CSS
+              : rarityCss(it.rarity),
+        ),
       )
       .setOrigin(0.5, 0);
+    // Names sit side by side under icons (iconSize + 8 apart): a long one wraps onto 2 lines and shrinks
+    fitTextLines(name, this.opts.iconSize + 14);
     this.root.add(name);
     this.finishItem(i, it, icon, big);
   }
@@ -347,7 +360,7 @@ export class ChestReveal {
         .setFillStyle(0x6ee06a, 0.08);
       this.root.addAt(ring, 0);
       const tag = scene.add
-        .text(x + s / 2 + 2, y - s / 2 + 4, '広告', {
+        .text(x + s / 2 + 2, y - s / 2 + 4, t('広告'), {
           ...textStyle(Math.min(15, Math.max(11, Math.round(s * 0.15))), '#ffffff'),
           stroke: '#1a5a1a',
           strokeThickness: 3,

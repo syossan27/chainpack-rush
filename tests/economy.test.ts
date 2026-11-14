@@ -121,8 +121,11 @@ describe('economy', () => {
 
   it('永続強化: 費用の伸びと上限、効果', () => {
     expect(upgradeCost('maxHp', 0)).toBe(50);
-    expect(upgradeCost('maxHp', 1)).toBe(80);
+    expect(upgradeCost('maxHp', 1)).toBe(70);
     expect(upgradeCost('maxHp', 10)).toBeNull();
+    // 後半の地域を開放すると、攻撃倍率と最大HPの上限が上がる（元の上限を超えた段は伸びが緩い）
+    expect(upgradeCost('attack', 20, 30)).toBe(Math.round(60 * Math.pow(1.3, 20)));
+    expect(upgradeCost('attack', 21, 30)).toBe(Math.round(60 * Math.pow(1.3, 20) * 1.12));
     const s = createInitialSave();
     s.gold = 1e9;
     for (let i = 0; i < 20; i++) buyUpgrade(s, 'atb');
@@ -132,6 +135,11 @@ describe('economy', () => {
     expect(s.loadout.height).toBe(5);
     for (let i = 0; i < 10; i++) buyUpgrade(s, 'storage');
     expect(storageCapacity(s)).toBe(100);
+    for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
+    expect(s.upgrades.attack).toBe(20);
+    s.progress.unlocked.push('volcano', 'glacier');
+    for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
+    expect(s.upgrades.attack).toBe(40);
   });
 
   it('バックパック拡張は列と行を交互に', () => {

@@ -1,5 +1,10 @@
 import '@fontsource/m-plus-rounded-1c/500.css';
 import '@fontsource/m-plus-rounded-1c/800.css';
+// Traditional Chinese and Korean (subset files are only downloaded when their characters are drawn)
+import '@fontsource/noto-sans-tc/500.css';
+import '@fontsource/noto-sans-tc/800.css';
+import '@fontsource/noto-sans-kr/500.css';
+import '@fontsource/noto-sans-kr/800.css';
 import Phaser from 'phaser';
 import { setAudioSuspended, unlockAudio } from './audio/sfx';
 import { initLifecycle, onAppStateChange } from './platform/lifecycle';
@@ -11,6 +16,18 @@ import { ResultScene } from './scenes/ResultScene';
 import { RunScene } from './scenes/RunScene';
 import { StageSelectScene } from './scenes/StageSelectScene';
 import { COLORS, H, W } from './ui/theme';
+
+// Phaser reuses a scene's previous start data when it is started without any: after
+// start('Loadout', { challenge: true }), a plain start('Loadout') opened the challenge loadout again
+// (and start('Base') could reopen an old page). Always pass an object so each start gets only its own data.
+const sceneStart = Phaser.Scenes.ScenePlugin.prototype.start;
+Phaser.Scenes.ScenePlugin.prototype.start = function (
+  this: Phaser.Scenes.ScenePlugin,
+  key?: string | Phaser.Scene,
+  data?: object,
+) {
+  return sceneStart.call(this, key, data ?? {});
+};
 
 initLifecycle();
 // バックグラウンドでは音を止める（ランは RunScene 側で自動ポーズ）

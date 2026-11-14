@@ -1,0 +1,472 @@
+// German: game data (items, enemies, regions, techniques, achievements, ...).
+// Key: Japanese source string → value: translation (keep {placeholders})
+import type { Dict } from '../types';
+
+export const DATA: Dict = {
+  // src/config/balance.ts
+  '感電！': 'Schock!',
+  '爆発！': 'Explosion!',
+  '粉砕！': 'Zertrümmern!',
+  '毒爆！': 'Giftausbruch!',
+  '浄化！': 'Reinigen!',
+  '封印！': 'Versiegeln!',
+  硬い: 'Zäh',
+  速い: 'Flink',
+  金ぴか: 'Golden',
+  最大HP: 'Max. HP',
+  攻撃間隔: 'Angriffstakt',
+  攻撃倍率: 'Angriffsmultiplikator',
+  出撃時間: 'Zeitlimit',
+  バックパック拡張: 'Größerer Rucksack',
+  消耗品枠: 'Item-Slots',
+  倉庫容量: 'Lagerplatz',
+  '480円': '¥480',
+
+  // src/core/affixes.ts
+  鋭い: 'Scharf',
+  '攻撃力 +{v}%': 'Angriff +{v}%',
+  会心: 'Kritisch',
+  '会心率 +{v}%': 'Krit-Chance +{v}%',
+  先駆け: 'Vorhut',
+  '3連鎖目までなら ダメージ +{v}%': 'Schaden +{v}% in Glied 1–3',
+  締め: 'Finale',
+  '6連鎖目以降なら ダメージ +{v}%': 'Schaden +{v}% ab Glied 6',
+  弱点突き: 'Schwachpunkt',
+  '状態がついた敵に ダメージ +{v}%': 'Schaden +{v}% gegen Gegner mit Status',
+  ボス特効: 'Bossjäger',
+  'ボスに ダメージ +{v}%': 'Schaden +{v}% gegen Bosse',
+  頑丈: 'Robust',
+  '防御値 +{v}%': 'Verteidigung +{v}%',
+  癒し: 'Heilung',
+  '連鎖が通るとHP +{v}': 'HP +{v}, wenn eine Kette hindurchläuft',
+  速攻: 'Tempo',
+  'この連鎖のあとの待ち -{v}%': 'Wartezeit nach dieser Kette -{v}%',
+  初撃: 'Erstschlag',
+  '1連鎖目 ダメージ +{v}%': 'Schaden +{v}% in Glied 1',
+
+  // src/core/names.ts
+  はやての: 'des Sturms',
+  ひかりの: 'des Lichts',
+  ほのおの: 'der Flammen',
+  こおりの: 'des Frosts',
+  いかずちの: 'des Donners',
+  かぜの: 'des Windes',
+  やみの: 'der Schatten',
+  ほしの: 'der Sterne',
+  つきの: 'des Mondes',
+  たいようの: 'der Sonne',
+  まよなかの: 'der Mitternacht',
+  あかつきの: 'der Morgenröte',
+  しろがねの: 'in Silber',
+  こがねの: 'in Gold',
+  くろがねの: 'aus Eisen',
+  みどりの: 'in Grün',
+  あおぞらの: 'des Himmels',
+  ゆうやけの: 'des Abendrots',
+  しずかな: 'der Stille',
+  げんきな: 'voller Elan',
+  のんびり: 'ohne Eile',
+  ちいさな: 'im Miniformat',
+  おおきな: 'im XXL-Format',
+  まっすぐな: 'mit Herz',
+  ゆうしゃ: 'Held',
+  けんし: 'Fechter',
+  まほうつかい: 'Magier',
+  ぼうけんしゃ: 'Abenteurer',
+  かじや: 'Schmied',
+  たびびと: 'Wanderer',
+  きし: 'Ritter',
+  かりゅうど: 'Jäger',
+  スライム: 'Schleim',
+  ドラゴン: 'Drache',
+  ゴーレム: 'Golem',
+  ねこ: 'Katze',
+  いぬ: 'Hund',
+  うさぎ: 'Hase',
+  ふくろう: 'Eule',
+  くま: 'Bär',
+  ほうせき: 'Juwel',
+  たいまつ: 'Fackel',
+  たて: 'Schild',
+  つるぎ: 'Klinge',
+  おの: 'Axt',
+  やり: 'Lanze',
+  ゆみ: 'Bogen',
+  バックパック: 'Rucksack',
+  '{first}{second}|name': '{second} {first}',
+  名無しの冒険者: 'Namenloser Abenteurer',
+
+  // src/data/achievements.ts
+  はじめの一歩: 'Erste Schritte',
+  自分の装備でランを1回終える: 'Beende eine Expedition mit eigener Ausrüstung',
+  駆け出し冒険者: 'Abenteuer-Neuling',
+  ランを10回終える: 'Beende 10 Expeditionen',
+  歴戦の勇者: 'Kampferprobter Held',
+  ランを50回終える: 'Beende 50 Expeditionen',
+  つながる力: 'Kettenkraft',
+  '6連鎖を決める': 'Schaffe eine Kette aus 6 Gliedern',
+  連鎖使い: 'Kettenkünstler',
+  '10連鎖を決める': 'Schaffe eine Kette aus 10 Gliedern',
+  連鎖の達人: 'Kettenmeister',
+  '14連鎖を決める': 'Schaffe eine Kette aus 14 Gliedern',
+  終わらない連鎖: 'Endlose Kette',
+  '18連鎖を決める': 'Schaffe eine Kette aus 18 Gliedern',
+  重い一撃: 'Schwerer Schlag',
+  '1回の攻撃で200ダメージ': '200 Schaden mit einem Treffer',
+  会心の一撃: 'Volltreffer',
+  '1回の攻撃で1,000ダメージ': '1.000 Schaden mit einem Treffer',
+  山をも砕く: 'Bergbrecher',
+  '1回の攻撃で5,000ダメージ': '5.000 Schaden mit einem Treffer',
+  伝説の一撃: 'Legendärer Schlag',
+  '1回の攻撃で20,000ダメージ': '20.000 Schaden mit einem Treffer',
+  ボス討伐: 'Bossbezwinger',
+  '1回のランでボスを倒す': 'Besiege einen Boss in einer Expedition',
+  奥へ奥へ: 'Immer tiefer',
+  '1回のランで5周目に着く': 'Erreiche Runde 5 in einer Expedition',
+  果てを目指して: 'Bis ans Ende',
+  '1回のランで8周目に着く': 'Erreiche Runde 8 in einer Expedition',
+  一網打尽の名人: 'K.o.-Meister',
+  '1回のランで一網打尽を5回': 'Besiege in einer Expedition 5-mal eine ganze Gruppe mit einer Kette',
+  洞窟へ: 'Auf in die Höhle',
+  洞窟を開放する: 'Schalte die Höhle frei',
+  城壁へ: 'Auf zum Burgwall',
+  城壁を開放する: 'Schalte den Burgwall frei',
+  秘技の目覚め: 'Verborgenes Talent',
+  必殺技を1つ見つける: 'Entdecke einen Spezialangriff',
+  奥義皆伝: 'Großmeister',
+  必殺技をすべて見つける: 'Entdecke alle Spezialangriffe',
+  紫の輝き: 'Lila Glanz',
+  エピックの装備を手に入れる: 'Erhalte einen epischen Gegenstand',
+  金色の伝説: 'Goldene Legende',
+  レジェンドの装備を手に入れる: 'Erhalte einen legendären Gegenstand',
+  神話の遺物: 'Mythisches Relikt',
+  アーティファクトを手に入れる: 'Erhalte ein Artefakt',
+  魔王討伐: 'Dämonenkönig besiegt',
+  '魔王城で魔王を倒す（エンドレスが開放）':
+    'Besiege den Dämonenkönig in der Dämonenburg (schaltet Endlos frei)',
+  果てなき道: 'Weg ohne Ende',
+  エンドレスで5周目に着く: 'Erreiche Runde 5 in Endlos',
+  深淵へ: 'In den Abgrund',
+  エンドレスで10周目に着く: 'Erreiche Runde 10 in Endlos',
+  伝説の勇者: 'Legendärer Held',
+  エンドレスで15周目に着く: 'Erreiche Runde 15 in Endlos',
+  終わりなき者: 'Unermüdlich',
+  エンドレスで20周目に着く: 'Erreiche Runde 20 in Endlos',
+
+  // src/data/challenges.ts
+  レアの意地: 'Seltener Stolz',
+  'レア以下の装備だけで、洞窟でどこまで削れるか':
+    'Nur Ausrüstung bis Selten. Wie viel Schaden schaffst du in der Höhle?',
+  ひとすじの連鎖: 'Eine einzige Kette',
+  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
+    'Nur ein Ursprung. Bezwinge den Burgwall mit einer langen Kette.',
+  属性の試練: 'Probe der Elemente',
+  '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
+    'Nur Ausrüstung mit Feuer, Blitz, Eis, Wasser und Öl. Brenn den Vulkan mit Kombos nieder!',
+  守りなし: 'Ohne Deckung',
+  '防具は置けない。やられる前に倒しきれ':
+    'Keine Rüstung erlaubt. Besiege sie, bevor sie dich besiegen!',
+
+  // src/data/enemies.ts
+  コウモリ: 'Fledermaus',
+  ゴブリン: 'Goblin',
+  甲冑兵: 'Panzerkrieger',
+  狼: 'Wolf',
+  骸骨: 'Skelett',
+  呪術師: 'Hexer',
+  大スライム: 'Riesenschleim',
+  ゴブリン王: 'Goblinkönig',
+  鉄の騎士: 'Eisenritter',
+  スライムの母: 'Schleimmutter',
+  吸血女王: 'Vampirkönigin',
+  呪術王: 'Hexerkönig',
+  岩のゴーレム: 'Felsgolem',
+  火トカゲ: 'Feuerechse',
+  溶岩スライム: 'Lavaschleim',
+  火の精: 'Feuergeist',
+  炎竜: 'Feuerdrache',
+  溶岩の巨人: 'Lavariese',
+  雪だるま: 'Schneemann',
+  氷の狼: 'Eiswolf',
+  雪男: 'Yeti',
+  氷の女王: 'Eiskönigin',
+  氷原のマンモス: 'Tundramammut',
+  小悪魔: 'Teufelchen',
+  ガーゴイル: 'Gargoyle',
+  闇の魔導士: 'Dunkelmagier',
+  黒騎士: 'Schwarzer Ritter',
+  魔王: 'Dämonenkönig',
+  カカシ: 'Übungspuppe',
+  '単体、特殊能力なし（どちらの構成でも可）':
+    'Kämpft allein, keine Spezialfähigkeit (jeder Aufbau klappt)',
+  '取り巻きゴブリンを常に4体呼ぶ（短い連鎖の複数・薙ぎ払いが有利）':
+    'Hat immer 4 Goblin-Helfer dabei (mehrere kurze Ketten und Schwung-Angriffe helfen)',
+  '一撃120未満のダメージを無効（連鎖の後半や大技で崩す）':
+    'Ignoriert Treffer unter 120 Schaden (durchbrich das mit späten Kettengliedern oder starken Treffern)',
+  'スライムを常に4体呼ぶ（短い連鎖の複数・薙ぎ払いが有利）':
+    'Hat immer 4 Schleime dabei (mehrere kurze Ketten und Schwung-Angriffe helfen)',
+  'コウモリを次々に5体まで呼ぶ（全体攻撃・薙ぎ払いが有利）':
+    'Ruft immer neue Fledermäuse, bis zu 5 (Angriffe auf alle und Schwung-Angriffe helfen)',
+  '毎秒HPが回復する（一気に削り切る長い連鎖が有利）':
+    'Heilt jede Sekunde HP (lange Ketten, die schnell den Rest erledigen, helfen)',
+  'HPが半分を切ると攻撃が速く強くなる（盾で耐えるか、一気に倒す）':
+    'Unter halben HP: schnellere, stärkere Angriffe (mit Schilden durchhalten oder schnell besiegen)',
+  'HPが半分を切ると攻撃が速く強くなる。炎が効きにくく、氷が弱点':
+    'Unter halben HP: schnellere, stärkere Angriffe. Resistent gegen Feuer, schwach gegen Eis.',
+  '溶岩スライムを呼ぶ。炎はほとんど効かず、氷と水が弱点':
+    'Ruft Lavaschleime. Feuer wirkt kaum, schwach gegen Eis und Wasser.',
+  '氷の狼を次々に呼ぶ。氷が効きにくく、炎が弱点':
+    'Ruft immer neue Eiswölfe. Resistent gegen Eis, schwach gegen Feuer.',
+  '一撃400未満のダメージを無効。氷が効きにくく、炎が弱点':
+    'Ignoriert Treffer unter 400 Schaden. Resistent gegen Eis, schwach gegen Feuer.',
+  '一撃900未満のダメージを無効。雷が弱点':
+    'Ignoriert Treffer unter 900 Schaden. Schwach gegen Blitz.',
+  '小悪魔を呼び続ける最後の敵。物理と炎が効きにくく、雷が弱点':
+    'Der letzte Gegner. Ruft ständig Teufelchen. Resistent gegen physische Angriffe und Feuer, schwach gegen Blitz.',
+
+  // src/data/items.ts
+  起点石: 'Ursprungsstein',
+  '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
+    'Hier beginnt eine Kette. Kein Angriff. Die Seltenheit bestimmt die Zahl der Ausgänge (Gewöhnlich 1, Selten 2, Episch 3, Legendär 4).',
+  速の起点石: 'Flinker Ursprungsstein',
+  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
+    'Linien ab diesem Ursprung geben die Kette 0.05 s schneller weiter, dafür machen ihre Angriffe -10% Schaden.',
+  重い起点石: 'Schwerer Ursprungsstein',
+  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
+    'Angriffe auf Linien ab diesem Ursprung machen +20% Schaden, dafür wird die Kette 0.05 s langsamer weitergegeben.',
+  炎の起点石: 'Feuer-Ursprungsstein',
+  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Feuer +15% Schaden.',
+  雷の起点石: 'Blitz-Ursprungsstein',
+  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Blitz +15% Schaden.',
+  打撃の起点石: 'Wucht-Ursprungsstein',
+  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Wucht +15% Schaden.',
+  盾の起点石: 'Schild-Ursprungsstein',
+  'この起点から伸びる線の、防御装備の防御値 +25%。':
+    'Auf Linien ab diesem Ursprung geben Rüstungsgegenstände +25% Verteidigung.',
+  毒の起点石: 'Gift-Ursprungsstein',
+  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
+    'Auf Linien ab diesem Ursprung macht Gift +60% Schaden pro Sekunde.',
+  吸血の起点石: 'Vampir-Ursprungsstein',
+  'この起点から伸びる線の、吸血で回復する量 +50%。':
+    'Auf Linien ab diesem Ursprung: Heilung durch Lebensraub +50%.',
+  風の起点石: 'Wind-Ursprungsstein',
+  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Wind +15% Schaden.',
+  光の起点石: 'Licht-Ursprungsstein',
+  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Licht +15% Schaden.',
+  闇の起点石: 'Schatten-Ursprungsstein',
+  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
+    'Auf Linien ab diesem Ursprung machen Angriffe mit Schatten +15% Schaden.',
+  剣: 'Schwert',
+  '基本の単体攻撃。': 'Ein einfacher Einzelangriff.',
+  大剣: 'Großschwert',
+  '強力な単体攻撃。ただし次への伝達に0.4秒かかる。':
+    'Ein starker Einzelangriff, braucht aber 0.4 s, um die Kette weiterzugeben.',
+  槍: 'Speer',
+  '狙いの後ろの1体にも同じダメージ。': 'Trifft auch 1 Gegner hinter dem Ziel mit gleichem Schaden.',
+  斧: 'Axt',
+  '交戦範囲の全敵を薙ぎ払う。': 'Trifft mit Schwung alle Gegner in Reichweite.',
+  ハンマー: 'Hammer',
+  '打撃。凍結した敵を粉砕（×2.5）。': 'Wucht. Zertrümmert gefrorene Gegner (×2.5).',
+  鉄球: 'Eisenkugel',
+  '打撃の範囲攻撃。凍結した敵を粉砕（×2.5）。':
+    'Flächenangriff mit Wucht. Zertrümmert gefrorene Gegner (×2.5).',
+  松明: 'Fackel',
+  '炎。油まみれの敵を爆発させる（×2、範囲に拡大）。':
+    'Feuer. Lässt ölige Gegner explodieren (×2, trifft eine Fläche).',
+  炎の杖: 'Feuerstab',
+  '炎の範囲攻撃。油まみれの敵を爆発させる。':
+    'Flächenangriff mit Feuer. Lässt ölige Gegner explodieren.',
+  雷の杖: 'Blitzstab',
+  '雷。濡れた敵を感電させる（×3）。': 'Blitz. Schockt nasse Gegner (×3).',
+  雷鳴の鈴: 'Donnerglocke',
+  '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
+    'Blitz auf alle Gegner im Bild (Stärke ×0.4). Schockt nasse Gegner.',
+  氷の剣: 'Eisschwert',
+  '狙いを凍結させる。打撃で粉砕できる。': 'Friert das Ziel ein. Wucht kann es zertrümmern.',
+  水竜の瓶: 'Wasserdrachen-Flasche',
+  '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
+    'Macht das Ziel nass, damit Blitz es schocken kann. Gegner mit Status erleiden ×1.2 Schaden.',
+  雨雲の杖: 'Regenstab',
+  '画面内の全敵を濡らす。状態がついた敵へのダメージ×1.2。':
+    'Macht alle Gegner im Bild nass. Gegner mit Status erleiden ×1.2 Schaden.',
+  油瓶: 'Ölflasche',
+  '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。':
+    'Übergießt das Ziel mit Öl, damit Feuer es explodieren lässt. Gegner mit Status erleiden ×1.2 Schaden.',
+  風の剣: 'Windschwert',
+  '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。':
+    'Wind. Treffer auf vergiftete Gegner stapeln das Gift (bis zu 5-fach). Ein Treffer bei 5-fachem Gift verursacht das ganze restliche Gift auf einmal (Giftausbruch).',
+  嵐の杖: 'Sturmstab',
+  '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。':
+    'Ein Schwung mit Wind. Stapelt das Gift bei allen getroffenen vergifteten Gegnern; bei 5-fach: Giftausbruch.',
+  光の剣: 'Lichtschwert',
+  '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。':
+    'Licht. Belegt das Ziel mit Strahlend. Reinigt gebannte Gegner und heilt den Helden.',
+  太陽の杖: 'Sonnenstab',
+  '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
+    'Flächenangriff mit Licht. Belegt mit Strahlend, reinigt gebannte Gegner und heilt den Helden.',
+  闇の剣: 'Schattenschwert',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
+    'Schatten. Belegt das Ziel mit Gebannt (senkt seinen Angriff). Versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
+  闇の杖: 'Schattenstab',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
+    'Flächenangriff mit Schatten. Belegt mit Gebannt, versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
+  木の盾: 'Holzschild',
+  '連鎖が通ると、終了時に防御値+8。': '+8 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  鎖帷子: 'Kettenhemd',
+  '連鎖が通ると、終了時に防御値+12。': '+12 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  鋼の鎧: 'Stahlrüstung',
+  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
+    '+20 Verteidigung am Ende jeder Kette, die hindurchläuft. Etwas schwer: gibt die Kette langsamer weiter.',
+  短剣: 'Dolch',
+  '軽い一撃。次の装備へすぐ伝わる。':
+    'Ein leichter Treffer. Gibt die Kette schnell an den nächsten Gegenstand weiter.',
+  双剣: 'Doppelklinge',
+  '2回斬る（連鎖数は1つ）。': 'Schlägt 2× pro Glied zu.',
+  弓: 'Bogen',
+  '狙いの後ろ2体まで射抜く。': 'Durchbohrt bis zu 2 Gegner hinter dem Ziel.',
+  大斧: 'Streitaxt',
+  '目の前の敵をまとめて薙ぎ払う重い一撃。次へ伝わるのが遅い。':
+    'Ein schwerer Schlag, der alle Gegner vor dir mit Schwung trifft. Gibt die Kette langsam weiter.',
+  聖剣: 'Heiliges Schwert',
+  '会心が出やすい（会心率+20%）。': 'Trifft öfter kritisch (Krit-Chance +20%).',
+  雷の槍: 'Blitzspeer',
+  '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
+    'Ein Blitzstoß, der auch 1 Gegner hinter dem Ziel trifft. Schockt nasse Gegner.',
+  氷の杖: 'Froststab',
+  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
+    'Friert das Ziel und die Gegner um es herum ein. Wucht kann sie zertrümmern.',
+  革鎧: 'Lederrüstung',
+  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
+    '+6 Verteidigung am Ende jeder Kette, die hindurchläuft. Leicht: gibt die Kette schnell weiter.',
+  大盾: 'Turmschild',
+  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
+    '+26 Verteidigung am Ende jeder Kette, die hindurchläuft. Schwer: gibt die Kette langsam weiter.',
+  鉄の盾: 'Eisenschild',
+  '連鎖が通ると、終了時に防御値+18。': '+18 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  循環の環: 'Ouroboros-Ring',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
+    'Verteilt die Kette in alle 4 Richtungen. Bei Ketten durch diesen Ring steigt das Limit des Kettenmultiplikators auf ×4.0.',
+  竜牙の剣: 'Drachenzahn',
+  '竜を討った剣。ボスへのダメージ×2。':
+    'Das Schwert, das einen Drachen erschlug. Schaden gegen Bosse ×2.',
+  天雷の大槌: 'Donnerhammer',
+  '画面内の全敵へ雷を落とす。濡れた敵は感電する。':
+    'Lässt Blitze auf alle Gegner im Bild niedergehen. Nasse Gegner werden geschockt.',
+  毒の短剣: 'Giftdolch',
+  '当てた敵を毒にする（5秒間、この一撃の30%を毎秒与える）。毒の敵へのほかの攻撃は×1.2。':
+    'Vergiftet den getroffenen Gegner (5 s lang 30% dieses Treffers pro Sekunde). Andere Angriffe auf vergiftete Gegner machen ×1.2 Schaden.',
+  毒霧の杖: 'Giftnebelstab',
+  '狙いのまわりにも当たり、まとめて毒にする（5秒間、一撃の30%を毎秒）。':
+    'Trifft auch Gegner um das Ziel herum und vergiftet alle (5 s lang 30% des Treffers pro Sekunde).',
+  吸血の剣: 'Vampirschwert',
+  '与えたダメージの8%だけ、勇者のHPが回復する。':
+    'Heilt den Helden um 8% des verursachten Schadens.',
+  疾風の羽: 'Sturmfeder',
+  'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。':
+    'Gegenstände nach dieser Feder zählen ein Glied weiter (der Kettenmultiplikator steigt schneller). Gibt die Kette schnell weiter.',
+  深淵の杯: 'Abgrundkelch',
+  '当てた敵を毒にし、与えたダメージの15%だけHPが回復する。':
+    'Vergiftet den getroffenen Gegner und heilt den Helden um 15% des verursachten Schadens.',
+  賢者の石: 'Stein der Weisen',
+  '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
+    'Belegt getroffene Gegner auf einmal mit Nass, Öl und Gefroren. Spätere Angriffe mit Blitz, Feuer und Wucht werden alle zu Kombos.',
+  不落の城門: 'Festungstor',
+  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    'Solange es im Rucksack ist, bist du in Ketten nie ungeschützt und taumelst nie. +40 Verteidigung.',
+  号令: 'Schlachtruf',
+  '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
+    'Füllt sofort die Leiste unter dem Helden und zündet gleich den nächsten Ursprung. Nicht während einer Kette nutzbar.',
+  時止め: 'Zeitstopp',
+  '3秒間、敵の行動を止める。': 'Hält alle Gegner 3 Sekunden lang an.',
+  油の大樽: 'Ölfass',
+  '画面内の全敵に油を付与。': 'Übergießt alle Gegner im Bild mit Öl.',
+  雨乞いの符: 'Regenzauber',
+  '画面内の全敵に濡れを付与。': 'Macht alle Gegner im Bild nass.',
+  時の砂: 'Sand der Zeit',
+  '出撃時間を5秒のばす。': 'Verlängert die Expedition um 5 Sekunden.',
+  爆弾: 'Bombe',
+  '画面内の全敵に60ダメージ（攻撃倍率の強化が乗る）。':
+    '60 Schaden an allen Gegnern im Bild (verstärkt durch das Training „Angriffsmultiplikator“).',
+  幸運の硬貨: 'Glücksmünze',
+  '8秒間、会心率+30%。': 'Krit-Chance +30% für 8 Sekunden.',
+  回復薬: 'Heiltrank',
+  'HPを40回復。': 'Stellt 40 HP wieder her.',
+  物理: 'Physisch',
+  打撃: 'Wucht',
+  炎: 'Feuer',
+  雷: 'Blitz',
+  氷: 'Eis',
+  水: 'Wasser',
+  油: 'Öl',
+  風: 'Wind',
+  光: 'Licht',
+  闇: 'Schatten',
+  単体: 'Einzel',
+  薙ぎ払い: 'Schwung',
+  範囲: 'Fläche',
+  全体: 'Alle',
+  濡れ: 'Nass',
+  凍結: 'Gefroren',
+  毒: 'Gift',
+  灼光: 'Strahlend',
+  呪縛: 'Gebannt',
+  コモン: 'Gewöhnlich',
+  レア: 'Selten',
+  エピック: 'Episch',
+  レジェンド: 'Legendär',
+
+  // src/data/referenceLoadouts.ts
+  一本型: 'Eine Kette',
+  複数型: 'Mehrere Ketten',
+  混合型: 'Gemischt',
+
+  // src/data/regions.ts
+  草原: 'Grasland',
+  'スライム、ゴブリン、狼': 'Schleime, Goblins, Wölfe',
+  洞窟: 'Höhle',
+  'コウモリ、骸骨、呪術師（群れが多い）': 'Fledermäuse, Skelette, Hexer (viele Gruppen)',
+  城壁: 'Burgwall',
+  '甲冑兵、ゴブリン、骸骨（硬い）': 'Panzerkrieger, Goblins, Skelette (zäh)',
+  火山: 'Vulkan',
+  '火トカゲ、溶岩スライム、火の精': 'Feuerechsen, Lavaschleime, Feuergeister',
+  '炎が効きにくい・氷と水が弱点': 'Resistent gegen Feuer, schwach gegen Eis und Wasser',
+  氷河: 'Gletscher',
+  '氷の狼、雪だるま、雪男（速い）': 'Eiswölfe, Schneemänner, Yetis (flink)',
+  '氷が効きにくい・炎が弱点': 'Resistent gegen Eis, schwach gegen Feuer',
+  魔王城: 'Dämonenburg',
+  '小悪魔、ガーゴイル、闇の魔導士': 'Teufelchen, Gargoyles, Dunkelmagier',
+  '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）':
+    'Resistent gegen Physisch und Feuer, schwach gegen Blitz (Gargoyles: schwach gegen Wucht)',
+  エンドレス: 'Endlos',
+  全地域の雑魚: 'Aus allen Gebieten',
+  '周回ごとにいろいろな敵。装備とゴールドは出ない':
+    'Jede Runde neue Gegner. Keine Ausrüstung, kein Gold.',
+
+  // src/data/techniques.ts
+  'クリムゾン・バースト': 'Feuersturm',
+  '油瓶 → 松明か炎の杖 → 炎の杖': 'Ölflasche → Fackel/Feuerstab → Feuerstab',
+  '油と炎の気配がする…': 'Du spürst Öl und Feuer…',
+  'トライ・サンダー': 'Dreifachblitz',
+  '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備':
+    'Wasserdrachen-Flasche/Regenstab → Blitz-Gegenstand → Blitz-Gegenstand',
+  '水と雷の気配がする…': 'Du spürst Wasser und Donner…',
+  'フロスト・ブレイカー': 'Frostbrecher',
+  '氷の剣か氷の杖 → ハンマーか鉄球 → ハンマーか鉄球':
+    'Eisschwert/Froststab → Hammer/Eisenkugel → Hammer/Eisenkugel',
+  '氷と打撃の気配がする…': 'Du spürst Eis und einen schweren Schlag…',
+  'トリプル・スラッシュ': 'Dreifachhieb',
+  '剣か短剣 → 剣か短剣 → 大剣か聖剣':
+    'Schwert/Dolch → Schwert/Dolch → Großschwert/Heiliges Schwert',
+  '剣が三つ重なる…': 'Drei Klingen reihen sich auf…',
+  'サイクロン・アックス': 'Zyklonaxt',
+  '斧 → 斧か大斧 → 大斧': 'Axt → Axt/Streitaxt → Streitaxt',
+  '斧が三つ重なる…': 'Drei Äxte reihen sich auf…',
+  'ヴェノム・クロス': 'Giftkreuz',
+  '毒の短剣 → 短剣か毒の短剣 → 吸血の剣': 'Giftdolch → Dolch/Giftdolch → Vampirschwert',
+  '毒と血の気配がする…': 'Du spürst Gift und Blut…',
+};

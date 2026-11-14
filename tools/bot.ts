@@ -1,7 +1,7 @@
 // 自動プレイ用のボット（プレイヤーの代わりに、配置・消耗品・売却・強化を決める）
 // 人間の遊び方とは違うので、結果は「目安」として読む。
 import { AREA, RARITY, STATUS, type UpgradeId } from '../src/config/balance';
-import { planChain, simulateChain } from '../src/core/chain';
+import { simulateChain } from '../src/core/chain';
 import type { Combat } from '../src/core/combat';
 import { computeDamage, findCombo } from '../src/core/damage';
 import {
@@ -13,6 +13,7 @@ import {
   storageCapacity,
   storageCount,
   upgradeCost,
+  upgradeMaxLevel,
   buyUpgrade,
   synthPlan,
   synthesize,
@@ -260,7 +261,10 @@ const UPGRADE_PRIORITY: UpgradeId[] = [
 export function buyUpgrades(save: SaveData): UpgradeId[] {
   const bought: UpgradeId[] = [];
   for (;;) {
-    const options = UPGRADE_PRIORITY.map((id) => ({ id, cost: upgradeCost(id, save.upgrades[id]) }))
+    const options = UPGRADE_PRIORITY.map((id) => ({
+      id,
+      cost: upgradeCost(id, save.upgrades[id], upgradeMaxLevel(save, id)),
+    }))
       .filter((o): o is { id: UpgradeId; cost: number } => o.cost !== null && o.cost <= save.gold)
       .sort((a, b) => a.cost - b.cost);
     const pick = options[0];
@@ -272,11 +276,9 @@ export function buyUpgrades(save: SaveData): UpgradeId[] {
 
 export function chainSummary(save: SaveData): { origins: number; longest: number; placed: number } {
   const items = itemMap(save);
-  const plans = save.loadout.originOrder
-    .filter((u) => save.loadout.cells.includes(u))
-    .map((u) => planChain(save.loadout, items, u));
+  const plans = simulateChain(save.loadout, items).plans;
   return {
-    origins: plans.length,
+    origins: save.loadout.originOrder.filter((u) => save.loadout.cells.includes(u)).length,
     longest: Math.max(0, ...plans.map((p) => p.maxStep)),
     placed: save.loadout.cells.filter(Boolean).length,
   };

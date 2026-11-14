@@ -1,0 +1,16 @@
+{
+  "file": "wolf_idle.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 1,
+  "originX": 0.5,
+  "originY": 0.875,
+  "originPx": [
+    32,
+    56
+  ],
+  "fps": 1,
+  "loop": true,
+  "groundY": 55,
+  "note": "PixelLab generate-image-v2（seed 202、16案中 0番、スライムを絵柄の見本に8色まで）を左右反転して、足を y=55 に合わせた。"
+}

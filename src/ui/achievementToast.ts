@@ -2,6 +2,8 @@
 import Phaser from 'phaser';
 import type { AchievementDef } from '../data/achievements';
 import { sfx } from '../audio/sfx';
+import { t } from '../i18n';
+import { fitText } from './kit/widgets';
 import { textStyle } from './theme';
 
 const HOLD_MS = 1700;
@@ -20,17 +22,20 @@ export function showAchievements(
       const bg = scene.add.rectangle(0, 0, w, 96, 0x1a1208, 0.94);
       bg.setStrokeStyle(4, 0xffd25a);
       const tag = scene.add
-        .text(-w / 2 + 18, -30, '実績達成！', textStyle(20, '#ff8ce8'))
-        .setOrigin(0, 0.5);
-      const name = scene.add
-        .text(-w / 2 + 18, 12, a.name, textStyle(30, '#ffe27a'))
+        .text(-w / 2 + 18, -30, t('実績達成！'), textStyle(20, '#ff8ce8'))
         .setOrigin(0, 0.5);
       const gold = scene.add
         .text(w / 2 - 18, 0, `+${a.reward}G`, textStyle(34, '#ffd25a'))
         .setOrigin(1, 0.5);
-      const desc = scene.add
-        .text(w / 2 - 18, -30, a.desc, textStyle(15, '#c8c0d8'))
-        .setOrigin(1, 0.5);
+      // The name stops before the reward, and the description before the tag on its row
+      const name = fitText(
+        scene.add.text(-w / 2 + 18, 12, t(a.name), textStyle(30, '#ffe27a')).setOrigin(0, 0.5),
+        w - 36 - gold.width - 16,
+      );
+      const desc = fitText(
+        scene.add.text(w / 2 - 18, -30, t(a.desc), textStyle(15, '#c8c0d8')).setOrigin(1, 0.5),
+        w - 36 - tag.width - 16,
+      );
       root.add([bg, tag, name, gold, desc]);
       sfx('openRare');
       scene.tweens.chain({

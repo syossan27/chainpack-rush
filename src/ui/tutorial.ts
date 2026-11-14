@@ -1,24 +1,17 @@
 // 初めて遊ぶ人向けの案内（各画面で1回だけ）。説明したい場所だけ明るく残し、矢印と吹き出しで示す。
 // 画面のどこかをタップすると次へ。「スキップ」で以降の案内をすべて出さない。
+// If the last step has onTap, it is a "try it" step: it advances only when the highlighted area is
+// tapped and then does what that button does (guides home → region → demo run → result → loadout).
 import Phaser from 'phaser';
 import { getSave, persist } from '../platform/store';
 import { sfx } from '../audio/sfx';
+import { t } from '../i18n';
 import { COLORS, inkStyle, textStyle } from './theme';
-import { panel } from './kit/widgets';
+import { fitText, panel } from './kit/widgets';
 
-/** 案内の種類（各画面で1回） */
-export const TUTORIAL_KEYS = [
-  'home',
-  'stage',
-  'run',
-  'demoEnd',
-  'result',
-  'loadout',
-  'smith',
-] as const;
+import { DEMO_KEY, SKIP_ALL, TUTORIAL_KEYS, type TutorialKey } from '../core/tutorialKeys';
 
-/** 最初の出撃の体験ラン（伝説の装備を借りて遊ぶ）。済んだら tutorialSeen に入る。スキップでは飛ばさない */
-export const DEMO_KEY = 'demo';
+export { DEMO_KEY, TUTORIAL_KEYS, type TutorialKey };
 
 export function demoPending(): boolean {
   return !getSave().tutorialSeen.includes(DEMO_KEY);
@@ -27,12 +20,16 @@ export function demoPending(): boolean {
 export function markDemoDone(): void {
   markSeen([DEMO_KEY]);
 }
-export type TutorialKey = (typeof TUTORIAL_KEYS)[number];
 
 export interface CoachStep {
   /** 明るく残す場所（中心と大きさ）。null なら画面全体を薄暗くするだけ */
   rect: { x: number; y: number; w: number; h: number } | null;
   text: string;
+  /**
+   * Action step (last step only, needs rect): advances only when the highlighted area is tapped,
+   * then closes the tutorial and runs this (the same handler as the button underneath)
+   */
+  onTap?: () => void;
 }
 
 export interface CoachOptions {
@@ -42,13 +39,22 @@ export interface CoachOptions {
 }
 
 export function tutorialSeen(key: TutorialKey): boolean {
-  return getSave().tutorialSeen.includes(key);
+  const seen = getSave().tutorialSeen;
+  return seen.includes(key) || seen.includes(SKIP_ALL);
 }
 
 function markSeen(keys: readonly string[]): void {
   const save = getSave();
   for (const k of keys) if (!save.tutorialSeen.includes(k)) save.tutorialSeen.push(k);
   persist();
+}
+
+/** Tutorials currently on screen */
+const open = new Set<string>();
+
+/** A guide is on screen (screens that chain guides wait until it closes) */
+export function tutorialOpen(): boolean {
+  return open.size > 0;
 }
 
 /** まだ見ていなければ案内を出す。出したら true */
@@ -58,7 +64,10 @@ export function runTutorial(
   steps: CoachStep[],
   opts: CoachOptions = {},
 ): boolean {
-  if (tutorialSeen(key) || steps.length === 0) return false;
+  // Don't stack the same tutorial when the screen re-renders while it is open
+  if (tutorialSeen(key) || steps.length === 0 || open.has(key)) return false;
+  open.add(key);
+  scene.events.once('shutdown', () => open.delete(key));
   opts.onStart?.();
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -69,7 +78,8 @@ export function runTutorial(
   const finish = (skipAll: boolean) => {
     if (closed) return;
     closed = true;
-    markSeen(skipAll ? TUTORIAL_KEYS : [key]);
+    open.delete(key);
+    markSeen(skipAll ? [...TUTORIAL_KEYS, SKIP_ALL] : [key]);
     root.destroy();
     opts.onDone?.();
   };
@@ -102,7 +112,17 @@ export function runTutorial(
       .setOrigin(0, 0)
       .setInteractive();
     root.add([...shades, catcher]);
-    catcher.on('pointerup', () => {
+    const action = r && step.onTap && index === steps.length - 1 ? step.onTap : null;
+    catcher.on('pointerup', (p: Phaser.Input.Pointer) => {
+      if (action && r) {
+        // Only the highlighted area works; other taps are ignored
+        const inside = Math.abs(p.x - r.x) <= r.w / 2 && Math.abs(p.y - r.y) <= r.h / 2;
+        if (!inside) return;
+        sfx('click');
+        finish(false);
+        action();
+        return;
+      }
       sfx('click');
       index++;
       if (index >= steps.length) finish(false);
@@ -111,6 +131,7 @@ export function runTutorial(
 
     // 枠と矢印
     let bubbleY = H / 2;
+    let anchor: { above: boolean; edge: number } | null = null;
     if (r) {
       const frame = scene.add.graphics();
       frame.lineStyle(5, 0xffd25a, 1);
@@ -136,9 +157,10 @@ export function runTutorial(
       arrow.strokeTriangle(tri[0]!, tri[1]!, tri[2]!, tri[3]!, tri[4]!, tri[5]!);
       root.add(arrow);
       scene.tweens.add({ targets: arrow, y: 10 * dir, yoyo: true, repeat: -1, duration: 420 });
-      bubbleY = above ? r.y - r.h / 2 - 120 : r.y + r.h / 2 + 120;
+      anchor = { above, edge: above ? r.y - r.h / 2 : r.y + r.h / 2 };
     }
     // 吹き出し
+    // The text wraps to the bubble's inner width and the bubble grows with the wrapped height
     const bw = W - 80;
     const text = scene.add
       .text(W / 2, 0, step.text, {
@@ -149,24 +171,37 @@ export function runTutorial(
       })
       .setOrigin(0.5);
     const bh = text.height + 70;
+    if (anchor) {
+      // Center 120px from the highlight as before. A very tall bubble (long translation) moves
+      // further away so it never covers the highlighted area itself
+      const gap = Math.max(120, bh / 2 + 14);
+      bubbleY = anchor.above ? anchor.edge - gap : anchor.edge + gap;
+    }
     bubbleY = Phaser.Math.Clamp(bubbleY, bh / 2 + 20, H - bh / 2 - 20);
     const bubble = panel(scene, W / 2, bubbleY, bw, bh, 'paper');
     text.setY(bubbleY - 12);
-    const page = scene.add
-      .text(
-        W / 2,
-        bubbleY + bh / 2 - 22,
-        `タップで次へ（${index + 1}/${steps.length}）`,
-        textStyle(16, '#7a5a30', false),
-      )
-      .setOrigin(0.5);
+    const pageParams = { n: index + 1, total: steps.length };
+    const page = fitText(
+      scene.add
+        .text(
+          W / 2,
+          bubbleY + bh / 2 - 22,
+          t(
+            action ? '光っているところをタップ（{n}/{total}）' : 'タップで次へ（{n}/{total}）',
+            pageParams,
+          ),
+          textStyle(16, '#7a5a30', false),
+        )
+        .setOrigin(0.5),
+      bw - 60,
+    );
     root.add([bubble, text, page]);
     bubble.setScale(0.9).setAlpha(0);
     scene.tweens.add({ targets: bubble, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
 
     // スキップ（以降の案内をすべて出さない）
     const skip = scene.add
-      .text(W - 20, 24, 'スキップ ›', {
+      .text(W - 20, 24, t('スキップ ›'), {
         ...textStyle(20, COLORS.text),
         backgroundColor: '#0c0a12cc',
         padding: { x: 10, y: 6 },

@@ -24,3 +24,26 @@ export function debugSpeed(): number | null {
   const n = Number(s);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
+
+/** 開発用: URL に ?challenge=open を付ける（または試遊版のビルド）と、今日から挑戦が始まったことにする */
+export function devChallengeOpen(): number | undefined {
+  // 試遊版のビルド（VITE_CHALLENGE_OPEN=1）でも開いた状態にする
+  const forced = import.meta.env.VITE_CHALLENGE_OPEN === '1';
+  if (!forced) {
+    if (typeof location === 'undefined') return undefined;
+    if (new URLSearchParams(location.search).get('challenge') !== 'open') return undefined;
+  }
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/** Development only: ?rage=1 makes the training dummy angry, to check the angry boss look (never in production builds) */
+export function devRage(): boolean {
+  return import.meta.env.DEV && params.get('rage') === '1';
+}
+
+/** Development only: ?cosmetics=all lets you wear every challenge cosmetic (never in production builds) */
+export function devAllCosmetics(): boolean {
+  return import.meta.env.DEV && params.get('cosmetics') === 'all';
+}

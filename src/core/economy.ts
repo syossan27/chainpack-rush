@@ -16,20 +16,44 @@ import {
   type UpgradeId,
 } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
-import { REGIONS } from '../data/regions';
+import { t } from '../i18n';
+import { ENDLESS, REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
 import { resizeLoadout } from './loadout';
-import { createItem, rerollExits, rollLoot } from './loot';
+import { allowsRarity, createItem, lineItemFor, pickDef, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Rarity } from './types';
 
+/** 地域の★（その地域で倒した周目のボスの数。PROGRESS.starLoops） */
+export function regionStars(save: SaveData, regionId: string): number {
+  const best = save.progress.best[regionId] ?? 0;
+  return PROGRESS.starLoops.filter((l) => best > l).length;
+}
+
+/** エンドレスが開放されているか（魔王城の3周目のボス＝魔王を倒した） */
+export function endlessUnlocked(save: SaveData): boolean {
+  return regionStars(save, 'demon_castle') >= 1;
+}
+
+/** 全地域の★の合計 */
+export function totalStars(save: SaveData): number {
+  return REGIONS.reduce((sum, r) => sum + regionStars(save, r.id), 0);
+}
+
 export function heroStats(save: SaveData): HeroStats {
-  const u = save.upgrades;
+  return heroFrom(save.upgrades, totalStars(save));
+}
+
+/** 強化の段と★の数から、勇者の強さ（ランキングでサーバーも同じ計算をする） */
+export function heroFrom(
+  u: Pick<SaveData['upgrades'], 'maxHp' | 'atb' | 'attack' | 'runTime'>,
+  stars: number,
+): HeroStats {
   return {
-    maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp,
+    maxHp: HERO.maxHp + UPGRADES.maxHp.effect * u.maxHp + PROGRESS.starHp * stars,
     atbTime: Math.max(HERO.minAtbTime, HERO.atbTime - UPGRADES.atb.effect * u.atb),
-    attackMult: 1 + UPGRADES.attack.effect * u.attack,
+    attackMult: 1 + UPGRADES.attack.effect * u.attack + PROGRESS.starAttack * stars,
     runTime: Math.min(TIME_BONUS.maxRunTime, SIM.runDuration + UPGRADES.runTime.effect * u.runTime),
   };
 }
@@ -54,14 +78,27 @@ export function storageCapacity(save: SaveData): number {
   return STORAGE.baseCapacity + UPGRADES.storage.effect * save.upgrades.storage;
 }
 
-export function upgradeCost(id: UpgradeId, level: number): number | null {
+/** 開放した後半の地域（火山から）の数 */
+export function lateRegionsUnlocked(save: SaveData): number {
+  return REGIONS.slice(3).filter((r) => save.progress.unlocked.includes(r.id)).length;
+}
+
+/** 強化の上限（攻撃倍率・最大HPは、後半の地域を開放するたびに上がる） */
+export function upgradeMaxLevel(save: SaveData | null, id: UpgradeId): number {
   const def = UPGRADES[id];
-  if (level >= def.maxLevel) return null;
-  return Math.round(def.baseCost * Math.pow(def.growth, level));
+  return def.maxLevel + (save ? (def.perRegionLevels ?? 0) * lateRegionsUnlocked(save) : 0);
+}
+
+export function upgradeCost(id: UpgradeId, level: number, maxLevel?: number): number | null {
+  const def = UPGRADES[id];
+  if (level >= (maxLevel ?? def.maxLevel)) return null;
+  const base = def.baseCost * Math.pow(def.growth, Math.min(level, def.maxLevel));
+  const late = Math.max(0, level - def.maxLevel);
+  return Math.round(base * Math.pow(def.lateGrowth ?? def.growth, late));
 }
 
 export function buyUpgrade(save: SaveData, id: UpgradeId): boolean {
-  const cost = upgradeCost(id, save.upgrades[id]);
+  const cost = upgradeCost(id, save.upgrades[id], upgradeMaxLevel(save, id));
   if (cost === null || save.gold < cost) return false;
   save.gold -= cost;
   save.upgrades[id]++;
@@ -234,6 +271,43 @@ export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[])
 }
 
 /** ラン中に使った消耗品を倉庫と消耗品枠から取り除く */
+/** 今の消耗品枠の中身を「入れておきたいもの」として覚える（配置画面で枠を変えたとき） */
+export function rememberConsumables(save: SaveData): void {
+  const items = itemMap(save);
+  save.loadout.consumableAuto = save.loadout.consumables
+    .map((u) => items.get(u)?.defId)
+    .filter((d): d is string => !!d);
+}
+
+/**
+ * 消耗品枠の自動補充: 覚えている消耗品のうち、枠に足りないものを倉庫から入れ直す（使い切ったポーションなど）。
+ * 入れたものの uid を返す
+ */
+export function refillConsumables(save: SaveData): string[] {
+  const want = save.loadout.consumableAuto;
+  if (!want || want.length === 0) return [];
+  const items = itemMap(save);
+  const slots = consumableSlots(save);
+  const have = save.loadout.consumables.map((u) => items.get(u)?.defId);
+  const missing = want.slice();
+  for (const d of have) {
+    const k = missing.indexOf(d ?? '');
+    if (k >= 0) missing.splice(k, 1);
+  }
+  const used = equippedUids(save);
+  const added: string[] = [];
+  for (const defId of missing) {
+    if (save.loadout.consumables.length >= slots) break;
+    const it = save.inventory.find(
+      (i) => i.defId === defId && !used.has(i.uid) && !added.includes(i.uid),
+    );
+    if (!it) continue;
+    save.loadout.consumables.push(it.uid);
+    added.push(it.uid);
+  }
+  return added;
+}
+
 export function consumeItems(save: SaveData, uids: readonly string[]): void {
   const set = new Set(uids);
   save.inventory = save.inventory.filter((it) => !set.has(it.uid));
@@ -253,6 +327,8 @@ export interface SynthPlan {
   /** 揃っている数（選んだ装備を含む） */
   have: number;
   to: Rarity | null;
+  /** できあがる装備（系統で上の装備になることがある） */
+  toDefId?: string;
   cost: number;
   /** 合成できないとき、その理由 */
   reason: string | null;
@@ -265,11 +341,14 @@ export interface SynthPlan {
 export function synthPlan(save: SaveData, uid: string): SynthPlan {
   const it = save.inventory.find((i) => i.uid === uid);
   const none = (reason: string): SynthPlan => ({ uids: [], have: 0, to: null, cost: 0, reason });
-  if (!it) return none('見つかりません');
+  if (!it) return none(t('見つかりません'));
   const def = getItemDef(it.defId);
   const to = NEXT_RARITY[it.rarity] ?? null;
-  if (def.kind === 'consumable') return none('消耗品は合成できません');
-  if (def.artifact || !to) return none('これ以上のレアリティはありません');
+  if (def.kind === 'consumable') return none(t('消耗品は合成できません'));
+  if (def.artifact || !to) return none(t('これ以上のレアリティはありません'));
+  // 系統: 上のレアリティがない装備は、系統の次の装備になる（革鎧のレア → 鎖帷子のエピック）
+  const toDefId = lineItemFor(it.defId, to);
+  if (!toDefId) return none(t('これ以上のレアリティはありません'));
   const eq = equippedUids(save);
   const cost = SYNTH.cost[it.rarity as 'common' | 'rare' | 'epic'];
   if (eq.has(uid) || it.locked)
@@ -278,7 +357,9 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
       have: 0,
       to,
       cost,
-      reason: eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
+      reason: t(
+        eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
+      ),
     };
   const inPresets = otherPresetUse(save);
   const mates = save.inventory
@@ -298,11 +379,11 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
   const uids = [uid, ...mates.slice(0, SYNTH.count - 1).map((i) => i.uid)];
   const reason =
     uids.length < SYNTH.count
-      ? `同じ装備があと${SYNTH.count - uids.length}つ必要`
+      ? t('同じ装備があと{n}つ必要', { n: SYNTH.count - uids.length })
       : save.gold < cost
-        ? `${cost}G 必要`
+        ? t('{cost}G 必要', { cost })
         : null;
-  return { uids, have: uids.length, to, cost, reason };
+  return { uids, have: uids.length, to, toDefId, cost, reason };
 }
 
 /** 合成の成功率（そのレアリティから1つ上へ） */
@@ -330,10 +411,12 @@ export function synthesize(save: SaveData, uid: string, rng: Rng): SynthResult |
   const success = rng.next() < SYNTH.successRate[from];
   const newUid = `i${save.nextUid++}`;
   let item: ItemInstance;
-  if (success) item = createItem(rng, base.defId, plan.to, newUid);
+  if (success) item = createItem(rng, plan.toDefId ?? base.defId, plan.to, newUid);
   else {
-    const pool = ITEM_DEFS.filter((d) => d.kind !== 'consumable' && !d.artifact);
-    item = createItem(rng, rng.pick(pool).id, from, newUid);
+    const pool = ITEM_DEFS.filter(
+      (d) => d.kind !== 'consumable' && !d.artifact && allowsRarity(d.id, from),
+    );
+    item = createItem(rng, pickDef(rng, pool).id, from, newUid);
   }
   save.inventory.push(item);
   return { item, success };
@@ -375,8 +458,21 @@ export function recordRun(
   result: RunResult,
 ): { unlocked: string | null } {
   save.stats.runs++;
+  // 倒した敵から拾ったゴールド
+  save.gold += result.stats.gold ?? 0;
   save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
   save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
+  // エンドレス: 地域の記録・開放とは別に、自己ベスト（到達周回、同じなら合計ダメージ）
+  if (regionId === ENDLESS.id) {
+    const e = save.endless;
+    const dmg = Math.round(result.stats.totalDamage);
+    if (
+      result.reachedLoop > e.bestLoop ||
+      (result.reachedLoop === e.bestLoop && dmg > e.bestDamage)
+    )
+      save.endless = { bestLoop: result.reachedLoop, bestDamage: dmg };
+    return { unlocked: null };
+  }
   save.progress.best[regionId] = Math.max(save.progress.best[regionId] ?? 0, result.reachedLoop);
   let unlocked: string | null = null;
   if (result.stats.bossesDefeated >= PROGRESS.unlockLoop) {

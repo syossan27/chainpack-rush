@@ -34,10 +34,10 @@ npx cap run android
 npx cap run ios        # Mac + Xcode が必要
 ```
 
-アイコンとスプラッシュは `assets/icon-*.png`（1024×1024）と `assets/splash*.png`（2732×2732）から `@capacitor/assets` で生成する。元画像は仮素材の勇者から作っている（本素材ができたら差し替える）:
+アイコンとスプラッシュは `assets/icon-*.png`（1024×1024）と `assets/splash*.png`（2732×2732）から `@capacitor/assets` で生成する。これらと Web 用の `public/icon-*.png` は、PixelLab で作った勇者の絵（`assets/app-icon/hero_bust.png`、64px）から作る:
 
 ```bash
-npm run store-assets   # assets/icon-*.png, assets/splash*.png を作り直す
+npm run store-assets   # assets/icon-*.png, assets/splash*.png, public/icon-*.png を作り直す
 npm run assets         # ios/ と android/ のアイコン・スプラッシュを生成
 ```
 

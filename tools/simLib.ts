@@ -3,7 +3,10 @@ import { planChain } from '../src/core/chain';
 import { Combat } from '../src/core/combat';
 import { heroStats } from '../src/core/economy';
 import { createInitialSave } from '../src/core/save';
-import { REGIONS } from '../src/data/regions';
+import { REGIONS as ALL_REGIONS } from '../src/data/regions';
+
+// 参考配置は中盤の装備一式なので、比べるのは草原・洞窟・城壁まで（火山からは長期のボットで見る）
+const REGIONS = ALL_REGIONS.slice(0, 3);
 import {
   REFERENCE_LOADOUTS,
   REFERENCE_UPGRADES,

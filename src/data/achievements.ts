@@ -9,7 +9,8 @@ export type AchievementCheck =
   | { kind: 'own'; rarity: 'epic' | 'legendary' | 'artifact' }
   | { kind: 'runBosses'; n: number }
   | { kind: 'runLoop'; n: number }
-  | { kind: 'runSweeps'; n: number };
+  | { kind: 'runSweeps'; n: number }
+  | { kind: 'endlessLoop'; n: number };
 
 export interface AchievementDef {
   id: string;
@@ -44,28 +45,28 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'step_6',
     name: 'つながる力',
-    desc: '6段の連鎖を決める',
+    desc: '6連鎖を決める',
     reward: 80,
     check: { kind: 'maxStep', n: 6 },
   },
   {
     id: 'step_10',
     name: '連鎖使い',
-    desc: '10段の連鎖を決める',
+    desc: '10連鎖を決める',
     reward: 200,
     check: { kind: 'maxStep', n: 10 },
   },
   {
     id: 'step_14',
     name: '連鎖の達人',
-    desc: '14段の連鎖を決める',
+    desc: '14連鎖を決める',
     reward: 600,
     check: { kind: 'maxStep', n: 14 },
   },
   {
     id: 'step_18',
     name: '終わらない連鎖',
-    desc: '18段の連鎖を決める',
+    desc: '18連鎖を決める',
     reward: 1500,
     check: { kind: 'maxStep', n: 18 },
   },
@@ -163,7 +164,7 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'own_legendary',
     name: '金色の伝説',
-    desc: 'レジェンダリーの装備を手に入れる',
+    desc: 'レジェンドの装備を手に入れる',
     reward: 400,
     check: { kind: 'own', rarity: 'legendary' },
   },
@@ -173,6 +174,41 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
     desc: 'アーティファクトを手に入れる',
     reward: 1200,
     check: { kind: 'own', rarity: 'artifact' },
+  },
+  {
+    id: 'demon_lord',
+    name: '魔王討伐',
+    desc: '魔王城で魔王を倒す（エンドレスが開放）',
+    reward: 5000,
+    check: { kind: 'unlocked', region: 'endless' },
+  },
+  {
+    id: 'endless_5',
+    name: '果てなき道',
+    desc: 'エンドレスで5周目に着く',
+    reward: 3000,
+    check: { kind: 'endlessLoop', n: 5 },
+  },
+  {
+    id: 'endless_10',
+    name: '深淵へ',
+    desc: 'エンドレスで10周目に着く',
+    reward: 8000,
+    check: { kind: 'endlessLoop', n: 10 },
+  },
+  {
+    id: 'endless_15',
+    name: '伝説の勇者',
+    desc: 'エンドレスで15周目に着く',
+    reward: 20000,
+    check: { kind: 'endlessLoop', n: 15 },
+  },
+  {
+    id: 'endless_20',
+    name: '終わりなき者',
+    desc: 'エンドレスで20周目に着く',
+    reward: 50000,
+    check: { kind: 'endlessLoop', n: 20 },
   },
 ];
 

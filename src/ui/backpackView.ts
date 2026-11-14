@@ -4,9 +4,10 @@ import Phaser from 'phaser';
 import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
+import { t } from '../i18n';
 import { ItemIcon } from './itemIcon';
 import { SKIN } from './kit/skin';
-import { panel } from './kit/widgets';
+import { fitText, panel } from './kit/widgets';
 import { CELL_SIZE, COLORS, W, textStyle } from './theme';
 
 const CIRCLED = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩', '⑪', '⑫'];
@@ -26,6 +27,11 @@ export function routeCss(index: number): string {
 
 export function originLabel(index: number): string {
   return CIRCLED[index] ?? `${index + 1}`;
+}
+
+/** Number(s) of the origin(s), e.g. ① (a firing has one origin; a line can pass several) */
+export function unitLabel(loadout: Loadout, originUids: readonly string[]): string {
+  return originUids.map((u) => originLabel(loadout.originOrder.indexOf(u))).join('');
 }
 
 export class BackpackView extends Phaser.GameObjects.Container {
@@ -50,7 +56,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
   private readonly labelLayer: Phaser.GameObjects.Container;
   private icons = new Map<number, ItemIcon>();
   private glows: { cell: number; color: number; until: number }[] = [];
-  private blinkUid: string | null = null;
+  private blinkUids: readonly string[] = [];
   private highlightCell = -1;
 
   constructor(
@@ -187,12 +193,15 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
     const focused = focus !== null ? p.plans[focus] : undefined;
-    const known = (t: string | undefined) => !!t && discovered.has(t);
+    const known = (tech: string | undefined) => !!tech && discovered.has(tech);
     const onRoute = new Set(focused?.steps.map((s) => s.cell) ?? []);
     for (const [cell, icon] of this.icons) {
       icon.setDimmed(p.unreachable.has(cell));
       if (focused && !onRoute.has(cell)) icon.setAlpha(0.35);
     }
+    // Routes share the cells after a sync point (with the same numbers): label each cell once
+    const labeled = new Set<number>();
+    const tagged = new Set<number>();
     p.plans.forEach((plan, pi) => {
       if (focused && plan !== focused) return;
       const color = routeColor(pi);
@@ -213,32 +222,58 @@ export class BackpackView extends Phaser.GameObjects.Container {
       }
       for (const s of plan.steps) {
         if (s.parentIndex < 0) continue;
+        const b = this.cellCenter(s.cell);
         const parent = plan.steps[s.parentIndex]!;
         const a = this.cellCenter(parent.cell);
-        const b = this.cellCenter(s.cell);
         this.lineG.lineStyle(width + 4, 0x0c0a12, 0.6);
         this.lineG.lineBetween(a.x, a.y, b.x, b.y);
         this.lineG.lineStyle(width, color, 0.95);
         this.lineG.lineBetween(a.x, a.y, b.x, b.y);
+        if (focused) this.flowEdges.push({ a, b, t0: parent.t, t1: s.t });
         this.lineG.fillStyle(color, 1);
         this.lineG.fillCircle(b.x, b.y, focused ? 7 : 5);
-        if (focused) this.flowEdges.push({ a, b, t0: parent.t, t1: s.t });
       }
       for (const s of plan.steps) {
-        if (s.step === null) continue;
+        if (s.step === null || labeled.has(s.cell)) continue;
+        labeled.add(s.cell);
         const c = this.cellCenter(s.cell);
-        const t = this.scene.add
+        const label = this.scene.add
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
-            known(s.tech) ? `必殺 ${s.step}段` : `${s.step}段 ×${s.mult.toFixed(2)}`,
+            known(s.tech)
+              ? t('必殺 {step}連鎖', { step: s.step })
+              : t('{step}連鎖 ×{mult}', { step: s.step, mult: s.mult.toFixed(2) }),
             textStyle(
               focused ? 15 : 13,
               known(s.tech) ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0',
             ),
           )
           .setOrigin(1, 1);
-        this.labelLayer.add(t);
+        // About one cell wide (a longer translation shrinks instead of covering the next cell)
+        fitText(label, this.cell + 6);
+        this.labelLayer.add(label);
+      }
+      // Sync points: which step the cell is on each route, and the bonus from here on (4+4 +30%)
+      for (const s of plan.steps) {
+        if (!s.mergeArrived || tagged.has(s.cell)) continue;
+        tagged.add(s.cell);
+        const c = this.cellCenter(s.cell);
+        const bonus = Math.round(s.mergeBonus ?? 0);
+        const text = `${s.mergeArrived.join('+')}${bonus > 0 ? ` +${bonus}%` : ''}`;
+        const tag = this.scene.add
+          .text(
+            c.x,
+            c.y - this.cell / 2 + 3,
+            text,
+            textStyle(14, bonus > 0 ? '#ffe27a' : '#c8c0d8'),
+          )
+          .setOrigin(0.5, 0);
+        fitText(tag, this.cell - 6);
+        const bg = this.scene.add
+          .rectangle(c.x, tag.y - 1, tag.displayWidth + 8, tag.displayHeight + 2, 0x0c0a12, 0.75)
+          .setOrigin(0.5, 0);
+        this.labelLayer.add([bg, tag]);
       }
       if (focused) {
         this.flowSpan = plan.duration;
@@ -283,8 +318,9 @@ export class BackpackView extends Phaser.GameObjects.Container {
     });
   }
 
-  setBlinkOrigin(uid: string | null): void {
-    this.blinkUid = uid;
+  /** Blink the origin that fires next */
+  setBlinkOrigin(uids: string | readonly string[] | null): void {
+    this.blinkUids = uids === null ? [] : typeof uids === 'string' ? [uids] : uids;
   }
 
   /** 毎フレーム呼ぶ（光と点滅） */
@@ -317,8 +353,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
       g.fillStyle(gl.color, a * 0.25);
       g.fillRect(c.x - this.cell / 2 + 3, c.y - this.cell / 2 + 3, this.cell - 6, this.cell - 6);
     }
-    if (this.blinkUid) {
-      const cell = this.loadout.cells.indexOf(this.blinkUid);
+    for (const uid of this.blinkUids) {
+      const cell = this.loadout.cells.indexOf(uid);
       if (cell >= 0 && Math.floor(now / 300) % 2 === 0) {
         const c = this.cellCenter(cell);
         g.lineStyle(4, COLORS.accent, 1);

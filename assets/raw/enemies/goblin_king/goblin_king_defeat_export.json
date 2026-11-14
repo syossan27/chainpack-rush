@@ -1,0 +1,16 @@
+{
+  "file": "goblin_king_defeat.png",
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.9166666666666666,
+  "originPx": [
+    48,
+    88
+  ],
+  "fps": 10,
+  "loop": false,
+  "groundY": 87,
+  "note": "ゴブリン王。王冠・赤いマント・トゲのこん棒。やられ。赤い傷の表現や小さなゴミの点は消し、足元は y=87 に合わせた。最後のコマはゲーム側で消す。"
+}
