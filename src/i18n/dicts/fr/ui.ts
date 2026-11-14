@@ -396,6 +396,8 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Annuler',
   全部外す: 'Tout retirer',
+  おまかせ: 'Auto',
+  '持ち物から、おまかせで並べます。': 'Place ton équipement automatiquement.',
   使えない: 'Interdit',
   挑戦へ: 'Défi',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':

@@ -388,6 +388,8 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Undo',
   全部外す: 'Clear All',
+  おまかせ: 'Auto',
+  '持ち物から、おまかせで並べます。': 'Lay out your gear automatically.',
   使えない: 'Not allowed',
   挑戦へ: 'Challenge',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':

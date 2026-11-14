@@ -371,6 +371,8 @@ export function confirmDialog(
   okLabel: string,
   onOk: () => void,
   okSkin: ButtonSkin = 'red',
+  /** A third choice, shown to the left of the OK button */
+  extra?: { label: string; onTap: () => void; skin: ButtonSkin },
 ): Phaser.GameObjects.Container {
   const W = scene.scale.gameSize.width;
   const H = scene.scale.gameSize.height;
@@ -395,23 +397,41 @@ export function confirmDialog(
   );
   msg.setY(top + 96);
   const by = top + ch - 70;
+  // Two buttons side by side, or three narrower ones with the extra choice
+  const bw = extra ? 180 : 230;
+  const okX = extra ? W / 2 : W / 2 - 130;
+  const cancelX = extra ? W / 2 + 200 : W / 2 + 130;
   const ok = new Button(
     scene,
-    W / 2 - 130,
+    okX,
     by,
     okLabel,
     () => {
       close();
       onOk();
     },
-    { width: 230, height: 80, skin: okSkin },
+    { width: bw, height: 80, skin: okSkin },
   );
-  const cancel = new Button(scene, W / 2 + 130, by, t('やめる'), close, {
-    width: 230,
+  const cancel = new Button(scene, cancelX, by, t('やめる'), close, {
+    width: bw,
     height: 80,
     skin: 'gray',
   });
   root.add([shade, bg, head, msg, ok, cancel]);
+  if (extra)
+    root.add(
+      new Button(
+        scene,
+        W / 2 - 200,
+        by,
+        extra.label,
+        () => {
+          close();
+          extra.onTap();
+        },
+        { width: bw, height: 80, skin: extra.skin },
+      ),
+    );
   return root;
 }
 

@@ -392,6 +392,8 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Urungkan',
   全部外す: 'Lepas Semua',
+  おまかせ: 'Otomatis',
+  '持ち物から、おまかせで並べます。': 'Atur perlengkapanmu secara otomatis.',
   使えない: 'Dilarang',
   挑戦へ: 'Tantangan',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':

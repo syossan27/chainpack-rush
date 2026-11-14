@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { maxMergeBonus, simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
 import { diagnose } from '../core/diagnose';
+import { autoLayout } from '../core/autoLayout';
 import { getTechnique } from '../data/techniques';
 import {
   defaultPresetName,
@@ -95,6 +96,8 @@ export class LoadoutScene extends Phaser.Scene {
   private selected: ItemInstance | null = null;
   /** 挑戦用の編成を編集中（その挑戦） */
   private challenge: ChallengeNow | null = null;
+  /** おまかせ (null when there is no room next to the consumable slots, or in the challenge) */
+  private autoBtn: RoundButton | null = null;
 
   constructor() {
     super('Loadout');
@@ -187,6 +190,24 @@ export class LoadoutScene extends Phaser.Scene {
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
       this.scene.start('Dummy'),
     );
+    // おまかせ: between the consumable slots and the scarecrow (not in the challenge, which ranks
+    // arranging). With 5 slots there is no room, so 全部外す offers it instead
+    this.autoBtn = null;
+    if (!this.challenge) {
+      const left = this.slotX(consumableSlots(save) - 1) + SLOT_SIZE / 2;
+      const right = W - 196 - 44;
+      const size = Math.min(88, right - left - 16);
+      if (size >= 64)
+        this.autoBtn = new RoundButton(
+          this,
+          (left + right) / 2,
+          LOADOUT_LAYOUT.slotsTop + 44,
+          size,
+          'star',
+          t('おまかせ'),
+          () => this.applyAuto(),
+        );
+    }
     new RoundButton(
       this,
       W - 76,
@@ -839,10 +860,36 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
+  /** おまかせ: lay out the gear by the simple rule (戻す brings the previous layout back) */
+  private applyAuto(): void {
+    const save = getSave();
+    const next = autoLayout(save.loadout, itemMap(save));
+    if (JSON.stringify(next) === JSON.stringify(save.loadout)) return;
+    save.loadout = next;
+    this.selected = null;
+    this.commit();
+  }
+
   private confirmReset(): void {
     const save = getSave();
     const placed = save.loadout.cells.filter(Boolean).length + save.loadout.consumables.length;
-    if (placed === 0) return;
+    // Without the おまかせ button (no room for it), offer it here
+    const auto =
+      !this.autoBtn && !this.challenge
+        ? { label: t('おまかせ'), onTap: () => this.applyAuto(), skin: 'green' as const }
+        : undefined;
+    if (placed === 0) {
+      if (auto)
+        confirmDialog(
+          this,
+          t('おまかせ'),
+          t('持ち物から、おまかせで並べます。'),
+          t('おまかせ'),
+          () => this.applyAuto(),
+          'green',
+        );
+      return;
+    }
     confirmDialog(
       this,
       t('全部外す'),
@@ -856,6 +903,8 @@ export class LoadoutScene extends Phaser.Scene {
         this.selected = null;
         this.commit();
       },
+      'red',
+      auto,
     );
   }
 

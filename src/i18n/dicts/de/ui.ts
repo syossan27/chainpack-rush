@@ -393,6 +393,8 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Zurück',
   全部外す: 'Alles raus',
+  おまかせ: 'Auto',
+  '持ち物から、おまかせで並べます。': 'Ordnet deine Ausrüstung automatisch an.',
   使えない: 'Verboten',
   挑戦へ: 'Zur Prüfung',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':

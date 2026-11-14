@@ -393,6 +393,8 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Desfazer',
   全部外す: 'Tirar Tudo',
+  おまかせ: 'Auto',
+  '持ち物から、おまかせで並べます。': 'Organiza seu equipamento automaticamente.',
   使えない: 'Proibido',
   挑戦へ: 'Desafio',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
