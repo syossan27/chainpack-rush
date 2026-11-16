@@ -158,7 +158,58 @@ export function heroLookPreview(scene: Phaser.Scene, look: string | null): strin
 
 // ---- Pet ----
 
-/** Baby dragon, 18×16, two wing frames (placeholder art drawn in code) */
+/** Real pet art: a horizontal strip of square frames in assets/sprites, played as a loop */
+export interface PetSheet {
+  file: string;
+  frames: number;
+  fps: number;
+  size: number;
+}
+
+export const PET_SHEETS: Record<string, PetSheet> = {
+  // PixelLab: a 9-color baby dragon facing right, flapping its wings (assets/raw/pets/)
+  pet_dragon: { file: 'pets/pet_dragon_fly.png', frames: 8, fps: 10, size: 40 },
+};
+
+/** Texture and animation key of a pet's strip */
+export const petSheetKey = (id: string) => `${id}_fly`;
+/** Still of the first frame, for the wardrobe cards */
+const petStillKey = (id: string) => `${id}_still`;
+
+/** After the strips are loaded: make each loop animation and a still of its first frame */
+export function createPetAnims(scene: Phaser.Scene): void {
+  for (const [id, sheet] of Object.entries(PET_SHEETS)) {
+    const key = petSheetKey(id);
+    if (!scene.textures.exists(key)) continue;
+    if (!scene.anims.exists(key))
+      scene.anims.create({
+        key,
+        frames: scene.anims.generateFrameNumbers(key, { start: 0, end: sheet.frames - 1 }),
+        frameRate: sheet.fps,
+        repeat: -1,
+      });
+    if (scene.textures.exists(petStillKey(id))) continue;
+    const frame = scene.textures.getFrame(key, 0);
+    const tex = scene.textures.createCanvas(petStillKey(id), sheet.size, sheet.size);
+    if (!frame || !tex) continue;
+    tex
+      .getContext()
+      .drawImage(
+        frame.source.image as CanvasImageSource,
+        frame.cutX,
+        frame.cutY,
+        frame.width,
+        frame.height,
+        0,
+        0,
+        frame.width,
+        frame.height,
+      );
+    tex.refresh();
+  }
+}
+
+/** Baby dragon, 18×16, two wing frames (placeholder art drawn in code, used when the strip is missing) */
 const PET_DRAGON: readonly (readonly string[])[] = [
   [
     '..........K...K...',
@@ -220,28 +271,41 @@ const petFrameKey = (id: string, i: number) => `${id}_${i}`;
 
 /**
  * Show the pet beside the hero: above and behind (left of) the given foot position, bobbing and
- * flapping. Returns null when the id is not a pet.
+ * flapping. `scale` is the hero's scale on that screen, so the pet has the same pixel size (the
+ * smaller placeholder art is drawn a third larger). Returns null when the id is not a pet.
  */
 export function addPet(
   scene: Phaser.Scene,
   id: string | null,
   x: number,
   y: number,
-  scale = 4,
-): Phaser.GameObjects.Image | null {
-  const art = id ? PET_ART[id] : undefined;
-  if (!id || !art || getCosmetic(id)?.kind !== 'pet') return null;
-  art.forEach((rows, i) => drawRows(scene, petFrameKey(id, i), rows));
-  const img = scene.add.image(x, y, petFrameKey(id, 0)).setScale(scale).setOrigin(0.5, 1);
-  let frame = 0;
-  const flap = scene.time.addEvent({
-    delay: 180,
-    loop: true,
-    callback: () => {
-      frame = (frame + 1) % art.length;
-      img.setTexture(petFrameKey(id, frame));
-    },
-  });
+  scale = 3,
+): Phaser.GameObjects.Sprite | Phaser.GameObjects.Image | null {
+  if (!id || getCosmetic(id)?.kind !== 'pet') return null;
+  const sheetKey = petSheetKey(id);
+  let img: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
+  let flap: Phaser.Time.TimerEvent | null = null;
+  if (scene.textures.exists(sheetKey) && scene.anims.exists(sheetKey)) {
+    img = scene.add.sprite(x, y, sheetKey, 0).setScale(scale).setOrigin(0.5, 1).play(sheetKey);
+  } else {
+    const art = PET_ART[id];
+    if (!art) return null;
+    art.forEach((rows, i) => drawRows(scene, petFrameKey(id, i), rows));
+    const still = scene.add
+      .image(x, y, petFrameKey(id, 0))
+      .setScale((scale * 4) / 3)
+      .setOrigin(0.5, 1);
+    img = still;
+    let frame = 0;
+    flap = scene.time.addEvent({
+      delay: 180,
+      loop: true,
+      callback: () => {
+        frame = (frame + 1) % art.length;
+        still.setTexture(petFrameKey(id, frame));
+      },
+    });
+  }
   const bob = scene.tweens.add({
     targets: img,
     y: y - 10,
@@ -251,7 +315,7 @@ export function addPet(
     ease: 'Sine.easeInOut',
   });
   img.once('destroy', () => {
-    flap.remove();
+    flap?.remove();
     bob.remove();
   });
   return img;
@@ -321,6 +385,7 @@ export function cosmeticTexture(scene: Phaser.Scene, id: string): string | null 
   if (!def) return null;
   if (def.kind === 'deco') return decoTexture(scene, id);
   if (def.kind === 'pet') {
+    if (scene.textures.exists(petStillKey(id))) return petStillKey(id);
     const art = PET_ART[id];
     if (!art) return null;
     drawRows(scene, petFrameKey(id, 0), art[0]!);

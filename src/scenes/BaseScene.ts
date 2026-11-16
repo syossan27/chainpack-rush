@@ -459,7 +459,7 @@ export class BaseScene extends Phaser.Scene {
     const aura = new HeroAura(this, W / 2, footY, auraTier(save.loadout, itemMap(save)), 170);
     this.root.add([glow, shadow, aura, hero]);
     // Pet (challenge reward) flies at the hero's upper left
-    const pet = addPet(this, save.look.pet, W / 2 - 120, footY - 128, 4);
+    const pet = addPet(this, save.look.pet, W / 2 - 120, footY - 128, 3);
     if (pet) this.root.add(pet);
     if (this.auraTick) this.events.off('update', this.auraTick);
     this.auraTick = (_t: number, dt: number) => {
@@ -2214,7 +2214,7 @@ export class BaseScene extends Phaser.Scene {
         .setScale(2.2)
         .setOrigin(heroOrigin.originX, heroOrigin.originY),
     );
-    const pet = addPet(this, save.look.pet, W / 2 - 104, footY - 96, 3);
+    const pet = addPet(this, save.look.pet, W / 2 - 104, footY - 96, 2);
     if (pet) this.root.add(pet);
     const nameY = stageY + 124;
     const deco = decoTexture(this, save.look.deco);

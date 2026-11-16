@@ -208,7 +208,7 @@ export class RunScene extends Phaser.Scene {
     this.field = new FieldView(this, this.regionId);
     // Pet (challenge reward) hovers at the hero's upper left; not in the demo run
     if (!this.demo)
-      addPet(this, save.look.pet, RUN_LAYOUT.heroScreenX - 84, RUN_LAYOUT.footY - 112, 3)?.setDepth(
+      addPet(this, save.look.pet, RUN_LAYOUT.heroScreenX - 84, RUN_LAYOUT.footY - 112, 2)?.setDepth(
         19,
       );
 

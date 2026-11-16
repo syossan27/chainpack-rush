@@ -1,0 +1,11 @@
+{
+  "file": "pet_dragon_fly.png",
+  "frameWidth": 40,
+  "frameHeight": 40,
+  "frames": 8,
+  "originX": 0.5,
+  "originY": 1,
+  "fps": 10,
+  "loop": true,
+  "note": "ちびドラゴン（挑戦1位のペット）。PixelLab generate-image-v2（32px、seed 31、64案中 18番、狼を絵柄の見本に）を左右反転して右向きにし、色の役割ごとに9色にしぼって（ほっぺは狼に近いピンクへ）40px のコマの中央に置いた。羽ばたきは animate-pixminimax（同じ絵を最初と最後のコマにして8コマ、seed 43）の0〜7番。2回羽ばたいて元に戻る。ゲームでは勇者と同じ倍率で出し、上下の揺れはゲーム側で付ける。"
+}
