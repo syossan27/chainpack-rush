@@ -439,6 +439,18 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originY: 0.7857,
         impactFrame: 4,
       },
+      // Venom Cross: 160×112, 9 frames. A green poison downslash, then frame 4 crosses it with a red slash in an X
+      special_venom: {
+        file: 'hero/hero_special_venom_cross.png',
+        frames: 9,
+        fps: 14,
+        loop: false,
+        frameWidth: 160,
+        frameHeight: 112,
+        originX: 0.3187,
+        originY: 0.7857,
+        impactFrame: 4,
+      },
       attack: {
         file: 'hero/hero_attack.png',
         frames: 9,
