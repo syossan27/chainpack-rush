@@ -1,6 +1,10 @@
 // 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
-import { originRarity } from './loot';
+import { validName } from './names';
+import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
+import { LANGS, type Lang } from '../i18n';
+import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
+import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
@@ -35,6 +39,23 @@ export interface SaveData {
   tutorialSeen: string[];
   /** 達成した実績（data/achievements.ts の id） */
   achievements: string[];
+  /** エンドレスの自己ベスト（到達周回と、その中で一番多かった合計ダメージ） */
+  endless: { bestLoop: number; bestDamage: number };
+  /** 2週替わりの挑戦の自己ベスト（期間の番号ごと。今の期間だけ残す） */
+  challenge: { period: number; best: number; bestLoop: number };
+  /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
+  challengeLoadout: Loadout | null;
+  /** ランキングに送った自己ベスト（シーズンごと。'challenge-3' → スコア） */
+  rankSent: Record<string, number>;
+  /** ランキングの報酬でもらった称号（新しい順） */
+  titles: string[];
+  /** ランキングの表示名（言葉の番号）。初めて送るときに決める */
+  rankName: { a: number; b: number; tag: number } | null;
+  /** Cosmetics earned in the challenge ranking (ids) and what is worn */
+  cosmetics: string[];
+  look: Look;
+  /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
+  editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
   adLog: { date: string; counts: Record<string, number> };
   settings: {
@@ -48,6 +69,8 @@ export interface SaveData {
     autoSell: 'off' | 'common' | 'rare' | 'epic';
     /** 自動売却で、追加効果（✦）つきは残すか */
     autoSellKeepAffix: boolean;
+    /** Display language ('auto' follows the device) */
+    lang: Lang | 'auto';
   };
 }
 
@@ -61,7 +84,8 @@ export interface Preset {
 }
 
 export function defaultPresets(): Preset[] {
-  return Array.from({ length: PRESET_COUNT }, (_, i) => ({ name: `編成${i + 1}`, loadout: null }));
+  // '' = the default name, shown as t('編成{n}') in the current language (see presetName)
+  return Array.from({ length: PRESET_COUNT }, () => ({ name: '', loadout: null }));
 }
 
 export function emptyLoadout(
@@ -98,6 +122,7 @@ export function createInitialSave(): SaveData {
   loadout.cells[w + 2] = byDef('wood_shield');
   loadout.originOrder = [byDef('origin_stone', 0), byDef('origin_stone', 1)];
   loadout.consumables = [byDef('potion')];
+  loadout.consumableAuto = ['potion'];
   return {
     version: SAVE_VERSION,
     gold: 0,
@@ -121,6 +146,14 @@ export function createInitialSave(): SaveData {
     premium: false,
     tutorialSeen: [],
     achievements: [],
+    endless: { bestLoop: 0, bestDamage: 0 },
+    challenge: { period: -1, best: 0, bestLoop: 0 },
+    challengeLoadout: null,
+    rankSent: {},
+    titles: [],
+    rankName: null,
+    cosmetics: [],
+    look: { ...NO_LOOK },
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -130,6 +163,7 @@ export function createInitialSave(): SaveData {
       showRoutes: true,
       autoSell: 'off',
       autoSellKeepAffix: true,
+      lang: 'auto',
     },
   };
 }
@@ -147,18 +181,35 @@ function readPresets(v: unknown): Preset[] {
   return base.map((b, i) => {
     const p: unknown = v[i];
     if (!isObj(p)) return b;
-    const name = typeof p.name === 'string' && p.name.length > 0 ? p.name.slice(0, 12) : b.name;
-    const lo = validLoadout(p.loadout)
-      ? {
-          width: p.loadout.width,
-          height: p.loadout.height,
-          cells: p.loadout.cells.map((c) => (typeof c === 'string' ? c : null)),
-          originOrder: p.loadout.originOrder.filter((u): u is string => typeof u === 'string'),
-          consumables: p.loadout.consumables.filter((u): u is string => typeof u === 'string'),
-        }
-      : null;
-    return { name, loadout: lo };
+    // Older saves stored the Japanese default name ('編成2'); turn it back into the default
+    const legacy = typeof p.name === 'string' ? /^編成(\d+)$/.exec(p.name) : null;
+    const name =
+      typeof p.name === 'string' && !(legacy && Number(legacy[1]) === i + 1)
+        ? p.name.slice(0, 12)
+        : b.name;
+    return { name, loadout: readLoadoutRec(p.loadout) };
   });
+}
+
+/** 並べ方の記録の読み込み。壊れていたら null */
+function readLoadoutRec(v: unknown): Loadout | null {
+  return validLoadout(v)
+    ? {
+        width: v.width,
+        height: v.height,
+        cells: v.cells.map((c) => (typeof c === 'string' ? c : null)),
+        originOrder: v.originOrder.filter((u): u is string => typeof u === 'string'),
+        consumables: v.consumables.filter((u): u is string => typeof u === 'string'),
+        ...autoOf(v),
+      }
+    : null;
+}
+
+/** 消耗品の自動補充の記録（古いセーブにはない） */
+function autoOf(l: { consumableAuto?: unknown }): { consumableAuto?: string[] } {
+  return Array.isArray(l.consumableAuto)
+    ? { consumableAuto: l.consumableAuto.filter((u): u is string => typeof u === 'string') }
+    : {};
 }
 
 export function serializeSave(save: SaveData): string {
@@ -223,6 +274,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         cells: lo.cells.map((c) => (typeof c === 'string' ? c : null)),
         originOrder: lo.originOrder.filter((u): u is string => typeof u === 'string'),
         consumables: lo.consumables.filter((u): u is string => typeof u === 'string'),
+        ...autoOf(lo),
       },
       upgrades: {
         ...base.upgrades,
@@ -239,8 +291,42 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       tutorialSeen: Array.isArray(data.tutorialSeen)
         ? data.tutorialSeen.filter((t): t is string => typeof t === 'string')
         : isObj(data.stats) && isNum(data.stats.runs) && data.stats.runs > 0
-          ? ['home', 'stage', 'run', 'demoEnd', 'result', 'loadout', 'smith', 'demo']
+          ? [...TUTORIAL_KEYS, DEMO_KEY]
           : [],
+      endless:
+        isObj(data.endless) && isNum(data.endless.bestLoop) && isNum(data.endless.bestDamage)
+          ? { bestLoop: data.endless.bestLoop, bestDamage: data.endless.bestDamage }
+          : { bestLoop: 0, bestDamage: 0 },
+      challenge:
+        isObj(data.challenge) &&
+        isNum(data.challenge.period) &&
+        isNum(data.challenge.best) &&
+        isNum(data.challenge.bestLoop)
+          ? {
+              period: data.challenge.period,
+              best: data.challenge.best,
+              bestLoop: data.challenge.bestLoop,
+            }
+          : { period: -1, best: 0, bestLoop: 0 },
+      challengeLoadout: readLoadoutRec(data.challengeLoadout),
+      rankSent: isObj(data.rankSent)
+        ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
+            string,
+            number
+          >)
+        : {},
+      rankName: validName(data.rankName) ? data.rankName : null,
+      cosmetics: Array.isArray(data.cosmetics)
+        ? COSMETICS.map((c) => c.id).filter((id) => (data.cosmetics as unknown[]).includes(id))
+        : [],
+      look: validLook(
+        isObj(data.look) ? (data.look as Partial<Look>) : undefined,
+        Array.isArray(data.cosmetics) ? (data.cosmetics as string[]) : [],
+      ),
+      titles: Array.isArray(data.titles)
+        ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
+        : [],
+      ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],
@@ -266,6 +352,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       },
     };
     if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
+    if (save.settings.lang !== 'auto' && !LANGS.includes(save.settings.lang))
+      save.settings.lang = 'auto';
     if (!['off', 'common', 'rare', 'epic'].includes(save.settings.autoSell))
       save.settings.autoSell = 'off';
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
@@ -284,6 +372,11 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         delete it.affixes;
         continue;
       }
+      // 系統: その装備が出ないレアリティなら、系統の装備に置きかえる（レジェンダリーの革鎧 → 鋼の鎧）
+      if (d.rarities && !allowsRarity(it.defId, it.rarity)) {
+        const to = lineItemFor(it.defId, it.rarity);
+        if (to) it.defId = to;
+      }
       if (d.kind !== 'origin') continue;
       if (it.exits.length === 0) it.exits = ['right'];
       it.rarity = originRarity(it.exits.length);
@@ -297,6 +390,13 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     save.loadout.consumables = save.loadout.consumables
       .filter((u) => owned.has(u))
       .slice(0, CONSUMABLE.baseSlots + 2);
+    // 消耗品枠の自動補充: 記録がない古いセーブは、今の枠の中身を覚える
+    if (!save.loadout.consumableAuto) {
+      const byUid = new Map(save.inventory.map((i) => [i.uid, i.defId]));
+      save.loadout.consumableAuto = save.loadout.consumables
+        .map((u) => byUid.get(u))
+        .filter((d): d is string => !!d);
+    }
     if (!Array.isArray(save.progress.unlocked) || !isObj(save.progress.best))
       save.progress = base.progress;
     return save;

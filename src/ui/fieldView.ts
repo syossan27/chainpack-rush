@@ -5,6 +5,7 @@ import { ELITES, FIELD, HERO, UI, type EliteId } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
+import { t } from '../i18n';
 import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
 import { generateBackgroundTextures } from './textures';
 import { HeroAura, type AuraTier } from './aura';
@@ -13,7 +14,17 @@ import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 /** 被弾モーションを見せる長さ（ms） */
 const HERO_HIT_MS = 250;
 
-const STATUS_COLOR: Record<Status, number> = { wet: 0x5aa0e8, oil: 0x6a5030, frozen: 0xc8f0ff };
+const STATUS_COLOR: Record<Status, number> = {
+  wet: 0x5aa0e8,
+  oil: 0x6a5030,
+  frozen: 0xc8f0ff,
+  poison: 0x8ae04a,
+  radiant: 0xfff0a0,
+  bound: 0x8a50c8,
+};
+
+/** 封印（攻撃が遅い）あいだの敵の色と、状態の丸の色 */
+const SEALED = { tint: 0xb8a8ff, dot: 0x5a3aa8 } as const;
 
 interface EnemySlot {
   id: number; // -1 なら空き
@@ -30,7 +41,21 @@ interface EnemySlot {
   /** 本素材のアニメで動かしている（揺らさない） */
   art: boolean;
   defId: string;
+  /** Angry boss: a red copy of the current frame, pulsing behind the body */
+  rageGlow: Phaser.GameObjects.Sprite;
+  /** When the last puff of steam rose from an angry boss (ms) */
+  steamAt: number;
 }
+
+/** Angry boss look: glow color, HP bar pulse color, steam color */
+// The glow is amber, not red, so it still shows on red bosses (fire dragon) and the red volcano
+const RAGE = {
+  glow: 0xffb020,
+  hpPulse: 0xffb040,
+  frame: 0xff5030,
+  steam: 0xffe0d8,
+  steamEdge: 0x9a4a40,
+} as const;
 
 /** 精鋭の色（体の色味と名札） */
 const ELITE_TINT: Record<EliteId, number> = { tough: 0xa8b8ff, swift: 0xffa0a0, golden: 0xffe070 };
@@ -135,6 +160,7 @@ export class FieldView {
         .text(0, 0, '▼', textStyle(26, '#ffef60'))
         .setOrigin(0.5, 1)
         .setVisible(false);
+      const rageGlow = scene.add.sprite(-500, 0, 'slime').setVisible(false);
       this.slots.push({
         id: -1,
         sprite,
@@ -149,6 +175,8 @@ export class FieldView {
         knockAt: 0,
         art: false,
         defId: '',
+        rageGlow,
+        steamAt: 0,
       });
     }
   }
@@ -245,6 +273,27 @@ export class FieldView {
     s.shadow.setVisible(false);
     s.tag.setVisible(false);
     s.aim.setVisible(false);
+    s.rageGlow.setVisible(false);
+  }
+
+  /** One puff of steam rising from an angry boss's head */
+  private steamPuff(x: number, y: number, depth: number): void {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    // An outline keeps the puff readable against a light sky
+    const p = this.scene.add
+      .rectangle(x + side * (8 + Math.random() * 16), y, 12, 12, RAGE.steam, 0.95)
+      .setStrokeStyle(2, RAGE.steamEdge, 0.9)
+      .setDepth(depth);
+    this.scene.tweens.add({
+      targets: p,
+      x: p.x + side * 14,
+      y: y - 46,
+      scale: 1.8,
+      alpha: 0,
+      duration: 650,
+      ease: 'Quad.easeOut',
+      onComplete: () => p.destroy(),
+    });
   }
 
   /** 必殺技: 勇者が前へ踏み込み、残像を引いて大きく構える（止めない。0.3秒ほど） */
@@ -329,7 +378,7 @@ export class FieldView {
     // 仮素材のときだけ、上下の揺れ（走り）と傾け（連鎖中）で動きを出す。本素材は地面に接地したままモーションに任せる
     const placeholder = !this.heroHasSprites;
     this.hero.setTint(now < this.heroHurtUntil ? 0xff8080 : 0xffffff);
-    this.hero.setAngle(placeholder && c.chain !== null ? Math.sin(now / 40) * 4 : 0);
+    this.hero.setAngle(placeholder && !c.ended && c.chain !== null ? Math.sin(now / 40) * 4 : 0);
     this.heroGlow.setAngle(this.hero.angle);
     this.heroGlow.setAlpha(c.unguarded ? 0.55 + Math.sin(now / 60) * 0.25 : 0);
     this.hero.anims.timeScale = speed;
@@ -337,8 +386,10 @@ export class FieldView {
     // 優先順に並べ、本素材のある最初の動作を使う（被弾が未登録なら、走り中は走りを、連鎖中は攻撃を続ける）
     // 攻撃: 連鎖中はずっと（3段目までの守られている間も）。短い連鎖で先に終わっても、振り切るまで続ける。
     // 新しい連鎖が始まったら頭から再生し直す
-    const newChain = c.chain !== null && c.chain !== this.lastChain;
-    this.lastChain = c.chain;
+    // 撤退・時間切れ・力尽きたあとは、連鎖の途中でも連鎖していない扱い（攻撃を振り続けない）
+    const chain = c.ended ? null : c.chain;
+    const newChain = chain !== null && chain !== this.lastChain;
+    this.lastChain = chain;
     const attackKey = animKey('hero', 'attack');
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
     // 必殺モーションは最後のコマまで再生しきるまで続ける
@@ -348,14 +399,14 @@ export class FieldView {
     const state: UnitAnimName =
       now < this.specialUntil || specialPlaying
         ? this.specialName
-        : c.chain !== null || swinging
+        : chain !== null || swinging
           ? 'attack'
           : c.running
             ? 'run'
             : 'idle';
     // 連鎖が続いている間は、振り終わるたびに次の一振りを始める（長い連鎖でも止まらない）
     const swingEnded =
-      c.chain !== null &&
+      chain !== null &&
       this.hero.anims.currentAnim?.key === attackKey &&
       !this.hero.anims.isPlaying;
     this.playHeroAnim(
@@ -420,16 +471,19 @@ export class FieldView {
         .setPosition(sx + knock, footY - 2)
         .setSize(def.frameWidth * def.displayScale * 0.5, e.def.boss ? 20 : 14)
         .setDepth(depth - 0.5);
+      const sealed = c.tick < e.slowUntil;
       if (now < s.flashUntil) s.sprite.setTintFill(0xffffff);
       else
         s.sprite.setTint(
           c.timeStopped
             ? 0x8090ff
-            : e.enraged
-              ? 0xff8070
-              : e.elite
-                ? ELITE_TINT[e.elite]
-                : 0xffffff,
+            : sealed
+              ? SEALED.tint
+              : e.enraged
+                ? 0xff8070
+                : e.elite
+                  ? ELITE_TINT[e.elite]
+                  : 0xffffff,
         );
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
       // 本素材は体の高さのすぐ上、仮素材はコマの余白込みで少し下げる
@@ -443,18 +497,62 @@ export class FieldView {
         .setPosition(sx - barW / 2, topY)
         .setSize(barW * ratio, 6)
         .setDepth(31);
+      // Angry boss (HP under half): it stays visible the whole time — a pulsing red glow around
+      // the body, steam from the head, and an HP bar that pulses inside a glowing frame
+      if (e.enraged) {
+        const pulse = 0.5 + Math.sin(now / 120) * 0.5;
+        s.rageGlow
+          .setVisible(true)
+          .setTexture(s.sprite.texture.key, s.sprite.frame.name)
+          .setOrigin(s.sprite.originX, s.sprite.originY)
+          .setFlipX(s.sprite.flipX)
+          .setScale(s.sprite.scaleX * 1.12)
+          .setPosition(s.sprite.x, s.sprite.y + 2)
+          .setTintFill(RAGE.glow)
+          .setAlpha(0.5 + pulse * 0.4)
+          .setDepth(depth - 0.2);
+        const mix = Phaser.Display.Color.Interpolate.ColorWithColor(
+          Phaser.Display.Color.ValueToColor(COLORS.hp),
+          Phaser.Display.Color.ValueToColor(RAGE.hpPulse),
+          100,
+          Math.round(pulse * 100),
+        );
+        s.hp.setFillStyle(Phaser.Display.Color.GetColor(mix.r, mix.g, mix.b));
+        s.hpBack.setStrokeStyle(2, RAGE.frame, 0.6 + pulse * 0.4);
+        // Steam: a puff about every 0.16 s of game time (none while paused)
+        if (speed > 0 && now - s.steamAt > 160 / speed) {
+          s.steamAt = now;
+          this.steamPuff(sx + knock, footY - hgt + 6, depth + 0.1);
+        }
+      } else {
+        s.rageGlow.setVisible(false);
+        s.hp.setFillStyle(COLORS.hp);
+        s.hpBack.setStrokeStyle();
+      }
       s.status.clear().setDepth(31);
       let k = 0;
-      for (const st of e.statuses.keys()) {
-        s.status.fillStyle(STATUS_COLOR[st], 1);
-        s.status.fillCircle(sx - barW / 2 + 8 + k * 18, topY - 14, 7);
+      const dot = (color: number) => {
+        const x = sx - barW / 2 + 8 + k * 18;
+        s.status.fillStyle(color, 1);
+        s.status.fillCircle(x, topY - 14, 7);
         s.status.lineStyle(2, 0x0c0a12, 1);
-        s.status.strokeCircle(sx - barW / 2 + 8 + k * 18, topY - 14, 7);
+        s.status.strokeCircle(x, topY - 14, 7);
         k++;
+        return x;
+      };
+      for (const st of e.statuses.keys()) {
+        const x = dot(STATUS_COLOR[st]);
+        // Poison stacked by wind: one small pip per extra layer, above the dot
+        if (st === 'poison')
+          for (let i = 1; i < e.poisonLayers; i++) {
+            s.status.fillStyle(STATUS_COLOR.poison, 1);
+            s.status.fillRect(x - 9 + (i - 1) * 5, topY - 27, 4, 4);
+          }
       }
+      if (sealed) dot(SEALED.dot);
       s.tag
         .setVisible(!!e.elite)
-        .setText(e.elite ? ELITES[e.elite].name : '')
+        .setText(e.elite ? t(ELITES[e.elite].name) : '')
         .setColor(e.elite ? ELITE_TEXT[e.elite] : '#ffffff')
         .setPosition(sx + barW / 2 - 4, topY - 6)
         .setDepth(32);

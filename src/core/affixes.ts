@@ -58,7 +58,7 @@ export const AFFIXES: Record<AffixId, AffixDef> = {
     kind: 'attack',
     min: 10,
     max: 30,
-    text: '3段目までなら ダメージ +{v}%',
+    text: '3連鎖目までなら ダメージ +{v}%',
     needsAtk: true,
   },
   finisher: {
@@ -67,7 +67,7 @@ export const AFFIXES: Record<AffixId, AffixDef> = {
     kind: 'attack',
     min: 10,
     max: 25,
-    text: '6段目以降なら ダメージ +{v}%',
+    text: '6連鎖目以降なら ダメージ +{v}%',
     needsAtk: true,
   },
   exploit: {
@@ -104,7 +104,7 @@ export const AFFIXES: Record<AffixId, AffixDef> = {
     kind: 'origin',
     min: 20,
     max: 50,
-    text: '連鎖の1段目 ダメージ +{v}%',
+    text: '1連鎖目 ダメージ +{v}%',
   },
 };
 

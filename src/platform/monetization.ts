@@ -2,6 +2,7 @@
 // 購入はすぐ購入できたことにする）。本物（AdMob・ストアの課金）は provider を差し替えるだけにする。
 import Phaser from 'phaser';
 import { MONETIZE } from '../config/balance';
+import { t } from '../i18n';
 import { COLORS, textStyle } from '../ui/theme';
 import { getSave, persist } from './store';
 
@@ -26,10 +27,14 @@ const mockProvider: MonetizationProvider = {
         .setOrigin(0, 0)
         .setInteractive();
       const title = scene.add
-        .text(W / 2, H / 2 - 80, '広告（テスト表示）', textStyle(36, COLORS.text))
+        .text(W / 2, H / 2 - 80, t('広告（テスト表示）'), textStyle(36, COLORS.text))
         .setOrigin(0.5);
       const note = scene.add
-        .text(W / 2, H / 2 - 20, '本番ではここに動画広告が流れます', textStyle(22, COLORS.textDim))
+        .text(W / 2, H / 2 - 20, t('本番ではここに動画広告が流れます'), {
+          ...textStyle(22, COLORS.textDim),
+          align: 'center',
+          wordWrap: { width: W - 60, useAdvancedWrap: true },
+        })
         .setOrigin(0.5);
       const count = scene.add.text(W / 2, H / 2 + 60, '3', textStyle(64, '#ffe27a')).setOrigin(0.5);
       root.add([shade, title, note, count]);

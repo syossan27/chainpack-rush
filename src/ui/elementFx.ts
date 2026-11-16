@@ -39,6 +39,9 @@ export class ElementFx {
     if (combo === 'shock') return this.shock(x, y);
     if (combo === 'explode') return this.explode(x, y);
     if (combo === 'shatter') return this.shatter(x, y);
+    if (combo === 'purify') return this.purify(x, y);
+    if (combo === 'seal') return this.seal(x, y);
+    if (combo === 'venom') return this.venom(x, y);
     switch (element) {
       case 'thunder':
         this.bolt(x, y, 1 + strength);
@@ -57,6 +60,15 @@ export class ElementFx {
         break;
       case 'oil':
         this.drops(x, y, 0x3a2a40, 6);
+        break;
+      case 'wind':
+        this.gust(x, y, 5 + Math.round(strength * 6));
+        break;
+      case 'light':
+        this.rays(x, y, 0xfff4b0, 5 + Math.round(strength * 5));
+        break;
+      case 'dark':
+        this.smoke(x, y, 0x6a3aa8, 5 + Math.round(strength * 5));
         break;
       default:
         break;
@@ -219,7 +231,88 @@ export class ElementFx {
     });
   }
 
+  /** 風: 横に走る細い筋 */
+  private gust(x: number, y: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const yy = y - 40 + Math.random() * 70;
+      const p = this.scene.add
+        .rectangle(x + 60, yy, 34 + Math.random() * 30, 4, i % 2 ? 0xe8fff0 : 0xa0f0c8)
+        .setDepth(this.depth)
+        .setAlpha(0.9);
+      this.scene.tweens.add({
+        targets: p,
+        x: x - 70 - Math.random() * 40,
+        alpha: 0,
+        scaleX: 0.4,
+        duration: 260 + Math.random() * 120,
+        delay: i * 25,
+        ease: 'Quad.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  /** 光: 中心から伸びる光の筋 */
+  private rays(x: number, y: number, color: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + Math.random() * 0.3;
+      const p = this.scene.add
+        .rectangle(x, y, 6, 30, i % 3 === 0 ? 0xffffff : color)
+        .setDepth(this.depth)
+        .setAngle(Phaser.Math.RadToDeg(a) + 90)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({
+        targets: p,
+        x: x + Math.cos(a) * 70,
+        y: y + Math.sin(a) * 70,
+        scaleY: 2,
+        alpha: 0,
+        duration: 320,
+        ease: 'Cubic.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  /** 闇: ゆっくり上る暗い煙（明るい空でも見えるよう、加算にしない） */
+  private smoke(x: number, y: number, color: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const p = this.scene.add
+        .rectangle(x + (Math.random() - 0.5) * 50, y + 10, 12, 12, i % 3 === 0 ? 0x2a1640 : color)
+        .setStrokeStyle(2, 0x1a0a28, 0.8)
+        .setDepth(this.depth)
+        .setAlpha(0.85);
+      this.scene.tweens.add({
+        targets: p,
+        y: y - 50 - Math.random() * 50,
+        x: p.x + (Math.random() - 0.5) * 30,
+        scale: 1.8,
+        alpha: 0,
+        duration: 520 + Math.random() * 200,
+        ease: 'Quad.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
   // ---- コンボ ----
+
+  private purify(x: number, y: number): void {
+    this.rays(x, y, 0xfff4b0, 14);
+    this.ring(x, y, 0xffffff, 6, 320);
+    this.ring(x, y, 0xffe080, 4, 260);
+  }
+
+  private seal(x: number, y: number): void {
+    this.smoke(x, y, 0x6a3aa8, 12);
+    this.ring(x, y, 0xb080ff, 6, 360);
+  }
+
+  private venom(x: number, y: number): void {
+    this.drops(x, y - 20, 0x8ae04a, 14);
+    this.ring(x, y, 0x8ae04a, 7, 360);
+    this.ring(x, y, 0xe0ff80, 4, 260);
+  }
 
   private shock(x: number, y: number): void {
     for (let i = 0; i < 3; i++) this.bolt(x + (i - 1) * 26, y, 1.6 - i * 0.2);

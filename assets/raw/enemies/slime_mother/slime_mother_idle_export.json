@@ -1,0 +1,16 @@
+{
+  "file": "slime_mother_idle.png",
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.9166666666666666,
+  "originPx": [
+    48,
+    88
+  ],
+  "fps": 8,
+  "loop": true,
+  "groundY": 87,
+  "note": "スライムの母。ピンクの大福に、ティアラ・ほっぺ・ハートの核。その場で伸び縮み・揺れる待機ループ（9コマから6コマ）。"
+}

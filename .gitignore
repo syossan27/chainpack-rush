@@ -6,3 +6,5 @@ coverage
 .mcp.json
 *.log
 .DS_Store
+functions/lib
+.firebase

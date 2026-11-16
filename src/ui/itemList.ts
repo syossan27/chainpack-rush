@@ -1,12 +1,14 @@
 // 倉庫の一覧（スクロール、種類・レアリティで絞り込み、タップ・長押し・ドラッグ）
 import { bindTap } from './kit/widgets';
 import Phaser from 'phaser';
+import { listGesture } from '../core/listGesture';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
+import { k, t } from '../i18n';
 import { ItemIcon } from './itemIcon';
 import { SKIN, SLICE } from './kit/skin';
-import { panel } from './kit/widgets';
+import { fitText, panel } from './kit/widgets';
 import { sfx } from '../audio/sfx';
 import { COLORS, W, textStyle } from './theme';
 
@@ -21,16 +23,15 @@ export type KindFilter = ItemKind | 'all';
 export type RarityFilter = Rarity | 'all';
 
 const KIND_LABEL: Record<KindFilter, string> = {
-  all: '全部',
-  origin: '起点',
-  attack: '攻撃',
-  defense: '防御',
-  consumable: '消耗品',
+  all: k('全部'),
+  origin: k('起点'),
+  attack: k('攻撃'),
+  defense: k('防御'),
+  consumable: k('消耗品'),
 };
 
 const LONG_PRESS_MS = 450;
 const FILTER_H = 58;
-const HOLD_TO_DRAG_MS = 150; // これだけ押さえてから動かすとドラッグ（素早い払いはスクロール）
 const DRAG_THRESHOLD = 14;
 const RARITY_ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
@@ -81,7 +82,7 @@ export class ItemList extends Phaser.GameObjects.Container {
       .text(
         W / 2,
         this.viewTop + this.viewHeight / 2,
-        '倉庫は空です',
+        t('倉庫は空です'),
         textStyle(24, COLORS.textDim),
       )
       .setOrigin(0.5);
@@ -108,20 +109,23 @@ export class ItemList extends Phaser.GameObjects.Container {
       const bg = this.scene.add
         .nineslice(x + w / 2, 24, on ? SKIN.tabOn : SKIN.tab, undefined, w, 46, m, m, 14, 14)
         .setInteractive({ useHandCursor: true });
-      const t = this.scene.add
-        .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
-        .setOrigin(0.5);
+      const text = fitText(
+        this.scene.add
+          .text(x + w / 2, 22, label, textStyle(20, on ? '#fff6d0' : COLORS.text))
+          .setOrigin(0.5),
+        w - 10,
+      );
       bindTap(bg, () => {
         sfx('click');
         onTap();
       });
-      this.filterBar.add([bg, t]);
+      this.filterBar.add([bg, text]);
     };
     const kinds: KindFilter[] = ['all', 'origin', 'attack', 'defense', 'consumable'];
     const cw = 100;
-    kinds.forEach((k, i) =>
-      chip(12 + i * (cw + 4), cw, KIND_LABEL[k], this.kind === k, () => {
-        this.kind = k;
+    kinds.forEach((kind, i) =>
+      chip(12 + i * (cw + 4), cw, t(KIND_LABEL[kind]), this.kind === kind, () => {
+        this.kind = kind;
         this.scrollY = 0;
         this.buildFilters();
         this.render();
@@ -129,7 +133,10 @@ export class ItemList extends Phaser.GameObjects.Container {
     );
     // レアリティはタップで順に切り替え
     const rs: RarityFilter[] = ['all', ...RARITIES];
-    const label = this.rarity === 'all' ? '★全部' : `★${RARITY_NAMES[this.rarity]!}`;
+    const label =
+      this.rarity === 'all'
+        ? t('★全部')
+        : t('★{rarity}', { rarity: t(RARITY_NAMES[this.rarity]!) });
     chip(12 + 5 * (cw + 4), W - 24 - 5 * (cw + 4), label, this.rarity !== 'all', () => {
       this.rarity = rs[(rs.indexOf(this.rarity) + 1) % rs.length]!;
       this.scrollY = 0;
@@ -143,11 +150,16 @@ export class ItemList extends Phaser.GameObjects.Container {
       .filter((it) => {
         const def = getItemDef(it.defId);
         if (this.kind !== 'all' && def.kind !== this.kind) return false;
-        if (this.rarity !== 'all' && it.rarity !== this.rarity) return false;
+        // 消耗品はレアリティを持たない（★の絞り込みには出さない）
+        if (this.rarity !== 'all' && (it.rarity !== this.rarity || def.kind === 'consumable'))
+          return false;
         return true;
       })
       .sort(
         (a, b) =>
+          // 消耗品は装備のあと（別枠）
+          Number(getItemDef(a.defId).kind === 'consumable') -
+            Number(getItemDef(b.defId).kind === 'consumable') ||
           RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] ||
           a.defId.localeCompare(b.defId) ||
           a.uid.localeCompare(b.uid),
@@ -175,15 +187,39 @@ export class ItemList extends Phaser.GameObjects.Container {
         const b = this.scene.add
           .rectangle(cx - 22, cy - 34, 48, 22, 0x0c0a12, 0.85)
           .setStrokeStyle(2, 0xffd25a);
-        const t = this.scene.add
-          .text(cx - 22, cy - 34, mark, textStyle(13, COLORS.gold))
-          .setOrigin(0.5);
-        this.content.add([b, t]);
+        // The badge is 48px wide; a longer mark (translation, typed preset name) shrinks to fit
+        const markText = fitText(
+          this.scene.add.text(cx - 22, cy - 34, mark, textStyle(13, COLORS.gold)).setOrigin(0.5),
+          56,
+        );
+        this.content.add([b, markText]);
       }
     });
     this.contentHeight = Math.ceil(list.length / this.cols) * this.cellSize + 12;
     this.emptyText.setVisible(list.length === 0);
     this.clampScroll();
+  }
+
+  /** The item shown first (top left) */
+  firstUid(): string | null {
+    return this.filtered()[0]?.uid ?? null;
+  }
+
+  /** Screen rect of an item's cell (null if filtered out or scrolled out of view). For guides */
+  cellRect(uid: string): { x: number; y: number; w: number; h: number } | null {
+    const i = this.filtered().findIndex((it) => it.uid === uid);
+    if (i < 0) return null;
+    const left = (W - this.cols * this.cellSize) / 2;
+    const x = left + (i % this.cols) * this.cellSize + this.cellSize / 2;
+    const y =
+      this.viewTop -
+      this.scrollY +
+      Math.floor(i / this.cols) * this.cellSize +
+      this.cellSize / 2 +
+      6;
+    const half = this.cellSize / 2;
+    if (y - half < this.viewTop || y + half > this.viewTop + this.viewHeight) return null;
+    return { x, y, w: this.cellSize, h: this.cellSize };
   }
 
   private clampScroll(): void {
@@ -234,9 +270,16 @@ export class ItemList extends Phaser.GameObjects.Container {
         timer?.remove();
         // 少し押さえてから動かした、または横へ動かした → ドラッグ。素早く縦に払った → スクロール
         // 押してからの時間は入力イベント自体の時刻で測る（フレームが遅くても判定がぶれない）
-        const held = p.moveTime - start.time >= HOLD_TO_DRAG_MS;
+        // When the list is too short to scroll, any move from an item drags it
         const wantsDrag =
-          pressed && this.handlers.onDragStart && (held || Math.abs(dx) > Math.abs(dy));
+          this.handlers.onDragStart !== undefined &&
+          listGesture({
+            onItem: pressed !== null,
+            canScroll: this.contentHeight > this.viewHeight,
+            heldMs: p.moveTime - start.time,
+            dx,
+            dy,
+          }) === 'drag';
         mode = wantsDrag ? 'drag' : 'scroll';
         if (mode === 'drag' && pressed) {
           this.handlers.onDragStart?.(pressed, p);
@@ -244,15 +287,7 @@ export class ItemList extends Phaser.GameObjects.Container {
         }
       }
       if (mode === 'scroll') {
-        // 一覧の上端より上へ指を出したら、押していたアイテムのドラッグに切り替える
-        if (pressed && this.handlers.onDragStart && p.y < this.viewTop - 10) {
-          mode = 'drag';
-          // ドラッグに切り替えたら、スクロールは押した時点の位置に戻す
-          this.scrollY = start.scroll;
-          this.clampScroll();
-          this.handlers.onDragStart(pressed, p);
-          return;
-        }
+        // スクロールを始めたら、指が一覧の外へ出てもスクロールのまま（位置は戻さない）
         this.scrollY = start.scroll - dy;
         this.clampScroll();
       }

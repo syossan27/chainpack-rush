@@ -7,11 +7,92 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '起点石',
     kind: 'origin',
     description:
-      '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンダリー4）。',
+      '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。',
+  },
+  // 起点石の種類: この起点から伸びる線に乗った装備にだけ効く（数値は仮）
+  {
+    id: 'origin_swift',
+    name: '速の起点石',
+    kind: 'origin',
+    line: { relay: -0.05, damage: -10 },
+    description:
+      'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。',
+  },
+  {
+    id: 'origin_heavy',
+    name: '重い起点石',
+    kind: 'origin',
+    line: { relay: 0.05, damage: 20 },
+    description: 'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。',
+  },
+  {
+    id: 'origin_fire',
+    name: '炎の起点石',
+    kind: 'origin',
+    line: { element: 'fire', elementDamage: 15 },
+    description: 'この起点から伸びる線の、炎の攻撃はダメージ +15%。',
+  },
+  {
+    id: 'origin_thunder',
+    name: '雷の起点石',
+    kind: 'origin',
+    line: { element: 'thunder', elementDamage: 15 },
+    description: 'この起点から伸びる線の、雷の攻撃はダメージ +15%。',
+  },
+  {
+    id: 'origin_blunt',
+    name: '打撃の起点石',
+    kind: 'origin',
+    line: { element: 'blunt', elementDamage: 15 },
+    description: 'この起点から伸びる線の、打撃の攻撃はダメージ +15%。',
+  },
+  {
+    id: 'origin_shield',
+    name: '盾の起点石',
+    kind: 'origin',
+    line: { defense: 25 },
+    description: 'この起点から伸びる線の、防御装備の防御値 +25%。',
+  },
+  {
+    id: 'origin_poison',
+    name: '毒の起点石',
+    kind: 'origin',
+    line: { poison: 60 },
+    description: 'この起点から伸びる線の、毒の毎秒ダメージ +60%。',
+  },
+  {
+    id: 'origin_vamp',
+    name: '吸血の起点石',
+    kind: 'origin',
+    line: { lifesteal: 50 },
+    description: 'この起点から伸びる線の、吸血で回復する量 +50%。',
+  },
+  {
+    id: 'origin_wind',
+    name: '風の起点石',
+    kind: 'origin',
+    line: { element: 'wind', elementDamage: 15 },
+    description: 'この起点から伸びる線の、風の攻撃はダメージ +15%。',
+  },
+  {
+    id: 'origin_light',
+    name: '光の起点石',
+    kind: 'origin',
+    line: { element: 'light', elementDamage: 15 },
+    description: 'この起点から伸びる線の、光の攻撃はダメージ +15%。',
+  },
+  {
+    id: 'origin_dark',
+    name: '闇の起点石',
+    kind: 'origin',
+    line: { element: 'dark', elementDamage: 15 },
+    description: 'この起点から伸びる線の、闇の攻撃はダメージ +15%。',
   },
 
   {
     id: 'sword',
+    rarities: ['common', 'epic'],
+    next: 'greatsword',
     name: '剣',
     kind: 'attack',
     element: 'physical',
@@ -21,6 +102,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'greatsword',
+    rarities: ['rare', 'legendary'],
+    next: 'holy_sword',
     name: '大剣',
     kind: 'attack',
     element: 'physical',
@@ -41,6 +124,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'axe',
+    rarities: ['common', 'epic'],
+    next: 'war_axe',
     name: '斧',
     kind: 'attack',
     element: 'physical',
@@ -50,6 +135,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'hammer',
+    rarities: ['rare', 'legendary'],
     name: 'ハンマー',
     kind: 'attack',
     element: 'blunt',
@@ -59,6 +145,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'iron_ball',
+    rarities: ['common', 'epic'],
+    next: 'hammer',
     name: '鉄球',
     kind: 'attack',
     element: 'blunt',
@@ -68,6 +156,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'torch',
+    rarities: ['common', 'rare'],
+    next: 'flame_staff',
     name: '松明',
     kind: 'attack',
     element: 'fire',
@@ -77,6 +167,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'flame_staff',
+    rarities: ['rare', 'legendary'],
     name: '炎の杖',
     kind: 'attack',
     element: 'fire',
@@ -86,6 +177,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_staff',
+    rarities: ['rare', 'legendary'],
     name: '雷の杖',
     kind: 'attack',
     element: 'thunder',
@@ -95,6 +187,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_bell',
+    rarities: ['common', 'epic'],
+    next: 'thunder_staff',
     name: '雷鳴の鈴',
     kind: 'attack',
     element: 'thunder',
@@ -104,6 +198,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'ice_sword',
+    rarities: ['rare', 'legendary'],
     name: '氷の剣',
     kind: 'attack',
     element: 'ice',
@@ -114,7 +209,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'canteen',
-    name: '水筒',
+    rarities: ['common', 'rare'],
+    next: 'raincloud_staff',
+    name: '水竜の瓶',
     kind: 'attack',
     element: 'water',
     area: 'single',
@@ -124,6 +221,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'raincloud_staff',
+    rarities: ['rare', 'legendary'],
     name: '雨雲の杖',
     kind: 'attack',
     element: 'water',
@@ -134,6 +232,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'oil_bottle',
+    rarities: ['common', 'epic'],
     name: '油瓶',
     kind: 'attack',
     element: 'oil',
@@ -142,9 +241,81 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     applies: 'oil',
     description: '狙いに油をかける。炎で爆発させられる。状態がついた敵へのダメージ×1.2。',
   },
+  // 風: 毒を重ねて、まとめて爆発させる（ボス向け）
+  {
+    id: 'wind_sword',
+    rarities: ['common', 'epic'],
+    next: 'storm_staff',
+    name: '風の剣',
+    kind: 'attack',
+    element: 'wind',
+    area: 'single',
+    atk: 10,
+    description:
+      '風。毒の敵に当てると毒が重なる（最大5重）。5重の敵に当てると、残りの毒をまとめて与える（毒爆）。',
+  },
+  {
+    id: 'storm_staff',
+    rarities: ['rare', 'legendary'],
+    name: '嵐の杖',
+    kind: 'attack',
+    element: 'wind',
+    area: 'sweep',
+    atk: 8,
+    description: '風の薙ぎ払い。当たった毒の敵すべてに毒を重ね、5重なら毒爆。',
+  },
+  // 光と闇: 交互につなぐとコンボが続く
+  {
+    id: 'light_sword',
+    rarities: ['common', 'epic'],
+    next: 'sun_staff',
+    name: '光の剣',
+    kind: 'attack',
+    element: 'light',
+    area: 'single',
+    atk: 8,
+    applies: 'radiant',
+    description: '光。狙いに灼光をつける。呪縛の敵を浄化して、勇者のHPを回復する。',
+  },
+  {
+    id: 'sun_staff',
+    rarities: ['rare', 'legendary'],
+    name: '太陽の杖',
+    kind: 'attack',
+    element: 'light',
+    area: 'splash',
+    atk: 8,
+    applies: 'radiant',
+    description: '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。',
+  },
+  {
+    id: 'dark_sword',
+    rarities: ['common', 'epic'],
+    next: 'dark_staff',
+    name: '闇の剣',
+    kind: 'attack',
+    element: 'dark',
+    area: 'single',
+    atk: 8,
+    applies: 'bound',
+    description: '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。',
+  },
+  {
+    id: 'dark_staff',
+    rarities: ['rare', 'legendary'],
+    name: '闇の杖',
+    kind: 'attack',
+    element: 'dark',
+    area: 'splash',
+    atk: 8,
+    applies: 'bound',
+    description: '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。',
+  },
 
   {
     id: 'wood_shield',
+    rarities: ['common', 'rare'],
+    next: 'iron_shield',
     name: '木の盾',
     kind: 'defense',
     defense: 8,
@@ -152,13 +323,26 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'chainmail',
+    rarities: ['rare', 'epic'],
+    next: 'steel_armor',
     name: '鎖帷子',
     kind: 'defense',
     defense: 12,
     description: '連鎖が通ると、終了時に防御値+12。',
   },
   {
+    id: 'steel_armor',
+    rarities: ['epic', 'legendary'],
+    name: '鋼の鎧',
+    kind: 'defense',
+    defense: 20,
+    relayDelay: 0.3,
+    description: '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。',
+  },
+  {
     id: 'dagger',
+    rarities: ['common', 'rare'],
+    next: 'sword',
     name: '短剣',
     kind: 'attack',
     element: 'physical',
@@ -175,7 +359,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'single',
     atk: 6,
     hits: 2,
-    description: '1段で2回斬る。',
+    description: '2回斬る（連鎖数は1つ）。',
   },
   {
     id: 'bow',
@@ -189,6 +373,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'war_axe',
+    rarities: ['rare', 'legendary'],
     name: '大斧',
     kind: 'attack',
     element: 'physical',
@@ -199,6 +384,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'holy_sword',
+    rarities: ['epic', 'legendary'],
     name: '聖剣',
     kind: 'attack',
     element: 'physical',
@@ -209,6 +395,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'thunder_spear',
+    rarities: ['epic', 'legendary'],
     name: '雷の槍',
     kind: 'attack',
     element: 'thunder',
@@ -219,6 +406,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'frost_staff',
+    rarities: ['common', 'epic'],
+    next: 'ice_sword',
     name: '氷の杖',
     kind: 'attack',
     element: 'ice',
@@ -230,6 +419,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
 
   {
     id: 'leather_armor',
+    rarities: ['common', 'rare'],
+    next: 'chainmail',
     name: '革鎧',
     kind: 'defense',
     defense: 6,
@@ -238,6 +429,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'tower_shield',
+    rarities: ['epic', 'legendary'],
     name: '大盾',
     kind: 'defense',
     defense: 26,
@@ -246,13 +438,15 @@ export const ITEM_DEFS: readonly ItemDef[] = [
   },
   {
     id: 'iron_shield',
+    rarities: ['rare', 'epic'],
+    next: 'tower_shield',
     name: '鉄の盾',
     kind: 'defense',
     defense: 18,
     description: '連鎖が通ると、終了時に防御値+18。',
   },
 
-  // ---- アーティファクト（レジェンダリーの中のレジェンダリー） ----
+  // ---- アーティファクト（レジェンドの中のレジェンド） ----
   {
     id: 'ouroboros',
     name: '循環の環',
@@ -285,6 +479,66 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     artifact: { exits: ['right', 'left'] },
     description: '画面内の全敵へ雷を落とす。濡れた敵は感電する。',
   },
+  // ---- 新しい効果（毒・吸血・段数）----
+  {
+    id: 'poison_dagger',
+    rarities: ['common', 'epic'],
+    next: 'venom_staff',
+    name: '毒の短剣',
+    kind: 'attack',
+    element: 'physical',
+    area: 'single',
+    atk: 5,
+    applies: 'poison',
+    description:
+      '当てた敵を毒にする（5秒間、この一撃の30%を毎秒与える）。毒の敵へのほかの攻撃は×1.2。',
+  },
+  {
+    id: 'venom_staff',
+    rarities: ['rare', 'legendary'],
+    name: '毒霧の杖',
+    kind: 'attack',
+    element: 'physical',
+    area: 'splash',
+    atk: 4,
+    applies: 'poison',
+    description: '狙いのまわりにも当たり、まとめて毒にする（5秒間、一撃の30%を毎秒）。',
+  },
+  {
+    id: 'vampire_sword',
+    rarities: ['rare', 'legendary'],
+    name: '吸血の剣',
+    kind: 'attack',
+    element: 'physical',
+    area: 'single',
+    atk: 11,
+    lifesteal: 0.08,
+    description: '与えたダメージの8%だけ、勇者のHPが回復する。',
+  },
+  {
+    id: 'wind_feather',
+    name: '疾風の羽',
+    kind: 'attack',
+    element: 'physical',
+    area: 'single',
+    atk: 3,
+    stepBoost: 1,
+    relayDelay: 0.1,
+    description:
+      'この羽のあとに続く装備は、連鎖数を1つ多く数える（連鎖倍率が早く上がる）。次へすぐ伝わる。',
+  },
+  {
+    id: 'abyss_chalice',
+    name: '深淵の杯',
+    kind: 'attack',
+    element: 'physical',
+    area: 'single',
+    atk: 18,
+    applies: 'poison',
+    lifesteal: 0.15,
+    artifact: { exits: ['up', 'right', 'down'] },
+    description: '当てた敵を毒にし、与えたダメージの15%だけHPが回復する。',
+  },
   {
     id: 'sage_stone',
     name: '賢者の石',
@@ -312,7 +566,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '号令',
     kind: 'consumable',
     effect: 'rally',
-    description: 'ATBを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。',
+    description: '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。',
   },
   {
     id: 'time_stop',
@@ -379,6 +633,9 @@ export const ELEMENT_NAMES: Record<string, string> = {
   ice: '氷',
   water: '水',
   oil: '油',
+  wind: '風',
+  light: '光',
+  dark: '闇',
 };
 
 export const AREA_NAMES: Record<string, string> = {
@@ -392,6 +649,9 @@ export const STATUS_NAMES: Record<string, string> = {
   wet: '濡れ',
   oil: '油',
   frozen: '凍結',
+  radiant: '灼光',
+  bound: '呪縛',
+  poison: '毒',
 };
 
 export const RARITY_NAMES: Record<string, string> = {

@@ -57,3 +57,13 @@ export class Rng {
 export function randomSeed(): number {
   return (Math.random() * 0xffffffff) >>> 0;
 }
+
+/**
+ * 整数乗（掛け算の繰り返し）。Math.pow は端末ごとに最後の桁がずれることがあるので、
+ * 戦闘の計算ではこちらを使う（ランキングでサーバーが同じ結果を再生できるように）
+ */
+export function ipow(base: number, exp: number): number {
+  let r = 1;
+  for (let i = 0; i < exp; i++) r *= base;
+  return r;
+}

@@ -1,0 +1,16 @@
+{
+  "file": "iron_knight_defeat.png",
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.9166666666666666,
+  "originPx": [
+    48,
+    88
+  ],
+  "fps": 10,
+  "loop": false,
+  "groundY": 87,
+  "note": "鉄の騎士。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。"
+}

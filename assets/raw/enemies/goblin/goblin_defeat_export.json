@@ -12,5 +12,5 @@
   "fps": 10,
   "loop": false,
   "groundY": 55,
-  "note": "Knocked back, collapses, last frame is faint. The game should destroy the sprite after this animation plays. Eyes close progressively (open, half, mostly, then fully shut). Do not recenter frames."
+  "note": "Knocked back, collapses, last frame is faint. The game should destroy the sprite after this animation plays. Eyes close progressively (open, half, mostly, then fully shut). Do not recenter frames.（左右反転して左向きにした）"
 }

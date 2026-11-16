@@ -62,7 +62,7 @@ describe('アーティファクト', () => {
     expect(normal / n).toBeCloseTo(LOOT.artifactChance, 3);
     expect(normal).toBeGreaterThan(0);
     expect(boss / n).toBeCloseTo(LOOT.artifactChanceRare, 3);
-  });
+  }, 20_000); // 40万回まわすので、ほかのテストと並ぶと遅くなる
 
   it('読み込み時に出口・レアリティを固定に戻し、追加効果を外す', () => {
     const s = createInitialSave();

@@ -1,5 +1,6 @@
 // 編成の切り替え。編成は並べ方の記録だけで、装備は倉庫に置いたまま（今の編成の分だけが「装備中」）
 import { getItemDef } from '../data/items';
+import { t } from '../i18n';
 import { consumableSlots } from './economy';
 export { otherPresetUse } from './economy';
 import { resizeLoadout } from './loadout';
@@ -19,6 +20,7 @@ function structuredCloneLoadout(l: Loadout): Loadout {
     cells: l.cells.slice(),
     originOrder: l.originOrder.slice(),
     consumables: l.consumables.slice(),
+    ...(l.consumableAuto ? { consumableAuto: l.consumableAuto.slice() } : {}),
   };
 }
 
@@ -65,6 +67,16 @@ export function switchPreset(save: SaveData, index: number): boolean {
   return true;
 }
 
+/** The default name of preset i in the current language */
+export function defaultPresetName(i: number): string {
+  return t('編成{n}', { n: i + 1 });
+}
+
+/** A preset's name in the current language (an empty name is the default) */
+export function presetName(save: SaveData, i: number): string {
+  return save.presets[i]?.name || defaultPresetName(i);
+}
+
 /** 編成の印（一覧用）: 「編成2」など。複数なら「編成2+」 */
 export function presetMark(
   save: SaveData,
@@ -73,6 +85,8 @@ export function presetMark(
 ): string | null {
   const list = uses.get(uid);
   if (!list || list.length === 0) return null;
-  const first = save.presets[list[0]!]!.name;
-  return list.length > 1 ? `${first.slice(0, 4)}+` : first.slice(0, 5);
+  const i = list[0]!;
+  // Player-typed names are cut short; default names are already short in every language
+  const first = save.presets[i]!.name ? save.presets[i]!.name.slice(0, 5) : presetName(save, i);
+  return list.length > 1 ? `${first}+` : first;
 }

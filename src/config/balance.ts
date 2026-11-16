@@ -42,6 +42,21 @@ export const CHAIN = {
   multBase: 1.2,
   multCap: 2.5, // 連鎖倍率の上限（1.2^5≒2.49 まで＝6段目までは仕様どおり）
   tailDelay: 0.2, // 最後の発動から連鎖終了まで
+  minRelay: 0.05, // 速の起点石などで縮めても、これより速くは伝わらない
+} as const;
+
+/**
+ * Merge (sync): origins still fire one at a time. At a cell where routes from 2+ origins meet,
+ * every route goes on from the longer route's step, and the merge bonus applies from there on.
+ * Each route's steps: which step the merge cell is on that route (3+4; equal = exact sync).
+ * Points = sum of the routes' steps × (shortest ÷ longest).
+ * Bonus = (points − offset) × perPoint % (up to cap %). The offset keeps a tiny sync (2+2) from
+ * paying almost as much as a real one.
+ */
+export const MERGE = {
+  perPoint: 6,
+  offset: 3,
+  cap: 40,
 } as const;
 
 /**
@@ -85,6 +100,22 @@ export const AREA = {
   allMult: 0.4,
 } as const;
 
+/** 毒: 付けた一撃のダメージの dpsRatio 倍を、毎秒 STATUS.duration 秒のあいだ与える（重ねがけは強い方） */
+export const POISON = {
+  dpsRatio: 0.3,
+  /** ダメージを表示する間隔（秒） */
+  tickEvery: 0.5,
+  /**
+   * 風: 毒の敵に当てると毒が1重ふえる（毎秒ダメージ×重ねた数、毒の時間も延びる）。
+   * maxLayers 重の敵に当てると、残りの毒をまとめて与える（毒爆）。仮の値
+   */
+  maxLayers: 5,
+  /** 毒爆のダメージ = 残りの毒（毎秒×重ね数×残り秒）× burstMult */
+  burstMult: 1.5,
+  burstName: 'venom',
+  burstLabel: '毒爆！',
+} as const;
+
 export const STATUS = {
   duration: 5,
   /** 状態がついた相手へのコンボ以外の攻撃は ×1.2（状態付与の装備にも単体で役目を持たせる） */
@@ -125,7 +156,36 @@ export const COMBOS: readonly ComboRule[] = [
     mult: 2.5,
     expandToSplash: false,
   },
+  // 光と闇: 倍率は低いが、交互につなぐと毎回コンボになる（光は灼光、闇は呪縛を付け直すため）
+  {
+    status: 'bound',
+    element: 'light',
+    name: 'purify',
+    label: '浄化！',
+    mult: 1.5,
+    expandToSplash: false,
+  },
+  {
+    status: 'radiant',
+    element: 'dark',
+    name: 'seal',
+    label: '封印！',
+    mult: 1.5,
+    expandToSplash: false,
+  },
 ];
+
+/**
+ * 光と闇のコンボの追加効果（仮の値）。
+ * 浄化: 勇者のHPを最大HPの purifyHeal 回復。封印: 敵の攻撃のたまり方を sealSlow 倍に（sealSeconds 秒）。
+ * 呪縛が付いている敵の攻撃力は boundAtkDown だけ下がる
+ */
+export const LIGHT_DARK = {
+  purifyHeal: 0.01,
+  sealSlow: 0.7,
+  sealSeconds: 4,
+  boundAtkDown: 0.2,
+} as const;
 
 export const LOOP_SCALING = {
   hp: 1.4, // 装備の追加効果・新装備で強くなりやすくなったぶん 1.3 から上げた
@@ -181,8 +241,9 @@ export const BOSS = {
   // 取り巻きの数と呼ぶ間隔は敵の定義（escortCount / summonInterval）。初回はまとめて呼ぶ
   regenPerSec: 0.02, // 呪術王: 毎秒、最大HPの2%を回復
   enrageAt: 0.5, // ゴーレム: HPがこの割合を切ると
-  enrageInterval: 0.5, // 攻撃間隔×0.5
+  enrageInterval: 0.6, // 攻撃間隔×0.6
   enrageAtk: 1.3, // 攻撃力×1.3
+  guardBreakSeconds: 5, // 粉砕を受けると、この秒数だけ「一撃○○未満を無効」が効かない（仮の値）
 } as const;
 
 /** ラン中の時間延長（基本の出撃時間は SIM.runDuration） */
@@ -276,6 +337,8 @@ export const LOOT = {
   originMinExits: 1, // 起点石は出口0を出さない（連鎖を始められないため）
   /** 起点石はレアリティ＝出口の数（コモン1・レア2・エピック3・レジェンダリー4）。ATK を持たないので、違いを出口の数で出す */
   originExits: { common: 1, rare: 2, epic: 3, legendary: 4 },
+  /** 起点石が出るとき、ふつうの起点石の割合（残りを種類つきで等分。仮の値） */
+  plainOriginShare: 0.5,
 } as const;
 
 /**
@@ -305,12 +368,34 @@ export interface UpgradeDef {
   baseCost: number;
   growth: number;
   maxLevel: number;
+  /** 火山・氷河・魔王城を開放するたびに、上限がこの段数ずつ上がる（後半のゴールドの使い道） */
+  perRegionLevels?: number;
+  /** 元の上限を超えた段の値段の伸び（元の上限の値段から、1段ごとに ×これ） */
+  lateGrowth?: number;
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
-  maxHp: { id: 'maxHp', name: '最大HP', effect: 10, baseCost: 50, growth: 1.6, maxLevel: 10 },
-  atb: { id: 'atb', name: 'ATB短縮', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
-  attack: { id: 'attack', name: '攻撃倍率', effect: 0.05, baseCost: 60, growth: 1.6, maxLevel: 20 },
+  maxHp: {
+    id: 'maxHp',
+    name: '最大HP',
+    effect: 10,
+    baseCost: 50,
+    growth: 1.4,
+    maxLevel: 10,
+    perRegionLevels: 5,
+    lateGrowth: 1.12,
+  },
+  atb: { id: 'atb', name: '攻撃間隔', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
+  attack: {
+    id: 'attack',
+    name: '攻撃倍率',
+    effect: 0.05,
+    baseCost: 60,
+    growth: 1.3,
+    maxLevel: 20,
+    perRegionLevels: 10,
+    lateGrowth: 1.12,
+  },
   runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
   backpack: {
     id: 'backpack',
@@ -344,6 +429,13 @@ export const STORAGE = {
 
 export const PROGRESS = {
   unlockLoop: 3, // 3周目のボスを倒すと次の地域が開放
+  /** 地域の★: この周目のボスを倒すと（＝その次の周目に着くと）★1つ */
+  starLoops: [3, 6, 10],
+  /** ★1つあたりの永続ボーナス */
+  starAttack: 0.03,
+  starHp: 5,
+  /** ボスを倒したときのゴールド（地域の goldPerKill の何倍か） */
+  bossGold: 25,
 } as const;
 
 export const UI = {

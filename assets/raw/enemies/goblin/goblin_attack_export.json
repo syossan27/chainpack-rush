@@ -12,5 +12,5 @@
   "fps": 12,
   "loop": false,
   "groundY": 55,
-  "note": "Club swing from the left shoulder down toward the left/hero. 96x64 canvas with origin (64,56), same convention as slime_attack. Do not recenter frames."
+  "note": "Club swing from the left shoulder down toward the left/hero. 96x64 canvas with origin (64,56), same convention as slime_attack. Do not recenter frames.（左右反転した待機から PixelLab animate-pixminimax で作り直し。seed 11、9コマ中 2,3,4,5,6,8。こん棒を振り上げて左へ振り下ろす）"
 }

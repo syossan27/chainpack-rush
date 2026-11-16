@@ -277,7 +277,7 @@ for (const id of Object.keys(UPGRADES) as UpgradeId[]) {
     levels.push(pl.reduce((s, l) => s + l.bought.filter((x) => x === id).length, 0));
   }
   out(
-    `| ${UPGRADES[id].name} | ${first.length ? median(first) : '買わず'} | ${f1(avg(levels))} | ${UPGRADES[id].maxLevel} |`,
+    `| ${UPGRADES[id].name} | ${first.length ? median(first) : '買わず'} | ${f1(avg(levels))} | ${UPGRADES[id].maxLevel}（地域で+${(UPGRADES[id].perRegionLevels ?? 0) * 3}） |`,
   );
 }
 out();

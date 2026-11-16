@@ -4,7 +4,7 @@ import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
 import { iconTex } from './kit/icons';
-import { SKIN, SLICE, tileKey } from './kit/skin';
+import { CONSUMABLE_TILE_KEY, SKIN, SLICE, tileKey } from './kit/skin';
 
 const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
   up: { dx: 0, dy: -1, rot: -Math.PI / 2 },
@@ -12,6 +12,11 @@ const ARROW: Record<Dir, { dx: number; dy: number; rot: number }> = {
   down: { dx: 0, dy: 1, rot: Math.PI / 2 },
   left: { dx: -1, dy: 0, rot: Math.PI },
 };
+
+/** 装備の枠: 消耗品はレアリティと別の色（青緑） */
+export function itemTileKey(item: ItemInstance): string {
+  return getItemDef(item.defId).kind === 'consumable' ? CONSUMABLE_TILE_KEY : tileKey(item.rarity);
+}
 
 export class ItemIcon extends Phaser.GameObjects.Container {
   readonly item: ItemInstance;
@@ -29,7 +34,7 @@ export class ItemIcon extends Phaser.GameObjects.Container {
     this.frame = scene.add.nineslice(
       0,
       0,
-      tileKey(item.rarity),
+      itemTileKey(item),
       undefined,
       size - 4,
       size - 4,
@@ -122,7 +127,7 @@ export class ItemIcon extends Phaser.GameObjects.Container {
 
   setDimmed(d: boolean): this {
     this.img.setTint(d ? 0x555566 : 0xffffff);
-    this.frame.setTexture(d ? SKIN.cellEmpty : tileKey(this.item.rarity));
+    this.frame.setTexture(d ? SKIN.cellEmpty : itemTileKey(this.item));
     this.setAlpha(d ? 0.7 : 1);
     return this;
   }

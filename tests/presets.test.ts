@@ -96,3 +96,23 @@ describe('編成', () => {
     expect(o.gold).toBe(0);
   });
 });
+
+describe('消耗品枠の自動補充', () => {
+  it('入れていた消耗品を使い切ったら、倉庫の同じものが入る。なければ空のまま覚えている', async () => {
+    const { refillConsumables, rememberConsumables, consumeItems } =
+      await import('../src/core/economy');
+    const s = createInitialSave();
+    const first = s.loadout.consumables[0]!;
+    const defId = s.inventory.find((i) => i.uid === first)!.defId;
+    rememberConsumables(s);
+    expect(s.loadout.consumableAuto).toEqual([defId]);
+    consumeItems(s, [first]);
+    expect(s.loadout.consumables).toHaveLength(0);
+    expect(refillConsumables(s)).toHaveLength(0); // 倉庫にない
+    s.inventory.push({ uid: 'p2', defId, rarity: 'common', exits: [], rerollCount: 0 });
+    expect(refillConsumables(s)).toEqual(['p2']);
+    expect(s.loadout.consumables).toEqual(['p2']);
+    // 保存しても覚えている
+    expect(deserializeSave(serializeSave(s)).loadout.consumableAuto).toEqual([defId]);
+  });
+});

@@ -1,0 +1,16 @@
+{
+  "file": "wolf_defeat.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "originX": 0.5,
+  "originY": 0.875,
+  "originPx": [
+    32,
+    56
+  ],
+  "fps": 10,
+  "loop": false,
+  "groundY": 55,
+  "note": "はじき飛ばされて横たわり、目を閉じる（seed 22、9コマ中 3〜8。1〜2コマ目の赤い傷の表現はポップな絵柄に合わないので使わない）。最後のコマはゲーム側で消す。"
+}

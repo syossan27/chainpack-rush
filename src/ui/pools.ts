@@ -1,6 +1,7 @@
 // オブジェクトプール: ダメージ数字（最大50）とエフェクトの粒（最大200）。ラン中に new しない
 import Phaser from 'phaser';
 import { UI } from '../config/balance';
+import { t } from '../i18n';
 import { SKIN } from './kit/skin';
 import { JUICE, textStyle } from './theme';
 
@@ -46,7 +47,7 @@ export function stepTier(step: number): number {
 /** ダメージ量に応じた色 */
 export function damageColor(value: number): string {
   let c: string = JUICE.damageTiers[0]!.color;
-  for (const t of JUICE.damageTiers) if (value >= t.min) c = t.color;
+  for (const tier of JUICE.damageTiers) if (value >= tier.min) c = tier.color;
   return c;
 }
 
@@ -106,7 +107,7 @@ export class DamageNumbers {
     const st = STEP_TIERS[tier]!;
     s.rainbow = tier === STEP_TIERS.length - 1 && !color;
     s.text
-      .setText(crit ? `会心 ${Math.round(value)}` : `${Math.round(value)}`)
+      .setText(crit ? t('会心 {n}', { n: Math.round(value) }) : `${Math.round(value)}`)
       .setFontSize(size)
       .setStroke(st.stroke, st.strokeWidth)
       .setShadow(0, 0, st.glow ?? '#000000', st.glow ? 12 : 0, true, true)

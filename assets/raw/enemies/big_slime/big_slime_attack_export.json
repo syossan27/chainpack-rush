@@ -1,0 +1,16 @@
+{
+  "file": "big_slime_attack.png",
+  "frameWidth": 128,
+  "frameHeight": 96,
+  "frames": 6,
+  "originX": 0.625,
+  "originY": 0.9166666666666666,
+  "originPx": [
+    80,
+    88
+  ],
+  "fps": 12,
+  "loop": false,
+  "groundY": 87,
+  "note": "大スライム。スライムと同じ大福の形に、小さな王冠と怒り眉。左へ攻撃して元の位置へ。128×96、原点 (80,88)。体当たりのスライムは宙に浮くコマがある。"
+}

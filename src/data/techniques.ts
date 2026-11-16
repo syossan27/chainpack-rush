@@ -35,7 +35,7 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
       ['thunder_staff', 'thunder_spear', 'thunder_bell'],
     ],
     element: 'thunder',
-    hint: '水筒か雨雲の杖 → 雷の装備 → 雷の装備',
+    hint: '水竜の瓶か雨雲の杖 → 雷の装備 → 雷の装備',
     teaser: '水と雷の気配がする…',
   },
   {
@@ -69,6 +69,14 @@ export const TECHNIQUES: readonly TechniqueDef[] = [
     element: 'physical',
     hint: '斧 → 斧か大斧 → 大斧',
     teaser: '斧が三つ重なる…',
+  },
+  {
+    id: 'venom',
+    name: 'ヴェノム・クロス',
+    seq: [['poison_dagger'], ['dagger', 'poison_dagger'], ['vampire_sword']],
+    element: 'physical',
+    hint: '毒の短剣 → 短剣か毒の短剣 → 吸血の剣',
+    teaser: '毒と血の気配がする…',
   },
 ];
 

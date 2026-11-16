@@ -66,6 +66,11 @@ const TILE_COLORS: Record<Rarity, [string, string, string]> = {
   epic: ['#b97cff', '#4a1c8c', '#e0b8ff'],
   legendary: ['#ffd25a', '#a8540c', '#fff0a0'],
 };
+/** 消耗品の枠（レアリティとは別。青緑） */
+const CONSUMABLE_TILE: [string, string, string] = ['#3fc8a8', '#0f5a52', '#9cf0d8'];
+export const CONSUMABLE_TILE_KEY = 'sk_tile_consumable';
+/** 消耗品の色（名前・タグ） */
+export const CONSUMABLE_CSS = '#5ee0c0';
 
 function rr(g: Ctx, x: number, y: number, w: number, h: number, r: number): void {
   g.beginPath();
@@ -322,11 +327,13 @@ export function generateSkin(scene: Phaser.Scene): void {
     });
   }
   // アイテム枠（レアリティ色）
-  for (const [r, [mid, outer, edge]] of Object.entries(TILE_COLORS) as [
-    Rarity,
-    [string, string, string],
-  ][]) {
-    canvas(scene, tileKey(r), 64, 64, (g) => {
+  for (const [key, [mid, outer, edge]] of [
+    ...(Object.entries(TILE_COLORS) as [Rarity, [string, string, string]][]).map(
+      ([r, c]) => [tileKey(r), c] as const,
+    ),
+    [CONSUMABLE_TILE_KEY, CONSUMABLE_TILE] as const,
+  ]) {
+    canvas(scene, key, 64, 64, (g) => {
       rr(g, 1, 1, 62, 62, 10);
       g.fillStyle = '#0c0a12';
       g.fill();

@@ -26,6 +26,10 @@ export interface RegionDef {
   loot: { rarityShift: number; artifactMult: number };
   bgColors: [number, number, number]; // 仮背景（奥→手前）
   groundColor: number;
+  /** 敵を1体倒すごとのゴールド（ボスは ×PROGRESS.bossGold）。奥の地域ほど多い */
+  goldPerKill: number;
+  /** 敵の得意・苦手のひとこと（地域選択に出す） */
+  resistNote?: string;
 }
 
 export const REGIONS: readonly RegionDef[] = [
@@ -46,6 +50,7 @@ export const REGIONS: readonly RegionDef[] = [
       ['iron_knight', 'golem'],
     ],
     power: { hp: 1, atk: 1 },
+    goldPerKill: 1,
     loot: { rarityShift: 0, artifactMult: 1 },
     bgColors: [0x7ec8f0, 0x6ab070, 0x4a9050],
     groundColor: 0x6b4a2a,
@@ -67,6 +72,7 @@ export const REGIONS: readonly RegionDef[] = [
       ['lich', 'bat_queen', 'golem'],
     ],
     power: { hp: 2.5, atk: 1.8 },
+    goldPerKill: 2,
     loot: { rarityShift: 0.2, artifactMult: 2 },
     bgColors: [0x1c1828, 0x2c2638, 0x3c3448],
     groundColor: 0x3a3040,
@@ -89,14 +95,122 @@ export const REGIONS: readonly RegionDef[] = [
       ['iron_knight', 'golem'],
       ['iron_knight', 'golem', 'lich'],
     ],
-    power: { hp: 6, atk: 3 },
+    power: { hp: 5, atk: 2.7 },
+    goldPerKill: 3,
     loot: { rarityShift: 0.4, artifactMult: 4 },
     bgColors: [0x9ab0c8, 0x7a8090, 0x5a6070],
     groundColor: 0x6a6a70,
   },
+  {
+    id: 'volcano',
+    name: '火山',
+    mobTrend: '火トカゲ、溶岩スライム、火の精',
+    resistNote: '炎が効きにくい・氷と水が弱点',
+    mobs: [
+      { id: 'fire_lizard', weight: 5 },
+      { id: 'magma_slime', weight: 2 },
+      { id: 'fire_spirit', weight: 1, maxPerGroup: 1 },
+    ],
+    groupCount: 3,
+    groupSize: [4, 5],
+    bossPools: [
+      ['lava_giant', 'bat_queen'],
+      ['fire_dragon', 'lava_giant'],
+      ['fire_dragon', 'lava_giant', 'golem'],
+    ],
+    power: { hp: 7, atk: 3.5 },
+    goldPerKill: 6,
+    loot: { rarityShift: 0.55, artifactMult: 6 },
+    bgColors: [0x3a1a1a, 0x6a2a1a, 0x8a3a1a],
+    groundColor: 0x2a1a14,
+  },
+  {
+    id: 'glacier',
+    name: '氷河',
+    mobTrend: '氷の狼、雪だるま、雪男（速い）',
+    resistNote: '氷が効きにくい・炎が弱点',
+    mobs: [
+      { id: 'ice_wolf', weight: 5 },
+      { id: 'snowman', weight: 3 },
+      { id: 'yeti', weight: 1, maxPerGroup: 1 },
+    ],
+    groupCount: 3,
+    groupSize: [4, 6],
+    bossPools: [
+      ['ice_queen', 'lich'],
+      ['mammoth', 'ice_queen'],
+      ['mammoth', 'ice_queen', 'fire_dragon'],
+    ],
+    power: { hp: 10, atk: 4.5 },
+    goldPerKill: 10,
+    loot: { rarityShift: 0.65, artifactMult: 8 },
+    bgColors: [0xc8e8f8, 0xa0c8e0, 0x80a8c8],
+    groundColor: 0xd8e4f0,
+  },
+  {
+    id: 'demon_castle',
+    name: '魔王城',
+    mobTrend: '小悪魔、ガーゴイル、闇の魔導士',
+    resistNote: '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）',
+    mobs: [
+      { id: 'imp', weight: 5 },
+      { id: 'gargoyle', weight: 2, maxPerGroup: 2 },
+      { id: 'dark_mage', weight: 1, maxPerGroup: 1 },
+    ],
+    groupCount: 3,
+    groupSize: [5, 6],
+    bossPools: [['dark_knight', 'ice_queen'], ['dark_knight', 'mammoth'], ['demon_lord']],
+    power: { hp: 14, atk: 5.5 },
+    goldPerKill: 15,
+    loot: { rarityShift: 0.75, artifactMult: 10 },
+    bgColors: [0x1a1020, 0x2a1830, 0x3a2040],
+    groundColor: 0x2a2030,
+  },
 ];
 
+/**
+ * エンドレス: 魔王城の強さから始まり、周回の上限なし（周回の伸びは他の地域と同じ指数）。
+ * 雑魚もボスも全地域から出る。装備とゴールドは落とさない（スコアを競う場）
+ */
+export const ENDLESS: RegionDef = {
+  id: 'endless',
+  name: 'エンドレス',
+  mobTrend: '全地域の雑魚',
+  resistNote: '周回ごとにいろいろな敵。装備とゴールドは出ない',
+  mobs: [
+    { id: 'imp', weight: 3 },
+    { id: 'ice_wolf', weight: 3 },
+    { id: 'fire_lizard', weight: 3 },
+    { id: 'skeleton', weight: 2 },
+    { id: 'gargoyle', weight: 1, maxPerGroup: 1 },
+    { id: 'yeti', weight: 1, maxPerGroup: 1 },
+    { id: 'magma_slime', weight: 1, maxPerGroup: 1 },
+    { id: 'dark_mage', weight: 1, maxPerGroup: 1 },
+  ],
+  groupCount: 3,
+  groupSize: [5, 6],
+  bossPools: [
+    [
+      'fire_dragon',
+      'lava_giant',
+      'ice_queen',
+      'mammoth',
+      'dark_knight',
+      'demon_lord',
+      'golem',
+      'iron_knight',
+      'lich',
+    ],
+  ],
+  power: { hp: 14, atk: 5.5 },
+  goldPerKill: 0,
+  loot: { rarityShift: 0, artifactMult: 0 },
+  bgColors: [0x0c0a18, 0x1a1030, 0x2a1848],
+  groundColor: 0x1a1428,
+};
+
 export function getRegion(id: string): RegionDef {
+  if (id === ENDLESS.id) return ENDLESS;
   const r = REGIONS.find((x) => x.id === id);
   if (!r) throw new Error(`unknown region: ${id}`);
   return r;
