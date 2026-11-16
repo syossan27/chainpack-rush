@@ -699,7 +699,25 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
       },
     },
   },
-  scarecrow: unit('scarecrow', SCARECROW, 48),
+  // Scarecrow (PixelLab): one still, front view with a target on the chest. 64px frame, ground y=55.
+  // It never moves or attacks, so the hit flash and knockback are its only motion
+  scarecrow: {
+    ...unit('scarecrow', SCARECROW, 48),
+    bodyHeight: 48,
+    facesLeft: true,
+    anims: {
+      idle: {
+        file: 'enemies/scarecrow/scarecrow_idle.png',
+        frames: 1,
+        fps: 1,
+        loop: true,
+        frameWidth: 64,
+        frameHeight: 64,
+        originX: 32 / 64,
+        originY: 56 / 64,
+      },
+    },
+  },
   // ---- 火山・氷河・魔王城（PixelLab） ----
   // 火のトカゲ（PixelLab）。黒曜石の体に溶岩の筋。64px コマ（攻撃だけ 96×64）、地面 y=55、左向き
   fire_lizard: {
