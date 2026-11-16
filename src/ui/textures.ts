@@ -97,14 +97,20 @@ export function generateAllTextures(scene: Phaser.Scene): void {
   }
 }
 
-/** 背景（多重スクロール3層）を地域の色から作る */
+/** Texture key of a region's background layer (0 far, 1 mid, 2 near) */
+export const bgKey = (regionId: string, layer: number) => `bg_${regionId}_${layer}`;
+
+/**
+ * 背景（多重スクロール3層）を地域の色から作る。Background art loaded in BootScene uses the same
+ * keys, so a region that has it skips the drawing here
+ */
 export function generateBackgroundTextures(
   scene: Phaser.Scene,
   regionId: string,
   colors: readonly [number, number, number],
   ground: number,
 ): string[] {
-  const keys = [0, 1, 2].map((i) => `bg_${regionId}_${i}`);
+  const keys = [0, 1, 2].map((i) => bgKey(regionId, i));
   if (scene.textures.exists(keys[0]!)) return keys;
   const width = 360;
   const height = 192;

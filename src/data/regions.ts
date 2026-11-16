@@ -24,7 +24,8 @@ export interface RegionDef {
   power: { hp: number; atk: number };
   /** 戦利品: コモンからレア以上へ回す割合（周回の分に足す）と、アーティファクトの出やすさの倍率 */
   loot: { rarityShift: number; artifactMult: number };
-  bgColors: [number, number, number]; // 仮背景（奥→手前）
+  /** Background colors (far to near). Without art, the backgrounds are drawn from these; [0] is also the sky above the art */
+  bgColors: [number, number, number];
   groundColor: number;
   /** 敵を1体倒すごとのゴールド（ボスは ×PROGRESS.bossGold）。奥の地域ほど多い */
   goldPerKill: number;
@@ -52,7 +53,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 1, atk: 1 },
     goldPerKill: 1,
     loot: { rarityShift: 0, artifactMult: 1 },
-    bgColors: [0x7ec8f0, 0x6ab070, 0x4a9050],
+    bgColors: [0xbadbee, 0x6ab070, 0x4a9050],
     groundColor: 0x6b4a2a,
   },
   {
@@ -74,7 +75,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 2.5, atk: 1.8 },
     goldPerKill: 2,
     loot: { rarityShift: 0.2, artifactMult: 2 },
-    bgColors: [0x1c1828, 0x2c2638, 0x3c3448],
+    bgColors: [0x2d2639, 0x2c2638, 0x3c3448],
     groundColor: 0x3a3040,
   },
   {
@@ -98,7 +99,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 5, atk: 2.7 },
     goldPerKill: 3,
     loot: { rarityShift: 0.4, artifactMult: 4 },
-    bgColors: [0x9ab0c8, 0x7a8090, 0x5a6070],
+    bgColors: [0xb2c5d5, 0x7a8090, 0x5a6070],
     groundColor: 0x6a6a70,
   },
   {
@@ -121,7 +122,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 7, atk: 3.5 },
     goldPerKill: 6,
     loot: { rarityShift: 0.55, artifactMult: 6 },
-    bgColors: [0x3a1a1a, 0x6a2a1a, 0x8a3a1a],
+    bgColors: [0x4f2722, 0x6a2a1a, 0x8a3a1a],
     groundColor: 0x2a1a14,
   },
   {
@@ -144,7 +145,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 10, atk: 4.5 },
     goldPerKill: 10,
     loot: { rarityShift: 0.65, artifactMult: 8 },
-    bgColors: [0xc8e8f8, 0xa0c8e0, 0x80a8c8],
+    bgColors: [0xcde5f3, 0xa0c8e0, 0x80a8c8],
     groundColor: 0xd8e4f0,
   },
   {
@@ -163,7 +164,7 @@ export const REGIONS: readonly RegionDef[] = [
     power: { hp: 14, atk: 5.5 },
     goldPerKill: 15,
     loot: { rarityShift: 0.75, artifactMult: 10 },
-    bgColors: [0x1a1020, 0x2a1830, 0x3a2040],
+    bgColors: [0x25162f, 0x2a1830, 0x3a2040],
     groundColor: 0x2a2030,
   },
 ];
@@ -205,7 +206,7 @@ export const ENDLESS: RegionDef = {
   power: { hp: 14, atk: 5.5 },
   goldPerKill: 0,
   loot: { rarityShift: 0, artifactMult: 0 },
-  bgColors: [0x0c0a18, 0x1a1030, 0x2a1848],
+  bgColors: [0x140e24, 0x1a1030, 0x2a1848],
   groundColor: 0x1a1428,
 };
 

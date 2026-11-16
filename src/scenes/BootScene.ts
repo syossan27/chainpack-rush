@@ -7,7 +7,8 @@ import { loadSave } from '../platform/storage';
 import { setSave } from '../platform/store';
 import { generateUiIcons } from '../ui/kit/icons';
 import { generateSkin } from '../ui/kit/skin';
-import { generateAllTextures } from '../ui/textures';
+import { bgKey, generateAllTextures } from '../ui/textures';
+import { ENDLESS, REGIONS } from '../data/regions';
 import { applyLang } from '../i18n/setup';
 import { loadFonts } from '../ui/fonts';
 import { COLORS, H, W, textStyle } from '../ui/theme';
@@ -49,6 +50,12 @@ export class BootScene extends Phaser.Scene {
     for (const def of ITEM_DEFS) {
       const url = spriteUrl(`icons/${def.id}.png`);
       if (url) this.load.image(iconKey(def.id), url);
+    }
+    // Background art: far, mid and near layers in assets/sprites/backgrounds/<region>_<0-2>.png.
+    // Only a region with all three uses them; the others keep the backgrounds drawn in code
+    for (const r of [...REGIONS, ENDLESS]) {
+      const urls = [0, 1, 2].map((i) => spriteUrl(`backgrounds/${r.id}_${i}.png`));
+      if (urls.every((u) => u)) urls.forEach((u, i) => this.load.image(bgKey(r.id, i), u!));
     }
     // Pet art (challenge reward). A missing strip falls back to the art drawn in code
     for (const [id, sheet] of Object.entries(PET_SHEETS)) {
