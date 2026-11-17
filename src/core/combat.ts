@@ -314,7 +314,7 @@ export class Combat {
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
   readonly luck: LuckRules;
-  private readonly guardAll: boolean;
+  private guardAll: boolean;
   private readonly layoutRng: Rng;
   /** 今の周回の並び（地域選択・進み具合の表示用） */
   layout: LoopLayout | null = null;
@@ -342,10 +342,10 @@ export class Combat {
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
-  private readonly origins: string[];
+  private origins: string[] = [];
   /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
-  private readonly units: string[][];
-  /** Each origin's chain (the layout does not change during a run) */
+  private units: string[][] = [];
+  /** Each origin's chain (fixed for a run, except when the prototype re-reads the backpack) */
   private readonly plans = new Map<string, ChainPlan>();
   private events: CombatEvent[] = [];
   private readonly inputs: RunInput[] = [];
@@ -360,10 +360,7 @@ export class Combat {
     this.cfg = cfg;
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.luck = { ...LUCK, ...cfg.luck };
-    // 不落の城門: バックパックに置いてあれば常に守られる
-    this.guardAll = cfg.loadout.cells.some(
-      (u) => !!u && !!cfg.items.get(u) && !!getItemDef(cfg.items.get(u)!.defId).guardAll,
-    );
+    this.guardAll = false;
     // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
     this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
@@ -374,10 +371,7 @@ export class Combat {
       this.mode === 'dummy'
         ? Number.POSITIVE_INFINITY
         : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
-    this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
-    // Origins fire one at a time, even when their routes sync
-    this.units = this.origins.map((o) => [o]);
-    for (const p of simulateChain(cfg.loadout, cfg.items).plans) this.plans.set(p.originUid, p);
+    this.readBackpack();
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
       .slice(0, slots)
@@ -397,6 +391,31 @@ export class Combat {
   }
 
   // ---- 公開 API ----
+
+  /** The backpack's origins, firing order and chains (and whether 不落の城門 is in it) */
+  private readBackpack(): void {
+    const { loadout, items } = this.cfg;
+    // 不落の城門: バックパックに置いてあれば常に守られる
+    this.guardAll = loadout.cells.some(
+      (u) => !!u && !!items.get(u) && !!getItemDef(items.get(u)!.defId).guardAll,
+    );
+    this.origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
+    // Origins fire one at a time, even when their routes sync
+    this.units = this.origins.map((o) => [o]);
+    this.plans.clear();
+    for (const p of simulateChain(loadout, items).plans) this.plans.set(p.originUid, p);
+  }
+
+  /**
+   * Prototype (roguelite): the caller changed the run's loadout / items in place; read them again.
+   * Only between chains (returns false while a chain is running). Not for ranked or replayed runs
+   */
+  replan(): boolean {
+    if (this.chain) return false;
+    this.readBackpack();
+    if (this.units.length > 0) this.nextUnitIndex %= this.units.length;
+    return true;
+  }
 
   get time(): number {
     return this.tick / SIM.ticksPerSecond;
