@@ -1,0 +1,39 @@
+{
+  "file": "fx/whirl.png",
+  "frameWidth": 64,
+  "frameHeight": 80,
+  "frames": 6,
+  "fps": 16,
+  "loop": true,
+  "origin": [0.5, 1],
+  "role": "Cyclone Axe body: a pale green tornado that runs along the ground from the sword tip to the target. The bottom tip stands on the ground.",
+  "source": {
+    "first_frame": {
+      "endpoint": "generate-image-v2",
+      "size": [64, 80],
+      "seed": 7701,
+      "picked_variation": 2,
+      "no_background": true,
+      "colors": [
+        "#ffffff",
+        "#effff4",
+        "#d0f8dc",
+        "#b8f0c8",
+        "#88d8a0",
+        "#4aa868",
+        "#2a6a48",
+        "#163a2a"
+      ],
+      "description": "a swirling tornado of wind, funnel shape wide at the top and narrow at the bottom where it touches the bottom edge of the image, pale green and white swirling bands, a few small green leaves caught in the wind, dark green outline, pixel art game effect sprite, single tornado centered, transparent background",
+      "note": "Moved down 8 px so the tip touches the bottom edge before animating"
+    },
+    "animation": {
+      "endpoint": "animate-pixminimax",
+      "frame_count": 8,
+      "seed": 7711,
+      "picked_generated_frames": [0, 1, 2, 3, 4, 7],
+      "description": "the tornado spins fast, the swirling white and green bands rotate around the funnel, the thin bottom tip wiggles on the ground, the leaves circle around it, the tornado stays in the same place and keeps its size and shape, seamless looping animation"
+    }
+  },
+  "note": "The 64x80 variation job cost 15 generations for 9 near-identical tornadoes. Picked the 6 frames whose changes are most even; generated frame 8 nearly equals frame 0. All colors stayed in the palette. Alpha is 0/255 only."
+}

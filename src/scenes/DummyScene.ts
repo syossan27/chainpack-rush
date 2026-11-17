@@ -18,7 +18,8 @@ import { FieldView } from '../ui/fieldView';
 import { DamageNumbers, Effects } from '../ui/pools';
 import { getItemDef } from '../data/items';
 import { ElementFx } from '../ui/elementFx';
-import { getTechnique } from '../data/techniques';
+import { getTechnique, type TechniqueDef } from '../data/techniques';
+import { scaleMs, techFxFor } from '../data/techFx';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
@@ -115,6 +116,31 @@ export class DummyScene extends Phaser.Scene {
   }
 
   /** バックパックの装備をタップ: 能力の詳細 */
+  /** A special technique on the scarecrow (same look as in a run; see RunScene.showTechnique) */
+  private showTechnique(tech: TechniqueDef | undefined, enemyId: number): void {
+    const e = this.combat.enemies.find((x) => x.id === enemyId);
+    const p = e ? this.field.enemyScreenPos(this.combat, e) : null;
+    const fx = techFxFor(tech?.id);
+    const timing = this.field.heroSpecial(tech?.id, p, gameSpeed());
+    const save = getSave();
+    if (tech && !save.discoveredTechs.includes(tech.id)) {
+      save.discoveredTechs.push(tech.id);
+      persist();
+      // showDiscovery translates the data key itself
+      showDiscovery(this, tech.name, 190);
+    }
+    const burst = () => {
+      if (p) {
+        if (fx) this.elementFx.technique(fx.impact, p.x, p.y);
+        this.effects.flash(p.x, p.y, fx?.color ?? 0xffffff, 4);
+      }
+      if (fx) this.field.techFx.screen(fx, save.settings.shake);
+    };
+    if (timing.landMs > 0) this.field.techFx.after(scaleMs(timing.landMs, gameSpeed()), burst);
+    else burst();
+    sfx('explode');
+  }
+
   private setupBackpackTap(): void {
     const loadout = getSave().loadout;
     const zone = this.add
@@ -168,24 +194,7 @@ export class DummyScene extends Phaser.Scene {
         }
         sfx('hit');
       } else if (ev.type === 'technique') {
-        const tech = getTechnique(ev.id);
-        const e = this.combat.enemies.find((x) => x.id === ev.enemyId);
-        const impact = this.field.heroSpecial(0xffe060, tech?.id);
-        const save = getSave();
-        if (tech && !save.discoveredTechs.includes(tech.id)) {
-          save.discoveredTechs.push(tech.id);
-          persist();
-          // showDiscovery translates the data key itself
-          showDiscovery(this, tech.name, 190);
-        }
-        if (e) {
-          const p = this.field.enemyScreenPos(this.combat, e);
-          this.time.delayedCall(impact / Math.max(0.1, gameSpeed()), () => {
-            this.elementFx.special(p.x, p.y, tech?.element);
-            this.effects.flash(p.x, p.y, 0xffffff, 4);
-          });
-        }
-        sfx('explode');
+        this.showTechnique(getTechnique(ev.id), ev.enemyId);
       } else if (ev.type === 'combo') {
         this.comboLabel.push(t(ev.label));
         sfxCombo(ev.name);

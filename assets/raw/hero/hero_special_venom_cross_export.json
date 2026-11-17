@@ -1,5 +1,5 @@
 {
-  "file": "hero/hero_special_venom_cross.png",
+  "file": "raw/hero/legacy/hero_special_venom_cross.png",
   "frameWidth": 160,
   "frameHeight": 112,
   "frames": 9,
@@ -18,5 +18,5 @@
     "first_and_last_frame": "hero_idle.png frame 0 placed at (19, 32) on a transparent 160x112 canvas",
     "description": "The knight steps forward and swings the sword twice very fast in an X: first a diagonal slash from high on the left down to low on the right that leaves a bright green poison slash trail, then a diagonal slash from low on the left up to high on the right that leaves a dark crimson slash trail crossing the green one, the green and crimson trails form a big X in front of him and fade, then he steps back to the starting stance."
   },
-  "note": "Hero colors snapped to the idle palette; trails flattened to green E6FF8C/6EE83C/2FA830 and red FF1A3C/D01C14/9A120E, which the cosmetic recolor leaves alone. Loose red drops removed. Two seeds were made (9101, 9102); 9101 was adopted."
+  "note": "Hero colors snapped to the idle palette; trails flattened to green E6FF8C/6EE83C/2FA830 and red FF1A3C/D01C14/9A120E, which the cosmetic recolor leaves alone. Loose red drops removed. Two seeds were made (9101, 9102); 9101 was adopted. Removed from the game (2026-11-17): every technique now uses the shared special motion (hero_special.png) plus its effect; the sheet moved to assets/raw/hero/legacy/, and its bright X (frame 4) became the Venom Cross body (assets/sprites/fx/venom.png)."
 }

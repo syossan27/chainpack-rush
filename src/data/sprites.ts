@@ -54,11 +54,11 @@ export interface SpriteAnim {
 }
 
 /**
- * special_<技のid>: その必殺技のモーション、special: 全技共通の必殺モーション（勇者）。
- * どちらも未登録なら通常の攻撃＋踏み込み・残像で代用
+ * special: the hero's special motion, shared by every outfit (body only). What tells the
+ * techniques apart is their effect (src/data/techFx.ts). Without it the hero steps in with
+ * afterimages instead
  */
-export type UnitAnimName =
-  'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special' | `special_${string}`;
+export type UnitAnimName = 'idle' | 'run' | 'attack' | 'hit' | 'move' | 'death' | 'special';
 
 export interface SpriteDef {
   key: string;
@@ -376,72 +376,11 @@ export const UNIT_SPRITES: Record<string, SpriteDef> = {
         originX: 41 / 96,
         originY: 71 / 80,
       },
-      // 必殺技のモーション: special_<技のid>（data/techniques.ts）。未登録の技は special、それも無ければ
-      // 通常の攻撃＋踏み込み・残像で代用。原点は開始コマの足元に固定し、コマごとの横ずれには寄せない。
-      // クリムゾン・バースト: 184×132・9コマ（PR #4）。テンポを崩さないよう 14fps（約0.64秒）
-      special_crimson: {
-        file: 'hero/hero_special_crimson_burst.png',
-        frames: 9,
-        fps: 14,
-        loop: false,
-        frameWidth: 184,
-        frameHeight: 132,
-        originX: 62.5 / 184,
-        originY: 98 / 132,
-        impactFrame: 4,
-      },
-      // 残りの4つ（PR #6）。原点は開始コマの足元（待機と揃う）。impactFrame は大きな演出を合わせるコマ
-      // トライ・サンダー: 160×112・6コマ。剣を掲げて雷を受け、3コマ目で振り下ろす
-      special_thunder: {
-        file: 'hero/hero_special_tri_thunder.png',
-        frames: 6,
-        fps: 12,
-        loop: false,
-        frameWidth: 160,
-        frameHeight: 112,
-        originX: 0.3187,
-        originY: 0.7857,
-        impactFrame: 3,
-      },
-      // フロスト・ブレイカー: 160×112・6コマ。2コマ目で氷の斬り下ろし。最後は低い構え（終わったら待機へ戻る）
-      special_frost: {
-        file: 'hero/hero_special_frost_breaker.png',
-        frames: 6,
-        fps: 12,
-        loop: false,
-        frameWidth: 160,
-        frameHeight: 112,
-        originX: 0.3187,
-        originY: 0.7857,
-        impactFrame: 2,
-      },
-      // トリプル・スラッシュ: 160×112・7コマ。3回振って、4コマ目の大振りが決め
-      special_triple: {
-        file: 'hero/hero_special_triple_slash.png',
-        frames: 7,
-        fps: 14,
-        loop: false,
-        frameWidth: 160,
-        frameHeight: 112,
-        originX: 0.3187,
-        originY: 0.7857,
-        impactFrame: 4,
-      },
-      // サイクロン・アックス: 184×112・6コマ。くるっと回って、4コマ目の回転斬りが決め
-      special_whirl: {
-        file: 'hero/hero_special_cyclone_axe.png',
-        frames: 6,
-        fps: 12,
-        loop: false,
-        frameWidth: 184,
-        frameHeight: 112,
-        originX: 0.3424,
-        originY: 0.7857,
-        impactFrame: 4,
-      },
-      // Venom Cross: 160×112, 9 frames. A green poison downslash, then frame 4 crosses it with a red slash in an X
-      special_venom: {
-        file: 'hero/hero_special_venom_cross.png',
+      // The special motion shared by every outfit (body only): wind up, swing (frame 4), thrust
+      // forward, back to the stance. Every outfit copies this choreography: same frames, impact
+      // frame and sword-tip path. What tells the techniques apart is the effect (data/techFx.ts)
+      special: {
+        file: 'hero/hero_special.png',
         frames: 9,
         fps: 14,
         loop: false,

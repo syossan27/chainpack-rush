@@ -9,6 +9,7 @@ import { generateUiIcons } from '../ui/kit/icons';
 import { generateSkin } from '../ui/kit/skin';
 import { bgKey, generateAllTextures } from '../ui/textures';
 import { ENDLESS, REGIONS } from '../data/regions';
+import { TECH_FX, fxSheetKey } from '../data/techFx';
 import { applyLang } from '../i18n/setup';
 import { loadFonts } from '../ui/fonts';
 import { COLORS, H, W, textStyle } from '../ui/theme';
@@ -66,6 +67,15 @@ export class BootScene extends Phaser.Scene {
           frameHeight: sheet.size,
         });
     }
+    // Special technique bodies (assets/sprites/fx). A missing one is drawn in code instead
+    for (const fx of Object.values(TECH_FX)) {
+      const url = spriteUrl(fx.body.file);
+      if (url)
+        this.load.spritesheet(fxSheetKey(fx.techId), url, {
+          frameWidth: fx.body.frameWidth,
+          frameHeight: fx.body.frameHeight,
+        });
+    }
   }
 
   create(): void {
@@ -110,6 +120,16 @@ export class BootScene extends Phaser.Scene {
       }
     }
     createPetAnims(this);
+    for (const fx of Object.values(TECH_FX)) {
+      const key = fxSheetKey(fx.techId);
+      if (!this.textures.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(key, { start: 0, end: fx.body.frames - 1 }),
+        frameRate: fx.body.fps,
+        repeat: fx.body.loop ? -1 : 0,
+      });
+    }
     generateSkin(this);
     generateUiIcons(this);
     // The language comes from the save, so load it first; then preload the fonts for that language

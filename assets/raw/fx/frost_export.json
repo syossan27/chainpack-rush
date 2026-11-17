@@ -1,0 +1,38 @@
+{
+  "file": "fx/frost.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "frames": 5,
+  "fps": 18,
+  "loop": false,
+  "origin": [0.5, 1],
+  "role": "Frost Breaker body: the ice spikes that pop up one after another along the ground toward the target (the wave front itself is not drawn). Each spike glints, cracks and shatters, then fades.",
+  "source": {
+    "first_frame": {
+      "endpoint": "generate-image-v2",
+      "size": [48, 48],
+      "seed": 7501,
+      "picked_variation": 2,
+      "no_background": true,
+      "colors": [
+        "#ffffff",
+        "#e8fbff",
+        "#bdf0ff",
+        "#8ad8f8",
+        "#4aa8e0",
+        "#2a6ab0",
+        "#1a3a6a",
+        "#0e1e3e"
+      ],
+      "description": "a cluster of three sharp ice crystal spikes thrusting straight up out of the ground, the tallest in the middle, pale cyan and white with bright highlights, dark blue outline, the spikes stand on the bottom edge of the image, a few ice chips at the base, pixel art game effect sprite, transparent background"
+    },
+    "animation": {
+      "endpoint": "animate-pixminimax",
+      "frame_count": 8,
+      "seed": 7511,
+      "picked_generated_frames": [2, 3, 4, 5, 7],
+      "description": "the ice crystal spikes glint, then crack all over, then shatter and burst apart into many small sharp ice shards that fly outward and fall down, ending with only a few shards scattered on the ground"
+    }
+  },
+  "note": "The variation job returned 25 near-identical crystal clusters for 10 generations. The animation kept the 7 palette colors, so no snapping was needed. Alpha is 0/255 only."
+}

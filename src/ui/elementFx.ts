@@ -2,9 +2,18 @@
 // コンボ（感電・爆発・粉砕）はさらに大きく。描画だけで、core には何も書き戻さない。
 import Phaser from 'phaser';
 import type { Element } from '../core/types';
+import { CHARACTER_SCALE } from '../data/sprites';
+import { fxSheetKey, type TechImpactKind } from '../data/techFx';
 
 /** 同時に出しすぎないための上限（100ミリ秒あたり） */
 const BUDGET = 10;
+/** Frost Breaker's impact crystal against the size of the frost body's art */
+const ICE_CRYSTAL_SCALE = 1.7;
+/** The frost art's frame (1-based) where the crystal bursts into shards */
+const ICE_SHATTER_FRAME = 4;
+/** Venom Cross impact colors (the X art's red and green) */
+const VENOM_RED = 0xff1a3c;
+const VENOM_GREEN = 0x6ee83c;
 
 export class ElementFx {
   private windowStart = 0;
@@ -76,26 +85,251 @@ export class ElementFx {
   }
 
   /** 必殺技の一撃: 属性の演出を特大で（予算に関係なく出す） */
-  special(x: number, y: number, element: Element | undefined): void {
-    switch (element) {
-      case 'fire':
+  technique(kind: TechImpactKind, x: number, y: number): void {
+    switch (kind) {
+      case 'crimson':
         this.explode(x, y);
         this.flames(x, y, 30);
+        this.pillar(x, 0xff6a20);
         break;
       case 'thunder':
         this.shock(x, y);
-        this.bolt(x, y, 2.4);
+        this.electricRing(x, y);
         break;
-      case 'ice':
-        this.shatter(x, y);
-        this.shards(x, y, 18, 0x9adfff);
+      case 'frost':
+        if (!this.iceCrystal(x)) this.icePillar(x);
+        this.ring(x, y, 0xffffff, 6, 300);
         break;
-      default:
-        this.shockwave(x, 2.4);
-        this.ring(x, y, 0xffffff, 8, 360);
-        this.ring(x, y, 0xffe060, 5, 280);
+      case 'triple':
+        this.triangle(x, y);
+        this.ring(x, y, 0xffffff, 7, 320);
         break;
+      case 'whirl':
+        this.vortex(x, y);
+        this.shockwave(x, 1.6);
+        break;
+      case 'venom':
+        // The X art itself bursts on the target (TechFxPlayer); the drawn X is its stand-in
+        if (!this.scene.textures.exists(fxSheetKey('venom'))) this.xMark(x, y);
+        // Kept abstract: red and green shards of light fly out, two rings pulse (the poison
+        // spreading), and a few poison bubbles rise off the target
+        this.shards(x, y, 12, VENOM_RED);
+        this.shards(x, y, 12, VENOM_GREEN);
+        this.ring(x, y, VENOM_GREEN, 6, 320);
+        this.scene.time.delayedCall(90, () => this.ring(x, y, VENOM_RED, 4.5, 280));
+        this.bubbles(x, y, 8);
+        break;
+      default: {
+        const never: never = kind;
+        return never;
+      }
     }
+  }
+
+  // ---- 必殺技の着弾の部品 ----
+
+  /** A column of fire rising from the ground */
+  private pillar(x: number, color: number): void {
+    const h = 220;
+    const col = this.scene.add
+      .rectangle(x, this.groundY, 40, h, color)
+      .setOrigin(0.5, 1)
+      .setScale(1, 0.1)
+      .setDepth(this.depth)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const core = this.scene.add
+      .rectangle(x, this.groundY, 16, h, 0xffe060)
+      .setOrigin(0.5, 1)
+      .setScale(1, 0.1)
+      .setDepth(this.depth)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: [col, core],
+      scaleY: 1,
+      duration: 120,
+      ease: 'Quad.easeOut',
+      onComplete: () =>
+        this.scene.tweens.add({
+          targets: [col, core],
+          scaleX: 0.2,
+          alpha: 0,
+          duration: 230,
+          onComplete: () => {
+            col.destroy();
+            core.destroy();
+          },
+        }),
+    });
+  }
+
+  /** Two yellow rings spreading out, with short sparks shooting outward */
+  private electricRing(x: number, y: number): void {
+    this.ring(x, y, 0xfff060, 7, 300);
+    this.scene.time.delayedCall(80, () => this.ring(x, y, 0xffffff, 5, 260));
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const p = this.scene.add
+        .rectangle(x, y, 22, 4, i % 2 ? 0xffffff : 0xffe040)
+        .setDepth(this.depth)
+        .setAngle(Phaser.Math.RadToDeg(a))
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({
+        targets: p,
+        x: x + Math.cos(a) * 90,
+        y: y + Math.sin(a) * 90,
+        alpha: 0,
+        duration: 260,
+        ease: 'Cubic.easeOut',
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  /** An ice pillar pushes up from the ground, then shatters */
+  /**
+   * Frost Breaker's impact with the art: the ice crystal (the frost body's art) thrusts up big
+   * from the ground, glints, then cracks and shatters. False when the art is missing
+   */
+  private iceCrystal(x: number): boolean {
+    const key = fxSheetKey('frost');
+    if (!this.scene.textures.exists(key) || !this.scene.anims.exists(key)) return false;
+    const scale = CHARACTER_SCALE * ICE_CRYSTAL_SCALE;
+    const s = this.scene.add
+      .sprite(x, this.groundY, key, 0)
+      .setOrigin(0.5, 1)
+      .setScale(scale, scale * 0.05)
+      .setDepth(this.depth);
+    // Animate at the game speed like the tweens (the scenes set tweens.timeScale to it)
+    s.anims.timeScale = this.scene.tweens.timeScale;
+    s.on(
+      Phaser.Animations.Events.ANIMATION_UPDATE,
+      (_a: Phaser.Animations.Animation, frame: Phaser.Animations.AnimationFrame) => {
+        // The frame where it bursts apart: add flying shards on top of the art's
+        if (frame.index === ICE_SHATTER_FRAME) {
+          this.shards(x, this.groundY - 80, 22, 0x9adfff);
+          this.shards(x, this.groundY - 150, 10, 0xe8fbff);
+        }
+      },
+    );
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () =>
+      this.scene.tweens.add({ targets: s, alpha: 0, duration: 120, onComplete: () => s.destroy() }),
+    );
+    this.scene.tweens.add({
+      targets: s,
+      scaleY: scale,
+      duration: 110,
+      ease: 'Back.easeOut',
+      // Hold the glint a moment, then crack and shatter
+      onComplete: () => s.playAfterDelay(key, 150),
+    });
+    return true;
+  }
+
+  private icePillar(x: number): void {
+    const h = 150;
+    const parts = [
+      this.scene.add.rectangle(x, this.groundY, 44, h, 0x9adfff),
+      this.scene.add.rectangle(x - 6, this.groundY, 12, h - 20, 0xe8fbff),
+    ];
+    for (const p of parts)
+      p.setOrigin(0.5, 1).setScale(1, 0.05).setStrokeStyle(3, 0x2a6aa0, 0.9).setDepth(this.depth);
+    this.scene.tweens.add({
+      targets: parts,
+      scaleY: 1,
+      duration: 110,
+      ease: 'Back.easeOut',
+      onComplete: () =>
+        this.scene.time.delayedCall(150, () => {
+          for (const p of parts) p.destroy();
+          this.shards(x, this.groundY - h / 2, 22, 0x9adfff);
+          this.shards(x, this.groundY - h, 10, 0xe8fbff);
+        }),
+    });
+  }
+
+  /** Three white lines meet in a triangle over the target, flash, and burst outward */
+  private triangle(x: number, y: number): void {
+    const r = 46;
+    for (let i = 0; i < 3; i++) {
+      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 3;
+      const b = a + (2 * Math.PI) / 3;
+      const mx = x + ((Math.cos(a) + Math.cos(b)) / 2) * r;
+      const my = y + ((Math.sin(a) + Math.sin(b)) / 2) * r;
+      const len = Math.sqrt(3) * r;
+      const line = this.scene.add
+        .rectangle(mx, my, len * 1.4, 6, 0xffffff)
+        .setAngle(
+          Phaser.Math.RadToDeg(Math.atan2(Math.sin(b) - Math.sin(a), Math.cos(b) - Math.cos(a))),
+        )
+        .setScale(0, 1)
+        .setDepth(this.depth)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({
+        targets: line,
+        scaleX: 1,
+        duration: 90,
+        delay: i * 50,
+        ease: 'Quad.easeOut',
+        onComplete: () =>
+          this.scene.tweens.add({
+            targets: line,
+            scaleY: 3,
+            alpha: 0,
+            duration: 220,
+            delay: 60,
+            onComplete: () => line.destroy(),
+          }),
+      });
+    }
+    this.scene.time.delayedCall(200, () => this.rays(x, y, 0xffffff, 12));
+  }
+
+  /** Debris and leaves circling the target as they rise */
+  private vortex(x: number, y: number): void {
+    for (let i = 0; i < 18; i++) {
+      const p = this.scene.add
+        .rectangle(x, y + 30, 8, 5, [0xb8f0c8, 0x6ab070, 0xc8a070][i % 3]!)
+        .setDepth(this.depth);
+      const start = (i / 18) * Math.PI * 2;
+      const state = { t: 0 };
+      this.scene.tweens.add({
+        targets: state,
+        t: 1,
+        duration: 520 + (i % 4) * 60,
+        ease: 'Quad.easeOut',
+        onUpdate: () => {
+          const a = start + state.t * Math.PI * 3;
+          const radius = 26 + state.t * 40;
+          p.setPosition(x + Math.cos(a) * radius, y + 30 - state.t * 120);
+          p.setAngle(state.t * 540);
+          p.setAlpha(1 - state.t);
+        },
+        onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  /** A green and red X stays on the target for a moment, then fades */
+  private xMark(x: number, y: number): void {
+    const bars = [
+      this.scene.add.rectangle(x, y, 110, 12, 0x6ee83c).setAngle(45),
+      this.scene.add.rectangle(x, y, 110, 12, 0xff1a3c).setAngle(-45),
+    ];
+    for (const b of bars) b.setStrokeStyle(3, 0x1a0a14, 0.9).setScale(0.3).setDepth(this.depth);
+    this.scene.tweens.add({
+      targets: bars,
+      scale: 1,
+      duration: 90,
+      ease: 'Back.easeOut',
+      onComplete: () =>
+        this.scene.tweens.add({
+          targets: bars,
+          alpha: 0,
+          delay: 400,
+          duration: 200,
+          onComplete: () => bars.forEach((b) => b.destroy()),
+        }),
+    });
   }
 
   // ---- 部品 ----
@@ -212,6 +446,40 @@ export class ElementFx {
         alpha: 0,
         duration: 420,
         onComplete: () => p.destroy(),
+      });
+    }
+  }
+
+  /** Poison bubbles that well up on the target, rise and pop */
+  private bubbles(x: number, y: number, n: number): void {
+    for (let i = 0; i < n; i++) {
+      const b = this.scene.add
+        .circle(
+          x + (Math.random() - 0.5) * 60,
+          y + (Math.random() - 0.3) * 60,
+          4 + Math.random() * 6,
+        )
+        .setFillStyle(0x6ee83c, 0.75)
+        .setStrokeStyle(2, 0xe6ff8c, 0.9)
+        .setDepth(this.depth)
+        .setScale(0);
+      const delay = i * 45;
+      this.scene.tweens.add({ targets: b, scale: 1, delay, duration: 100 });
+      this.scene.tweens.add({
+        targets: b,
+        y: b.y - 40 - Math.random() * 40,
+        x: b.x + (Math.random() - 0.5) * 16,
+        delay,
+        duration: 480,
+        ease: 'Sine.easeOut',
+        onComplete: () =>
+          this.scene.tweens.add({
+            targets: b,
+            scale: 1.8,
+            alpha: 0,
+            duration: 110,
+            onComplete: () => b.destroy(),
+          }),
       });
     }
   }

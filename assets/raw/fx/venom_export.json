@@ -1,0 +1,17 @@
+{
+  "file": "fx/venom.png",
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "frames": 1,
+  "fps": 14,
+  "loop": false,
+  "role": "Venom Cross body: the green and red X slash. It flies to the target, flashes white there and swells as it fades (the X itself is the impact).",
+  "source": {
+    "from": "assets/sprites/hero/hero_special_venom_cross.png (the retired dedicated motion, 160x112 frames)",
+    "picked_source_frames": [4],
+    "kept_colors": ["#e6ff8c", "#6ee83c", "#2fa830", "#ff1a3c", "#d01c14", "#9a120e"],
+    "crop_in_source_frame": [44, 8, 140, 104],
+    "note": "Only the six effect colors were kept (the knight removed); cropped 96x96 around the X crossing. No PixelLab generation."
+  },
+  "note": "The dark red and breaking-up frames (source 5-6) were tried and dropped: a dark red X left on the target read like a failed effect."
+}

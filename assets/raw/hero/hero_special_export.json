@@ -1,0 +1,44 @@
+{
+  "file": "hero/hero_special.png",
+  "frameWidth": 160,
+  "frameHeight": 112,
+  "frames": 9,
+  "originX": 0.3187,
+  "originY": 0.7857,
+  "originPx": [51, 88],
+  "fps": 14,
+  "loop": false,
+  "impactFrame": 4,
+  "groundY": 87,
+  "role": "The shared special motion every outfit copies: same frame count, impact frame and sword-tip path per frame.",
+  "choreography": [
+    "0 stance",
+    "1-2 sword raised back over the shoulder",
+    "3 crouch, sword pulled far back (charge)",
+    "4 follow-through: the swing has landed, sword low to the right (impact)",
+    "5-7 sword thrust straight forward at chest height (finishing pose)",
+    "8 back toward the stance"
+  ],
+  "tip": [
+    [71, 41],
+    [34, 32],
+    [29, 35],
+    [27, 40],
+    [107, 86],
+    [109, 70],
+    [108, 70],
+    [108, 70],
+    [97, 53]
+  ],
+  "source": {
+    "endpoint": "animate-pixminimax",
+    "frame_count": 12,
+    "seed": 9201,
+    "picked_generated_frames": [0, 1, 2, 3, 6, 7, 8, 10, 11],
+    "first_and_last_frame": "hero_idle.png frame 0 placed at (19, 32) on a transparent 160x112 canvas",
+    "description": "The knight pulls the sword far back over his shoulder and crouches to charge up, then swings it in one big powerful diagonal slash forward and down, then thrusts the sword straight forward at chest height in a heroic finishing pose and holds it, then returns to the starting stance. Only the knight moves: no slash trails, no glow, no effects.",
+    "subject_description": "a small chibi knight in silver plate armour with a horned helmet, a red plume, a red cape and a sword",
+    "initial_pose": "standing upright facing right with the sword held upright in front"
+  },
+  "note": "Colors snapped to the idle palette. Two seeds made (9201, 9202); 9201 adopted (9202 drew a large arc over the body). Generated frames 4-5 carry an arc the model drew anyway and were not used."
+}

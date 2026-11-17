@@ -1,0 +1,38 @@
+{
+  "file": "fx/crimson.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 6,
+  "fps": 16,
+  "loop": true,
+  "role": "Crimson Burst body: the fire crescent that flies from the sword tip to the target. Faces right; the game rotates it toward the target.",
+  "source": {
+    "first_frame": {
+      "endpoint": "generate-image-v2",
+      "size": [64, 64],
+      "seed": 7301,
+      "picked_variation": 1,
+      "no_background": true,
+      "colors": [
+        "#fff8d0",
+        "#ffe860",
+        "#ffc020",
+        "#ff8a20",
+        "#ff5a10",
+        "#ff2a10",
+        "#d81808",
+        "#8a0a04",
+        "#3a0802"
+      ],
+      "description": "a big crescent-shaped slash of fire flying to the right, the curved outer edge faces right, bright yellow-white core and orange-red flame edges with small flame tongues trailing to the left, pixel art game effect sprite, single object centered, transparent background"
+    },
+    "animation": {
+      "endpoint": "animate-pixminimax",
+      "frame_count": 8,
+      "seed": 7311,
+      "picked_generated_frames": [0, 2, 3, 5, 6, 7],
+      "description": "a crescent-shaped slash of fire burning in place, the flames flicker and the flame tongues on the left wave and lick backwards, embers drift, the crescent keeps the same shape, size and position, seamless looping fire animation"
+    }
+  },
+  "note": "Every color is vivid (s>=0.95, l>=0.45), a red with hue 0-14, or very dark, so the hero recolor leaves it alone. Picked the 6 frames whose changes are most even; generated frame 8 nearly equals frame 0, so 7 -> 0 loops smoothly. Alpha is 0/255 only."
+}

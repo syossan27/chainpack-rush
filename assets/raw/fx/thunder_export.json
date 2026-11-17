@@ -1,0 +1,38 @@
+{
+  "file": "fx/thunder.png",
+  "frameWidth": 48,
+  "frameHeight": 160,
+  "frames": 5,
+  "fps": 20,
+  "loop": false,
+  "origin": [0.5, 1],
+  "role": "Tri-Thunder body: a lightning bolt that drops from the sky three times. The bottom edge (sparks) lands on the target; it stays until the 5 frames have played, then fades.",
+  "source": {
+    "first_frame": {
+      "endpoint": "generate-image-v2",
+      "size": [48, 160],
+      "seed": 7401,
+      "picked_variation": 0,
+      "no_background": true,
+      "colors": [
+        "#ffffff",
+        "#fffbe0",
+        "#fff27a",
+        "#ffe040",
+        "#ffc81a",
+        "#e09a10",
+        "#3a3a8a",
+        "#1c1a4a"
+      ],
+      "description": "a thick jagged lightning bolt striking straight down from the top edge to the bottom edge, zigzag shape, bright white core, yellow glow edges, dark navy outline, small sparks where it ends at the bottom, pixel art game effect sprite, single vertical bolt centered, transparent background"
+    },
+    "animation": {
+      "endpoint": "animate-pixminimax",
+      "frame_count": 8,
+      "seed": 7411,
+      "picked_generated_frames": [0, 4, 5, 7, 8],
+      "description": "a lightning bolt striking down crackles and flickers with energy, the white core pulses, the thin side branches flash on and off and change shape, sparks burst out at the bottom, the main bolt stays in the same place"
+    }
+  },
+  "note": "The animation added ~90 in-between colors (muddy browns); every pixel was snapped to the 8-color palette above. Picked frames alternate the full bolt and the white flash frames so it crackles. Alpha is 0/255 only."
+}

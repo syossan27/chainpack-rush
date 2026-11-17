@@ -1,0 +1,28 @@
+{
+  "file": "fx/triple.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "frames": 4,
+  "fps": 16,
+  "loop": true,
+  "role": "Triple Slash body: a white crescent slash; three of them fly level to the target, 50 ms apart and 16 px apart vertically. Faces right.",
+  "source": {
+    "first_frame": {
+      "endpoint": "generate-image-v2",
+      "size": [64, 64],
+      "seed": 7601,
+      "picked_variation": 7,
+      "no_background": true,
+      "colors": ["#ffffff", "#f0f8ff", "#d8ecff", "#b0d8ff", "#7ab0f0", "#3a5aa8", "#1c2450"],
+      "description": "a sharp white crescent-shaped sword slash wave flying to the right, the curved outer edge faces right, thin blade-like crescent with a bright white core and pale blue edges, a few speed streaks trailing to the left, dark navy outline, pixel art game effect sprite, single object centered, transparent background"
+    },
+    "animation": {
+      "endpoint": "animate-pixminimax",
+      "frame_count": 8,
+      "seed": 7611,
+      "picked_generated_frames": [0, 1, 2, 3],
+      "description": "a white crescent sword slash shimmers in place, a bright glint runs along its edge, the small sparkles behind it flicker and drift backwards, the crescent keeps the same shape, size and position, seamless looping animation"
+    }
+  },
+  "note": "Frames 1-3 carry a glint running along the edge (bottom, right, top), then back to frame 0. The animation added two armor-like greys (#7f7d7a, #807e7b, 37 px); every pixel was snapped to the palette above, so no grey matches the hero's armor. Alpha is 0/255 only."
+}

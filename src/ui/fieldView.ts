@@ -6,8 +6,19 @@ import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
 import { t } from '../i18n';
-import { UNIT_SPRITES, animKey, animOrigin, stillOrigin, type UnitAnimName } from '../data/sprites';
+import {
+  UNIT_SPRITES,
+  animFrameSize,
+  animKey,
+  animOrigin,
+  stillOrigin,
+  type UnitAnimName,
+} from '../data/sprites';
+import { anchorAt, anchorToWorld } from '../core/heroAnchors';
+import { HERO_ANCHORS } from '../data/heroAnchors';
+import { scaleMs, specialTimeline, techFxFor } from '../data/techFx';
 import { generateBackgroundTextures } from './textures';
+import { TechFxPlayer, type Target } from './techFxPlayer';
 import { HeroAura, type AuraTier } from './aura';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
@@ -77,7 +88,6 @@ export class FieldView {
   private aura: HeroAura | null = null;
   /** 必殺モーションを続ける時刻 */
   private specialUntil = 0;
-  private specialName: UnitAnimName = 'special';
   private lastNow = 0;
   /** 直前のフレームの連鎖（新しい連鎖の始まりを見分ける） */
   private lastChain: Combat['chain'] = null;
@@ -89,9 +99,13 @@ export class FieldView {
   private lastRate = 1;
   readonly lastSeen = new Map<number, { x: number; y: number }>();
   visibleEnemies = 0;
+  /** Special technique effects (the scene calls screen() at the impact) */
+  readonly techFx: TechFxPlayer;
 
   constructor(scene: Phaser.Scene, regionId: string) {
     this.scene = scene;
+    // Above the hero and the enemies, below the hit effects (55, 56)
+    this.techFx = new TechFxPlayer(scene, 54, RUN_LAYOUT.footY);
     const region = getRegion(regionId);
     const keys = generateBackgroundTextures(scene, region.id, region.bgColors, region.groundColor);
     const bgScale = 2; // 背景も整数倍（端数拡大を避ける）
@@ -186,12 +200,15 @@ export class FieldView {
     return RUN_LAYOUT.heroScreenX + (x - c.heroX);
   }
 
-  enemyScreenPos(c: Combat, e: EnemyState): { x: number; y: number } {
+  enemyScreenPos(c: Combat, e: EnemyState): { x: number; y: number; footY: number } {
     const def = UNIT_SPRITES[e.defId];
     const h = def ? def.frameHeight * def.displayScale : 96;
+    // footY: the enemy's feet (a lightning bolt runs down to here)
+    const footY = RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY;
     return {
       x: this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX,
-      y: RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY - h * 0.6,
+      y: footY - h * 0.6,
+      footY,
     };
   }
 
@@ -296,19 +313,30 @@ export class FieldView {
     });
   }
 
-  /** 必殺技: 勇者が前へ踏み込み、残像を引いて大きく構える（止めない。0.3秒ほど） */
-  /** 戻り値: 必殺モーションの斬りつけまでのミリ秒（モーションがなければ 0） */
-  heroSpecial(color: number, techId?: string): number {
+  /**
+   * Special technique: the hero plays the shared special motion while the technique's effect
+   * charges at the sword tip, then at the swing its body flies to `target` (the target's position
+   * when the technique fired; it is not looked up again). Never stops the game.
+   * Returns, in ms at game speed 1, when the body leaves and when it lands (both 0 without the motion,
+   * in which case the hero steps in instead).
+   * speed: the scene's game speed, the same one its tweens and impact timer use (not the field's
+   * last frame rate, which is 0 right after a hit stop or a pause)
+   */
+  heroSpecial(
+    techId: string | undefined,
+    target: Target | null,
+    speed: number,
+  ): { releaseMs: number; landMs: number } {
     const h = this.hero;
-    // 専用の必殺モーションがあれば、振り切るまでそれを使う（update で上書きしない）。技ごと → 共通の順
     const def = UNIT_SPRITES.hero!;
-    const names: UnitAnimName[] = techId ? [`special_${techId}`, 'special'] : ['special'];
-    const name = names.find((n) => def.anims?.[n] && this.scene.anims.exists(animKey('hero', n)));
-    const sp = name ? def.anims![name]! : undefined;
-    if (sp && name) {
-      this.specialName = name;
-      this.specialUntil = this.scene.time.now + (sp.frames / sp.fps) * 1000;
-      this.playHeroAnim([name], true);
+    const fx = techFxFor(techId);
+    const color = fx?.color ?? 0xffe060;
+    const sp = def.anims?.special;
+    const motion = sp && this.scene.anims.exists(animKey('hero', 'special')) ? sp : undefined;
+    this.techFx.stopCharge();
+    if (motion) {
+      this.specialUntil = this.scene.time.now + scaleMs((motion.frames / motion.fps) * 1000, speed);
+      this.playHeroAnim(['special'], true);
     }
     const baseX = RUN_LAYOUT.heroScreenX;
     this.scene.tweens.killTweensOf(h);
@@ -333,8 +361,28 @@ export class FieldView {
         onComplete: () => g.destroy(),
       });
     }
-    // 専用モーションがあるときは、踏み込みと拡大はモーションに任せる（残像だけ重ねる）
-    if (sp) return ((sp.impactFrame ?? 0) / sp.fps) * 1000;
+    // With the motion, the stepping in is in the art (only the afterimages are added)
+    if (motion) {
+      const to: Target = target ?? {
+        x: baseX + 240,
+        y: RUN_LAYOUT.footY - 40,
+        footY: RUN_LAYOUT.footY,
+      };
+      const body = { frames: motion.frames, fps: motion.fps, impactFrame: motion.impactFrame ?? 0 };
+      // The body leaves from the tip at the swing frame. Read from that frame, not the one on
+      // screen: a hit stop holds the hero's animation, so at release it may still be winding up
+      const swingTip = () => this.heroTip(body.impactFrame) ?? { x: h.x, y: h.y - 60 };
+      if (!fx) {
+        const at = (body.impactFrame / body.fps) * 1000;
+        return { releaseMs: at, landMs: at };
+      }
+      const timing = specialTimeline(body, fx, Math.abs(to.x - swingTip().x));
+      this.techFx.charge(fx, () => this.heroTip(), scaleMs(timing.releaseMs, speed));
+      this.techFx.after(scaleMs(timing.releaseMs, speed), () =>
+        this.techFx.release(fx, swingTip(), to, timing, speed),
+      );
+      return { releaseMs: timing.releaseMs, landMs: timing.landMs };
+    }
     // 踏み込み → 戻る、一瞬大きく
     this.scene.tweens.add({
       targets: h,
@@ -353,7 +401,28 @@ export class FieldView {
       yoyo: true,
       hold: 120,
     });
-    return 0;
+    return { releaseMs: 0, landMs: 0 };
+  }
+
+  /**
+   * The sword tip on screen while the shared special motion plays (null otherwise): at the frame
+   * on screen, or at `frame` of the motion
+   */
+  private heroTip(frame?: number): { x: number; y: number } | null {
+    const def = UNIT_SPRITES.hero!;
+    const sp = def.anims?.special;
+    if (!sp || this.hero.anims.currentAnim?.key !== animKey('hero', 'special')) return null;
+    frame ??= (this.hero.anims.currentFrame?.index ?? 1) - 1;
+    const p = anchorAt(HERO_ANCHORS, 'knight', 'special', frame, 'tip');
+    if (!p) return null;
+    const size = animFrameSize(def, sp);
+    return anchorToWorld(
+      p,
+      { width: size.frameWidth, height: size.frameHeight },
+      animOrigin(def, sp),
+      this.hero,
+      this.hero.scaleX,
+    );
   }
 
   /** 勇者のオーラ（置いている装備の強さで決まる） */
@@ -394,11 +463,10 @@ export class FieldView {
     const swinging = this.hero.anims.currentAnim?.key === attackKey && this.hero.anims.isPlaying;
     // 必殺モーションは最後のコマまで再生しきるまで続ける
     const specialPlaying =
-      (this.hero.anims.currentAnim?.key ?? '').startsWith('hero_special') &&
-      this.hero.anims.isPlaying;
+      this.hero.anims.currentAnim?.key === animKey('hero', 'special') && this.hero.anims.isPlaying;
     const state: UnitAnimName =
       now < this.specialUntil || specialPlaying
-        ? this.specialName
+        ? 'special'
         : chain !== null || swinging
           ? 'attack'
           : c.running
@@ -579,7 +647,7 @@ export class FieldView {
       sprite.setOrigin(originX, originY);
       if (
         sprite.anims.currentAnim?.key !== key ||
-        (restart && (chosen === 'attack' || chosen.startsWith('special')))
+        (restart && (chosen === 'attack' || chosen === 'special'))
       )
         sprite.play(key);
     }

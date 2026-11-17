@@ -46,7 +46,8 @@ import { iconKey } from '../data/sprites';
 import { getRegion } from '../data/regions';
 import { DamageNumbers, Effects, damageColor, stepTier } from '../ui/pools';
 import { ElementFx } from '../ui/elementFx';
-import { getTechnique } from '../data/techniques';
+import { getTechnique, type TechniqueDef } from '../data/techniques';
+import { scaleMs, techFxFor } from '../data/techFx';
 import { earnReward, isPremium } from '../platform/monetization';
 import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
@@ -80,14 +81,6 @@ const TIME_BONUS_Y = 188;
 
 /** 段数の段階ごとの火花の色（5段・7段・10段） */
 const STEP_SPARK: Record<number, number> = { 2: 0xffc84a, 3: 0xff6a3a, 4: 0xffffff };
-
-/** 必殺技の色（属性ごと） */
-const TECH_COLOR: Partial<Record<string, number>> = {
-  fire: 0xff7a30,
-  thunder: 0xffe060,
-  ice: 0x9adfff,
-  physical: 0xffffff,
-};
 
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
@@ -582,6 +575,8 @@ export class RunScene extends Phaser.Scene {
       this.numbers.show(300 + Math.random() * 350, 280 + Math.random() * 180, Math.random() * 3000);
     }
     this.field.update(this.combat, now, halted ? 0 : rate);
+    // A special on screen holds while paused or while an item card is open
+    this.field.techFx.setHalted(halted);
     this.checkBossApproach();
     this.view.tick(now);
     this.numbers.update(dt);
@@ -835,6 +830,38 @@ export class RunScene extends Phaser.Scene {
     this.tweens.add({ targets: b, alpha: 0, y: { from: 250, to: 220 }, delay: 700, duration: 320 });
   }
 
+  /**
+   * A special technique: the shared special motion and the technique's effect. The target's
+   * position is taken once, now; the big impact comes when the effect's body lands there
+   * (the damage number is already shown)
+   */
+  private showTechnique(tech: TechniqueDef | undefined, enemyId: number): void {
+    const p = this.enemyPos(enemyId);
+    const fx = techFxFor(tech?.id);
+    const timing = this.field.heroSpecial(tech?.id, p, this.speed);
+    // 初めて出した技は図鑑に登録して、テロップで知らせる
+    const save = getSave();
+    if (tech && !this.demo && !save.discoveredTechs.includes(tech.id)) {
+      save.discoveredTechs.push(tech.id);
+      persist();
+      // showDiscovery translates the data key itself
+      showDiscovery(this, tech.name);
+    }
+    const burst = () => {
+      if (p) {
+        if (fx) this.elementFx.technique(fx.impact, p.x, p.y);
+        this.effects.flash(p.x, p.y, fx?.color ?? 0xffffff, 4);
+      }
+      if (fx) this.field.techFx.screen(fx, this.shake);
+      else if (this.shake) this.cameras.main.shake(140, 0.009);
+    };
+    // Through the effect's own timer, so it waits while the game is paused
+    if (timing.landMs > 0) this.field.techFx.after(scaleMs(timing.landMs, this.speed), burst);
+    else burst();
+    this.hitStop(JUICE.hitStopMs.big);
+    sfx('explode');
+  }
+
   private enemyPos(id: number): { x: number; y: number } | null {
     const e = this.combat.enemies.find((x) => x.id === id);
     return e ? this.field.enemyScreenPos(this.combat, e) : (this.field.lastSeen.get(id) ?? null);
@@ -922,31 +949,7 @@ export class RunScene extends Phaser.Scene {
           break;
         }
         case 'technique': {
-          const tech = getTechnique(ev.id);
-          const p = this.enemyPos(ev.enemyId);
-          const color = tech ? (TECH_COLOR[tech.element] ?? 0xffffff) : 0xffffff;
-          // 必殺モーションがあれば、大きな演出は斬りつけのコマに合わせる（ダメージ数字はそのまま）
-          const impact = this.field.heroSpecial(color, tech?.id);
-          // 初めて出した技は図鑑に登録して、テロップで知らせる
-          const save = getSave();
-          if (tech && !this.demo && !save.discoveredTechs.includes(tech.id)) {
-            save.discoveredTechs.push(tech.id);
-            persist();
-            // showDiscovery translates the data key itself
-            showDiscovery(this, tech.name);
-          }
-          const burst = () => {
-            if (p) {
-              this.elementFx.special(p.x, p.y, tech?.element);
-              this.effects.slash(p.x, p.y, color, 3);
-              this.effects.flash(p.x, p.y, color, 4);
-            }
-            if (this.shake) this.cameras.main.shake(140, 0.009);
-          };
-          if (impact > 0) this.time.delayedCall(impact / Math.max(0.1, this.speed), burst);
-          else burst();
-          this.hitStop(JUICE.hitStopMs.big);
-          sfx('explode');
+          this.showTechnique(getTechnique(ev.id), ev.enemyId);
           break;
         }
         case 'merge': {
