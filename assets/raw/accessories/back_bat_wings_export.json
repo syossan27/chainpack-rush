@@ -1,0 +1,16 @@
+{
+  "file": "accessories/back_bat_wings.png",
+  "size": [25, 25],
+  "pivot": [21, 21],
+  "sway": { "deg": 6, "ms": 1400 },
+  "role": "コウモリの翼 (back). One purple bat wing seen from the side, rooted behind the shoulder (the pivot is near its lower right) and spread up and back to the left; it peeks out behind the helmet. Swings ±6° around the root every 1.4 s.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [32, 32],
+    "seed": 8301,
+    "picked_variation": 9,
+    "no_background": true,
+    "description": "pixel art game item: a pair of small dark purple bat wings seen from the side, worn on the back of a character facing right, the wings spread up and back toward the left, the wing root at the lower right, membrane with finger bones, dark outline"
+  },
+  "note": "Trimmed (25x25) and mirrored left-right (the generated wing grew up and to the right). Alpha is 0/255 only; 48 colors. The user picked the lighter purple so it shows on dark backgrounds."
+}

@@ -1,0 +1,16 @@
+{
+  "file": "accessories/back_knight_flag.png",
+  "size": [23, 29],
+  "pivot": [20, 38],
+  "sway": { "deg": 4, "ms": 1100 },
+  "role": "騎士の旗 (back). A crimson banner with a gold crown emblem on a short spear-tipped pole, stood on the back like a war banner and streaming back (left). The pivot is on the pole 12 px below the image, so the pole's foot sits behind the shoulder and its tip shows above the helmet. Swings ±4° around the pivot every 1.1 s.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [32, 32],
+    "seed": 8401,
+    "picked_variation": 0,
+    "no_background": true,
+    "description": "pixel art game item: a small knight's banner on a short vertical wooden pole, a crimson red flag with gold trim and a small gold emblem fluttering to the left, worn on the back like a sashimono, side view, dark outline"
+  },
+  "note": "Trimmed (23x29) and mirrored left-right (the generated flag flew to the right). Alpha is 0/255 only; 62 colors. The user chose the higher of two placements (+12 px)."
+}

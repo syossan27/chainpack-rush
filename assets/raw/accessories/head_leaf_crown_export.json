@@ -1,0 +1,15 @@
+{
+  "file": "accessories/head_leaf_crown.png",
+  "size": [24, 8],
+  "pivot": [11, -3],
+  "role": "若葉の冠 (head). The front half of a thin ring of leaves, worn low around the helmet between the horns like a crown of thorns. The back half is cut off because the helmet would hide it.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [28, 16],
+    "seed": 8204,
+    "picked_variation": 37,
+    "no_background": true,
+    "description": "pixel art game item: a thin circlet of small green leaves, like a crown of thorns made of leaves, a narrow thin ring seen from the front and slightly above (flat ellipse), dark outline"
+  },
+  "note": "Trimmed to the ring (24x14), then the rows from the ring's middle down were kept (24x8). Alpha is 0/255 only; 46 colors. Placed with its top row 3 px below the head anchor (the dome top), centered 1 px right of it. Earlier tries that were not used: create-image-bitforge (13 calls; with the hero as the style sample it copied the helmet, without it the small images were blurry) and generate-image-v2 full crowns (seeds 8202, 8203; too big, they hid the top half of the helmet)."
+}

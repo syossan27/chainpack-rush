@@ -1,0 +1,16 @@
+{
+  "file": "accessories/head_flame_plume.png",
+  "size": [16, 17],
+  "pivot": [14, 15],
+  "hidesPlume": true,
+  "role": "炎の羽飾り (head). Flame-like orange and red feathers on a small holder, standing on the dome and trailing back (left). While it is worn the hero's red helmet plume is erased from the animation sheets (src/core/heroPlume.ts); the still and the face icon keep it.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [24, 24],
+    "seed": 8501,
+    "picked_variation": 14,
+    "no_background": true,
+    "description": "pixel art game item: a small helmet plume made of flame-like feathers, bright orange and yellow fire feathers curling back to the left, attached at the bottom, side view, dark outline"
+  },
+  "note": "Trimmed (16x17) and mirrored left-right (the generated plume curled to the right). Alpha is 0/255 only; 57 colors. The pivot is the holder's foot 2 px right of its middle, so it stands where the original plume grows. Laid over the original plume it looked doubled, so the user asked to take the original off."
+}

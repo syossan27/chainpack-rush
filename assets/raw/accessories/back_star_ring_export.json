@@ -1,0 +1,27 @@
+{
+  "file": "accessories/back_star_ring.png",
+  "size": [46, 46],
+  "pivot": [18, 31],
+  "pulse": { "min": 0.75, "ms": 2400 },
+  "twinkle": { "at": [6, 17], "everyMs": 3000, "arms": "#fffac8" },
+  "role": "星の輪 (back; the endless loop 10 reward). A ring of light standing behind the hero like a halo, big enough to frame the whole helmet: deep red outside to pale yellow inside, hollow in the middle. Its center sits 5 px ahead of and 8 px above the back point. It glows (brightness breathes 75–100% every 2.4 s) and a warm star glint pops on its left side every 3 s.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [32, 32],
+    "seed": 8801,
+    "picked_variation": 0,
+    "no_background": true,
+    "description": "pixel art game effect, a single object with no person: a large glowing ring of light, a thick round band that fades from deep red on its outer edge through orange to bright yellow on its inner edge, the middle of the ring is empty and transparent, seen from the front, streaks of light running around the ring as if it is spinning"
+  },
+  "palette": {
+    "outline": [68, 8, 20],
+    "red": [173, 21, 15],
+    "orange": [232, 91, 22],
+    "yellow": [251, 206, 80],
+    "pale": [255, 250, 140],
+    "yellow2": [253, 234, 111],
+    "inner": [232, 173, 79]
+  },
+  "build": "The generated rings came out 24 px wide, which only showed as a hoop beside the hero. This 46 px ring was placed by a script in the same 7 colors: from the outer edge in, bands of 1 outline, 2 red, 2 orange, 2 yellow, 1 pale, 1 yellow2, 1 inner (band width 10). Alpha is 0/255 only.",
+  "history": "Planned as a halo floating over the head. The user asked instead for a ring of light on the back like a mecha's back halo (they showed a reference photo: a big ring, red outside to yellow inside), so it moved from head to back (id head_star_ring → back_star_ring). The user picked 46 px over 40 and 52, and kept the name 星の輪."
+}

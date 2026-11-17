@@ -1,0 +1,17 @@
+{
+  "file": "accessories/back_demon_wings.png",
+  "size": [28, 28],
+  "pivot": [24, 24],
+  "sway": { "deg": 4, "ms": 1800 },
+  "role": "魔王の翼 (back). One demon king's wing seen from the side: black bones with gold-tipped claws and a crimson membrane, rooted behind the shoulder and spread up and back to the left. A size up from the bat wing; swings ±4° around the root every 1.8 s (slower than the bat wing, for weight).",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [40, 40],
+    "seed": 8703,
+    "picked_variation": 11,
+    "no_background": true,
+    "description": "pixel art game item icon, a single object with no person: one large majestic demon king wing seen from the side, a thick black bony arm with sharp spikes along its top edge, dark crimson membrane, shiny golden claws at the wing tips and at the joint, the wing root at the lower right and the wing spreading wide up and to the left, dark outline"
+  },
+  "note": "Trimmed (28x28) and mirrored left-right (the generated wing grew up and to the right). Alpha is 0/255 only; 61 colors. At 40 px the call cost 15 generations and returned 36 variations.",
+  "history": "Seed 8701 (32 px, 'worn on the back of a character') drew a whole character in all 64 variations. Seed 8702 (32 px, 'a single object with no person') gave clean black-and-crimson wings, but the user found them too close to the bat wing and asked for more of a demon king's majesty: bigger, with gold claws."
+}

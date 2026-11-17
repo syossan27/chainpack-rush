@@ -1,0 +1,25 @@
+{
+  "file": "accessories/head_ice_crystal.png",
+  "size": [7, 9],
+  "pivot": [-2, -4],
+  "twinkle": { "at": [4, 2], "everyMs": 2600 },
+  "role": "氷の結晶 (head). A small ice jewel set on the red gem in the middle of the helmet's forehead; a four-point glint (drawn in code, src/ui/heroAccessories.ts) pops on its upper right every 2.6 s.",
+  "source": {
+    "endpoint": "generate-image-v2",
+    "size": [16, 16],
+    "seed": 8603,
+    "picked_variation": 0,
+    "no_background": true,
+    "description": "pixel art game item: a tiny pale blue ice crystal, a small sharp faceted ice shard pointing up, a little jewel ornament, dark outline, very small and simple"
+  },
+  "palette": {
+    "K": [14, 5, 41],
+    "D": [77, 138, 199],
+    "M": [94, 198, 228],
+    "L": [128, 234, 253],
+    "P": [200, 246, 255],
+    "W": [255, 255, 255]
+  },
+  "note": "Hand-placed 7x9 (variant A: white facets on the upper left) in the colors of variation #0; the generated shards were too big for the forehead gem. The pivot lies outside the image: it is the head anchor (dome top), and the jewel sits 2 px right and 4 px below it, over the red gem (measured about +5, +7.5..8.2 from the anchor in every frame). Alpha is 0/255 only.",
+  "history": "Started as 氷の冠 (a crown). Earlier tries: seed 8601 at 28x16 (thin ice tiaras) and seed 8602 at 24x24 (crystal clusters). The user found crowns did not suit the helmet, asked for a one-point item instead, renamed it 氷の結晶, then asked for it smaller and on the forehead's red gem, and for a stronger ice look with an occasional twinkle."
+}
