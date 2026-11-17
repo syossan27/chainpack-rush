@@ -73,6 +73,11 @@ export interface SaveData {
     autoSellKeepAffix: boolean;
     /** Display language ('auto' follows the device) */
     lang: Lang | 'auto';
+    /**
+     * Debug: every look in the wardrobe can be worn (only in development and trial builds; the
+     * looks really owned stay as they are)
+     */
+    debug: boolean;
   };
 }
 
@@ -167,6 +172,7 @@ export function createInitialSave(): SaveData {
       autoSell: 'off',
       autoSellKeepAffix: true,
       lang: 'auto',
+      debug: false,
     },
   };
 }
@@ -322,9 +328,15 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       cosmetics: Array.isArray(data.cosmetics)
         ? COSMETICS.map((c) => c.id).filter((id) => (data.cosmetics as unknown[]).includes(id))
         : [],
+      // With the debug setting on, looks not owned may be worn (the boot narrows it again when the
+      // build does not allow it: fixLook)
       look: validLook(
         isObj(data.look) ? (data.look as Partial<Look>) : undefined,
-        Array.isArray(data.cosmetics) ? (data.cosmetics as string[]) : [],
+        isObj(data.settings) && data.settings.debug === true
+          ? COSMETICS.map((c) => c.id)
+          : Array.isArray(data.cosmetics)
+            ? (data.cosmetics as string[])
+            : [],
       ),
       // Only owned looks can be new (older saves have none)
       newCosmetics: Array.isArray(data.newCosmetics)
@@ -370,6 +382,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       save.settings.autoSell = 'off';
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
       save.settings.autoSellKeepAffix = true;
+    if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

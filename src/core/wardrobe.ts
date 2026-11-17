@@ -2,7 +2,7 @@
 // Pure: no Phaser (the screen itself is BaseScene.renderWardrobe).
 import { k } from '../i18n';
 import { cosmeticCondition, cosmeticProgress } from './cosmeticRewards';
-import { COSMETICS, getCosmetic, shownInWardrobe, type CosmeticKind } from './cosmetics';
+import { COSMETICS, getCosmetic, shownInWardrobe, validLook, type CosmeticKind } from './cosmetics';
 import type { SaveData } from './save';
 
 /** The tabs, left to right. `label` is a Japanese key shown through t() */
@@ -37,7 +37,9 @@ export function wardrobeCards(save: SaveData, kind: CosmeticKind, ownsAll = fals
     condition: null,
     progress: null,
   };
-  const looks = COSMETICS.filter((c) => c.kind === kind && shownInWardrobe(c, save.cosmetics));
+  const looks = COSMETICS.filter(
+    (c) => c.kind === kind && (ownsAll || shownInWardrobe(c, save.cosmetics)),
+  );
   return [
     none,
     ...looks.map((c) => {
@@ -69,4 +71,24 @@ export function markSeen(save: SaveData, kind: CosmeticKind): void {
 /** The tab to open on: the leftmost one with new looks, else the hero */
 export function firstTab(save: SaveData): CosmeticKind {
   return newKinds(save)[0] ?? 'hero';
+}
+
+/**
+ * Every look counts as owned: the debug setting is on and this build allows it (`allowed`:
+ * development and trial builds). The looks really owned are not changed
+ */
+export function looksAllOpen(save: SaveData, allowed: boolean): boolean {
+  return allowed && save.settings.debug;
+}
+
+/** Take off worn looks that may not be worn now (after the debug setting went off, or on boot) */
+export function fixLook(save: SaveData, allowed: boolean): void {
+  const wearable = looksAllOpen(save, allowed) ? COSMETICS.map((c) => c.id) : save.cosmetics;
+  save.look = validLook(save.look, wearable);
+}
+
+/** The name decoration to send to the ranking: only one really owned (the server checks it) */
+export function rankingDeco(save: SaveData): string | null {
+  const id = save.look.deco;
+  return id && save.cosmetics.includes(id) ? id : null;
 }

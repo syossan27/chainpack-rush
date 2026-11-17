@@ -6,6 +6,8 @@ import { ITEM_DEFS } from '../data/items';
 import { loadSave } from '../platform/storage';
 import { persist, setSave } from '../platform/store';
 import { grantCosmetics } from '../core/cosmeticRewards';
+import { fixLook } from '../core/wardrobe';
+import { debugMenuAllowed } from '../platform/debug';
 import { generateUiIcons } from '../ui/kit/icons';
 import { generateSkin } from '../ui/kit/skin';
 import { bgKey, generateAllTextures } from '../ui/textures';
@@ -144,6 +146,10 @@ export class BootScene extends Phaser.Scene {
       setSave(save);
       // Looks earned before they existed (or while away) are handed over once; NEW marks them
       if (grantCosmetics(save).length > 0) persist();
+      // Looks worn through the debug setting come off where this build does not allow it
+      const worn = JSON.stringify(save.look);
+      fixLook(save, debugMenuAllowed());
+      if (JSON.stringify(save.look) !== worn) persist();
       applyLang(save.settings.lang);
       // The worn look (recolors the hero textures for every scene; hides the plume under a flame plume)
       applyHeroLook(this, save.look);

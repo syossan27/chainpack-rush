@@ -43,6 +43,14 @@ export function devRage(): boolean {
   return import.meta.env.DEV && params.get('rage') === '1';
 }
 
+/**
+ * The settings screen's debug switch is offered (and works) in development and trial builds only,
+ * never in the release build
+ */
+export function debugMenuAllowed(): boolean {
+  return import.meta.env.DEV || import.meta.env.VITE_CHALLENGE_OPEN === '1';
+}
+
 /** Development only: ?cosmetics=all lets you wear every challenge cosmetic (never in production builds) */
 export function devAllCosmetics(): boolean {
   return import.meta.env.DEV && params.get('cosmetics') === 'all';

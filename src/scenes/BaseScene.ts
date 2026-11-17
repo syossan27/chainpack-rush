@@ -59,7 +59,7 @@ import {
   rulesText,
 } from '../core/challenge';
 import { session } from '../platform/session';
-import { devAllCosmetics, devChallengeOpen } from '../platform/debug';
+import { debugMenuAllowed, devAllCosmetics, devChallengeOpen } from '../platform/debug';
 import { LANG_NAMES, k, lang, num, t } from '../i18n';
 import { READY_LANGS, applyLang, type LangSetting } from '../i18n/setup';
 import { loadFonts } from '../ui/fonts';
@@ -80,7 +80,16 @@ import {
   type CosmeticKind,
 } from '../core/cosmetics';
 import { giveCosmetics } from '../core/cosmeticRewards';
-import { WARDROBE_TABS, firstTab, markSeen, newKinds, wardrobeCards } from '../core/wardrobe';
+import {
+  firstTab,
+  fixLook,
+  looksAllOpen,
+  markSeen,
+  newKinds,
+  rankingDeco,
+  wardrobeCards,
+  WARDROBE_TABS,
+} from '../core/wardrobe';
 import {
   claimSeasonRewards,
   fetchBoard,
@@ -140,6 +149,12 @@ const UPGRADE_ICON: Record<UpgradeId, IconName> = {
 
 const CONTENT_TOP = TOP_BAR_H + 8;
 const CONTENT_BOTTOM = H - TAB_BAR_H - 8;
+
+/** Every look can be worn: the debug setting (development / trial builds) or ?cosmetics=all */
+function allLooksOpen(): boolean {
+  return looksAllOpen(getSave(), debugMenuAllowed()) || devAllCosmetics();
+}
+
 /** Center y of an upgrade row (7 rows of 128px fit one screen) */
 const upgradeRowY = (i: number): number => CONTENT_TOP + 132 + i * 128;
 /** A bottom tab's tile (0 = storage … 4 = loadout), for guides */
@@ -1251,8 +1266,37 @@ export class BaseScene extends Phaser.Scene {
   private renderSettings(): void {
     const save = getSave();
     const st = save.settings;
+    // Development and trial builds get a debug row; the rows then sit 110 px apart instead of 130
+    const dbg = debugMenuAllowed();
+    const L = dbg
+      ? {
+          panelY: 560,
+          panelH: 700,
+          volume: 285,
+          haptics: 395,
+          shake: 505,
+          debug: 615,
+          speed: 725,
+          note: 790,
+          lang: 855,
+          help: 975,
+          premium: 1065,
+        }
+      : {
+          panelY: 545,
+          panelH: 670,
+          volume: 300,
+          haptics: 430,
+          shake: 560,
+          debug: 0,
+          speed: 690,
+          note: 760,
+          lang: 830,
+          help: 960,
+          premium: 1050,
+        };
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('設定')));
-    this.root.add(panel(this, W / 2, 545, W - 40, 670, 'paper'));
+    this.root.add(panel(this, W / 2, L.panelY, W - 40, L.panelH, 'paper'));
     const row = (
       y: number,
       label: string,
@@ -1283,7 +1327,7 @@ export class BaseScene extends Phaser.Scene {
       this.render();
     };
     row(
-      300,
+      L.volume,
       t('音量'),
       `${Math.round(st.volume * 100)}%`,
       () => {
@@ -1299,7 +1343,7 @@ export class BaseScene extends Phaser.Scene {
     const speeds: readonly number[] = SIM.speedOptions;
     const si = Math.max(0, speeds.indexOf(st.gameSpeed));
     row(
-      690,
+      L.speed,
       t('ゲームスピード'),
       `×${st.gameSpeed}`,
       () => {
@@ -1313,7 +1357,7 @@ export class BaseScene extends Phaser.Scene {
     );
     this.root.add(
       fitText(
-        ink(this, 70, 760, t('検証用。×2 なら30秒のランが15秒で終わります'), 18, '#7a5a30'),
+        ink(this, 70, L.note, t('検証用。×2 なら30秒のランが15秒で終わります'), 18, '#7a5a30'),
         W - 140,
       ),
     );
@@ -1323,7 +1367,7 @@ export class BaseScene extends Phaser.Scene {
       new Button(
         this,
         W / 2 - 110,
-        1050,
+        L.premium,
         t(prem ? 'プレミアム（購入済み）' : 'プレミアム {price}', { price: t(PREMIUM_PRICE) }),
         () => {
           if (prem) {
@@ -1345,7 +1389,7 @@ export class BaseScene extends Phaser.Scene {
       new Button(
         this,
         W / 2 + 214,
-        1050,
+        L.premium,
         t('購入を復元'),
         () => {
           void restorePurchases().then((ok) => {
@@ -1357,7 +1401,7 @@ export class BaseScene extends Phaser.Scene {
       ),
     );
     this.root.add(
-      new Button(this, W / 2 - 110, 960, t('遊び方・強くなるコツ'), () => this.go('help'), {
+      new Button(this, W / 2 - 110, L.help, t('遊び方・強くなるコツ'), () => this.go('help'), {
         width: 400,
         height: 84,
         fontSize: 24,
@@ -1370,7 +1414,7 @@ export class BaseScene extends Phaser.Scene {
       new Button(
         this,
         W / 2 + 214,
-        960,
+        L.help,
         t('案内をもう一度'),
         () => {
           resetTutorials();
@@ -1379,17 +1423,26 @@ export class BaseScene extends Phaser.Scene {
         { width: 200, height: 84, fontSize: 20, skin: 'blue' },
       ),
     );
-    row(430, t('振動'), st.haptics ? 'ON' : 'OFF', null, () => {
+    row(L.haptics, t('振動'), st.haptics ? 'ON' : 'OFF', null, () => {
       st.haptics = !st.haptics;
       changed();
     });
-    row(560, t('画面揺れ・光'), st.shake ? 'ON' : 'OFF', null, () => {
+    row(L.shake, t('画面揺れ・光'), st.shake ? 'ON' : 'OFF', null, () => {
       st.shake = !st.shake;
       changed();
     });
+    // Debug: every look in the wardrobe can be tried on. Turned off, looks not owned come off
+    if (dbg)
+      row(L.debug, t('デバッグ機能'), st.debug ? 'ON' : 'OFF', null, () => {
+        st.debug = !st.debug;
+        fixLook(save, true);
+        applyHeroLook(this, save.look);
+        changed();
+        if (st.debug) this.showToast(t('着せ替えの見た目をすべて試せます'));
+      });
     // Language (also labelled in English so a player stuck in an unknown language can find it)
     if (READY_LANGS.length > 1) {
-      const y = 830;
+      const y = L.lang;
       const label = lang() === 'en' ? 'Language' : `${t('言語')} / Language`;
       // Ends before the language button (its left edge is at x = W - 340)
       this.root.add(fitText(ink(this, 70, y, label, 26).setOrigin(0, 0.5), W - 340 - 70 - 12));
@@ -2220,7 +2273,7 @@ export class BaseScene extends Phaser.Scene {
 
   private renderWardrobe(): void {
     const save = getSave();
-    const ownsAll = devAllCosmetics();
+    const ownsAll = allLooksOpen();
     const kind = this.wardrobeTab;
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('着せ替え'), 340));
     this.root.add(
@@ -2315,8 +2368,9 @@ export class BaseScene extends Phaser.Scene {
       sfx('click');
       save.look = { ...save.look, [kind]: id };
       if (kind === 'hero' || kind === 'head') applyHeroLook(this, save.look);
-      // Others see the decoration in the ranking (the server checks it was earned)
-      if (kind === 'deco') void saveDeco(id);
+      // Others see the decoration in the ranking (the server checks it was earned; one worn
+      // through the debug setting is not sent)
+      if (kind === 'deco') void saveDeco(rankingDeco(save));
       persist();
       this.render();
     };
@@ -2416,7 +2470,7 @@ export class BaseScene extends Phaser.Scene {
           width: 104,
           height: 56,
           fontSize: 18,
-          skin: save.cosmetics.length > 0 || devAllCosmetics() ? 'gold' : undefined,
+          skin: save.cosmetics.length > 0 || allLooksOpen() ? 'gold' : undefined,
         },
       ),
     );

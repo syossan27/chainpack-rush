@@ -266,6 +266,8 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Tutorial di tiap layar akan muncul lagi',
   振動: 'Getaran',
   '画面揺れ・光': 'Guncangan & Kilatan Layar',
+  デバッグ機能: 'Mode Debug',
+  着せ替えの見た目をすべて試せます: 'Kamu bisa mencoba semua tampilan di Lemari',
   言語: 'Bahasa',
   '{auto}（{lang}）': '{auto} ({lang})',
   自動: 'Otomatis',

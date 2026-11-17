@@ -265,6 +265,8 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'El tutorial de cada pantalla se mostrará de nuevo',
   振動: 'Vibración',
   '画面揺れ・光': 'Sacudidas y destellos',
+  デバッグ機能: 'Modo de depuración',
+  着せ替えの見た目をすべて試せます: 'Puedes probarte todos los aspectos del Vestuario',
   言語: 'Idioma',
   '{auto}（{lang}）': '{auto} ({lang})',
   自動: 'Automático',

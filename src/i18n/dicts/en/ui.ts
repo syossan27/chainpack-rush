@@ -262,6 +262,8 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': "Each screen's tutorial will show again",
   振動: 'Vibration',
   '画面揺れ・光': 'Screen Shake & Flash',
+  デバッグ機能: 'Debug Mode',
+  着せ替えの見た目をすべて試せます: 'You can try on every look in the Wardrobe',
   言語: 'Language',
   '{auto}（{lang}）': '{auto} ({lang})',
   自動: 'Auto',
