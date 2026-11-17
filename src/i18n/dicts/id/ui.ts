@@ -27,7 +27,7 @@ export const UI: Dict = {
   銅のメダル: 'Medali Perunggu',
   銀の王冠: 'Mahkota Perak',
   金の王冠: 'Mahkota Emas',
-  若葉の冠: 'Mahkota Daun Muda',
+  若葉の印: 'Tanda Daun Muda',
   コウモリの翼: 'Sayap Kelelawar',
   騎士の旗: 'Panji Ksatria',
   炎の羽飾り: 'Hiasan Bulu Api',

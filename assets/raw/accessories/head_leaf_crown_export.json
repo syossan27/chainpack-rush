@@ -1,15 +1,22 @@
 {
   "file": "accessories/head_leaf_crown.png",
-  "size": [24, 8],
-  "pivot": [11, -3],
-  "role": "若葉の冠 (head). The front half of a thin ring of leaves, worn low around the helmet between the horns like a crown of thorns. The back half is cut off because the helmet would hide it.",
+  "size": [9, 9],
+  "pivot": [-1, -4],
+  "role": "若葉の印 (head; id head_leaf_crown). A young-leaf mark on the forehead: an arrowhead notched on top and split down the middle, yellow on the left and green on the right, set over the red gem (the gem peeks through the notch).",
   "source": {
-    "endpoint": "generate-image-v2",
-    "size": [28, 16],
-    "seed": 8204,
-    "picked_variation": 37,
-    "no_background": true,
-    "description": "pixel art game item: a thin circlet of small green leaves, like a crown of thorns made of leaves, a narrow thin ring seen from the front and slightly above (flat ellipse), dark outline"
+    "endpoint": "none (pixels placed by hand)",
+    "palette": {
+      "K outline": [22, 44, 24],
+      "W light yellow": [255, 242, 160],
+      "Y yellow": [250, 214, 64],
+      "O dark yellow": [206, 150, 34],
+      "P light green": [214, 248, 150],
+      "L green": [150, 222, 92],
+      "M mid green": [88, 176, 62],
+      "D dark green": [46, 118, 44]
+    },
+    "rows": ["KK.....KK", "KWK...KPK", "KYYK.KLMK", "KWYOKLMDK", "KYYOKMMDK", "KYYOKMMDK", ".KYOKMDK.", "..KOKDK..", "...KKK..."]
   },
-  "note": "Trimmed to the ring (24x14), then the rows from the ring's middle down were kept (24x8). Alpha is 0/255 only; 46 colors. Placed with its top row 3 px below the head anchor (the dome top), centered 1 px right of it. Earlier tries that were not used: create-image-bitforge (13 calls; with the hero as the style sample it copied the helmet, without it the small images were blurry) and generate-image-v2 full crowns (seeds 8202, 8203; too big, they hid the top half of the helmet)."
+  "note": "Centered on the forehead gem (about +5.5, +8.3 from the head anchor, measured for the ice crystal). Alpha is 0/255 only.",
+  "history": "First 若葉の冠: the front half of a thin ring of leaves worn low on the helmet (generate-image-v2 seed 8204 #37, 24x8; earlier bitforge and full-crown tries were dropped). The user found it looked just like a crown of thorns and asked for a one-point mark on the forehead instead, like the ice crystal. Of three hand-drawn ideas (two sprout leaves, a beginner-mark style arrowhead, one leaf) the user picked the mark, a little bigger (7x7 → 9x9), and renamed it 若葉の印. The id stays head_leaf_crown so saves that own it keep it."
 }

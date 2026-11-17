@@ -27,7 +27,7 @@ export const UI: Dict = {
   銅のメダル: 'Medalla de Bronce',
   銀の王冠: 'Corona de Plata',
   金の王冠: 'Corona de Oro',
-  若葉の冠: 'Corona de Hojas',
+  若葉の印: 'Marca de Hoja',
   コウモリの翼: 'Alas de Murciélago',
   騎士の旗: 'Estandarte del Caballero',
   炎の羽飾り: 'Penacho de Llamas',

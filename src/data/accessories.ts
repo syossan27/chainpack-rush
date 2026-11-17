@@ -25,9 +25,10 @@ export interface AccessoryArt {
 
 /** Look id → art (assets/raw/accessories/<id>_export.json has how each was made) */
 export const ACCESSORY_ART: Readonly<Record<string, AccessoryArt>> = {
-  // The front half of a thin ring of leaves, wrapped low around the helmet between the horns
-  // (the back half would be hidden by the helmet, so it is cut off)
-  head_leaf_crown: { file: 'accessories/head_leaf_crown.png', pivot: [11, -3] },
+  // 若葉の印: a young-leaf mark (yellow left, green right, notched on top) over the red gem on the
+  // forehead (9x9, pixels placed by hand); the gem peeks through the notch. The id is still
+  // head_leaf_crown (it was a ring of leaves first), so saves that own it keep it
+  head_leaf_crown: { file: 'accessories/head_leaf_crown.png', pivot: [-1, -4] },
   // Flame-like feathers standing on the dome and trailing back; the helmet's red plume is taken off
   // while it is worn
   head_flame_plume: {

@@ -26,7 +26,7 @@ export const UI: Dict = {
   銅のメダル: 'Bronze Medal',
   銀の王冠: 'Silver Crown',
   金の王冠: 'Gold Crown',
-  若葉の冠: 'Leaf Crown',
+  若葉の印: 'Leaf Mark',
   コウモリの翼: 'Bat Wings',
   騎士の旗: "Knight's Banner",
   炎の羽飾り: 'Flame Plume',

@@ -124,7 +124,7 @@ describe('冒険のご褒美の小物', () => {
       [
         'head_leaf_crown',
         'head',
-        '若葉の冠',
+        '若葉の印',
         { kind: 'regionStars', region: 'grassland', stars: 1 },
       ],
       ['back_bat_wings', 'back', 'コウモリの翼', { kind: 'regionStars', region: 'cave', stars: 1 }],

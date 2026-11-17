@@ -46,7 +46,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
   {
     id: 'head_leaf_crown',
     kind: 'head',
-    name: k('若葉の冠'),
+    name: k('若葉の印'),
     source: { kind: 'regionStars', region: 'grassland', stars: 1 },
   },
   {
