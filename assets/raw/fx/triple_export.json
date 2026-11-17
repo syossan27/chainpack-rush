@@ -5,7 +5,7 @@
   "frames": 4,
   "fps": 16,
   "loop": true,
-  "role": "Triple Slash body: a white crescent slash; three of them fly level to the target, 50 ms apart and 16 px apart vertically. Faces right.",
+  "role": "Triple Slash body: a white crescent slash. Three fly level to the target together in a \">\" formation (the middle one leads, the others 36 px behind and 36 px above / below; techFx flyFormation). Faces right, not rotated.",
   "source": {
     "first_frame": {
       "endpoint": "generate-image-v2",

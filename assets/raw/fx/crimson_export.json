@@ -5,7 +5,7 @@
   "frames": 6,
   "fps": 16,
   "loop": true,
-  "role": "Crimson Burst body: the fire crescent that flies from the sword tip to the target. Faces right; the game rotates it toward the target.",
+  "role": "Crimson Burst body: the fire crescent that flies from the sword tip to the target. Faces right and is not rotated: it flies level at the target's height (techFx flyStart).",
   "source": {
     "first_frame": {
       "endpoint": "generate-image-v2",
