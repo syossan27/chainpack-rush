@@ -27,6 +27,18 @@ export const UI: Dict = {
   銅のメダル: 'Medali Perunggu',
   銀の王冠: 'Mahkota Perak',
   金の王冠: 'Mahkota Emas',
+  若葉の冠: 'Mahkota Daun Muda',
+  コウモリの翼: 'Sayap Kelelawar',
+  騎士の旗: 'Panji Ksatria',
+  炎の羽飾り: 'Hiasan Bulu Api',
+  氷の結晶: 'Kristal Es',
+  魔王の翼: 'Sayap Raja Iblis',
+  星の輪: 'Lingkaran Bintang',
+
+  // src/core/cosmeticRewards.ts
+  '{region}で★{stars}（{loop}周目のボスを倒す）':
+    '★{stars} di {region} (kalahkan Bos Putaran {loop})',
+  'エンドレスで{n}周目に着く': 'Capai putaran {n} di mode Tanpa Batas',
 
   // src/core/diagnose.ts
   '必殺技の並びがそろう！': 'Melengkapi urutan Jurus Spesial!',
@@ -319,19 +331,20 @@ export const UI: Dict = {
   '新しい装飾品: {list}': 'Kosmetik baru: {list}',
   ランキングの報酬: 'Hadiah Peringkat',
   受け取る: 'Klaim',
-  装飾品: 'Kosmetik',
   戻る: 'Kembali',
-  '挑戦で上位に入るともらえる、見た目だけの装飾品':
-    'Kosmetik untuk peringkat atas di Tantangan. Hanya mengubah tampilan.',
   冒険者: 'Petualang',
-  挑戦で上位に入るともらえます: 'Didapat dengan masuk peringkat atas di Tantangan',
-  勇者の色: 'Warna Pahlawan',
   いつもの色: 'Bawaan',
   ペット: 'Peliharaan',
   なし: 'Tidak ada',
-  '名前の飾り（ランキング）': 'Hiasan Nama (Peringkat)',
   使用中: 'Digunakan',
   '{band}でもらえる': 'Hadiah {band}',
+  着せ替え: 'Lemari',
+  '冒険や挑戦でもらえる、見た目だけの装飾品':
+    'Tampilan dari petualangan dan Tantangan. Hanya mengubah penampilan.',
+  勇者: 'Pahlawan',
+  頭: 'Kepala',
+  背中: 'Punggung',
+  名前の飾り: 'Hiasan Nama',
   '舞台: {region}': 'Lokasi: {region}',
   '・{rule}': '• {rule}',
   'リリースから2週間後に開放！': 'Dibuka 2 minggu setelah rilis!',
@@ -600,6 +613,8 @@ export const UI: Dict = {
 
   // src/ui/achievementToast.ts
   '実績達成！': 'Pencapaian Terbuka!',
+  '新しい見た目！': 'Tampilan Baru!',
+  拠点で勇者をタップして着せ替え: 'Ketuk pahlawan di Markas untuk berganti tampilan',
 
   // src/ui/backpackView.ts
   '必殺 {step}連鎖': 'Spesial #{step}',

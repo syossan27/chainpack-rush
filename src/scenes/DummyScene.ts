@@ -56,7 +56,7 @@ export class DummyScene extends Phaser.Scene {
     });
     // Development only: an angry dummy, to check the angry boss look
     if (devRage()) for (const e of this.combat.enemies) e.enraged = true;
-    this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id);
+    this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id, getSave().look);
     this.field.setAura(auraTier(save.loadout, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);

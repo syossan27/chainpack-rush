@@ -27,6 +27,18 @@ export const UI: Dict = {
   銅のメダル: 'Médaille de bronze',
   銀の王冠: "Couronne d'argent",
   金の王冠: "Couronne d'or",
+  若葉の冠: 'Couronne de feuilles',
+  コウモリの翼: 'Ailes de chauve-souris',
+  騎士の旗: 'Bannière du chevalier',
+  炎の羽飾り: 'Plumet de flammes',
+  氷の結晶: 'Cristal de glace',
+  魔王の翼: 'Ailes du Roi démon',
+  星の輪: 'Halo étoilé',
+
+  // src/core/cosmeticRewards.ts
+  '{region}で★{stars}（{loop}周目のボスを倒す）':
+    '{region} : ★{stars} (bats le boss du tour {loop})',
+  'エンドレスで{n}周目に着く': 'Atteins le tour {n} en mode Infini',
 
   // src/core/diagnose.ts
   '必殺技の並びがそろう！': "Complète l'ordre d'un coup spécial !",
@@ -322,19 +334,20 @@ export const UI: Dict = {
   '新しい装飾品: {list}': 'Nouveaux cosmétiques : {list}',
   ランキングの報酬: 'Récompenses du classement',
   受け取る: 'Récupérer',
-  装飾品: 'Cosmétiques',
   戻る: 'Retour',
-  '挑戦で上位に入るともらえる、見た目だけの装飾品':
-    'Des cosmétiques pour les meilleurs rangs des Défis. Ils ne changent que ton apparence.',
   冒険者: 'Aventurier',
-  挑戦で上位に入るともらえます: 'À gagner en finissant bien classé à un Défi',
-  勇者の色: 'Couleurs du héros',
   いつもの色: 'Par défaut',
   ペット: 'Compagnon',
   なし: 'Aucun',
-  '名前の飾り（ランキング）': 'Badge de nom (classement)',
   使用中: 'Utilisé',
   '{band}でもらえる': 'Récompense : {band}',
+  着せ替え: 'Garde-robe',
+  '冒険や挑戦でもらえる、見た目だけの装飾品':
+    'Apparences gagnées en aventure et aux Défis. Elles ne changent que le look.',
+  勇者: 'Héros',
+  頭: 'Tête',
+  背中: 'Dos',
+  名前の飾り: 'Badge de nom',
   '舞台: {region}': 'Lieu : {region}',
   '・{rule}': '• {rule}',
   'リリースから2週間後に開放！': 'Ouvre 2 semaines après la sortie !',
@@ -605,6 +618,8 @@ export const UI: Dict = {
 
   // src/ui/achievementToast.ts
   '実績達成！': 'Succès débloqué !',
+  '新しい見た目！': 'Nouvelle apparence !',
+  拠点で勇者をタップして着せ替え: 'Touche le héros à la Base pour changer son apparence',
 
   // src/ui/backpackView.ts
   '必殺 {step}連鎖': 'Spécial #{step}',

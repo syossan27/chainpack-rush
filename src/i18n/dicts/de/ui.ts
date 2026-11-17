@@ -26,6 +26,18 @@ export const UI: Dict = {
   銅のメダル: 'Bronzemedaille',
   銀の王冠: 'Silberkrone',
   金の王冠: 'Goldkrone',
+  若葉の冠: 'Blätterkrone',
+  コウモリの翼: 'Fledermausflügel',
+  騎士の旗: 'Ritterbanner',
+  炎の羽飾り: 'Flammenfeder',
+  氷の結晶: 'Eiskristall',
+  魔王の翼: 'Flügel des Dämonenkönigs',
+  星の輪: 'Sternenring',
+
+  // src/core/cosmeticRewards.ts
+  '{region}で★{stars}（{loop}周目のボスを倒す）':
+    '★{stars} in {region} (besiege den Boss der Runde {loop})',
+  'エンドレスで{n}周目に着く': 'Erreiche Runde {n} in Endlos',
 
   // src/core/diagnose.ts
   '必殺技の並びがそろう！': 'Vervollständigt einen Spezialangriff!',
@@ -320,19 +332,20 @@ export const UI: Dict = {
   '新しい装飾品: {list}': 'Neue Kosmetik: {list}',
   ランキングの報酬: 'Ranglisten-Belohnung',
   受け取る: 'Abholen',
-  装飾品: 'Kosmetik',
   戻る: 'Zurück',
-  '挑戦で上位に入るともらえる、見た目だけの装飾品':
-    'Kosmetik für Top-Ränge in Prüfungen. Ändert nur dein Aussehen.',
   冒険者: 'Abenteurer',
-  挑戦で上位に入るともらえます: 'Für Top-Ränge in einer Prüfung',
-  勇者の色: 'Heldenfarben',
   いつもの色: 'Standard',
   ペット: 'Begleiter',
   なし: 'Keine',
-  '名前の飾り（ランキング）': 'Namensdeko (Rangliste)',
   使用中: 'Aktiv',
   '{band}でもらえる': 'Belohnung für {band}',
+  着せ替え: 'Garderobe',
+  '冒険や挑戦でもらえる、見た目だけの装飾品':
+    'Aussehen aus Abenteuern und Prüfungen – ändert nur das Aussehen.',
+  勇者: 'Held',
+  頭: 'Kopf',
+  背中: 'Rücken',
+  名前の飾り: 'Namensdeko',
   '舞台: {region}': 'Gebiet: {region}',
   '・{rule}': '• {rule}',
   'リリースから2週間後に開放！': 'Öffnet 2 Wochen nach Release!',
@@ -598,6 +611,8 @@ export const UI: Dict = {
 
   // src/ui/achievementToast.ts
   '実績達成！': 'Erfolg erreicht!',
+  '新しい見た目！': 'Neues Aussehen!',
+  拠点で勇者をタップして着せ替え: 'Tippe in der Basis auf den Helden, um ihn einzukleiden',
 
   // src/ui/backpackView.ts
   '必殺 {step}連鎖': 'Spezial #{step}',

@@ -2,7 +2,8 @@
 import { markDemoDone, runTutorial } from '../ui/tutorial';
 import { sfx } from '../audio/sfx';
 import { PROGRESS } from '../config/balance';
-import { showAchievements } from '../ui/achievementToast';
+import { TOAST_STEP_MS, showAchievements, showNewLooks } from '../ui/achievementToast';
+import { grantCosmetics } from '../core/cosmeticRewards';
 import { checkAchievements } from '../core/achievements';
 import type { AchievementDef } from '../data/achievements';
 import Phaser from 'phaser';
@@ -137,6 +138,7 @@ export class ResultScene extends Phaser.Scene {
       stars: regionStars(save, regionId),
     };
     let achieved: AchievementDef[] = [];
+    let newLooks: string[] = [];
     if (demo) markDemoDone();
     else {
       consumeItems(save, result.usedConsumables);
@@ -157,6 +159,8 @@ export class ResultScene extends Phaser.Scene {
       } else {
         unlocked = recordRun(save, regionId, result).unlocked;
         achieved = checkAchievements(save, result);
+        // Looks earned by this run's stars or endless loop
+        newLooks = grantCosmetics(save);
       }
     }
     persist();
@@ -332,6 +336,9 @@ export class ResultScene extends Phaser.Scene {
       );
     }
     if (achieved.length > 0) showAchievements(this, achieved, 62, 1400);
+    // After the achievement cards, so the two never overlap
+    if (newLooks.length > 0)
+      showNewLooks(this, newLooks, 62, 1400 + achieved.length * TOAST_STEP_MS);
     if (unlocked) {
       fitText(
         this.add

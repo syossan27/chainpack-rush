@@ -20,6 +20,8 @@ import { scaleMs, specialTimeline, techFxFor } from '../data/techFx';
 import { generateBackgroundTextures } from './textures';
 import { TechFxPlayer, type Target } from './techFxPlayer';
 import { HeroAura, type AuraTier } from './aura';
+import { addHeroAccessories } from './heroAccessories';
+import { NO_LOOK, type Look } from '../core/cosmetics';
 import { COLORS, RUN_LAYOUT, W, textStyle } from './theme';
 
 /** 被弾モーションを見せる長さ（ms） */
@@ -102,7 +104,8 @@ export class FieldView {
   /** Special technique effects (the scene calls screen() at the impact) */
   readonly techFx: TechFxPlayer;
 
-  constructor(scene: Phaser.Scene, regionId: string) {
+  /** look: the worn head / back accessories */
+  constructor(scene: Phaser.Scene, regionId: string, look: Pick<Look, 'head' | 'back'> = NO_LOOK) {
     this.scene = scene;
     // Above the hero and the enemies, below the hit effects (55, 56)
     this.techFx = new TechFxPlayer(scene, 54, RUN_LAYOUT.footY);
@@ -141,6 +144,8 @@ export class FieldView {
       .setOrigin(origin.originX, origin.originY)
       .setScale(heroDef.displayScale)
       .setDepth(20);
+    // Accessories follow the hero frame by frame (depth 19.9 behind / 20.1 in front)
+    addHeroAccessories(scene, this.hero, look);
     // 足元の影
     scene.add
       .ellipse(RUN_LAYOUT.heroScreenX + 4, RUN_LAYOUT.footY - 2, 100, 16, 0x000000, 0.28)

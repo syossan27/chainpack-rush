@@ -198,7 +198,7 @@ export class RunScene extends Phaser.Scene {
     this.ending = false;
     this.cameras.main.setBackgroundColor(COLORS.bg);
 
-    this.field = new FieldView(this, this.regionId);
+    this.field = new FieldView(this, this.regionId, getSave().look);
     // Pet (challenge reward) hovers at the hero's upper left; not in the demo run
     if (!this.demo)
       addPet(this, save.look.pet, RUN_LAYOUT.heroScreenX - 84, RUN_LAYOUT.footY - 112, 2)?.setDepth(

@@ -72,13 +72,15 @@ import {
   decoTexture,
   heroLookPreview,
 } from '../ui/cosmeticsView';
+import { addHeroAccessories } from '../ui/heroAccessories';
 import {
-  COSMETICS,
   cosmeticsForBand,
   getCosmetic,
   isChallengeSeason,
   type CosmeticKind,
 } from '../core/cosmetics';
+import { giveCosmetics } from '../core/cosmeticRewards';
+import { WARDROBE_TABS, firstTab, markSeen, newKinds, wardrobeCards } from '../core/wardrobe';
 import {
   claimSeasonRewards,
   fetchBoard,
@@ -102,6 +104,7 @@ import {
   choiceDialog,
   confirmDialog,
   fitText,
+  fitTextLines,
   ink,
   panel,
   ribbon,
@@ -298,6 +301,9 @@ export class BaseScene extends Phaser.Scene {
   private auraTick: ((t: number, dt: number) => void) | null = null;
   private toast: Phaser.GameObjects.Text | null = null;
   private rankTab: RankMode = 'challenge';
+  /** Wardrobe: where "back" returns to, and the open tab */
+  private wardrobeBack: 'home' | 'challenge' = 'home';
+  private wardrobeTab: CosmeticKind = 'hero';
   private rankGen = 0;
 
   constructor() {
@@ -457,7 +463,37 @@ export class BaseScene extends Phaser.Scene {
       .setOrigin(heroOrigin.originX, heroOrigin.originY);
     // 置いている装備の強さで、勇者にオーラ
     const aura = new HeroAura(this, W / 2, footY, auraTier(save.loadout, itemMap(save)), 170);
-    this.root.add([glow, shadow, aura, hero]);
+    // Accessories: back behind the hero, head in front
+    const acc = addHeroAccessories(this, hero, save.look);
+    this.root.add([glow, shadow, aura]);
+    if (acc.back) this.root.add(acc.back);
+    this.root.add(hero);
+    if (acc.head) this.root.add(acc.head);
+    // Tap the hero to open the wardrobe; NEW floats over the head while there are unseen looks
+    // (tapping NEW opens it too: children tap the word)
+    const openWardrobe = () => {
+      sfx('click');
+      this.openWardrobe('home');
+    };
+    hero.setInteractive({ useHandCursor: true });
+    bindTap(hero, openWardrobe);
+    if (save.newCosmetics.length > 0) {
+      const tag = this.add
+        .text(W / 2, footY - 250, 'NEW', textStyle(30, '#ff5a5a'))
+        .setOrigin(0.5)
+        .setAngle(-6)
+        .setInteractive({ useHandCursor: true });
+      bindTap(tag, openWardrobe);
+      this.root.add(tag);
+      this.tweens.add({
+        targets: tag,
+        y: tag.y - 10,
+        yoyo: true,
+        repeat: -1,
+        duration: 700,
+        ease: 'Sine.easeInOut',
+      });
+    }
     // Pet (challenge reward) flies at the hero's upper left
     const pet = addPet(this, save.look.pet, W / 2 - 120, footY - 128, 3);
     if (pet) this.root.add(pet);
@@ -2159,11 +2195,7 @@ export class BaseScene extends Phaser.Scene {
         );
         // Challenge top ranks also earn cosmetics (looks only)
         if (isChallengeSeason(r.season))
-          for (const id of cosmeticsForBand(r.band))
-            if (!save.cosmetics.includes(id)) {
-              save.cosmetics.push(id);
-              gained.push(id);
-            }
+          gained.push(...giveCosmetics(save, cosmeticsForBand(r.band)));
       }
       if (gained.length > 0)
         lines.push(
@@ -2178,13 +2210,21 @@ export class BaseScene extends Phaser.Scene {
     });
   }
 
-  // ---- 装飾品（挑戦の上位のご褒美。見た目だけで、強さは変わらない） ----
+  // ---- 着せ替え（冒険の節目と挑戦の上位でもらえる見た目。強さは変わらない） ----
+  /** Open the wardrobe on the first tab with new looks; "back" returns to `from` */
+  private openWardrobe(from: 'home' | 'challenge'): void {
+    this.wardrobeBack = from;
+    this.wardrobeTab = firstTab(getSave());
+    this.go('wardrobe');
+  }
+
   private renderWardrobe(): void {
     const save = getSave();
-    const owns = (id: string | null) => !id || devAllCosmetics() || save.cosmetics.includes(id);
-    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('装飾品'), 340));
+    const ownsAll = devAllCosmetics();
+    const kind = this.wardrobeTab;
+    this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('着せ替え'), 340));
     this.root.add(
-      new Button(this, 76, CONTENT_TOP + 40, t('戻る'), () => this.go('challenge'), {
+      new Button(this, 76, CONTENT_TOP + 40, t('戻る'), () => this.go(this.wardrobeBack), {
         width: 112,
         height: 56,
         fontSize: 20,
@@ -2196,25 +2236,31 @@ export class BaseScene extends Phaser.Scene {
           .text(
             W / 2,
             CONTENT_TOP + 80,
-            t('挑戦で上位に入るともらえる、見た目だけの装飾品'),
+            t('冒険や挑戦でもらえる、見た目だけの装飾品'),
             textStyle(20, COLORS.textDim),
           )
           .setOrigin(0.5, 0),
         W - 40,
       ),
     );
-    // Preview: the hero in the worn look with the pet, and the name as the ranking shows it
-    const stageY = CONTENT_TOP + 222;
-    this.root.add(panel(this, W / 2, stageY, W - 40, 196, 'inset'));
+
+    // Try-on stage: the hero idling in the worn look with its accessories and pet, and the name as
+    // the ranking shows it
+    const stageY = CONTENT_TOP + 262;
+    const scale = 2.6;
+    this.root.add(panel(this, W / 2, stageY, W - 40, 300, 'inset'));
     const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
-    const footY = stageY + 86;
-    this.root.add(
-      this.add
-        .sprite(W / 2, footY, 'hero')
-        .setScale(2.2)
-        .setOrigin(heroOrigin.originX, heroOrigin.originY),
-    );
-    const pet = addPet(this, save.look.pet, W / 2 - 104, footY - 96, 2);
+    const footY = stageY + 92;
+    const hero = this.add
+      .sprite(W / 2, footY, 'hero')
+      .setScale(scale)
+      .setOrigin(heroOrigin.originX, heroOrigin.originY);
+    if (this.anims.exists(animKey('hero', 'idle'))) hero.play(animKey('hero', 'idle'));
+    const acc = addHeroAccessories(this, hero, save.look);
+    if (acc.back) this.root.add(acc.back);
+    this.root.add(hero);
+    if (acc.head) this.root.add(acc.head);
+    const pet = addPet(this, save.look.pet, W / 2 - 120, footY - 110, scale);
     if (pet) this.root.add(pet);
     const nameY = stageY + 124;
     const deco = decoTexture(this, save.look.deco);
@@ -2238,82 +2284,120 @@ export class BaseScene extends Phaser.Scene {
       );
     this.root.add(nameText0);
 
-    const wear = (kind: CosmeticKind, id: string | null) => {
-      if (!owns(id)) {
-        this.showToast(t('挑戦で上位に入るともらえます'), true);
-        return;
-      }
+    // Tabs: hero (colors), head, back, pet, name decoration. A red dot marks unseen looks
+    const tabY = CONTENT_TOP + 456;
+    const tabGap = 8;
+    const tabW = (W - 40 - tabGap * (WARDROBE_TABS.length - 1)) / WARDROBE_TABS.length;
+    const marked = newKinds(save);
+    WARDROBE_TABS.forEach((tab, i) => {
+      const x = 20 + tabW / 2 + i * (tabW + tabGap);
+      const on = tab.kind === kind;
+      this.root.add(panel(this, x, tabY, tabW, 56, on ? 'paper' : 'inset'));
+      const label = on
+        ? ink(this, x, tabY, t(tab.label), 20, '#5a3a20')
+        : this.add.text(x, tabY, t(tab.label), textStyle(20, COLORS.text));
+      this.root.add(fitText(label.setOrigin(0.5), tabW - 12));
+      if (!on && marked.includes(tab.kind))
+        this.root.add(
+          this.add.circle(x + tabW / 2 - 8, tabY - 22, 9, 0xe83c3c).setStrokeStyle(3, 0x0c0a12),
+        );
+      const hit = this.add.zone(x, tabY, tabW, 56).setInteractive({ useHandCursor: true });
+      hit.on('pointerup', () => {
+        if (this.wardrobeTab === tab.kind) return;
+        sfx('click');
+        this.wardrobeTab = tab.kind;
+        this.render();
+      });
+      this.root.add(hit);
+    });
+
+    const wear = (id: string | null) => {
       sfx('click');
       save.look = { ...save.look, [kind]: id };
-      if (kind === 'hero') applyHeroLook(this, id);
+      if (kind === 'hero' || kind === 'head') applyHeroLook(this, save.look);
       // Others see the decoration in the ranking (the server checks it was earned)
       if (kind === 'deco') void saveDeco(id);
       persist();
       this.render();
     };
-    const sections: { kind: CosmeticKind; title: string; none: string }[] = [
-      { kind: 'hero', title: t('勇者の色'), none: t('いつもの色') },
-      { kind: 'pet', title: t('ペット'), none: t('なし') },
-      { kind: 'deco', title: t('名前の飾り（ランキング）'), none: t('なし') },
-    ];
+    // Cards: owned looks with their art, the others as a black silhouette with how to earn them
+    const cards = wardrobeCards(save, kind, ownsAll);
     const cw = 150;
-    const ch = 140;
+    const ch = 170;
     const gap = 12;
-    sections.forEach((sec, si) => {
-      const hy = CONTENT_TOP + 372 + si * 206;
-      this.root.add(fitText(this.add.text(36, hy, sec.title, textStyle(24, '#ffe27a')), W - 72));
-      const opts: (string | null)[] = [
-        null,
-        ...COSMETICS.filter((c) => c.kind === sec.kind).map((c) => c.id),
-      ];
-      const total = opts.length * cw + (opts.length - 1) * gap;
-      opts.forEach((id, i) => {
-        const x = W / 2 - total / 2 + cw / 2 + i * (cw + gap);
-        const cy = hy + 40 + ch / 2;
-        const def = id ? getCosmetic(id) : undefined;
-        const owned = owns(id);
-        const worn = save.look[sec.kind] === id;
-        this.root.add(panel(this, x, cy, cw, ch, worn ? 'paper' : 'inset'));
-        const key =
-          sec.kind === 'hero' ? heroLookPreview(this, id) : id ? cosmeticTexture(this, id) : null;
-        if (key) {
-          const src = this.textures.get(key).getSourceImage();
-          const img = this.add
-            .image(x, cy - 16, key)
-            .setScale(Math.min(80 / src.height, 120 / src.width, 4));
-          if (!owned) img.setTint(0x222230);
-          this.root.add(img);
-        } else {
-          const none = worn
-            ? ink(this, x, cy - 16, '—', 30)
-            : this.add.text(x, cy - 16, '—', textStyle(30, COLORS.textDim));
-          this.root.add(none.setOrigin(0.5));
-        }
-        const label = def ? t(def.name) : sec.none;
-        const name = worn
-          ? ink(this, x, cy + 30, label, 18, '#5a3a20')
-          : this.add.text(x, cy + 30, label, textStyle(18, owned ? COLORS.text : COLORS.textDim));
-        this.root.add(fitText(name.setOrigin(0.5), cw - 14));
-        const state = worn
-          ? t('使用中')
-          : owned
-            ? ''
-            : t('{band}でもらえる', { band: t(RANK_REWARDS[def!.band].label) });
-        if (state)
-          this.root.add(
-            fitText(
-              (worn
-                ? ink(this, x, cy + 54, state, 16, '#3a8a3a')
-                : this.add.text(x, cy + 54, state, textStyle(16, COLORS.textWarn))
-              ).setOrigin(0.5),
-              cw - 12,
-            ),
+    const cols = 4;
+    const none = kind === 'hero' ? t('いつもの色') : t('なし');
+    cards.forEach((card, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const inRow = Math.min(cols, cards.length - row * cols);
+      const rowW = inRow * cw + (inRow - 1) * gap;
+      const x = W / 2 - rowW / 2 + cw / 2 + col * (cw + gap);
+      const cy = tabY + 50 + ch / 2 + row * (ch + gap);
+      const def = card.id ? getCosmetic(card.id) : undefined;
+      this.root.add(panel(this, x, cy, cw, ch, card.worn ? 'paper' : 'inset'));
+      const key =
+        kind === 'hero'
+          ? heroLookPreview(this, card.id)
+          : card.id
+            ? cosmeticTexture(this, card.id)
+            : null;
+      if (key) {
+        const src = this.textures.get(key).getSourceImage();
+        const img = this.add
+          .image(x, cy - 34, key)
+          .setScale(Math.min(76 / src.height, 120 / src.width, 4));
+        if (!card.owned) img.setTintFill(0x0a0810);
+        this.root.add(img);
+      } else {
+        const dash = card.worn
+          ? ink(this, x, cy - 34, '—', 30)
+          : this.add.text(x, cy - 34, '—', textStyle(30, COLORS.textDim));
+        this.root.add(dash.setOrigin(0.5));
+      }
+      const label = def ? t(def.name) : none;
+      const name = card.worn
+        ? ink(this, x, cy + 20, label, 18, '#5a3a20')
+        : this.add.text(
+            x,
+            cy + 20,
+            label,
+            textStyle(18, card.owned ? COLORS.text : COLORS.textDim),
           );
-        const hit = this.add.zone(x, cy, cw, ch).setInteractive({ useHandCursor: true });
-        hit.on('pointerup', () => wear(sec.kind, id));
-        this.root.add(hit);
+      this.root.add(fitText(name.setOrigin(0.5), cw - 14));
+      if (card.worn)
+        this.root.add(
+          fitText(ink(this, x, cy + 48, t('使用中'), 16, '#3a8a3a').setOrigin(0.5), cw - 12),
+        );
+      else if (card.condition) {
+        const cond = this.add
+          .text(x, cy + 45, card.condition, textStyle(14, COLORS.textWarn))
+          .setOrigin(0.5);
+        this.root.add(fitTextLines(cond, cw - 12, 2, 0.8));
+        if (card.progress)
+          this.root.add(
+            this.add.text(x, cy + 75, card.progress, textStyle(16, COLORS.gold)).setOrigin(0.5),
+          );
+      }
+      if (card.isNew)
+        this.root.add(
+          this.add
+            .text(x + cw / 2 - 6, cy - ch / 2 + 4, 'NEW', textStyle(18, '#ff5a5a'))
+            .setOrigin(1, 0)
+            .setAngle(-8),
+        );
+      const hit = this.add.zone(x, cy, cw, ch).setInteractive({ useHandCursor: true });
+      hit.on('pointerup', () => {
+        if (card.owned) wear(card.id);
+        else if (card.condition) this.showToast(card.condition, true);
       });
+      this.root.add(hit);
     });
+    // This tab's new looks have now been seen (the NEW marks above show this one time)
+    if (cards.some((c) => c.isNew)) {
+      markSeen(save, kind);
+      persist();
+    }
   }
 
   // ---- 2週替わりの挑戦 ----
@@ -2322,12 +2406,19 @@ export class BaseScene extends Phaser.Scene {
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('2週替わりの挑戦'), 400));
     // Cosmetics earned from the challenge ranking
     this.root.add(
-      new Button(this, W - 64, CONTENT_TOP + 40, t('装飾品'), () => this.go('wardrobe'), {
-        width: 104,
-        height: 56,
-        fontSize: 18,
-        skin: save.cosmetics.length > 0 || devAllCosmetics() ? 'gold' : undefined,
-      }),
+      new Button(
+        this,
+        W - 64,
+        CONTENT_TOP + 40,
+        t('着せ替え'),
+        () => this.openWardrobe('challenge'),
+        {
+          width: 104,
+          height: 56,
+          fontSize: 18,
+          skin: save.cosmetics.length > 0 || devAllCosmetics() ? 'gold' : undefined,
+        },
+      ),
     );
     const now = Date.now();
     const start = challengeStart(devChallengeOpen());

@@ -51,9 +51,11 @@ export interface SaveData {
   titles: string[];
   /** ランキングの表示名（言葉の番号）。初めて送るときに決める */
   rankName: { a: number; b: number; tag: number } | null;
-  /** Cosmetics earned in the challenge ranking (ids) and what is worn */
+  /** Cosmetics owned (ids) and what is worn */
   cosmetics: string[];
   look: Look;
+  /** Owned looks not seen in the wardrobe yet (the NEW marks) */
+  newCosmetics: string[];
   /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
   editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
@@ -154,6 +156,7 @@ export function createInitialSave(): SaveData {
     rankName: null,
     cosmetics: [],
     look: { ...NO_LOOK },
+    newCosmetics: [],
     adLog: { date: '', counts: {} },
     settings: {
       volume: 0.7,
@@ -323,6 +326,15 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         isObj(data.look) ? (data.look as Partial<Look>) : undefined,
         Array.isArray(data.cosmetics) ? (data.cosmetics as string[]) : [],
       ),
+      // Only owned looks can be new (older saves have none)
+      newCosmetics: Array.isArray(data.newCosmetics)
+        ? COSMETICS.map((c) => c.id).filter(
+            (id) =>
+              (data.newCosmetics as unknown[]).includes(id) &&
+              Array.isArray(data.cosmetics) &&
+              (data.cosmetics as unknown[]).includes(id),
+          )
+        : [],
       titles: Array.isArray(data.titles)
         ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
         : [],

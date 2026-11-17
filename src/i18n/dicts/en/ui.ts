@@ -26,6 +26,18 @@ export const UI: Dict = {
   銅のメダル: 'Bronze Medal',
   銀の王冠: 'Silver Crown',
   金の王冠: 'Gold Crown',
+  若葉の冠: 'Leaf Crown',
+  コウモリの翼: 'Bat Wings',
+  騎士の旗: "Knight's Banner",
+  炎の羽飾り: 'Flame Plume',
+  氷の結晶: 'Ice Crystal',
+  魔王の翼: "Demon Lord's Wings",
+  星の輪: 'Star Halo',
+
+  // src/core/cosmeticRewards.ts
+  '{region}で★{stars}（{loop}周目のボスを倒す）':
+    '★{stars} in {region} (defeat the Loop {loop} Boss)',
+  'エンドレスで{n}周目に着く': 'Reach loop {n} in Endless',
 
   // src/core/diagnose.ts
   '必殺技の並びがそろう！': 'Completes a Special Move sequence!',
@@ -315,19 +327,20 @@ export const UI: Dict = {
   '新しい装飾品: {list}': 'New cosmetics: {list}',
   ランキングの報酬: 'Ranking Rewards',
   受け取る: 'Claim',
-  装飾品: 'Cosmetics',
   戻る: 'Back',
-  '挑戦で上位に入るともらえる、見た目だけの装飾品':
-    'Cosmetics for top Challenge ranks. They only change your look.',
   冒険者: 'Adventurer',
-  挑戦で上位に入るともらえます: 'Earned by ranking high in a Challenge',
-  勇者の色: 'Hero Colors',
   いつもの色: 'Default',
   ペット: 'Pet',
   なし: 'None',
-  '名前の飾り（ランキング）': 'Name Badge (Ranking)',
   使用中: 'In Use',
   '{band}でもらえる': '{band} reward',
+  着せ替え: 'Wardrobe',
+  '冒険や挑戦でもらえる、見た目だけの装飾品':
+    'Looks earned on adventures and in Challenges. They only change your look.',
+  勇者: 'Hero',
+  頭: 'Head',
+  背中: 'Back',
+  名前の飾り: 'Name Badge',
   '舞台: {region}': 'Stage: {region}',
   '・{rule}': '• {rule}',
   'リリースから2週間後に開放！': 'Opens 2 weeks after launch!',
@@ -592,6 +605,8 @@ export const UI: Dict = {
 
   // src/ui/achievementToast.ts
   '実績達成！': 'Achievement Unlocked!',
+  '新しい見た目！': 'New Look!',
+  拠点で勇者をタップして着せ替え: 'Tap the hero at the Base to dress up',
 
   // src/ui/backpackView.ts
   '必殺 {step}連鎖': 'Special #{step}',

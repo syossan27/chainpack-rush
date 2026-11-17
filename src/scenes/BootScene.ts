@@ -4,12 +4,14 @@ import { PET_SHEETS, applyHeroLook, createPetAnims, petSheetKey } from '../ui/co
 import { UNIT_SPRITES, animFrameSize, animKey, iconKey, type UnitAnimName } from '../data/sprites';
 import { ITEM_DEFS } from '../data/items';
 import { loadSave } from '../platform/storage';
-import { setSave } from '../platform/store';
+import { persist, setSave } from '../platform/store';
+import { grantCosmetics } from '../core/cosmeticRewards';
 import { generateUiIcons } from '../ui/kit/icons';
 import { generateSkin } from '../ui/kit/skin';
 import { bgKey, generateAllTextures } from '../ui/textures';
 import { ENDLESS, REGIONS } from '../data/regions';
 import { TECH_FX, fxSheetKey } from '../data/techFx';
+import { ACCESSORY_ART, accessoryKey } from '../data/accessories';
 import { applyLang } from '../i18n/setup';
 import { loadFonts } from '../ui/fonts';
 import { COLORS, H, W, textStyle } from '../ui/theme';
@@ -66,6 +68,11 @@ export class BootScene extends Phaser.Scene {
           frameWidth: sheet.size,
           frameHeight: sheet.size,
         });
+    }
+    // Head and back accessories (assets/sprites/accessories). A missing one is not drawn
+    for (const [id, art] of Object.entries(ACCESSORY_ART)) {
+      const url = spriteUrl(art.file);
+      if (url) this.load.image(accessoryKey(id), url);
     }
     // Special technique bodies (assets/sprites/fx). A missing one is drawn in code instead
     for (const fx of Object.values(TECH_FX)) {
@@ -135,9 +142,11 @@ export class BootScene extends Phaser.Scene {
     // The language comes from the save, so load it first; then preload the fonts for that language
     void loadSave().then(async (save) => {
       setSave(save);
+      // Looks earned before they existed (or while away) are handed over once; NEW marks them
+      if (grantCosmetics(save).length > 0) persist();
       applyLang(save.settings.lang);
-      // Challenge reward look (recolors the hero textures for every scene)
-      applyHeroLook(this, save.look.hero);
+      // The worn look (recolors the hero textures for every scene; hides the plume under a flame plume)
+      applyHeroLook(this, save.look);
       await loadFonts();
       this.scene.start('Base');
     });

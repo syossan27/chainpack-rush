@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { anchorAt, anchorToWorld, type AnchorTable } from '../src/core/heroAnchors';
+import { anchorAt, anchorToWorld, heroFrameOf, type AnchorTable } from '../src/core/heroAnchors';
 import { HERO_ANCHORS } from '../src/data/heroAnchors';
 import { UNIT_SPRITES } from '../src/data/sprites';
 
@@ -62,5 +62,45 @@ describe('騎士の必殺の共通の動き', () => {
   it('勇者の必殺は共通の動きだけ', () => {
     const names = Object.keys(UNIT_SPRITES.hero!.anims!).filter((k) => k.startsWith('special'));
     expect(names).toEqual(['special']);
+  });
+});
+
+describe('騎士の頭と背中の位置（小物の付け根）', () => {
+  it('勇者の全アニメの全コマに頭と背中がある（背中を隠すコマは null）。点はコマの中', () => {
+    const hero = UNIT_SPRITES.hero!;
+    for (const [name, anim] of Object.entries(hero.anims!)) {
+      const a = HERO_ANCHORS.knight![name]!;
+      expect(a, name).toBeDefined();
+      expect(a.head, name).toHaveLength(anim!.frames);
+      expect(a.back, name).toHaveLength(anim!.frames);
+      expect(
+        a.head!.every((p) => p !== null),
+        name,
+      ).toBe(true);
+      const w = anim!.frameWidth ?? hero.frameWidth;
+      const h = anim!.frameHeight ?? hero.frameHeight;
+      for (const p of [...a.head!, ...a.back!]) {
+        if (!p) continue;
+        expect(p[0], name).toBeGreaterThanOrEqual(0);
+        expect(p[0], name).toBeLessThan(w);
+        expect(p[1], name).toBeGreaterThanOrEqual(0);
+        expect(p[1], name).toBeLessThan(h);
+      }
+    }
+  });
+
+  it('待機の1コマ目は頭も背中も見える（地域選択の小窓・拠点の静止画）', () => {
+    expect(anchorAt(HERO_ANCHORS, 'knight', 'idle', 0, 'head')).not.toBeNull();
+    expect(anchorAt(HERO_ANCHORS, 'knight', 'idle', 0, 'back')).not.toBeNull();
+  });
+
+  it('勇者の絵の今のコマ: アニメのコマ・静止画は待機の1コマ目・それ以外は null', () => {
+    expect(heroFrameOf('hero', 'hero_run', 3)).toEqual({ anim: 'run', frame: 3 });
+    expect(heroFrameOf('hero', 'hero_run', '3')).toEqual({ anim: 'run', frame: 3 });
+    expect(heroFrameOf('hero', 'hero', '__BASE')).toEqual({ anim: 'idle', frame: 0 });
+    expect(heroFrameOf('hero', 'hero_look_hero_gold', '__BASE')).toBeNull();
+    expect(heroFrameOf('hero', 'slime_idle', 0)).toBeNull();
+    expect(heroFrameOf('hero', 'hero_run', -1)).toBeNull();
+    expect(heroFrameOf('hero', 'hero_run', 1.5)).toBeNull();
   });
 });

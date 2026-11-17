@@ -33,3 +33,20 @@ export function anchorToWorld(
     y: at.y + (p[1] - origin.originY * frame.height) * scale,
   };
 }
+
+/**
+ * Which animation frame a hero sprite shows, from its texture key and frame name: an animation
+ * sheet `${unitKey}_${anim}` gives that frame; the still (`unitKey` itself) is the first idle frame.
+ * Anything else (look previews, other units, odd frame names) is null
+ */
+export function heroFrameOf(
+  unitKey: string,
+  textureKey: string,
+  frameName: string | number,
+): { anim: string; frame: number } | null {
+  if (textureKey === unitKey) return { anim: 'idle', frame: 0 };
+  if (!textureKey.startsWith(`${unitKey}_`)) return null;
+  const frame = typeof frameName === 'number' ? frameName : Number(frameName);
+  if (!Number.isInteger(frame) || frame < 0) return null;
+  return { anim: textureKey.slice(unitKey.length + 1), frame };
+}

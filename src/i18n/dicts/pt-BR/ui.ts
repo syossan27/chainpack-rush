@@ -27,6 +27,18 @@ export const UI: Dict = {
   銅のメダル: 'Medalha de Bronze',
   銀の王冠: 'Coroa de Prata',
   金の王冠: 'Coroa de Ouro',
+  若葉の冠: 'Coroa de Folhas',
+  コウモリの翼: 'Asas de Morcego',
+  騎士の旗: 'Estandarte do Cavaleiro',
+  炎の羽飾り: 'Penacho de Chamas',
+  氷の結晶: 'Cristal de Gelo',
+  魔王の翼: 'Asas do Rei Demônio',
+  星の輪: 'Auréola Estelar',
+
+  // src/core/cosmeticRewards.ts
+  '{region}で★{stars}（{loop}周目のボスを倒す）':
+    '★{stars} em {region} (derrote o Chefe da Volta {loop})',
+  'エンドレスで{n}周目に着く': 'Chegue à volta {n} no modo Infinito',
 
   // src/core/diagnose.ts
   '必殺技の並びがそろう！': 'Completa a sequência de um Golpe Especial!',
@@ -320,19 +332,20 @@ export const UI: Dict = {
   '新しい装飾品: {list}': 'Novos cosméticos: {list}',
   ランキングの報酬: 'Recompensas do Ranking',
   受け取る: 'Receber',
-  装飾品: 'Cosméticos',
   戻る: 'Voltar',
-  '挑戦で上位に入るともらえる、見た目だけの装飾品':
-    'Cosméticos para quem fica no topo dos Desafios. Só mudam o visual.',
   冒険者: 'Aventureiro',
-  挑戦で上位に入るともらえます: 'Ganhe ficando no topo de um Desafio',
-  勇者の色: 'Cores do Herói',
   いつもの色: 'Padrão',
   ペット: 'Mascote',
   なし: 'Nenhum',
-  '名前の飾り（ランキング）': 'Enfeite do Nome (Ranking)',
   使用中: 'Em Uso',
   '{band}でもらえる': 'Prêmio: {band}',
+  着せ替え: 'Guarda-roupa',
+  '冒険や挑戦でもらえる、見た目だけの装飾品':
+    'Visuais ganhos em aventuras e Desafios. Só mudam a aparência.',
+  勇者: 'Herói',
+  頭: 'Cabeça',
+  背中: 'Costas',
+  名前の飾り: 'Enfeite do Nome',
   '舞台: {region}': 'Região: {region}',
   '・{rule}': '• {rule}',
   'リリースから2週間後に開放！': 'Abre 2 semanas após o lançamento!',
@@ -599,6 +612,8 @@ export const UI: Dict = {
 
   // src/ui/achievementToast.ts
   '実績達成！': 'Conquista Desbloqueada!',
+  '新しい見た目！': 'Novo Visual!',
+  拠点で勇者をタップして着せ替え: 'Toque no herói na Base para trocar o visual',
 
   // src/ui/backpackView.ts
   '必殺 {step}連鎖': 'Especial #{step}',

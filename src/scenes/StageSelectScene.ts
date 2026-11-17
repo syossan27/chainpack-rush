@@ -14,6 +14,7 @@ import { TopBar } from '../ui/kit/chrome';
 import { Button, Pill, fitText, icon, panel, ribbon, bindTap } from '../ui/kit/widgets';
 import { SKIN } from '../ui/kit/skin';
 import { generateBackgroundTextures } from '../ui/textures';
+import { addHeroAccessories } from '../ui/heroAccessories';
 import { COLORS, H, W, textStyle } from '../ui/theme';
 import { num, t } from '../i18n';
 
@@ -384,11 +385,14 @@ export class StageSelectScene extends Phaser.Scene {
         .setFlipX(!bossDef.facesLeft),
     );
     const heroOrigin = stillOrigin(UNIT_SPRITES.hero!);
-    this.root.add(
-      this.add
-        .image(cx - 60, top + h - 12, 'hero')
-        .setOrigin(heroOrigin.originX, heroOrigin.originY)
-        .setScale(0.9),
-    );
+    const hero = this.add
+      .image(cx - 60, top + h - 12, 'hero')
+      .setOrigin(heroOrigin.originX, heroOrigin.originY)
+      .setScale(0.9);
+    // The still is the first idle frame; the worn accessories go on it
+    const acc = addHeroAccessories(this, hero, getSave().look);
+    if (acc.back) this.root.add(acc.back);
+    this.root.add(hero);
+    if (acc.head) this.root.add(acc.head);
   }
 }

@@ -1,7 +1,11 @@
-// Drawing the challenge cosmetics: hero color looks, the pet, and name decorations.
+// Drawing the cosmetics: hero color looks (and the plume taken off for the flame plume), the pet,
+// and name decorations. Head and back accessories are in heroAccessories.ts.
 import Phaser from 'phaser';
-import { UNIT_SPRITES, PALETTE, animKey, type UnitAnimName } from '../data/sprites';
-import { getCosmetic } from '../core/cosmetics';
+import { UNIT_SPRITES, PALETTE, animFrameSize, animKey, type UnitAnimName } from '../data/sprites';
+import { HERO_ANCHORS } from '../data/heroAnchors';
+import { erasePlume } from '../core/heroPlume';
+import { getCosmetic, type Look } from '../core/cosmetics';
+import { ACCESSORY_ART, accessoryKey } from '../data/accessories';
 
 // ---- Hero color looks ----
 // The hero sprites are recolored at runtime: armor greys, the red cape/plume and the gold trim are told
@@ -89,7 +93,7 @@ function recolorPixels(data: Uint8ClampedArray, rules: Partial<Record<Part, Rule
 
 /** The original pixels of each hero texture, kept so a look can be changed back */
 const heroOriginals = new Map<string, HTMLCanvasElement>();
-let heroLookNow: string | null = null;
+let heroLookNow = 'none|false';
 
 function heroTextureKeys(scene: Phaser.Scene): string[] {
   const def = UNIT_SPRITES.hero;
@@ -100,10 +104,23 @@ function heroTextureKeys(scene: Phaser.Scene): string[] {
   );
 }
 
-/** Put the hero in a color look (null = the normal colors). Changes every scene's hero at once */
-export function applyHeroLook(scene: Phaser.Scene, look: string | null): void {
-  const id = look && HERO_LOOK_RULES[look] ? look : null;
-  if (id === heroLookNow) return;
+/**
+ * Put the hero in its worn look: the color look (look.hero; null = the normal colors), and without
+ * the red helmet plume while a head accessory that replaces it is worn (the flame plume). Changes
+ * every scene's hero at once. The still ('hero', also the face icon) keeps its plume
+ */
+export function applyHeroLook(scene: Phaser.Scene, look: Pick<Look, 'hero' | 'head'>): void {
+  const id = look.hero && HERO_LOOK_RULES[look.hero] ? look.hero : null;
+  // Only when its art is really there: a flame plume that failed to load must not leave the
+  // helmet bald
+  const noPlume = !!(
+    look.head &&
+    ACCESSORY_ART[look.head]?.hidesPlume &&
+    scene.textures.exists(accessoryKey(look.head))
+  );
+  const state = `${id ?? 'none'}|${noPlume}`;
+  if (state === heroLookNow) return;
+  const def = UNIT_SPRITES.hero!;
   for (const key of heroTextureKeys(scene)) {
     const src = scene.textures.get(key).source[0];
     if (!src) continue;
@@ -120,9 +137,25 @@ export function applyHeroLook(scene: Phaser.Scene, look: string | null): void {
     canvas.height = orig.height;
     const ctx = canvas.getContext('2d')!;
     ctx.drawImage(orig, 0, 0);
-    if (id) {
+    // The plume comes off the animation sheets only (frame by frame, above each head anchor)
+    const anim = key === def.key ? null : (key.slice(def.key.length + 1) as UnitAnimName);
+    const sheet = anim ? def.anims?.[anim] : undefined;
+    const heads = anim ? HERO_ANCHORS.knight?.[anim]?.head : undefined;
+    const erase = noPlume && sheet && heads;
+    if (id || erase) {
       const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      recolorPixels(img.data, HERO_LOOK_RULES[id]!);
+      // The plume is found by its red, so it comes off before a color look repaints the reds
+      if (erase) {
+        const size = animFrameSize(def, sheet);
+        erasePlume(
+          img.data,
+          canvas.width,
+          size.frameWidth,
+          size.frameHeight,
+          heads.map((p) => p?.[1] ?? 0),
+        );
+      }
+      if (id) recolorPixels(img.data, HERO_LOOK_RULES[id]!);
       ctx.putImageData(img, 0, 0);
     }
     // Swap the pixels under the existing frames (animations keep working)
@@ -130,7 +163,7 @@ export function applyHeroLook(scene: Phaser.Scene, look: string | null): void {
     src.isCanvas = true;
     src.update();
   }
-  heroLookNow = id;
+  heroLookNow = state;
 }
 
 /** A still of the hero in a look (null = normal colors), for the wardrobe cards */
@@ -384,6 +417,8 @@ export function cosmeticTexture(scene: Phaser.Scene, id: string): string | null 
   const def = getCosmetic(id);
   if (!def) return null;
   if (def.kind === 'deco') return decoTexture(scene, id);
+  if (def.kind === 'head' || def.kind === 'back')
+    return scene.textures.exists(accessoryKey(id)) ? accessoryKey(id) : null;
   if (def.kind === 'pet') {
     if (scene.textures.exists(petStillKey(id))) return petStillKey(id);
     const art = PET_ART[id];
