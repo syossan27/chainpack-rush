@@ -23,8 +23,11 @@ export const session: {
   } | null;
   /** 次の出撃を挑戦にする（出撃したら空に戻す） */
   challenge: ChallengeSortie | null;
+  /** Prototype (roguelite): the next sortie grows its line during the run (cleared when it starts) */
+  proto: boolean;
 } = {
   regionId: null,
   lastResult: null,
   challenge: null,
+  proto: false,
 };

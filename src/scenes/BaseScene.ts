@@ -564,6 +564,22 @@ export class BaseScene extends Phaser.Scene {
       new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')),
     );
 
+    // Prototype (roguelite), with the debug setting on: grow the line during the run
+    if (debugMenuAllowed() && save.settings.debug)
+      this.root.add(
+        new Button(
+          this,
+          W / 2,
+          310,
+          t('試作: ローグライト'),
+          () => {
+            session.proto = true;
+            this.scene.start('Run');
+          },
+          { width: 300, height: 60, fontSize: 22, skin: 'blue' },
+        ),
+      );
+
     // 出撃
     const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {
       width: 460,

@@ -13,7 +13,17 @@ import {
   refillConsumables,
   totalStars,
 } from '../core/economy';
-import { randomSeed } from '../core/rng';
+import { Rng, randomSeed } from '../core/rng';
+import {
+  countsForPick,
+  PICK_EVERY_KILLS,
+  PICK_HEAL,
+  PROTO_REGION,
+  placeItem,
+  protoChoices,
+  protoStart,
+  rotateExits,
+} from '../core/proto';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
@@ -31,6 +41,7 @@ import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
+import { ProtoPick } from '../ui/protoPick';
 import { avatar } from '../ui/kit/chrome';
 import {
   Bar,
@@ -96,6 +107,18 @@ export class RunScene extends Phaser.Scene {
   private inspecting = false;
   /** 最初の出撃の体験ラン（伝説の装備を借りる） */
   private demo = false;
+  /** Prototype (roguelite): the line grows during the run with gear picked every few kills / after a boss */
+  private proto = false;
+  private protoRng: Rng | null = null;
+  private protoPick: ProtoPick | null = null;
+  /** A pick waiting for the current chain to end */
+  private protoPending: 'kill' | 'boss' | null = null;
+  private protoKills = 0;
+  private protoSerial = 0;
+  /** The gear chosen and not placed yet, and the cell of the gear just placed (a tap turns it) */
+  private protoHeld: ItemInstance | null = null;
+  private protoPlaced = -1;
+  private protoMarks: Phaser.GameObjects.Graphics | null = null;
   /** 挑戦の出撃（なければ null） */
   private challenge: ChallengeSortie | null = null;
   private cfg!: RunConfig;
@@ -148,7 +171,9 @@ export class RunScene extends Phaser.Scene {
     // 挑戦: 地域と乱数の種は全員同じ。強化と★は使わず、装備とゴールドは出ない
     this.challenge = session.challenge;
     session.challenge = null;
-    this.demo = !this.challenge && demoPending();
+    this.proto = !this.challenge && session.proto;
+    session.proto = false;
+    this.demo = !this.challenge && !this.proto && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
     // 挑戦は挑戦用の編成で（消耗品の入れ直しも挑戦用の編成に）
     if (this.challenge) {
@@ -156,37 +181,56 @@ export class RunScene extends Phaser.Scene {
       refillConsumables(save);
       leaveChallengeEdit(save);
       persist();
-    } else if (!this.demo && refillConsumables(save).length > 0) persist();
+    } else if (!this.demo && !this.proto && refillConsumables(save).length > 0) persist();
     this.warned = new Set();
     this.recordShown = new Set();
     this.bestBefore =
-      this.demo || save.stats.runs === 0
+      this.demo || this.proto || save.stats.runs === 0
         ? null
         : { step: save.stats.maxStep, damage: save.stats.maxDamage };
     this.regionId = this.challenge
       ? this.challenge.regionId
       : this.demo
         ? DEMO_REGION
-        : (session.regionId ?? save.progress.unlocked[0]!);
+        : this.proto
+          ? PROTO_REGION
+          : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
     const demo = this.demo ? demoLoadout() : null;
-    const loadout = demo ? demo.loadout : this.challenge ? challengeLoadoutOf(save) : save.loadout;
+    // The prototype starts from a tiny line of its own (the save's gear is not used)
+    const proto = this.proto ? protoStart() : null;
+    const loadout = demo
+      ? demo.loadout
+      : proto
+        ? proto.loadout
+        : this.challenge
+          ? challengeLoadoutOf(save)
+          : save.loadout;
     this.loadout = loadout;
-    this.items = demo ? demo.items : itemMap(save);
+    this.items = demo ? demo.items : proto ? proto.items : itemMap(save);
     this.shake = save.settings.shake;
     this.cfg = {
       seed: this.seed,
       regionId: this.regionId,
       loadout,
       items: this.items,
-      hero: demo ? DEMO_HERO : this.challenge ? BASE_HERO_STATS : heroStats(save),
-      noLoot: !!this.challenge,
-      consumableSlots: demo ? 0 : consumableSlots(save),
+      hero: demo ? DEMO_HERO : this.challenge || this.proto ? BASE_HERO_STATS : heroStats(save),
+      noLoot: !!this.challenge || this.proto,
+      consumableSlots: demo || proto ? 0 : consumableSlots(save),
       demo: this.demo,
-      firstRun: !this.demo && !this.challenge && save.stats.runs === 0,
+      firstRun: !this.demo && !this.challenge && !this.proto && save.stats.runs === 0,
     };
     this.combat = new Combat(this.cfg);
+    this.protoRng = this.proto ? new Rng((this.seed ^ 0x51ed) >>> 0) : null;
+    this.protoPick = null;
+    // The prototype opens with a pick before the first fight
+    this.protoPending = this.proto ? 'kill' : null;
+    this.protoKills = 0;
+    this.protoSerial = 0;
+    this.protoHeld = null;
+    this.protoPlaced = -1;
+    this.protoMarks = null;
     // ランキングのシーズン（出撃した時点で決める）
     this.season = this.challenge ? this.challenge.period : endlessSeason(Date.now());
     this.acc = 0;
@@ -247,7 +291,11 @@ export class RunScene extends Phaser.Scene {
       setAudioSuspended(false);
     });
     this.handleEvents(this.combat.drainEvents());
-    // 初めての出撃（体験ラン）: 止めて、しくみを案内する
+    // 初めての出撃（体験ラン）: 止めて、しくみを案内する（試作では出さない）
+    if (!this.proto) this.runGuide();
+  }
+
+  private runGuide(): void {
     runTutorial(
       this,
       'run',
@@ -514,8 +562,13 @@ export class RunScene extends Phaser.Scene {
       .setDepth(45)
       .setInteractive();
     zone.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (this.paused || this.ending || this.inspecting) return;
+      if (this.paused || this.ending) return;
       if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      if (this.protoPick) {
+        this.protoCellTap(this.view.cellAt(p.x, p.y));
+        return;
+      }
+      if (this.inspecting) return;
       const uid = loadout.cells[this.view.cellAt(p.x, p.y)];
       const it = uid ? this.items.get(uid) : undefined;
       if (!it) return;
@@ -551,7 +604,7 @@ export class RunScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const now = this.time.now;
-    const halted = this.paused || this.inspecting;
+    const halted = this.paused || this.inspecting || this.protoPick !== null;
     // ヒットストップ中は止め、ボス撃破のあとはしばらくスロー
     const juice = now < this.hitStopUntil ? 0 : now < this.slowUntil ? JUICE.bossSlowRate : 1;
     const rate = this.speed * juice;
@@ -566,6 +619,7 @@ export class RunScene extends Phaser.Scene {
         n++;
         this.handleEvents(this.combat.drainEvents());
       }
+      if (this.proto) this.protoTick();
     }
     const dt = halted ? 0 : (delta / 1000) * this.speed * Math.max(juice, JUICE.bossSlowRate);
     // 止めているあいだも UI（詳細カードなど）の動きは通常の速さで動かす
@@ -841,7 +895,7 @@ export class RunScene extends Phaser.Scene {
     const timing = this.field.heroSpecial(tech?.id, p, this.speed);
     // 初めて出した技は図鑑に登録して、テロップで知らせる
     const save = getSave();
-    if (tech && !this.demo && !save.discoveredTechs.includes(tech.id)) {
+    if (tech && !this.demo && !this.proto && !save.discoveredTechs.includes(tech.id)) {
       save.discoveredTechs.push(tech.id);
       persist();
       // showDiscovery translates the data key itself
@@ -871,6 +925,7 @@ export class RunScene extends Phaser.Scene {
     const now = this.time.now;
     const c = this.combat;
     for (const ev of events) {
+      if (this.proto) this.protoCount(ev);
       switch (ev.type) {
         case 'loopStart':
           // ボスの名前は、近づいてきたときの警報で出す
@@ -1095,6 +1150,7 @@ export class RunScene extends Phaser.Scene {
             ev.reason === 'dead' &&
             !this.demo &&
             !this.challenge &&
+            !this.proto &&
             !this.combat.revived &&
             !this.ending
           )
@@ -1153,6 +1209,10 @@ export class RunScene extends Phaser.Scene {
     this.ending = true;
     sfx('runEnd');
     const r = this.combat.result();
+    if (this.proto) {
+      this.finishProto(r.reachedLoop, r.stats.maxStep);
+      return;
+    }
     // 挑戦とエンドレスは、ランキングに送れる記録を作っておく（送るのは自己ベストのときだけ）
     const mode = this.challenge ? 'challenge' : this.regionId === 'endless' ? 'endless' : null;
     const save = getSave();
@@ -1179,5 +1239,134 @@ export class RunScene extends Phaser.Scene {
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,
     );
     this.time.delayedCall(1300, () => this.scene.start('Result'));
+  }
+
+  // ---- Prototype (roguelite) ----
+
+  /** Every few kills (and a boss down) earns a pick */
+  private protoCount(ev: CombatEvent): void {
+    if (ev.type === 'bossDefeated') this.protoPending = 'boss';
+    if (ev.type !== 'enemyDeath' || !countsForPick(ev)) return;
+    this.protoKills++;
+    if (this.protoKills % PICK_EVERY_KILLS === 0) this.protoPending ??= 'kill';
+  }
+
+  /** After the fight steps: an earned pick opens once the chain ends */
+  private protoTick(): void {
+    const c = this.combat;
+    if (c.ended || this.ending || this.protoPick) return;
+    if (this.protoPending && !c.chain) {
+      const boss = this.protoPending === 'boss';
+      this.protoPending = null;
+      this.startProtoPick(boss);
+    }
+  }
+
+  private startProtoPick(boss: boolean): void {
+    const c = this.combat;
+    const choices = protoChoices(this.protoRng!, c.loop, this.protoSerial++);
+    c.hp = Math.min(c.maxHp, c.hp + PICK_HEAL);
+    sfx(boss ? 'openRare' : 'click');
+    this.protoPick = new ProtoPick(this, choices, this.loadout.cells.includes(null), {
+      onChoose: (it) => {
+        sfx('click');
+        this.protoHeld = it;
+        this.protoPick?.setStage('place');
+        this.markProtoCells(
+          this.loadout.cells.flatMap((u, i) => (u ? [] : [i])),
+          0x80ffff,
+        );
+      },
+      onSkip: () => this.endProtoPick(),
+      onResume: () => this.endProtoPick(),
+    });
+  }
+
+  /** Place the chosen gear in an empty cell; after that, taps on it turn its arrows */
+  private protoCellTap(cell: number): void {
+    if (cell < 0) return;
+    if (this.protoHeld) {
+      if (!placeItem(this.loadout, this.items, this.protoHeld, cell)) return;
+      sfx('click');
+      this.protoHeld = null;
+      this.protoPlaced = cell;
+      this.protoRefresh();
+      this.markProtoCells([cell], 0xffd34a);
+      this.protoPick?.setStage('turn');
+      return;
+    }
+    if (cell !== this.protoPlaced) return;
+    const uid = this.loadout.cells[cell];
+    const it = uid ? this.items.get(uid) : undefined;
+    if (!it) return;
+    rotateExits(it);
+    sfx('click');
+    this.protoRefresh();
+  }
+
+  /** Redraw the bag and re-plan right away, so "next chain" shows what a turn does before 再開
+   *  (a pick only opens between chains, so replanning here is allowed) */
+  private protoRefresh(): void {
+    this.view.setLoadout(this.loadout, this.items);
+    this.combat.replan();
+  }
+
+  private markProtoCells(cells: readonly number[], color: number): void {
+    this.protoMarks?.destroy();
+    const g = this.add.graphics().setDepth(46);
+    const size = this.view.gridHeight / this.loadout.height;
+    g.lineStyle(4, color, 0.95);
+    for (const i of cells) {
+      const c = this.view.cellCenter(i);
+      g.strokeRect(
+        this.view.x + c.x - size / 2 + 4,
+        this.view.y + c.y - size / 2 + 4,
+        size - 8,
+        size - 8,
+      );
+    }
+    this.protoMarks = g;
+  }
+
+  /** Back to the fight: the new gear joins the chains from the next fire */
+  private endProtoPick(): void {
+    this.protoPick?.destroy();
+    this.protoPick = null;
+    this.protoMarks?.destroy();
+    this.protoMarks = null;
+    this.protoHeld = null;
+    this.protoPlaced = -1;
+    this.combat.replan();
+    this.field.setAura(auraTier(this.loadout, this.items));
+    this.acc = 0;
+  }
+
+  /** The prototype keeps nothing: show how far it got, then play again or go home */
+  private finishProto(loop: number, chain: number): void {
+    this.protoPick?.destroy();
+    this.protoPick = null;
+    this.protoMarks?.destroy();
+    this.protoMarks = null;
+    this.showBanner(t('試作おわり'));
+    this.time.delayedCall(1300, () =>
+      choiceDialog(
+        this,
+        t('試作おわり'),
+        [
+          {
+            label: t('もう一度'),
+            skin: 'gold',
+            onPick: () => {
+              session.proto = true;
+              this.scene.start('Run');
+            },
+          },
+          { label: t('拠点へ'), skin: 'gray', onPick: () => this.scene.start('Base') },
+        ],
+        t('到達 {loop}周目・最大 {chain}連鎖', { loop, chain }),
+        undefined,
+        true,
+      ),
+    );
   }
 }
