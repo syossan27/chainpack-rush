@@ -564,26 +564,12 @@ export class BaseScene extends Phaser.Scene {
       new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')),
     );
 
-    // Prototype (roguelite), with the debug setting on: grow the line during the run
+    // Trial rule switches for ordinary runs, with the debug setting on (the stacked board comes
+    // with the count going on)
     if (debugMenuAllowed() && save.settings.debug) {
-      this.root.add(
-        new Button(
-          this,
-          W / 2,
-          300,
-          t('試作: ローグライト'),
-          () => {
-            session.proto = true;
-            this.scene.start('Run');
-          },
-          { width: 300, height: 52, fontSize: 20, skin: 'blue' },
-        ),
-      );
-      // Trial rule switches for ordinary runs (the stacked board comes with the count going on)
-      const switches: ['trialKeepCount' | 'trialStack' | 'trialDive', string][] = [
+      const switches: ['trialKeepCount' | 'trialStack', string][] = [
         ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
         ['trialStack', k('試作: 重ねる盤面 {state}')],
-        ['trialDive', k('試作: 潜る {state}')],
       ];
       switches.forEach(([key, label], i) => {
         const on = save.settings[key];
@@ -591,7 +577,7 @@ export class BaseScene extends Phaser.Scene {
           new Button(
             this,
             W / 2,
-            358 + i * 58,
+            300 + i * 58,
             t(label, { state: on ? 'ON' : 'OFF' }),
             () => {
               save.settings[key] = !on;

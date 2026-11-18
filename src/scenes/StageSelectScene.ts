@@ -75,12 +75,7 @@ export class StageSelectScene extends Phaser.Scene {
     // Trial: a run on the stacked board needs an origin stone there
     const block = sortieBlock(save, sortieBoard(save, debugMenuAllowed(), session.regionId ?? ''));
     // Shared by the button and the tutorial's action step
-    const sortie = () => {
-      // Trial (dive): a sortie from here always starts a new dive
-      session.dive = null;
-      session.diveCamp = false;
-      this.scene.start('Run');
-    };
+    const sortie = () => this.scene.start('Run');
     const go = new Button(this, W - 140, H - 80, t('出撃！'), sortie, {
       width: 240,
       height: 100,

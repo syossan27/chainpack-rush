@@ -470,23 +470,4 @@ export const DATA: Dict = {
   '毒の短剣 → 短剣か毒の短剣 → 吸血の剣':
     'Dague empoisonnée → Dague/Dague empoisonnée → Épée vampire',
   '毒と血の気配がする…': 'On sent le poison et le sang…',
-  重ねの極意: 'Maîtrise de la pile',
-  '重ねの倍率が ×1.5 / ×2 / ×3 になる。': 'Les multiplicateurs de pile deviennent ×1.5 / ×2 / ×3.',
-  大連鎖: 'Grande chaîne',
-  '10連鎖目から先の一撃は ダメージ ×2。': 'Les coups à partir de la chaîne 10 infligent ×2 dégâts.',
-  必殺の冴え: 'Spécial affûté',
-  '必殺技の一撃が ダメージ ×2.5。': 'Le coup du Coup spécial inflige ×2.5 dégâts.',
-  一色: 'Unicolore',
-  '攻撃の重ねがすべて同じ属性なら、ダメージ ×1.6。':
-    'Si toutes les piles d’attaque partagent un élément, dégâts ×1.6.',
-  四隅: 'Quatre coins',
-  '四隅のマスで鳴る装備は ダメージ ×2。':
-    'L’équipement qui se déclenche dans une case de coin inflige ×2 dégâts.',
-  早撃ち: 'Tir rapide',
-  '連鎖のあとの待ちが 40% 短くなる。': 'L’attente après une chaîne est 40 % plus courte.',
-  生き血: 'Sang vital',
-  '敵を1体倒すたびに、最大HPの2% 回復。': 'Chaque ennemi vaincu rend 2 % des HP max.',
-  勝ち癖: 'Habitude de gagner',
-  'この潜りで勝った戦闘1つごとに、ダメージ +10%。':
-    'Dégâts +10 % par combat gagné pendant cette descente.',
 };

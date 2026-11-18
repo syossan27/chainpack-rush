@@ -106,50 +106,6 @@ export const STACK = {
   ringRelay: 0.1,
 } as const;
 
-/**
- * Trial (dive): a sortie goes down floors. A floor is a map of rows to choose from, then the boss;
- * each fight is one node, HP carries over, and the run's laws bend the chain
- */
-export const DIVE = {
-  /** Rows to choose from before the boss row */
-  rows: 3,
-  /** Nodes in a row to choose from (both ends included) */
-  rowSize: [2, 3] as readonly [number, number],
-  /** Node kinds in rows after the first (the first row has no camp) */
-  kindWeights: { fight: 5, elite: 2, camp: 2 },
-  /** A camp's rest heals this share of max HP */
-  campHeal: 0.4,
-  /** Fighting longer than this (seconds of the fight clock) enrages the enemies, again each time */
-  enrageSec: 60,
-  /** Enemy attack multiplier per enrage */
-  enrageAtk: 2,
-  /** Falling in a dive brings home this share of the bag (rounded down), gold too */
-  deathKeep: 0.5,
-  /** Laws offered after an elite or a boss */
-  lawChoices: 3,
-} as const;
-
-/** Trial (dive): the laws' numbers (names in src/data/laws.ts) */
-export const LAW = {
-  /** 重ねの極意: stack multipliers by position from the bottom */
-  stackPosMult: [1.5, 2, 3] as readonly number[],
-  /** 大連鎖: strikes from this chain count on */
-  longChainFrom: 10,
-  longChainMult: 2,
-  /** 必殺の冴え */
-  techniqueMult: 2.5,
-  /** 一色: every attack stack shares one element */
-  monoMult: 1.6,
-  /** 四隅: gear ringing in a corner cell */
-  cornerMult: 2,
-  /** 早撃ち: the hero's attack interval multiplier */
-  quickFireAtb: 0.6,
-  /** 生き血: share of max HP per kill */
-  lifeOnKill: 0.02,
-  /** 勝ち癖: damage per fight won in this dive */
-  winStreakPerWin: 0.1,
-} as const;
-
 export const CHAIN_RULES_OFF: ChainRules = {
   ...CHAIN_RULES,
   atbPerStep: false,

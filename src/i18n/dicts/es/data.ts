@@ -469,23 +469,4 @@ export const DATA: Dict = {
   'ヴェノム・クロス': 'Cruz Venenosa',
   '毒の短剣 → 短剣か毒の短剣 → 吸血の剣': 'Daga Venenosa → Daga/Daga Venenosa → Espada Vampírica',
   '毒と血の気配がする…': 'Percibes veneno y sangre…',
-  重ねの極意: 'Maestría de pila',
-  '重ねの倍率が ×1.5 / ×2 / ×3 になる。': 'Los multiplicadores de pila pasan a ×1.5 / ×2 / ×3.',
-  大連鎖: 'Gran cadena',
-  '10連鎖目から先の一撃は ダメージ ×2。': 'Los golpes desde la cadena 10 hacen ×2 de daño.',
-  必殺の冴え: 'Especial afilado',
-  '必殺技の一撃が ダメージ ×2.5。': 'El golpe del Golpe especial hace ×2.5 de daño.',
-  一色: 'Un color',
-  '攻撃の重ねがすべて同じ属性なら、ダメージ ×1.6。':
-    'Si todas las pilas de ataque comparten elemento, daño ×1.6.',
-  四隅: 'Cuatro esquinas',
-  '四隅のマスで鳴る装備は ダメージ ×2。':
-    'El equipo que se activa en una casilla de esquina hace ×2 de daño.',
-  早撃ち: 'Tiro rápido',
-  '連鎖のあとの待ちが 40% 短くなる。': 'La espera tras una cadena es un 40% más corta.',
-  生き血: 'Sangre vital',
-  '敵を1体倒すたびに、最大HPの2% 回復。': 'Cada enemigo derrotado recupera el 2% del HP máx.',
-  勝ち癖: 'Hábito ganador',
-  'この潜りで勝った戦闘1つごとに、ダメージ +10%。':
-    'Daño +10% por cada combate ganado en este descenso.',
 };

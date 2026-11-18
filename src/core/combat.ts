@@ -9,10 +9,8 @@ import {
   type EliteId,
   type LuckRules,
   CONSUMABLE,
-  DIVE,
   FIELD,
   HERO,
-  LAW,
   LIGHT_DARK,
   LOOP_SCALING,
   LOOT,
@@ -25,14 +23,12 @@ import {
 } from '../config/balance';
 import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
-import type { LawId } from '../data/laws';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
-import { LAYOUT, rollLoop, type LoopLayout } from './layout';
+import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
-import { lawStrikeMult, lawsOf, type LawFx } from './dive';
 import { rollLoot } from './loot';
 import { Rng, ipow } from './rng';
 import type {
@@ -79,21 +75,6 @@ export interface RunConfig {
   noLoot?: boolean;
   /** First own run after the demo: the first enemy killed always drops an equipment piece */
   firstRun?: boolean;
-  /** Trial (dive): one fight of a floor instead of the timed run */
-  encounter?: Encounter;
-}
-
-/** Trial (dive): one fight. No clock, it ends when the enemies are down ('cleared') or the hero */
-export interface Encounter {
-  /** fight: the region's groups of one loop; elite: each group has an elite; boss: the boss alone */
-  kind: 'fight' | 'elite' | 'boss';
-  /** Enemy strength, boss and loot as in this loop of the timed run */
-  floor: number;
-  /** The hero's HP carried in */
-  hp: number;
-  laws: readonly LawId[];
-  /** Fights won in this dive so far (勝ち癖) */
-  wins: number;
 }
 
 export interface EnemyState {
@@ -129,11 +110,8 @@ export interface EnemyState {
   guardBrokenUntil: number;
 }
 
-/**
- * timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る）、
- * cleared: one fight of a dive (trial) won
- */
-export type EndReason = 'timeout' | 'dead' | 'retreat' | 'cleared';
+/** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
+export type EndReason = 'timeout' | 'dead' | 'retreat';
 
 export type CombatEvent =
   | { type: 'loopStart'; tick: number; loop: number; bossId: string }
@@ -336,7 +314,7 @@ export class Combat {
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
   readonly luck: LuckRules;
-  private guardAll: boolean;
+  private readonly guardAll: boolean;
   private readonly layoutRng: Rng;
   /** 今の周回の並び（地域選択・進み具合の表示用） */
   layout: LoopLayout | null = null;
@@ -364,10 +342,10 @@ export class Combat {
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
-  private origins: string[] = [];
+  private readonly origins: string[];
   /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
-  private units: string[][] = [];
-  /** Each origin's chain (fixed for a run, except when the prototype re-reads the backpack) */
+  private readonly units: string[][];
+  /** Each origin's chain (the layout does not change during a run) */
   private readonly plans = new Map<string, ChainPlan>();
   private events: CombatEvent[] = [];
   private readonly inputs: RunInput[] = [];
@@ -377,30 +355,29 @@ export class Combat {
   private loopStartX = 0;
   private nextGroup = 1;
   private bossGroup = 0;
-  /** Trial (dive): the laws of this fight against the board (null outside a dive) */
-  private readonly law: LawFx | null;
-  /** Trial (dive): the fight clock tick of the next enrage */
-  private nextEnrage = 0;
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.luck = { ...LUCK, ...cfg.luck };
-    this.guardAll = false;
+    // 不落の城門: バックパックに置いてあれば常に守られる
+    this.guardAll = cfg.loadout.cells.some(
+      (u) => !!u && !!cfg.items.get(u) && !!getItemDef(cfg.items.get(u)!.defId).guardAll,
+    );
     // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
     this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
     this.rng = new Rng(cfg.seed);
     this.region = getRegion(cfg.regionId);
-    const enc = this.mode === 'run' ? cfg.encounter : undefined;
-    this.law = enc ? lawsOf(enc.laws, cfg.loadout, cfg.items, enc.wins) : null;
-    this.hp = enc ? Math.min(cfg.hero.maxHp, enc.hp) : cfg.hero.maxHp;
+    this.hp = cfg.hero.maxHp;
     this.maxTicks =
-      this.mode === 'dummy' || enc
+      this.mode === 'dummy'
         ? Number.POSITIVE_INFINITY
         : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
-    this.nextEnrage = secToTicks(DIVE.enrageSec);
-    this.readBackpack();
+    this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
+    // Origins fire one at a time, even when their routes sync
+    this.units = this.origins.map((o) => [o]);
+    for (const p of simulateChain(cfg.loadout, cfg.items).plans) this.plans.set(p.originUid, p);
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
       .slice(0, slots)
@@ -414,41 +391,12 @@ export class Combat {
         false,
         0,
       );
-    } else if (enc) {
-      this.loop = enc.floor;
-      this.startEncounter(enc);
     } else {
       this.startLoop();
     }
   }
 
   // ---- 公開 API ----
-
-  /** The backpack's origins, firing order and chains (and whether 不落の城門 is in it) */
-  private readBackpack(): void {
-    const { loadout, items } = this.cfg;
-    // 不落の城門: バックパックに置いてあれば常に守られる
-    this.guardAll = loadout.cells.some(
-      (u) => !!u && !!items.get(u) && !!getItemDef(items.get(u)!.defId).guardAll,
-    );
-    this.origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
-    // Origins fire one at a time, even when their routes sync
-    this.units = this.origins.map((o) => [o]);
-    this.plans.clear();
-    for (const p of simulateChain(loadout, items, this.law?.posMult).plans)
-      this.plans.set(p.originUid, p);
-  }
-
-  /**
-   * Prototype (roguelite): the caller changed the run's loadout / items in place; read them again.
-   * Only between chains (returns false while a chain is running). Not for ranked or replayed runs
-   */
-  replan(): boolean {
-    if (this.chain) return false;
-    this.readBackpack();
-    if (this.units.length > 0) this.nextUnitIndex %= this.units.length;
-    return true;
-  }
 
   get time(): number {
     return this.tick / SIM.ticksPerSecond;
@@ -581,8 +529,6 @@ export class Combat {
     const effect = def.effect;
     if (!effect) return false;
     if (effect === 'rally' && (this.chain || this.origins.length === 0)) return false;
-    // A dive (trial) has no clock: 時の砂 does nothing there
-    if (effect === 'addTime' && this.law) return false;
     this.consumables[slot] = null;
     this.usedConsumables.push(uid);
     this.inputs.push({ t: this.tick, k: 'use', slot });
@@ -693,16 +639,6 @@ export class Combat {
     // 走っているあいだ（会敵するまで）は出撃時間を減らさない
     if (!this.running) this.clock++;
     if (this.clock >= this.maxTicks) this.end('timeout');
-    // Trial (dive): a fight that drags on enrages the enemies, again each time
-    if (this.law && this.clock >= this.nextEnrage) {
-      this.nextEnrage += secToTicks(DIVE.enrageSec);
-      for (const e of this.enemies) {
-        if (!e.alive) continue;
-        e.atk *= DIVE.enrageAtk;
-        e.enraged = true;
-        this.emit({ type: 'enrage', tick: this.tick, enemyId: e.id });
-      }
-    }
   }
 
   // ---- 内部 ----
@@ -745,34 +681,10 @@ export class Combat {
     this.layout = layout;
     const bossId = layout.bossId;
     this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId });
-    this.spawnGroups(layout, this.eliteChance());
-    this.bossGroup = this.nextGroup++;
-    this.spawnEnemy(bossId, this.loopStartX + layout.bossX, FIELD.bossStand, false, this.bossGroup);
-    this.summonTimer = 0;
-  }
-
-  /** Trial (dive): one fight — the loop's groups (an elite in each for 'elite'), or its boss alone */
-  private startEncounter(enc: Encounter): void {
-    const layout = rollLoop(this.region, enc.floor, this.layoutRng);
-    this.layout = layout;
-    this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId: layout.bossId });
-    if (enc.kind === 'boss') {
-      this.bossGroup = this.nextGroup++;
-      this.spawnEnemy(layout.bossId, LAYOUT.firstGroupX, FIELD.bossStand, false, this.bossGroup);
-    } else this.spawnGroups(layout, enc.kind === 'elite' ? 1 : this.eliteChance());
-    this.summonTimer = 0;
-  }
-
-  /** The chance that a group of this loop has an elite */
-  private eliteChance(): number {
-    return Math.min(
+    const eliteChance = Math.min(
       this.luck.eliteChanceMax,
       this.luck.eliteChance + this.luck.eliteChancePerLoop * (this.loop - 1),
     );
-  }
-
-  /** The loop's groups of small enemies; each group has an elite with this chance */
-  private spawnGroups(layout: LoopLayout, eliteChance: number): void {
     for (const g of layout.groups) {
       const group = this.nextGroup++;
       // 群れに1体まで精鋭が混ざる（後列の呪術師も対象）
@@ -804,6 +716,9 @@ export class Combat {
         );
       });
     }
+    this.bossGroup = this.nextGroup++;
+    this.spawnEnemy(bossId, this.loopStartX + layout.bossX, FIELD.bossStand, false, this.bossGroup);
+    this.summonTimer = 0;
   }
 
   private spawnEnemy(
@@ -1212,7 +1127,6 @@ export class Combat {
             mods.bonus *
             resistMult(t.def, def.element) *
             this.affixMult(c, inst, eff, t, statused, mods.origin) *
-            (this.law ? lawStrikeMult(this.law, { uid, step: eff, tech: mods.tech !== 1 }) : 1) *
             100,
         ) / 100;
       if (raw > 0) {
@@ -1400,9 +1314,6 @@ export class Combat {
       boss: e.def.boss,
       fled: false,
     });
-    // Trial (dive) law 生き血: each kill heals a share of max HP
-    if (!e.escort && this.law?.laws.has('lifeOnKill'))
-      this.hp = Math.min(this.maxHp, this.hp + this.maxHp * LAW.lifeOnKill);
     // ゴールド: 地域ごとの1体あたり（ボスは多め）。お供からは出ない
     if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot)
       this.stats.gold =
@@ -1455,23 +1366,17 @@ export class Combat {
       this.bossesDefeated++;
       this.stats.bossesDefeated = this.bossesDefeated;
       this.emit({ type: 'bossDefeated', tick: this.tick, loop: this.loop, bossId: e.defId });
-      // A dive's fight ends with its boss; the timed run goes on to the next loop
-      if (!this.law) {
-        this.addTime(TIME_BONUS.boss, 'boss');
-        this.loop++;
-        this.loopStartX = this.heroX + FIELD.loopGap;
-        this.enemies = this.enemies.filter((x) => x.alive);
-        this.startLoop();
-      }
+      this.addTime(TIME_BONUS.boss, 'boss');
+      this.loop++;
+      this.loopStartX = this.heroX + FIELD.loopGap;
+      this.enemies = this.enemies.filter((x) => x.alive);
+      this.startLoop();
     }
-    // Trial (dive): the fight is won when no enemy is left (escorts flee with their boss)
-    if (this.law && !this.enemies.some((o) => o.alive && !o.escort)) this.end('cleared');
   }
 
   /** 出撃時間をのばす（上限 TIME_BONUS.maxRunTime）。実際に増えた分をイベントで出す */
   private addTime(seconds: number, reason: TimeBonusReason): void {
-    // A dive (trial) has no clock to extend
-    if (this.mode !== 'run' || this.ended || this.cfg.demo || this.law) return;
+    if (this.mode !== 'run' || this.ended || this.cfg.demo) return;
     const cap = secToTicks(TIME_BONUS.maxRunTime);
     const before = this.maxTicks;
     this.maxTicks = Math.min(cap, this.maxTicks + secToTicks(seconds));

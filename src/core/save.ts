@@ -86,8 +86,6 @@ export interface SaveData {
     trialKeepCount: boolean;
     /** Trial switch on the home screen (debug setting on): runs use the stacked board */
     trialStack: boolean;
-    /** Trial switch on the home screen (debug setting on): a sortie dives down floors */
-    trialDive: boolean;
   };
 }
 
@@ -185,7 +183,6 @@ export function createInitialSave(): SaveData {
       debug: false,
       trialKeepCount: false,
       trialStack: false,
-      trialDive: false,
     },
   };
 }
@@ -413,7 +410,6 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
     if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
     if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
-    if (typeof save.settings.trialDive !== 'boolean') save.settings.trialDive = false;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

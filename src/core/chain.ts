@@ -200,7 +200,6 @@ function spread(
   items: ReadonlyMap<string, ItemInstance>,
   originUid: string,
   sync: ReadonlyMap<number, SyncPoint>,
-  posMult: readonly number[] = STACK.posMult,
 ): { plan: ChainPlan; reach: Map<number, Reach> } {
   const steps: ChainStep[] = [];
   const lines: string[][] = []; // origin stones on the line up to each step
@@ -307,7 +306,7 @@ function spread(
     // Sync point: every route goes on from the longer one
     const sp = first ? sync.get(cell) : undefined;
     const count = sp ? Math.max(own, sp.count) : own;
-    const stackMult = pos === undefined ? undefined : posMult[pos]!;
+    const stackMult = pos === undefined ? undefined : STACK.posMult[pos]!;
     // A line that passes through another origin stone also takes that stone's effect
     const myLines =
       def.kind === 'origin' && !lines[parent]!.includes(uid)
@@ -489,15 +488,13 @@ export interface ChainPreview {
   unreachable: Set<number>;
 }
 
-/** `posMult`: the stack multipliers by position (trial dive law 重ねの極意 raises them) */
 export function simulateChain(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
-  posMult?: readonly number[],
 ): ChainPreview {
   const origins = loadout.originOrder.filter((uid) => loadout.cells.includes(uid));
   const sync = syncPoints(loadout, items);
-  const plans = origins.map((o) => spread(loadout, items, o, sync, posMult).plan);
+  const plans = origins.map((o) => spread(loadout, items, o, sync).plan);
   const reachable = new Set<number>();
   for (const p of plans) for (const s of p.steps) reachable.add(s.cell);
   const unreachable = new Set<number>();

@@ -467,23 +467,4 @@ export const DATA: Dict = {
   '毒の短剣 → 短剣か毒の短剣 → 吸血の剣':
     'Adaga Venenosa → Adaga/Adaga Venenosa → Espada Vampírica',
   '毒と血の気配がする…': 'Você sente veneno e sangue no ar…',
-  重ねの極意: 'Maestria da Pilha',
-  '重ねの倍率が ×1.5 / ×2 / ×3 になる。': 'Os multiplicadores da pilha passam a ×1.5 / ×2 / ×3.',
-  大連鎖: 'Grande Corrente',
-  '10連鎖目から先の一撃は ダメージ ×2。': 'Golpes a partir da Corrente 10 causam dano ×2.',
-  必殺の冴え: 'Especial Afiado',
-  '必殺技の一撃が ダメージ ×2.5。': 'O golpe do Golpe Especial causa dano ×2.5.',
-  一色: 'Uma Cor',
-  '攻撃の重ねがすべて同じ属性なら、ダメージ ×1.6。':
-    'Se todas as pilhas de ataque tiverem o mesmo elemento, dano ×1.6.',
-  四隅: 'Quatro Cantos',
-  '四隅のマスで鳴る装備は ダメージ ×2。':
-    'Equipamentos que disparam numa casa de canto causam dano ×2.',
-  早撃ち: 'Saque Rápido',
-  '連鎖のあとの待ちが 40% 短くなる。': 'A espera após uma corrente fica 40% menor.',
-  生き血: 'Sangue Vital',
-  '敵を1体倒すたびに、最大HPの2% 回復。': 'Cada inimigo derrotado recupera 2% do HP máximo.',
-  勝ち癖: 'Hábito de Vitória',
-  'この潜りで勝った戦闘1つごとに、ダメージ +10%。':
-    'Dano +10% para cada luta vencida neste mergulho.',
 };
