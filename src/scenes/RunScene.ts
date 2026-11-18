@@ -14,7 +14,8 @@ import {
   totalStars,
 } from '../core/economy';
 import { randomSeed } from '../core/rng';
-import { stackBoardOf, trialRules, usesStackBoard } from '../core/trial';
+import { stackBoardOf, trialRules, usesMastery, usesStackBoard } from '../core/trial';
+import { runMastery } from '../core/mastery';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
@@ -109,6 +110,8 @@ export class RunScene extends Phaser.Scene {
   private bestBefore: { step: number; damage: number } | null = null;
   /** Played under a trial rule from the home screen switch (records are left alone) */
   private trial = false;
+  /** Trial (mastery): mastery grows and techniques must spark before they are known */
+  private mastery = false;
   private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
@@ -207,12 +210,17 @@ export class RunScene extends Phaser.Scene {
       demo: this.demo,
       regionId: this.regionId,
     });
-    this.trial = trial !== undefined;
-    if (trial) {
-      this.cfg.rules = trial;
-      // No new-record banners: the trial run does not count toward the records
-      this.bestBefore = null;
-    }
+    // Trial (mastery): the hero's levels and learned techniques come along
+    this.mastery = usesMastery(save, debugMenuAllowed(), {
+      challenge: !!this.challenge,
+      demo: this.demo,
+      regionId: this.regionId,
+    });
+    if (this.mastery) this.cfg.mastery = runMastery(save);
+    this.trial = trial !== undefined || this.mastery;
+    if (trial) this.cfg.rules = trial;
+    // No new-record banners: the trial run does not count toward the records
+    if (this.trial) this.bestBefore = null;
     this.combat = new Combat(this.cfg);
     // ランキングのシーズン（出撃した時点で決める）
     this.season = this.challenge ? this.challenge.period : endlessSeason(Date.now());
@@ -868,7 +876,8 @@ export class RunScene extends Phaser.Scene {
     const timing = this.field.heroSpecial(tech?.id, p, this.speed);
     // 初めて出した技は図鑑に登録して、テロップで知らせる
     const save = getSave();
-    if (tech && !this.demo && !save.discoveredTechs.includes(tech.id)) {
+    // (Not from the mastery trial: there a technique is learned by a spark, apart from the 図鑑)
+    if (tech && !this.demo && !this.mastery && !save.discoveredTechs.includes(tech.id)) {
       save.discoveredTechs.push(tech.id);
       persist();
       // showDiscovery translates the data key itself
@@ -973,6 +982,16 @@ export class RunScene extends Phaser.Scene {
             if (this.shake) this.cameras.main.shake(90 + strength * 90, 0.003 + strength * 0.007);
           }
           sfx('hit');
+          break;
+        }
+        case 'spark': {
+          // Trial (mastery): the technique is learned right now (its technique event follows)
+          const name = t(getTechnique(ev.id)?.name ?? '');
+          this.showBanner(t('閃いた！ {name}', { name }), '#ffe27a');
+          this.slowUntil = now + JUICE.bossSlowMs;
+          if (this.shake) this.cameras.main.flash(260, 255, 248, 200);
+          sfx('openRare');
+          hapticSuccess();
           break;
         }
         case 'technique': {
@@ -1190,6 +1209,7 @@ export class RunScene extends Phaser.Scene {
       demo: this.demo,
       ...(this.challenge ? { challenge: this.challenge } : {}),
       ...(this.trial ? { trial: true } : {}),
+      ...(this.mastery ? { mastery: true } : {}),
       ...(mode && !this.demo
         ? { submission: buildSubmission(mode, this.season, this.cfg, r, save, totalStars(save)) }
         : {}),

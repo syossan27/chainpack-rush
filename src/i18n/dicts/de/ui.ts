@@ -746,4 +746,10 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '„Neu würfeln“ dreht die Ausgänge in zufällige Richtungen. Mit „Gezielt“ wählst du die Richtungen selbst.',
   'この装備をタップして、選んでみよう': 'Tippe auf diesen Gegenstand, um ihn auszuwählen.',
+  '試作: 熟練と閃き {state}': 'Prototyp: Meisterschaft & Geistesblitz {state}',
+  '閃いた必殺技: {names}': 'Geistesblitz: {names}',
+  '{el} +{n}（Lv{lv}↑）': '{el} +{n} (St.{lv}↑)',
+  '{el} +{n}（Lv{lv}）': '{el} +{n} (St.{lv})',
+  '熟練 {list}': 'Meisterschaft {list}',
+  '閃いた！ {name}': 'Geistesblitz! {name}',
 };

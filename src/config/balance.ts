@@ -106,6 +106,19 @@ export const STACK = {
   ringRelay: 0.1,
 } as const;
 
+/**
+ * Trial (mastery): the hero's mastery per element grows with every ring of attack gear. A technique
+ * is not known until it sparks: when its line-up comes, it may spark (chance by the element's level)
+ */
+export const MASTERY = {
+  /** Rings to reach level 1; level n needs base × n(n+1)/2 in all */
+  base: 50,
+  /** Spark chance per level of the technique's element (100% at most) */
+  sparkPerLevel: 0.15,
+  /** Damage of the element's gear per level */
+  dmgPerLevel: 0.03,
+} as const;
+
 export const CHAIN_RULES_OFF: ChainRules = {
   ...CHAIN_RULES,
   atbPerStep: false,

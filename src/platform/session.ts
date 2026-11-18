@@ -22,6 +22,8 @@ export const session: {
     submission?: ScoreSubmission;
     /** Played under a trial rule: the records are not updated */
     trial?: boolean;
+    /** Trial (mastery): the run's rings and sparks go to the hero's mastery */
+    mastery?: boolean;
   } | null;
   /** 次の出撃を挑戦にする（出撃したら空に戻す） */
   challenge: ChallengeSortie | null;

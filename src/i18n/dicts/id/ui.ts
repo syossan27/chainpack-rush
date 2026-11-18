@@ -748,4 +748,10 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '"Acak Ulang" mengubah arah jalur secara acak. Dengan "Atur", kamu memilih arahnya sendiri.',
   'この装備をタップして、選んでみよう': 'Ketuk item ini untuk memilihnya.',
+  '試作: 熟練と閃き {state}': 'Prototipe: Penguasaan & Ilham {state}',
+  '閃いた必殺技: {names}': 'Ilham: {names}',
+  '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Lv{lv}↑)',
+  '{el} +{n}（Lv{lv}）': '{el} +{n} (Lv{lv})',
+  '熟練 {list}': 'Penguasaan {list}',
+  '閃いた！ {name}': 'Dapat ilham! {name}',
 };

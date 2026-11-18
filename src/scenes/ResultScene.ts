@@ -34,6 +34,9 @@ import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
 import { challengeLoadoutOf } from '../core/challengeLoadout';
 import { sortieBoard } from '../core/trial';
+import { recordMastery, type MasteryGain } from '../core/mastery';
+import { ELEMENT_NAMES } from '../data/items';
+import { getTechnique } from '../data/techniques';
 import { debugMenuAllowed } from '../platform/debug';
 import { rankScore } from '../core/ranking';
 import { ensureName, rankingReady, submitScore } from '../platform/ranking';
@@ -85,6 +88,55 @@ export class ResultScene extends Phaser.Scene {
       duration: 500,
       onComplete: () => txt.destroy(),
     });
+  }
+
+  /**
+   * Trial (mastery): between the record and the loot — techniques learned by a spark, then the
+   * elements that grew most (a level up is marked and pulses)
+   */
+  private showMastery(m: { gains: readonly MasteryGain[]; learned: readonly string[] }): void {
+    let y = 538;
+    if (m.learned.length > 0) {
+      const names = m.learned.map((id) => t(getTechnique(id)?.name ?? id)).join(' / ');
+      fitText(
+        this.add
+          .text(W / 2, 522, t('閃いた必殺技: {names}', { names }), textStyle(24, '#ffe27a'))
+          .setOrigin(0.5),
+        W - 40,
+      );
+      y = 552;
+    }
+    const top = [...m.gains].sort((a, b) => b.added - a.added).slice(0, 3);
+    if (top.length === 0) return;
+    const up = top.some((g) => g.levelAfter > g.levelBefore);
+    const list = top
+      .map((g) => {
+        const el = t(ELEMENT_NAMES[g.element] ?? g.element);
+        return g.levelAfter > g.levelBefore
+          ? t('{el} +{n}（Lv{lv}↑）', { el, n: g.added, lv: g.levelAfter })
+          : t('{el} +{n}（Lv{lv}）', { el, n: g.added, lv: g.levelAfter });
+      })
+      .join('  ');
+    const line = fitText(
+      this.add
+        .text(
+          W / 2,
+          y,
+          t('熟練 {list}', { list }),
+          textStyle(20, up ? COLORS.accentText : COLORS.text),
+        )
+        .setOrigin(0.5),
+      W - 40,
+    );
+    if (up)
+      this.tweens.add({
+        targets: line,
+        scale: line.scale * 1.08,
+        yoyo: true,
+        repeat: 3,
+        duration: 260,
+        delay: 600,
+      });
   }
 
   private stamp(x: number, y: number, text: string, delay: number, size = 20, maxW = 260): void {
@@ -141,6 +193,7 @@ export class ResultScene extends Phaser.Scene {
       stars: regionStars(save, regionId),
     };
     let achieved: AchievementDef[] = [];
+    let mastery: { gains: MasteryGain[]; learned: string[] } | null = null;
     let newLooks: string[] = [];
     if (demo) markDemoDone();
     else {
@@ -161,6 +214,9 @@ export class ResultScene extends Phaser.Scene {
         save.stats.runs++;
       } else {
         unlocked = recordRun(save, regionId, result, { trial }).unlocked;
+        // Trial (mastery): the run's rings and sparks grow the hero's mastery
+        if (last.mastery && result.stats.rings)
+          mastery = recordMastery(save, result.stats.rings, result.stats.sparks ?? []);
         // A trial run earns no achievements or looks (its strength is not the real game's)
         if (!trial) {
           achieved = checkAchievements(save, result);
@@ -361,6 +417,7 @@ export class ResultScene extends Phaser.Scene {
         W - 40,
       );
     }
+    if (mastery) this.showMastery(mastery);
     let lootRibbon = ribbon(this, W / 2, 590, t('戦利品 {n}', { n: added.length }), 300).setScale(
       0.8,
     );

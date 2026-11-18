@@ -754,4 +754,10 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '« Relancer » tourne les sorties dans des sens au hasard. Avec « Au choix », tu choisis toi-même les sens.',
   'この装備をタップして、選んでみよう': 'Touche cet objet pour le sélectionner.',
+  '試作: 熟練と閃き {state}': 'Prototype : Maîtrise et Éclair {state}',
+  '閃いた必殺技: {names}': 'Éclair de génie : {names}',
+  '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Niv.{lv}↑)',
+  '{el} +{n}（Lv{lv}）': '{el} +{n} (Niv.{lv})',
+  '熟練 {list}': 'Maîtrise {list}',
+  '閃いた！ {name}': 'Éclair de génie ! {name}',
 };

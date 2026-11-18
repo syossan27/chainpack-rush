@@ -22,6 +22,16 @@ export function stackSwitchOn(save: SaveData, allowed: boolean): boolean {
   return allowed && save.settings.debug && save.settings.trialStack;
 }
 
+/** The mastery switch is on (and works in this build) */
+export function masterySwitchOn(save: SaveData, allowed: boolean): boolean {
+  return allowed && save.settings.debug && save.settings.trialMastery;
+}
+
+/** This run grows mastery and needs techniques to spark (trial) */
+export function usesMastery(save: SaveData, allowed: boolean, run: RunKind): boolean {
+  return masterySwitchOn(save, allowed) && ordinary(run);
+}
+
 /** This run uses the stacked board (trial) */
 export function usesStackBoard(save: SaveData, allowed: boolean, run: RunKind): boolean {
   return stackSwitchOn(save, allowed) && ordinary(run);

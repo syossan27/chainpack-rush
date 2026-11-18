@@ -8,6 +8,7 @@ import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
+import { isElement, type MasteryData } from './mastery';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -49,6 +50,8 @@ export interface SaveData {
   trialLoadout?: Loadout | null;
   /** Trial: the stacked board is being edited and sits in loadout for now */
   editingTrial?: boolean;
+  /** Trial (mastery): the hero's mastery per element and the techniques learned by a spark */
+  mastery?: MasteryData;
   /** ランキングに送った自己ベスト（シーズンごと。'challenge-3' → スコア） */
   rankSent: Record<string, number>;
   /** ランキングの報酬でもらった称号（新しい順） */
@@ -86,6 +89,8 @@ export interface SaveData {
     trialKeepCount: boolean;
     /** Trial switch on the home screen (debug setting on): runs use the stacked board */
     trialStack: boolean;
+    /** Trial switch on the home screen (debug setting on): mastery grows, techniques must spark */
+    trialMastery: boolean;
   };
 }
 
@@ -183,6 +188,7 @@ export function createInitialSave(): SaveData {
       debug: false,
       trialKeepCount: false,
       trialStack: false,
+      trialMastery: false,
     },
   };
 }
@@ -250,6 +256,18 @@ export function serializeSave(save: SaveData): string {
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/** Trial (mastery): points per known element (non-negative numbers) and learned technique ids */
+function readMastery(v: Record<string, unknown>): MasteryData {
+  const points: MasteryData['points'] = {};
+  if (isObj(v.points))
+    for (const [el, n] of Object.entries(v.points))
+      if (isElement(el) && isNum(n) && n >= 0) points[el] = n;
+  const learned = Array.isArray(v.learned)
+    ? v.learned.filter((t): t is string => typeof t === 'string')
+    : [];
+  return { points, learned };
+}
 
 function validItem(v: unknown): v is ItemInstance {
   if (!isObj(v)) return false;
@@ -376,6 +394,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         : [],
       ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
       ...(data.editingTrial === true ? { editingTrial: true } : {}),
+      ...(isObj(data.mastery) ? { mastery: readMastery(data.mastery) } : {}),
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],
@@ -410,6 +429,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
     if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
     if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
+    if (typeof save.settings.trialMastery !== 'boolean') save.settings.trialMastery = false;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

@@ -22,7 +22,7 @@ import {
 } from '../core/challenge';
 import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
 import { debugMenuAllowed, devChallengeOpen } from '../platform/debug';
-import { enterTrialEdit, leaveTrialEdit, stackSwitchOn } from '../core/trial';
+import { enterTrialEdit, leaveTrialEdit, masterySwitchOn, stackSwitchOn } from '../core/trial';
 import {
   stackAt,
   stackMove,
@@ -309,6 +309,14 @@ export class LoadoutScene extends Phaser.Scene {
     this.view.tick(this.time.now);
   }
 
+  /** Techniques shown by name: the 図鑑's, or with the mastery trial on, the ones learned by a spark */
+  private knownTechs(): readonly string[] {
+    const save = getSave();
+    return masterySwitchOn(save, debugMenuAllowed())
+      ? (save.mastery?.learned ?? [])
+      : save.discoveredTechs;
+  }
+
   private refresh(): void {
     const save = getSave();
     this.presetUses = otherPresetUse(save);
@@ -317,7 +325,7 @@ export class LoadoutScene extends Phaser.Scene {
     const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
     if (save.settings.showRoutes)
-      this.view.showPreview(preview, this.focus, new Set(save.discoveredTechs));
+      this.view.showPreview(preview, this.focus, new Set(this.knownTechs()));
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
     this.info.setText(t('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）'));
@@ -469,7 +477,7 @@ export class LoadoutScene extends Phaser.Scene {
       const p = preview.plans[this.focus]!;
       const e = est[this.focus]!;
       // 必殺技の名前は、見つけたあとだけ出す（ネタバレしない）
-      const knownTech = e.techs.find((id) => save.discoveredTechs.includes(id));
+      const knownTech = e.techs.find((id) => this.knownTechs().includes(id));
       const tech = knownTech ? getTechnique(knownTech) : undefined;
       const params = { n: num(e.total), step: p.maxStep };
       const bonus = Math.round(maxMergeBonus(p));

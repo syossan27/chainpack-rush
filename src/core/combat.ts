@@ -6,6 +6,7 @@ import {
   CHAIN_RULES,
   ELITES,
   LUCK,
+  MASTERY,
   type EliteId,
   type LuckRules,
   CONSUMABLE,
@@ -23,13 +24,14 @@ import {
 } from '../config/balance';
 import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
-import { TECHNIQUE_MULT } from '../data/techniques';
+import { TECHNIQUE_MULT, getTechnique } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
 import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
+import { sparkChance } from './mastery';
 import { Rng, ipow } from './rng';
 import type {
   Area,
@@ -37,6 +39,7 @@ import type {
   ChainStep,
   LineBoost,
   ConsumableEffect,
+  Element,
   ItemDef,
   ItemInstance,
   Loadout,
@@ -75,6 +78,14 @@ export interface RunConfig {
   noLoot?: boolean;
   /** First own run after the demo: the first enemy killed always drops an equipment piece */
   firstRun?: boolean;
+  /** Trial (mastery): the hero's levels per element and the techniques learned so far */
+  mastery?: RunMastery;
+}
+
+/** Trial (mastery): what a run starts with (see core/mastery.ts) */
+export interface RunMastery {
+  levels: Partial<Record<Element, number>>;
+  learned: readonly string[];
 }
 
 export interface EnemyState {
@@ -128,6 +139,8 @@ export type CombatEvent =
   | { type: 'revive'; tick: number }
   /** 必殺技の一撃（演出用。ダメージは続く hit に入っている） */
   | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
+  /** Trial (mastery): a technique sparked and is learned (its technique event follows) */
+  | { type: 'spark'; tick: number; id: string; enemyId: number; uid: string }
   /** 合流: 2本以上の線が出会った（arrived は届いた線の段数（予定）、bonus はこの先の本流にかかる%） */
   | {
       type: 'merge';
@@ -225,6 +238,10 @@ export interface RunStats {
   /** 倒した敵から拾ったゴールド */
   gold?: number;
   sweeps: number; // 一網打尽の回数
+  /** Trial (mastery): rings of attack gear per element */
+  rings?: Partial<Record<Element, number>>;
+  /** Trial (mastery): techniques that sparked in this run */
+  sparks?: string[];
 }
 
 export interface RunResult {
@@ -342,6 +359,8 @@ export class Combat {
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
+  /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
+  private readonly learned: Set<string> | null;
   private readonly origins: string[];
   /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
   private readonly units: string[][];
@@ -358,6 +377,11 @@ export class Combat {
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
+    this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
+    if (cfg.mastery) {
+      this.stats.rings = {};
+      this.stats.sparks = [];
+    }
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.luck = { ...LUCK, ...cfg.luck };
     // 不落の城門: バックパックに置いてあれば常に守られる
@@ -1026,6 +1050,12 @@ export class Combat {
     };
     const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
+    // Trial (mastery): every ring of attack gear grows its element
+    const rings = this.stats.rings;
+    if (rings) {
+      const el = def.element ?? 'physical';
+      rings[el] = (rings[el] ?? 0) + 1;
+    }
     this.emit({
       type: 'step',
       tick: this.tick,
@@ -1045,9 +1075,10 @@ export class Combat {
       affixValue(inst, 'keen') / 100 +
       (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
     // 必殺技: 決まった並びの3つ目。止めずに、この一撃だけ強くする
-    const techMult = s.tech ? TECHNIQUE_MULT : 1;
-    if (s.tech)
-      this.emit({ type: 'technique', tick: this.tick, id: s.tech, enemyId: aim.id, uid: s.uid });
+    const tech = this.knownTech(s.tech, aim.id, s.uid);
+    const techMult = tech ? TECHNIQUE_MULT : 1;
+    if (tech)
+      this.emit({ type: 'technique', tick: this.tick, id: tech, enemyId: aim.id, uid: s.uid });
     const mods: StrikeMods = {
       tech: techMult,
       // 合流ボーナス（合流したマスから先の本流）と、起点石の種類のダメージ、重ねの位置（試作）
@@ -1057,6 +1088,21 @@ export class Combat {
     };
     for (let h = 0; h < (def.hits ?? 1); h++)
       this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
+  }
+
+  /**
+   * The technique this step fires. Trial (mastery): one not learned yet fires only if it sparks
+   * now (chance by its element's level), and is learned from then on
+   */
+  private knownTech(id: string | undefined, enemyId: number, uid: string): string | undefined {
+    if (!id || !this.learned || this.learned.has(id)) return id;
+    const el = getTechnique(id)?.element ?? 'physical';
+    const p = sparkChance(this.cfg.mastery?.levels[el] ?? 0);
+    if (p <= 0 || this.rng.next() >= p) return undefined;
+    this.learned.add(id);
+    this.stats.sparks?.push(id);
+    this.emit({ type: 'spark', tick: this.tick, id, enemyId, uid });
+    return id;
   }
 
   /** 合流の演出用イベント（届いた線の段数とボーナス） */
@@ -1127,6 +1173,7 @@ export class Combat {
             mods.bonus *
             resistMult(t.def, def.element) *
             this.affixMult(c, inst, eff, t, statused, mods.origin) *
+            this.masteryMult(def) *
             100,
         ) / 100;
       if (raw > 0) {
@@ -1168,6 +1215,13 @@ export class Combat {
       if (def.element === 'wind' && t.hp > 0) this.windOnPoison(c, t, uid, eff);
       if (t.hp <= 0) this.killEnemy(t);
     }
+  }
+
+  /** Trial (mastery): the element's level adds damage to its gear */
+  private masteryMult(def: ItemDef): number {
+    const levels = this.cfg.mastery?.levels;
+    if (!levels) return 1;
+    return 1 + (levels[def.element ?? 'physical'] ?? 0) * MASTERY.dmgPerLevel;
   }
 
   /** 追加効果によるダメージ倍率（装備の分と、起点の「初撃」） */
