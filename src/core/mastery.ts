@@ -29,7 +29,7 @@ export function masteryLevel(points: number): number {
   if (!(points > 0)) return 0;
   const top = MASTERY.maxLevel;
   if (points >= pointsForLevel(top)) return top;
-  // base × L(L+1)/2 ≤ points  ⇔  L ≤ (√(1 + 8·points/base) − 1) / 2  (L < maxLevel here)
+  // base * L(L+1)/2 <= points  <=>  L <= (sqrt(1 + 8 * points/base) - 1) / 2  (L < maxLevel here)
   const level = Math.floor((Math.sqrt(1 + 8 * (points / MASTERY.base)) - 1) / 2);
   // The square root may be off by one at a boundary: one step settles it
   if (pointsForLevel(level) > points) return level - 1;
