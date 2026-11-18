@@ -1,10 +1,29 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { MONETIZE, RARITY, SIM } from '../config/balance';
+import { DIVE, MONETIZE, RARITY, SIM } from '../config/balance';
 import { maxMergeBonus } from '../core/chain';
 import { addPet } from '../ui/cosmeticsView';
-import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
+import {
+  BASE_HERO_STATS,
+  Combat,
+  type CombatEvent,
+  type EndReason,
+  type Encounter,
+  type RunConfig,
+} from '../core/combat';
+import {
+  diveResult,
+  encounterSeed,
+  lawHero,
+  newDive,
+  nextFloor,
+  nodeAt,
+  offerLaws,
+  recordEncounter,
+  type DivePos,
+  type DiveState,
+} from '../core/dive';
 import { buildSubmission, endlessSeason } from '../core/ranking';
 import {
   consumableSlots,
@@ -14,7 +33,7 @@ import {
   totalStars,
 } from '../core/economy';
 import { Rng, randomSeed } from '../core/rng';
-import { stackBoardOf, trialRules, usesStackBoard } from '../core/trial';
+import { stackBoardOf, trialRules, usesDive, usesStackBoard } from '../core/trial';
 import {
   countsForPick,
   PICK_EVERY_KILLS,
@@ -43,6 +62,7 @@ import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { FieldView } from '../ui/fieldView';
 import { ProtoPick } from '../ui/protoPick';
+import { DiveMapView, showLawPick } from '../ui/diveViews';
 import { avatar } from '../ui/kit/chrome';
 import {
   Bar,
@@ -132,6 +152,13 @@ export class RunScene extends Phaser.Scene {
   private bestBefore: { step: number; damage: number } | null = null;
   /** Played under a trial rule from the home screen switch (records are left alone) */
   private trial = false;
+  /** Trial (dive): the dive this scene belongs to (null outside a dive) */
+  private dive: DiveState | null = null;
+  /** Trial (dive): the node fought now (null: between fights, the map is open) */
+  private diveKind: Encounter['kind'] | null = null;
+  private diveMap: DiveMapView | null = null;
+  /** Trial (dive): an overlay between fights is open (the field stands still) */
+  private diveHalt = false;
   private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
@@ -184,7 +211,8 @@ export class RunScene extends Phaser.Scene {
       refillConsumables(save);
       leaveChallengeEdit(save);
       persist();
-    } else if (!this.demo && !this.proto && refillConsumables(save).length > 0) persist();
+    } else if (!this.demo && !this.proto && !session.dive && refillConsumables(save).length > 0)
+      persist();
     this.warned = new Set();
     this.recordShown = new Set();
     this.bestBefore =
@@ -199,6 +227,30 @@ export class RunScene extends Phaser.Scene {
           ? PROTO_REGION
           : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
+    // Trial (dive): a new sortie starts a dive; between its fights the scene restarts with it
+    this.dive = null;
+    this.diveKind = null;
+    this.diveMap = null;
+    this.diveHalt = false;
+    const diving =
+      !this.proto &&
+      usesDive(save, debugMenuAllowed(), {
+        challenge: !!this.challenge,
+        demo: this.demo,
+        regionId: this.regionId,
+      });
+    if (!diving) session.dive = null;
+    else {
+      if (!session.dive || session.dive.regionId !== this.regionId)
+        session.dive = newDive(this.regionId, this.seed, heroStats(save).maxHp);
+      this.dive = session.dive;
+      const d = this.dive;
+      if (d.fighting && d.pos) {
+        const kind = nodeAt(d.map, d.pos).kind;
+        if (kind !== 'camp') this.diveKind = kind;
+        this.seed = encounterSeed(d);
+      }
+    }
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
     const demo = this.demo ? demoLoadout() : null;
     // The prototype starts from a tiny line of its own (the save's gear is not used)
@@ -220,6 +272,11 @@ export class RunScene extends Phaser.Scene {
           : stackRun
             ? stackBoardOf(save)
             : save.loadout;
+    // A dive's slots lose what earlier fights used up
+    if (this.dive) {
+      const used = this.dive.used;
+      loadout.consumables = loadout.consumables.filter((u) => !used.includes(u));
+    }
     this.loadout = loadout;
     this.items = demo ? demo.items : proto ? proto.items : itemMap(save);
     this.shake = save.settings.shake;
@@ -234,6 +291,19 @@ export class RunScene extends Phaser.Scene {
       demo: this.demo,
       firstRun: !this.demo && !this.challenge && !this.proto && save.stats.runs === 0,
     };
+    if (this.dive) {
+      const d = this.dive;
+      this.cfg.hero = lawHero(this.cfg.hero, d.laws);
+      // Between fights (map open) the field stands still; the encounter is only scenery then
+      this.cfg.encounter = {
+        kind: this.diveKind ?? 'fight',
+        floor: d.floor,
+        hp: d.hp,
+        laws: d.laws,
+        wins: d.wins,
+      };
+      this.cfg.firstRun = false;
+    }
     // Trial rule from the home screen switch (debug setting on, ordinary runs only)
     const trial = this.proto
       ? undefined
@@ -318,6 +388,11 @@ export class RunScene extends Phaser.Scene {
       setAudioSuspended(false);
     });
     this.handleEvents(this.combat.drainEvents());
+    // Trial (dive): between fights the floor map opens over the field
+    if (this.dive && this.diveKind === null) {
+      this.openDiveMap();
+      return;
+    }
     // 初めての出撃（体験ラン）: 止めて、しくみを案内する（試作では出さない）
     if (!this.proto) this.runGuide();
   }
@@ -487,7 +562,9 @@ export class RunScene extends Phaser.Scene {
           .text(
             W / 2,
             H / 2 + 162,
-            t('ここまでの戦利品を持ち帰ります'),
+            this.dive
+              ? t('潜りの途中なので、袋は半分になります')
+              : t('ここまでの戦利品を持ち帰ります'),
             textStyle(18, COLORS.textDim),
           )
           .setOrigin(0.5),
@@ -631,7 +708,7 @@ export class RunScene extends Phaser.Scene {
 
   override update(_time: number, delta: number): void {
     const now = this.time.now;
-    const halted = this.paused || this.inspecting || this.protoPick !== null;
+    const halted = this.paused || this.inspecting || this.protoPick !== null || this.diveHalt;
     // ヒットストップ中は止め、ボス撃破のあとはしばらくスロー
     const juice = now < this.hitStopUntil ? 0 : now < this.slowUntil ? JUICE.bossSlowRate : 1;
     const rate = this.speed * juice;
@@ -667,25 +744,41 @@ export class RunScene extends Phaser.Scene {
 
   private updateHud(): void {
     const c = this.combat;
-    const r = c.remaining;
-    const sec = Math.floor(r);
-    const cs = Math.floor((r - sec) * 100);
-    this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
-    this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
-    // 走っているあいだは出撃時間が止まっている: タイマーを薄く
-    this.hud.timer.setAlpha(c.running ? 0.45 : 1);
     const region = t(getRegion(this.regionId).name);
-    // Between the HP plate (right edge x=326) and the loot pill (left edge x=582)
-    fitText(
-      this.hud.loop
-        .setScale(1)
-        .setText(
-          this.speed !== 1
-            ? t('{region}　{loop}周目　×{speed}', { region, loop: c.loop, speed: this.speed })
-            : t('{region}　{loop}周目', { region, loop: c.loop }),
-        ),
-      230,
-    );
+    if (this.dive) {
+      // Trial (dive): no clock; the floor and the laws held instead
+      const d = this.dive;
+      fitText(
+        this.hud.timer
+          .setScale(1)
+          .setText(t('地下{n}階', { n: d.floor }))
+          .setColor(COLORS.text),
+        180,
+      ).setAlpha(1);
+      fitText(
+        this.hud.loop.setScale(1).setText(t('{region}　掟{n}つ', { region, n: d.laws.length })),
+        230,
+      );
+    } else {
+      const r = c.remaining;
+      const sec = Math.floor(r);
+      const cs = Math.floor((r - sec) * 100);
+      this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
+      this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
+      // 走っているあいだは出撃時間が止まっている: タイマーを薄く
+      this.hud.timer.setAlpha(c.running ? 0.45 : 1);
+      // Between the HP plate (right edge x=326) and the loot pill (left edge x=582)
+      fitText(
+        this.hud.loop
+          .setScale(1)
+          .setText(
+            this.speed !== 1
+              ? t('{region}　{loop}周目　×{speed}', { region, loop: c.loop, speed: this.speed })
+              : t('{region}　{loop}周目', { region, loop: c.loop }),
+          ),
+        230,
+      );
+    }
     this.hud.hp.setRatio(c.hp / c.maxHp);
     this.hud.def.setRatio(Math.min(1, c.defense / c.maxHp));
     this.hud.hpText.setText(`${Math.ceil(c.hp)}/${c.maxHp}`);
@@ -714,7 +807,9 @@ export class RunScene extends Phaser.Scene {
     }
     // The origin that fires next blinks
     this.view.setBlinkOrigin(c.chain ? null : (unit ?? null));
-    this.hud.loot.setValue(`${c.drops.length}`);
+    // In a dive the bag holds earlier fights' loot; once this fight is over its drops are in the bag
+    const fresh = this.dive && c.ended ? 0 : c.drops.length;
+    this.hud.loot.setValue(`${fresh + (this.dive?.bag.length ?? 0)}`);
     this.drawTrack();
     if (this.hud.fps) {
       // Developer overlay (debug flag only)
@@ -1171,6 +1266,10 @@ export class RunScene extends Phaser.Scene {
           sfx('openRare');
           break;
         case 'runEnd':
+          if (this.dive) {
+            this.endDiveFight(ev.reason);
+            break;
+          }
           // 力尽きたら、1ランに1回だけ「広告を見て再開」を選べる
           // 挑戦は全員同じ条件で競うので、再開はなし
           if (
@@ -1265,6 +1364,150 @@ export class RunScene extends Phaser.Scene {
               : '撤退！',
       ),
       r.reason === 'dead' ? COLORS.textWarn : COLORS.text,
+    );
+    this.time.delayedCall(1300, () => this.scene.start('Result'));
+  }
+
+  // ---- Trial (dive) ----
+
+  /** A fight of the dive is over: won → laws after an elite / boss, then the map (or the floor's
+   *  end); fallen or retreated → the dive ends with half the bag */
+  private endDiveFight(reason: EndReason): void {
+    if (this.ending) return;
+    const d = this.dive!;
+    const c = this.combat;
+    recordEncounter(d, c.result(), c.hp);
+    if (reason !== 'cleared') {
+      this.finishDive('dead');
+      return;
+    }
+    this.diveHalt = true;
+    const kind = this.diveKind;
+    if (kind !== 'boss') this.showBanner(t('突破！'), COLORS.gold);
+    this.time.delayedCall(1200, () => {
+      const offer =
+        kind === 'elite' || kind === 'boss'
+          ? offerLaws(new Rng((this.seed ^ 0x5bd1e995) >>> 0), d.laws)
+          : [];
+      const after = () => (kind === 'boss' ? this.askFloorEnd() : this.openDiveMap());
+      if (offer.length === 0) after();
+      else
+        showLawPick(this, offer, (id) => {
+          d.laws.push(id);
+          sfx('openRare');
+          after();
+        });
+    });
+  }
+
+  private openDiveMap(): void {
+    const d = this.dive!;
+    this.diveHalt = true;
+    this.diveMap?.destroy();
+    this.diveMap = new DiveMapView(this, d, this.combat.maxHp, {
+      onChoose: (pos) => this.chooseNode(pos),
+      onGiveUp: () => {
+        this.diveMap?.destroy();
+        this.diveMap = null;
+        this.finishDive('dead');
+      },
+    });
+  }
+
+  /** Go to a node: a fight restarts the scene with it, a camp asks what to do there */
+  private chooseNode(pos: DivePos): void {
+    if (this.ending) return;
+    const d = this.dive!;
+    sfx('click');
+    this.diveMap?.destroy();
+    this.diveMap = null;
+    d.pos = pos;
+    if (nodeAt(d.map, pos).kind === 'camp') {
+      this.openCamp();
+      return;
+    }
+    d.fighting = true;
+    this.scene.restart();
+  }
+
+  /** A camp: rest (heal) or rearrange the board (the loadout screen, then back to the map) */
+  private openCamp(): void {
+    const d = this.dive!;
+    const max = this.combat.maxHp;
+    const heal = Math.round(max * DIVE.campHeal);
+    choiceDialog(
+      this,
+      t('野営'),
+      [
+        {
+          label: t('休む（HP +{n}）', { n: heal }),
+          skin: 'gold',
+          onPick: () => {
+            d.hp = Math.min(max, d.hp + heal);
+            sfx('defense');
+            this.openDiveMap();
+          },
+        },
+        {
+          label: t('組み直す'),
+          skin: 'blue',
+          onPick: () => {
+            session.diveCamp = true;
+            this.scene.start('Loadout');
+          },
+        },
+      ],
+      t('どちらか1つ。組み直すときに、袋の中の装備は使えません'),
+      undefined,
+      true,
+    );
+  }
+
+  /** The floor's boss is down: go home with the whole bag, or go deeper */
+  private askFloorEnd(): void {
+    const d = this.dive!;
+    choiceDialog(
+      this,
+      t('地下{floor}階 突破！', { floor: d.floor }),
+      [
+        {
+          label: t('帰る（袋を全部持ち帰る）'),
+          skin: 'gold',
+          onPick: () => this.finishDive('retreat'),
+        },
+        {
+          label: t('次の階へ'),
+          skin: 'red',
+          onPick: () => {
+            nextFloor(d);
+            this.openDiveMap();
+          },
+        },
+      ],
+      t('袋 {n}個。倒れると半分になる', { n: d.bag.length }),
+      undefined,
+      true,
+    );
+  }
+
+  /** The dive ends: the result screen takes it as one run (half the bag when fallen) */
+  private finishDive(reason: 'retreat' | 'dead'): void {
+    if (this.ending) return;
+    this.ending = true;
+    const d = this.dive!;
+    const r = diveResult(d, reason, new Rng((d.seed ^ 0x2545f491) >>> 0));
+    session.dive = null;
+    session.lastResult = {
+      regionId: this.regionId,
+      result: r,
+      seed: d.seed,
+      trial: true,
+      dive: { floor: d.floor, lost: d.bag.length - r.drops.length },
+    };
+    sfx('runEnd');
+    this.showBanner(
+      t(reason === 'dead' ? '力尽きた…' : '帰還！'),
+      reason === 'dead' ? COLORS.textWarn : COLORS.text,
     );
     this.time.delayedCall(1300, () => this.scene.start('Result'));
   }

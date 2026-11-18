@@ -124,6 +124,7 @@ export class ResultScene extends Phaser.Scene {
     const { result, regionId } = last;
     const demo = last.demo === true;
     const trial = last.trial === true;
+    const dive = last.dive ?? null;
     const challenge = last.challenge ?? null;
     let challengeBest = false;
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存。
@@ -185,7 +186,9 @@ export class ResultScene extends Phaser.Scene {
             ? '力尽きた…'
             : result.reason === 'timeout'
               ? '時間切れ！'
-              : '撤退！',
+              : dive
+                ? '帰還！'
+                : '撤退！',
       ),
       420,
     );
@@ -256,7 +259,9 @@ export class ResultScene extends Phaser.Scene {
           190,
           challenge
             ? t('挑戦「{name}」・{region}', { name: t(challenge.name), region: regionName })
-            : regionName,
+            : dive && dive.lost > 0
+              ? t('{region}・倒れて袋の{n}個を失った', { region: regionName, n: dive.lost })
+              : regionName,
           textStyle(28, COLORS.textDim),
         )
         .setOrigin(0.5),
@@ -269,7 +274,9 @@ export class ResultScene extends Phaser.Scene {
           246,
           challenge
             ? t('スコア {score}', { score: num(result.stats.totalDamage) })
-            : t('到達 {loop}周目', { loop: result.reachedLoop }),
+            : dive
+              ? t('地下{floor}階まで潜った', { floor: dive.floor })
+              : t('到達 {loop}周目', { loop: result.reachedLoop }),
           textStyle(56, '#ffe27a'),
         )
         .setOrigin(0.5),
@@ -315,7 +322,10 @@ export class ResultScene extends Phaser.Scene {
         this.stamp(x + lbl.displayWidth + 30, y + 2, 'NEW!', 500 + i * 120, 15);
       }
     });
-    if (challenge ? challengeBest : !demo && !prev.first && result.reachedLoop > prev.loop)
+    // A trial run does not count toward the region's best loop
+    if (
+      challenge ? challengeBest : !demo && !trial && !prev.first && result.reachedLoop > prev.loop
+    )
       this.stamp(W / 2 + 200, 220, t('自己ベスト！'), 400);
     // 地域の★（3・6・10周目のボス撃破）。★ごとに攻撃+3%・最大HP+5
     const gained = demo || challenge ? 0 : regionStars(save, regionId) - prev.stars;

@@ -17,9 +17,19 @@ interface RunKind {
 /** Only ordinary runs: a challenge or endless run is ranked, and the demo is scripted */
 const ordinary = (run: RunKind) => !run.challenge && !run.demo && run.regionId !== 'endless';
 
-/** The stacked board switch is on (and works in this build) */
+/** The stacked board switch is on (and works in this build). The dive uses the stacked board too */
 export function stackSwitchOn(save: SaveData, allowed: boolean): boolean {
-  return allowed && save.settings.debug && save.settings.trialStack;
+  return allowed && save.settings.debug && (save.settings.trialStack || save.settings.trialDive);
+}
+
+/** The dive switch is on (and works in this build) */
+export function diveSwitchOn(save: SaveData, allowed: boolean): boolean {
+  return allowed && save.settings.debug && save.settings.trialDive;
+}
+
+/** This sortie dives down floors (trial) */
+export function usesDive(save: SaveData, allowed: boolean, run: RunKind): boolean {
+  return diveSwitchOn(save, allowed) && ordinary(run);
 }
 
 /** This run uses the stacked board (trial) */
@@ -34,8 +44,9 @@ export function trialRules(
   run: RunKind,
 ): Partial<ChainRules> | undefined {
   if (!allowed || !save.settings.debug || !ordinary(run)) return undefined;
-  // The stacked board comes with the count going on across kills
-  if (!save.settings.trialKeepCount && !save.settings.trialStack) return undefined;
+  // The stacked board (and the dive on it) comes with the count going on across kills
+  const s = save.settings;
+  if (!s.trialKeepCount && !s.trialStack && !s.trialDive) return undefined;
   return { keepCountOnKill: true };
 }
 

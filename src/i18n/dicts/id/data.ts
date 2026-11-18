@@ -470,4 +470,23 @@ export const DATA: Dict = {
   'ヴェノム・クロス': 'Silang Bisa',
   '毒の短剣 → 短剣か毒の短剣 → 吸血の剣': 'Belati Racun → Belati/Belati Racun → Pedang Vampir',
   '毒と血の気配がする…': 'Terasa hawa racun dan darah…',
+  重ねの極意: 'Seni Tumpukan',
+  '重ねの倍率が ×1.5 / ×2 / ×3 になる。': 'Pengali tumpukan menjadi ×1.5 / ×2 / ×3.',
+  大連鎖: 'Rantai Agung',
+  '10連鎖目から先の一撃は ダメージ ×2。': 'Serangan mulai Rantai 10 memberi damage ×2.',
+  必殺の冴え: 'Jurus Tajam',
+  '必殺技の一撃が ダメージ ×2.5。': 'Serangan Jurus Spesial memberi damage ×2.5.',
+  一色: 'Satu Warna',
+  '攻撃の重ねがすべて同じ属性なら、ダメージ ×1.6。':
+    'Jika semua tumpukan serangan berelemen sama, damage ×1.6.',
+  四隅: 'Empat Sudut',
+  '四隅のマスで鳴る装備は ダメージ ×2。':
+    'Perlengkapan yang berbunyi di petak sudut memberi damage ×2.',
+  早撃ち: 'Tembak Cepat',
+  '連鎖のあとの待ちが 40% 短くなる。': 'Jeda setelah rantai 40% lebih singkat.',
+  生き血: 'Darah Hidup',
+  '敵を1体倒すたびに、最大HPの2% 回復。': 'Tiap musuh dikalahkan memulihkan 2% HP maks.',
+  勝ち癖: 'Kebiasaan Menang',
+  'この潜りで勝った戦闘1つごとに、ダメージ +10%。':
+    'Damage +10% untuk tiap pertarungan yang dimenangi dalam penyelaman ini.',
 };

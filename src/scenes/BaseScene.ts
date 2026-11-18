@@ -580,9 +580,10 @@ export class BaseScene extends Phaser.Scene {
         ),
       );
       // Trial rule switches for ordinary runs (the stacked board comes with the count going on)
-      const switches: ['trialKeepCount' | 'trialStack', string][] = [
+      const switches: ['trialKeepCount' | 'trialStack' | 'trialDive', string][] = [
         ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
         ['trialStack', k('試作: 重ねる盤面 {state}')],
+        ['trialDive', k('試作: 潜る {state}')],
       ];
       switches.forEach(([key, label], i) => {
         const on = save.settings[key];

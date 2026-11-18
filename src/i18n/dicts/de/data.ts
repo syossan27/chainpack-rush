@@ -469,4 +469,23 @@ export const DATA: Dict = {
   'ヴェノム・クロス': 'Giftkreuz',
   '毒の短剣 → 短剣か毒の短剣 → 吸血の剣': 'Giftdolch → Dolch/Giftdolch → Vampirschwert',
   '毒と血の気配がする…': 'Du spürst Gift und Blut…',
+  重ねの極意: 'Stapelkunst',
+  '重ねの倍率が ×1.5 / ×2 / ×3 になる。': 'Stapel-Multiplikatoren werden ×1.5 / ×2 / ×3.',
+  大連鎖: 'Große Kette',
+  '10連鎖目から先の一撃は ダメージ ×2。': 'Treffer ab Kette 10 verursachen ×2 Schaden.',
+  必殺の冴え: 'Scharfer Spezialangriff',
+  '必殺技の一撃が ダメージ ×2.5。': 'Spezialangriff-Treffer verursachen ×2.5 Schaden.',
+  一色: 'Einfarbig',
+  '攻撃の重ねがすべて同じ属性なら、ダメージ ×1.6。':
+    'Haben alle Angriffsstapel dasselbe Element: Schaden ×1.6.',
+  四隅: 'Vier Ecken',
+  '四隅のマスで鳴る装備は ダメージ ×2。':
+    'Ausrüstung, die in einem Eckfeld auslöst, verursacht ×2 Schaden.',
+  早撃ち: 'Schnellschuss',
+  '連鎖のあとの待ちが 40% 短くなる。': 'Die Wartezeit nach einer Kette ist 40% kürzer.',
+  生き血: 'Lebensblut',
+  '敵を1体倒すたびに、最大HPの2% 回復。': 'Jeder besiegte Gegner heilt 2% der max. HP.',
+  勝ち癖: 'Siegesgewohnheit',
+  'この潜りで勝った戦闘1つごとに、ダメージ +10%。':
+    'Schaden +10% für jeden in diesem Abstieg gewonnenen Kampf.',
 };

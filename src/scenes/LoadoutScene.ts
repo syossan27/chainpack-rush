@@ -54,6 +54,7 @@ import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
+import { session } from '../platform/session';
 import { BackpackView } from '../ui/backpackView';
 import { routeColor, routeCss } from '../ui/backpackView';
 import { TabBar, TopBar, goTab } from '../ui/kit/chrome';
@@ -208,10 +209,14 @@ export class LoadoutScene extends Phaser.Scene {
             : null
           : presetMark(getSave(), this.presetUses, it.uid),
     );
-    const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
-    new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
-      this.scene.start('Dummy'),
-    );
+    // Trial (dive): opened from a camp, the screen only rearranges and leads back to the dive
+    const camp = this.stackMode && session.diveCamp && session.dive !== null;
+    if (!camp) {
+      const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
+      new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
+        this.scene.start('Dummy'),
+      );
+    }
     // おまかせ: between the consumable slots and the scarecrow (not in the challenge, which ranks
     // arranging). With 5 slots there is no room, so 全部外す offers it instead
     this.autoBtn = null;
@@ -235,18 +240,27 @@ export class LoadoutScene extends Phaser.Scene {
       W - 76,
       LOADOUT_LAYOUT.slotsTop + 44,
       88,
-      this.challenge ? 'clock' : 'swords',
-      t(this.challenge ? '挑戦へ' : '出撃'),
-      () =>
-        this.challenge
-          ? this.scene.start('Base', { page: 'challenge' })
-          : this.scene.start('StageSelect'),
+      camp ? 'back' : this.challenge ? 'clock' : 'swords',
+      t(camp ? '野営を出る' : this.challenge ? '挑戦へ' : '出撃'),
+      () => {
+        if (camp) {
+          // The dive goes on with this board: it needs an origin stone
+          if (sortieBlock(getSave()) === 'noOrigin') {
+            sfx('error');
+            return;
+          }
+          session.diveCamp = false;
+          this.scene.start('Run');
+        } else if (this.challenge) this.scene.start('Base', { page: 'challenge' });
+        else this.scene.start('StageSelect');
+      },
     ).setLit(true);
     new TopBar(this, save);
-    new TabBar(this, 'loadout', (id) => {
-      sfx('click');
-      goTab(this, id);
-    });
+    if (!camp)
+      new TabBar(this, 'loadout', (id) => {
+        sfx('click');
+        goTab(this, id);
+      });
 
     this.setupGridInput();
     this.refresh();
