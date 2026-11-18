@@ -8,6 +8,7 @@ import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
+import { getTechnique } from '../data/techniques';
 import { isElement, type MasteryData } from './mastery';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
@@ -263,8 +264,9 @@ function readMastery(v: Record<string, unknown>): MasteryData {
   if (isObj(v.points))
     for (const [el, n] of Object.entries(v.points))
       if (isElement(el) && isNum(n) && n >= 0) points[el] = n;
+  // Only real techniques, once each
   const learned = Array.isArray(v.learned)
-    ? v.learned.filter((t): t is string => typeof t === 'string')
+    ? [...new Set(v.learned.filter((t): t is string => typeof t === 'string' && !!getTechnique(t)))]
     : [];
   return { points, learned };
 }
