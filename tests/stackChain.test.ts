@@ -183,6 +183,24 @@ describe('重ねる盤面（試作）: 連鎖', () => {
     expect(firedPieces(flatPlan.steps, originIn(flat.items))).toBe(3);
   });
 
+  it('待ちの数え方は、起点石でない装備が鳴ったマスを1つと数える（一番下が何でも）', () => {
+    const step = (uid: string, cell: number, ring: number) => ({
+      t: 0,
+      uid,
+      step: null,
+      branch: 0,
+      mult: 1,
+      from: null,
+      parentIndex: -1,
+      cell,
+      ring,
+    });
+    const isOrigin = (uid: string) => uid.startsWith('o');
+    // A cell whose bottom is an origin stone still counts once for the sword above it
+    expect(firedPieces([step('o', 0, 0), step('s', 0, 1)], isOrigin)).toBe(1);
+    expect(firedPieces([step('o', 0, 0), step('a', 1, 0), step('b', 1, 1)], isOrigin)).toBe(1);
+  });
+
   it('戦闘のダメージに位置の倍率がかかる（2つ目は 連鎖×1.2 と 位置×1.5）', () => {
     const { loadout, items } = stacked(
       2,

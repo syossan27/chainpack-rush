@@ -157,7 +157,19 @@ export function restoreStackBoard(
     seen.add(u);
     return true;
   };
-  for (let i = 0; i < out.cells.length; i++) setStack(out, i, stackAt(rec, i).filter(ok));
+  for (let i = 0; i < out.cells.length; i++) {
+    const s = stackAt(rec, i).filter((u) => owned.has(u));
+    // Keep to the rules: an origin stone alone, otherwise the items of the top's group (≤ max)
+    const top = s[s.length - 1];
+    const g = top ? stackGroup(owned.get(top)!) : null;
+    const fit =
+      top === undefined
+        ? []
+        : g === null
+          ? [top]
+          : s.filter((u) => stackGroup(owned.get(u)!) === g).slice(-STACK.max);
+    setStack(out, i, fit.filter(ok));
+  }
   syncOrigins(out, owned);
   // One origin stone (a board stored with more keeps the first)
   for (const u of out.originOrder.slice(1)) pull(out, u);

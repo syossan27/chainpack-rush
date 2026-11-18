@@ -108,6 +108,20 @@ describe('重ねる盤面（試作）: 置き方', () => {
     expect(stackAt(l, 4)).toEqual(['s1']);
   });
 
+  it('読み直すと、決まりに合わない重ねは直る（起点石はひとりで1マス、重ねは同じ属性だけ）', () => {
+    const rec: Loadout = {
+      ...emptyStackBoard(),
+      cells: ['s1', 'o2', 's2', ...new Array<string | null>(9).fill(null)],
+      under: [['o1'], ['s3'], ['f1', 's4'], ...Array.from({ length: 9 }, () => [])],
+      originOrder: ['o2'],
+    };
+    const back = restoreStackBoard(rec, items, 3);
+    expect(stackAt(back, 0)).toEqual(['s1']);
+    expect(stackAt(back, 1)).toEqual(['o2']);
+    expect(stackAt(back, 2)).toEqual(['s4', 's2']);
+    expect(back.originOrder).toEqual(['o2']);
+  });
+
   it('読み直すと、もう持っていない装備は抜けて、下の装備が上がる', () => {
     let l = emptyStackBoard();
     for (const u of ['s1', 's2', 's3']) l = put(l, u, 2);

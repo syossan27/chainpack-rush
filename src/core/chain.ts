@@ -32,13 +32,21 @@ export function chainMultiplier(step: number, cap: number = CHAIN.multCap): numb
 
 /**
  * Pieces that count toward the wait after a chain (and the guard): every item except origin
- * stones. On a stacked board a stack counts once (its bottom ring), however many items it holds
+ * stones. On a stacked board a cell counts once, however many items it holds
  */
 export function firedPieces(
   steps: readonly ChainStep[],
   isOrigin: (uid: string) => boolean,
 ): number {
-  return steps.filter((s) => (s.ring ?? 0) === 0 && !isOrigin(s.uid)).length;
+  let pieces = 0;
+  // Stacked board: the cells where something other than an origin stone rang, each once
+  const cells = new Set<number>();
+  for (const s of steps) {
+    if (isOrigin(s.uid)) continue;
+    if (s.ring === undefined) pieces++;
+    else cells.add(s.cell);
+  }
+  return pieces + cells.size;
 }
 
 /** 起点石の種類: 線に乗った起点の効果（同じ種類の起点石は1回だけ） */
