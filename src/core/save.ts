@@ -45,6 +45,10 @@ export interface SaveData {
   challenge: { period: number; best: number; bestLoop: number };
   /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
   challengeLoadout: Loadout | null;
+  /** Trial: the stacked board (kept apart from the ordinary loadouts) */
+  trialLoadout?: Loadout | null;
+  /** Trial: the stacked board is being edited and sits in loadout for now */
+  editingTrial?: boolean;
   /** ランキングに送った自己ベスト（シーズンごと。'challenge-3' → スコア） */
   rankSent: Record<string, number>;
   /** ランキングの報酬でもらった称号（新しい順） */
@@ -78,6 +82,10 @@ export interface SaveData {
      * looks really owned stay as they are)
      */
     debug: boolean;
+    /** Trial switch on the home screen (debug setting on): the chain count goes on across kills */
+    trialKeepCount: boolean;
+    /** Trial switch on the home screen (debug setting on): runs use the stacked board */
+    trialStack: boolean;
   };
 }
 
@@ -173,6 +181,8 @@ export function createInitialSave(): SaveData {
       autoSellKeepAffix: true,
       lang: 'auto',
       debug: false,
+      trialKeepCount: false,
+      trialStack: false,
     },
   };
 }
@@ -210,11 +220,23 @@ function readLoadoutRec(v: unknown): Loadout | null {
         originOrder: v.originOrder.filter((u): u is string => typeof u === 'string'),
         consumables: v.consumables.filter((u): u is string => typeof u === 'string'),
         ...autoOf(v),
+        ...underOf(v),
       }
     : null;
 }
 
 /** 消耗品の自動補充の記録（古いセーブにはない） */
+/** Trial (stacked board): the items under each cell's top, when the board has them */
+function underOf(l: { under?: unknown; cells?: unknown }): { under?: string[][] } {
+  if (!Array.isArray(l.under) || !Array.isArray(l.cells) || l.under.length !== l.cells.length)
+    return {};
+  return {
+    under: l.under.map((s) =>
+      Array.isArray(s) ? s.filter((u): u is string => typeof u === 'string') : [],
+    ),
+  };
+}
+
 function autoOf(l: { consumableAuto?: unknown }): { consumableAuto?: string[] } {
   return Array.isArray(l.consumableAuto)
     ? { consumableAuto: l.consumableAuto.filter((u): u is string => typeof u === 'string') }
@@ -284,6 +306,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         originOrder: lo.originOrder.filter((u): u is string => typeof u === 'string'),
         consumables: lo.consumables.filter((u): u is string => typeof u === 'string'),
         ...autoOf(lo),
+        ...underOf(lo),
       },
       upgrades: {
         ...base.upgrades,
@@ -318,6 +341,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
             }
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
+      ...(data.trialLoadout ? { trialLoadout: readLoadoutRec(data.trialLoadout) } : {}),
       rankSent: isObj(data.rankSent)
         ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
             string,
@@ -351,6 +375,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
         : [],
       ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
+      ...(data.editingTrial === true ? { editingTrial: true } : {}),
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],
@@ -383,6 +408,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
       save.settings.autoSellKeepAffix = true;
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
+    if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
+    if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

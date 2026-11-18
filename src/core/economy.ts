@@ -23,7 +23,7 @@ import { resizeLoadout } from './loadout';
 import { allowsRarity, createItem, lineItemFor, pickDef, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
-import type { Dir, ItemInstance, Rarity } from './types';
+import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 
 /** 地域の★（その地域で倒した周目のボスの数。PROGRESS.starLoops） */
 export function regionStars(save: SaveData, regionId: string): number {
@@ -129,6 +129,8 @@ export function sellPrice(item: ItemInstance): number {
 export function equippedUids(save: SaveData): Set<string> {
   const s = new Set<string>();
   for (const c of save.loadout.cells) if (c) s.add(c);
+  // Trial (stacked board): the items under the tops are placed too
+  for (const st of save.loadout.under ?? []) for (const u of st) s.add(u);
   for (const c of save.loadout.consumables) s.add(c);
   return s;
 }
@@ -456,10 +458,13 @@ export function recordRun(
   save: SaveData,
   regionId: string,
   result: RunResult,
+  opts: { trial?: boolean } = {},
 ): { unlocked: string | null } {
   save.stats.runs++;
   // 倒した敵から拾ったゴールド
   save.gold += result.stats.gold ?? 0;
+  // A run under a trial rule leaves the records, the regions' best loops (★) and unlocks alone
+  if (opts.trial) return { unlocked: null };
   save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
   save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
   // エンドレス: 地域の記録・開放とは別に、自己ベスト（到達周回、同じなら合計ダメージ）
@@ -488,8 +493,9 @@ export function recordRun(
 
 export type SortieBlock = 'noOrigin' | 'storageFull' | null;
 
-export function sortieBlock(save: SaveData): SortieBlock {
-  if (!save.loadout.originOrder.some((u) => save.loadout.cells.includes(u))) return 'noOrigin';
+/** `board`: the loadout the run will use (the stacked board in the trial) */
+export function sortieBlock(save: SaveData, board: Loadout = save.loadout): SortieBlock {
+  if (!board.originOrder.some((u) => board.cells.includes(u))) return 'noOrigin';
   if (storageCount(save) > storageCapacity(save)) return 'storageFull';
   return null;
 }

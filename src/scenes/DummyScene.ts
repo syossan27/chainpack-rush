@@ -4,10 +4,11 @@ import Phaser from 'phaser';
 import { SIM } from '../config/balance';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { heroStats, itemMap } from '../core/economy';
-import type { ItemInstance } from '../core/types';
+import type { ItemInstance, Loadout } from '../core/types';
+import { stackBoardOf, stackSwitchOn } from '../core/trial';
 import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
-import { devRage } from '../platform/debug';
+import { debugMenuAllowed, devRage } from '../platform/debug';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
 import { gameSpeed, getSave, persist } from '../platform/store';
@@ -37,6 +38,8 @@ export class DummyScene extends Phaser.Scene {
   private acc = 0;
   private comboLabel: string[] = [];
   private mergeBonus = 0;
+  /** The board to try: the stacked board while that trial switch is on */
+  private board!: Loadout;
 
   constructor() {
     super('Dummy');
@@ -45,11 +48,12 @@ export class DummyScene extends Phaser.Scene {
   create(): void {
     const save = getSave();
     this.items = itemMap(save);
+    this.board = stackSwitchOn(save, debugMenuAllowed()) ? stackBoardOf(save) : save.loadout;
     this.cameras.main.setBackgroundColor(COLORS.bg);
     this.combat = new Combat({
       seed: 1,
       regionId: session.regionId ?? REGIONS[0]!.id,
-      loadout: save.loadout,
+      loadout: this.board,
       items: this.items,
       hero: save ? heroStats(save) : BASE_HERO_STATS,
       mode: 'dummy',
@@ -57,7 +61,7 @@ export class DummyScene extends Phaser.Scene {
     // Development only: an angry dummy, to check the angry boss look
     if (devRage()) for (const e of this.combat.enemies) e.enraged = true;
     this.field = new FieldView(this, session.regionId ?? REGIONS[0]!.id, getSave().look);
-    this.field.setAura(auraTier(save.loadout, this.items));
+    this.field.setAura(auraTier(this.board, this.items));
     this.numbers = new DamageNumbers(this, 60);
     this.effects = new Effects(this, 55);
     this.elementFx = new ElementFx(this, 56, 40, RUN_LAYOUT.footY - 4);
@@ -65,9 +69,7 @@ export class DummyScene extends Phaser.Scene {
       .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
       .setDepth(40);
-    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, save.loadout, this.items).setDepth(
-      41,
-    );
+    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, this.board, this.items).setDepth(41);
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
     this.add.existing(ribbon(this, W / 2, 50, t('カカシで試し撃ち'), 360).setDepth(70));
     panel(this, 230, RUN_LAYOUT.middleTop + 86, 420, 140, 'inset').setDepth(70);
@@ -142,7 +144,7 @@ export class DummyScene extends Phaser.Scene {
   }
 
   private setupBackpackTap(): void {
-    const loadout = getSave().loadout;
+    const loadout = this.board;
     const zone = this.add
       .zone(0, RUN_LAYOUT.backpackTop, W, this.view.gridHeight)
       .setOrigin(0, 0)
@@ -164,7 +166,7 @@ export class DummyScene extends Phaser.Scene {
         this.mergeBonus = 0;
         sfx('fire');
         this.stats.setText(
-          t('起点{origin} 発火中…', { origin: unitLabel(getSave().loadout, ev.plan.originUids) }),
+          t('起点{origin} 発火中…', { origin: unitLabel(this.board, ev.plan.originUids) }),
         );
       } else if (ev.type === 'merge') {
         this.mergeBonus = Math.max(this.mergeBonus, ev.bonus);

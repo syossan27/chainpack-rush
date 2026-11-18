@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
+import { iconKey } from '../data/sprites';
 import { t } from '../i18n';
 import { ItemIcon } from './itemIcon';
 import { SKIN } from './kit/skin';
@@ -144,6 +145,17 @@ export class BackpackView extends Phaser.GameObjects.Container {
       const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
       this.iconLayer.add(icon);
       this.icons.set(i, icon);
+      // Trial (stacked board): the items under the top, small at the top-left (labels sit below)
+      (this.loadout.under?.[i] ?? []).forEach((u, k) => {
+        const low = this.items.get(u);
+        if (!low) return;
+        const x = c.x - this.cell / 2 + 13 + k * 20;
+        const y = c.y - this.cell / 2 + 13;
+        this.iconLayer.add(
+          this.scene.add.rectangle(x, y, 20, 20, 0x0c0a12, 0.85).setStrokeStyle(2, 0xfff080),
+        );
+        this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
+      });
     });
     this.lineG.clear();
     this.labelLayer.removeAll(true);
@@ -233,8 +245,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
         this.lineG.fillStyle(color, 1);
         this.lineG.fillCircle(b.x, b.y, focused ? 7 : 5);
       }
+      // Stacked board (trial): a cell is labelled with its top ring (the last count, the technique)
+      const topRing = new Map<number, number>();
+      for (const s of plan.steps) if (s.step !== null) topRing.set(s.cell, s.ring ?? 0);
       for (const s of plan.steps) {
         if (s.step === null || labeled.has(s.cell)) continue;
+        if ((s.ring ?? 0) !== topRing.get(s.cell)) continue;
         labeled.add(s.cell);
         const c = this.cellCenter(s.cell);
         const label = this.scene.add

@@ -64,7 +64,7 @@ export function estimateRoute(
       if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
     }
     // 合流ボーナス（合流したマスから先の本流）と、起点石の種類
-    m *= (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1);
+    m *= (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1);
     const critChance = Math.min(
       1,
       LUCK.critChance + (def.critBonus ?? 0) + affixValue(inst, 'keen') / 100,

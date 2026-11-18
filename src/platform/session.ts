@@ -20,6 +20,8 @@ export const session: {
     challenge?: ChallengeSortie;
     /** ランキングに送れる記録（挑戦・エンドレス） */
     submission?: ScoreSubmission;
+    /** Played under a trial rule: the records are not updated */
+    trial?: boolean;
   } | null;
   /** 次の出撃を挑戦にする（出撃したら空に戻す） */
   challenge: ChallengeSortie | null;

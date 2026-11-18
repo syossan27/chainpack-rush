@@ -1,0 +1,175 @@
+// Trial (stacked board): editing a small board whose cells hold stacks of gear. The top item of a
+// cell is cells[i]; the items under it are under[i], bottom first. Pure: no Phaser.
+import { STACK } from '../config/balance';
+import { getItemDef } from '../data/items';
+import type { ItemInstance, Loadout } from './types';
+
+/** Which items may share a cell: attack gear of one element, or defense gear. Null never stacks */
+export function stackGroup(it: ItemInstance): string | null {
+  const def = getItemDef(it.defId);
+  if (def.kind === 'attack') return `attack:${def.element ?? 'physical'}`;
+  if (def.kind === 'defense') return 'defense';
+  return null;
+}
+
+/** The items in a cell, bottom → top (empty for an empty cell) */
+export function stackAt(l: Loadout, cell: number): string[] {
+  const top = l.cells[cell];
+  return top ? [...(l.under?.[cell] ?? []), top] : [];
+}
+
+/** Every item on the board: the tops and the items under them */
+export function boardUids(l: Loadout): string[] {
+  return l.cells.flatMap((_, i) => stackAt(l, i));
+}
+
+export function emptyStackBoard(): Loadout {
+  const n = STACK.width * STACK.height;
+  return {
+    width: STACK.width,
+    height: STACK.height,
+    cells: new Array<string | null>(n).fill(null),
+    under: Array.from({ length: n }, () => []),
+    originOrder: [],
+    consumables: [],
+  };
+}
+
+function clone(l: Loadout): Loadout {
+  return {
+    ...l,
+    cells: l.cells.slice(),
+    under: l.cells.map((_, i) => (l.under?.[i] ?? []).slice()),
+    originOrder: l.originOrder.slice(),
+    consumables: l.consumables.slice(),
+  };
+}
+
+/** Write a cell's stack back (bottom → top) */
+function setStack(l: Loadout, cell: number, stack: readonly string[]): void {
+  l.cells[cell] = stack[stack.length - 1] ?? null;
+  l.under![cell] = stack.slice(0, -1);
+}
+
+function syncOrigins(l: Loadout, items: ReadonlyMap<string, ItemInstance>): void {
+  l.originOrder = l.cells.filter(
+    (u): u is string => !!u && getItemDef(items.get(u)?.defId ?? '').kind === 'origin',
+  );
+}
+
+/** Take an item out of the board in place (no copy) */
+function pull(l: Loadout, uid: string): void {
+  for (let i = 0; i < l.cells.length; i++) {
+    const s = stackAt(l, i);
+    if (s.includes(uid))
+      setStack(
+        l,
+        i,
+        s.filter((u) => u !== uid),
+      );
+  }
+}
+
+/** Why an item cannot go on a cell: another element, a full stack, or a second origin stone */
+export type StackBlock = 'group' | 'full' | 'origin';
+
+/** Put an item on a cell: an empty cell takes it, an occupied cell stacks it on top */
+export function stackPut(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  uid: string,
+  cell: number,
+): { loadout: Loadout; block: StackBlock | null } {
+  const it = items.get(uid);
+  if (!it || cell < 0 || cell >= l.cells.length) return { loadout: l, block: null };
+  const def = getItemDef(it.defId);
+  if (def.kind === 'consumable') return { loadout: l, block: null };
+  const out = clone(l);
+  pull(out, uid);
+  const here = stackAt(out, cell);
+  if (here.length === 0) {
+    // One origin stone on the board (trial)
+    const other = out.originOrder.find((u) => u !== uid && boardUids(out).includes(u));
+    if (def.kind === 'origin' && other) return { loadout: l, block: 'origin' };
+    setStack(out, cell, [uid]);
+  } else {
+    const g = stackGroup(it);
+    if (g === null || g !== stackGroup(items.get(here[0]!)!)) return { loadout: l, block: 'group' };
+    if (here.length >= STACK.max) return { loadout: l, block: 'full' };
+    setStack(out, cell, [...here, uid]);
+  }
+  syncOrigins(out, items);
+  return { loadout: out, block: null };
+}
+
+/** Move a whole stack to another cell (it swaps with the stack there) */
+export function stackMove(l: Loadout, from: number, to: number): Loadout {
+  if (from === to || from < 0 || to < 0 || from >= l.cells.length || to >= l.cells.length) return l;
+  const out = clone(l);
+  const a = stackAt(out, from);
+  setStack(out, from, stackAt(out, to));
+  setStack(out, to, a);
+  return out;
+}
+
+/** Take one item off the board; the item below it becomes the top */
+export function stackTake(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  uid: string,
+): Loadout {
+  const out = clone(l);
+  pull(out, uid);
+  out.consumables = out.consumables.filter((u) => u !== uid);
+  syncOrigins(out, items);
+  return out;
+}
+
+/** Move an item one place up (+1) or down (-1) in its stack */
+export function stackShift(l: Loadout, uid: string, delta: 1 | -1): Loadout {
+  const cell = l.cells.findIndex((_, i) => stackAt(l, i).includes(uid));
+  if (cell < 0) return l;
+  const s = stackAt(l, cell);
+  const i = s.indexOf(uid);
+  const j = i + delta;
+  if (j < 0 || j >= s.length) return l;
+  const out = clone(l);
+  [s[i], s[j]] = [s[j]!, s[i]!];
+  setStack(out, cell, s);
+  return out;
+}
+
+/**
+ * A stored board against what the player owns now: items sold or used up drop out (the item below
+ * moves up), consumables keep to the slots. Nothing stored, or another size: an empty board
+ */
+export function restoreStackBoard(
+  rec: Loadout | null,
+  owned: ReadonlyMap<string, ItemInstance>,
+  consumableSlots: number,
+): Loadout {
+  if (!rec || rec.width !== STACK.width || rec.height !== STACK.height) return emptyStackBoard();
+  const out = emptyStackBoard();
+  const seen = new Set<string>();
+  const ok = (u: string) => {
+    const it = owned.get(u);
+    if (!it || seen.has(u) || getItemDef(it.defId).kind === 'consumable') return false;
+    seen.add(u);
+    return true;
+  };
+  for (let i = 0; i < out.cells.length; i++) setStack(out, i, stackAt(rec, i).filter(ok));
+  syncOrigins(out, owned);
+  // One origin stone (a board stored with more keeps the first)
+  for (const u of out.originOrder.slice(1)) pull(out, u);
+  syncOrigins(out, owned);
+  out.consumables = rec.consumables
+    .filter((u) => {
+      const it = owned.get(u);
+      if (!it || getItemDef(it.defId).kind !== 'consumable' || seen.has(u)) return false;
+      seen.add(u);
+      return true;
+    })
+    .slice(0, consumableSlots);
+  if (rec.consumableAuto) out.consumableAuto = rec.consumableAuto.slice();
+  return out;
+}

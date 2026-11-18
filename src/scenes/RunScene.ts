@@ -14,6 +14,7 @@ import {
   totalStars,
 } from '../core/economy';
 import { Rng, randomSeed } from '../core/rng';
+import { stackBoardOf, trialRules, usesStackBoard } from '../core/trial';
 import {
   countsForPick,
   PICK_EVERY_KILLS,
@@ -33,7 +34,7 @@ import {
   enterChallengeEdit,
   leaveChallengeEdit,
 } from '../core/challengeLoadout';
-import { debugFps, debugSeed, debugStress } from '../platform/debug';
+import { debugFps, debugMenuAllowed, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
 import { session, type ChallengeSortie } from '../platform/session';
@@ -129,6 +130,8 @@ export class RunScene extends Phaser.Scene {
   private recordShown = new Set<'step' | 'damage'>();
   /** 出撃前の記録（初めてなら null: 比べるものがない） */
   private bestBefore: { step: number; damage: number } | null = null;
+  /** Played under a trial rule from the home screen switch (records are left alone) */
+  private trial = false;
   private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
@@ -200,13 +203,23 @@ export class RunScene extends Phaser.Scene {
     const demo = this.demo ? demoLoadout() : null;
     // The prototype starts from a tiny line of its own (the save's gear is not used)
     const proto = this.proto ? protoStart() : null;
+    // Trial: the stacked board, with the home screen switch on (ordinary runs only)
+    const stackRun =
+      !this.proto &&
+      usesStackBoard(save, debugMenuAllowed(), {
+        challenge: !!this.challenge,
+        demo: this.demo,
+        regionId: this.regionId,
+      });
     const loadout = demo
       ? demo.loadout
       : proto
         ? proto.loadout
         : this.challenge
           ? challengeLoadoutOf(save)
-          : save.loadout;
+          : stackRun
+            ? stackBoardOf(save)
+            : save.loadout;
     this.loadout = loadout;
     this.items = demo ? demo.items : proto ? proto.items : itemMap(save);
     this.shake = save.settings.shake;
@@ -221,6 +234,20 @@ export class RunScene extends Phaser.Scene {
       demo: this.demo,
       firstRun: !this.demo && !this.challenge && !this.proto && save.stats.runs === 0,
     };
+    // Trial rule from the home screen switch (debug setting on, ordinary runs only)
+    const trial = this.proto
+      ? undefined
+      : trialRules(save, debugMenuAllowed(), {
+          challenge: !!this.challenge,
+          demo: this.demo,
+          regionId: this.regionId,
+        });
+    this.trial = trial !== undefined;
+    if (trial) {
+      this.cfg.rules = trial;
+      // No new-record banners: the trial run does not count toward the records
+      this.bestBefore = null;
+    }
     this.combat = new Combat(this.cfg);
     this.protoRng = this.proto ? new Rng((this.seed ^ 0x51ed) >>> 0) : null;
     this.protoPick = null;
@@ -1222,6 +1249,7 @@ export class RunScene extends Phaser.Scene {
       seed: this.seed,
       demo: this.demo,
       ...(this.challenge ? { challenge: this.challenge } : {}),
+      ...(this.trial ? { trial: true } : {}),
       ...(mode && !this.demo
         ? { submission: buildSubmission(mode, this.season, this.cfg, r, save, totalStars(save)) }
         : {}),

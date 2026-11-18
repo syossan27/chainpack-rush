@@ -171,6 +171,40 @@ describe('combat', () => {
     expect(steps).toEqual([1, 2, 3, 1, 2]);
   });
 
+  it('試作 keepCountOnKill: 狙いが倒れて次の敵へ移っても、段数は続く', () => {
+    // Same line as above: the slime falls at step 3, steps 4-5 hit the next enemy at 4 and 5
+    const { loadout, items } = build(6, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'b', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+      { uid: 'c', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 'd', defId: 'sword', x: 4, y: 0, exits: ['right'] },
+      { uid: 'e', defId: 'sword', x: 5, y: 0, exits: [] },
+    ]);
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      rules: { keepCountOnKill: true },
+    });
+    const evs: CombatEvent[] = [];
+    while (!evs.some((e) => e.type === 'chainEnd')) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    const steps = evs
+      .filter((e) => e.type === 'step' && e.step !== null)
+      .map((e) => (e.type === 'step' ? e.step : 0));
+    expect(steps).toEqual([1, 2, 3, 4, 5]);
+    // The count went on across a kill: step 4 hits a different enemy than step 1
+    const hitAt = (n: number) =>
+      evs.find((e) => e.type === 'hit' && e.step === n && !e.dot) as { enemyId: number };
+    expect(evs.some((e) => e.type === 'enemyDeath')).toBe(true);
+    expect(hitAt(4).enemyId).not.toBe(hitAt(1).enemyId);
+  });
+
   it('無防備中の被ダメージは×1.5、防御値から先に減る', () => {
     const { loadout, items } = specExample();
     const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });

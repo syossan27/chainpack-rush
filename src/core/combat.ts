@@ -26,7 +26,7 @@ import { getItemDef } from '../data/items';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
 import { rollLoop, type LoopLayout } from './layout';
-import { chainMultiplier, defenseValue, lineOrigin, simulateChain } from './chain';
+import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
@@ -425,10 +425,20 @@ export class Combat {
     return Math.max(0, (this.maxTicks - this.clock) / SIM.ticksPerSecond);
   }
 
+  private isOrigin(uid: string): boolean {
+    const it = this.cfg.items.get(uid);
+    return !!it && getItemDef(it.defId).kind === 'origin';
+  }
+
   /** 連鎖中は無防備。ただし起点のあと rules.guardSteps 段目までは守りが残る（next は起点を含む添字） */
   get unguarded(): boolean {
     if (this.guardAll) return false;
     if (this.chain === null) return false;
+    // Stacked board (trial): counted in cells, a stack is one
+    if (this.cfg.loadout.under) {
+      const done = this.chain.plan.steps.slice(0, this.chain.next);
+      return firedPieces(done, (u) => this.isOrigin(u)) >= this.rules.guardSteps;
+    }
     // 線を出す起点（先頭にまとめて並ぶ）の分だけずらす。ほかの線が届く起点は途中のマス
     const heads = this.chain.plan.steps.findIndex((s) => s.parentIndex >= 0);
     const origins = heads < 0 ? this.chain.plan.steps.length : heads;
@@ -934,7 +944,10 @@ export class Combat {
     );
     // A cut chain counts only the defense items it reached (盾の起点石 included, per step)
     const gain = c.cut
-      ? defenseSteps.reduce((sum, s) => sum + defenseValue(this.cfg.items.get(s.uid)!, s.line), 0)
+      ? defenseSteps.reduce(
+          (sum, s) => sum + defenseValue(this.cfg.items.get(s.uid)!, s.line) * (s.stackMult ?? 1),
+          0,
+        )
       : c.plan.defenseGain;
     // 癒し: 通った防御装備の分だけ回復
     const mend = defenseSteps.reduce(
@@ -960,10 +973,9 @@ export class Combat {
     if (r.atbPerStep) {
       // 起点（先頭）は数えない
       // 起点石は数えない（線を出した起点も、途中で通しただけの起点も）
+      // A stack counts once (stacked board, trial)
       const fired = c.plan.steps.slice(0, c.cut ? c.next : c.plan.steps.length);
-      const steps = fired.filter(
-        (s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind !== 'origin',
-      ).length;
+      const steps = firedPieces(fired, (u) => this.isOrigin(u));
       // 速攻: この発火の起点の値
       const quick =
         Math.max(
@@ -1021,8 +1033,9 @@ export class Combat {
       return;
     }
     const aimId = aim.id;
-    // The branch keeps counting while it aims at the same enemy
-    const eff = parent && parent.aim === aimId ? Math.max(parent.eff + 1, lift) : 1;
+    // The branch keeps counting while it aims at the same enemy (with the trial rule, across kills too)
+    const counts = parent && (parent.aim === aimId || this.rules.keepCountOnKill);
+    const eff = counts ? Math.max(parent.eff + 1, lift) : 1;
     if (sync) this.emitMerge(s, aimId);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
     c.exec[index] = {
@@ -1056,8 +1069,8 @@ export class Combat {
       this.emit({ type: 'technique', tick: this.tick, id: s.tech, enemyId: aim.id, uid: s.uid });
     const mods: StrikeMods = {
       tech: techMult,
-      // 合流ボーナス（合流したマスから先の本流）と、起点石の種類のダメージ
-      bonus: (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1),
+      // 合流ボーナス（合流したマスから先の本流）と、起点石の種類のダメージ、重ねの位置（試作）
+      bonus: (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1),
       origin: lineOrigin(c.plan, index),
       line: s.line,
     };

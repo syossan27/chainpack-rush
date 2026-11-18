@@ -33,6 +33,8 @@ import { buildShareImage, shareImage } from '../ui/shareCard';
 import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
 import { challengeLoadoutOf } from '../core/challengeLoadout';
+import { sortieBoard } from '../core/trial';
+import { debugMenuAllowed } from '../platform/debug';
 import { rankScore } from '../core/ranking';
 import { ensureName, rankingReady, submitScore } from '../platform/ranking';
 import { num, t } from '../i18n';
@@ -121,6 +123,7 @@ export class ResultScene extends Phaser.Scene {
     }
     const { result, regionId } = last;
     const demo = last.demo === true;
+    const trial = last.trial === true;
     const challenge = last.challenge ?? null;
     let challengeBest = false;
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存。
@@ -157,10 +160,13 @@ export class ResultScene extends Phaser.Scene {
           save.challenge = { period: challenge.period, best: score, bestLoop: result.reachedLoop };
         save.stats.runs++;
       } else {
-        unlocked = recordRun(save, regionId, result).unlocked;
-        achieved = checkAchievements(save, result);
-        // Looks earned by this run's stars or endless loop
-        newLooks = grantCosmetics(save);
+        unlocked = recordRun(save, regionId, result, { trial }).unlocked;
+        // A trial run earns no achievements or looks (its strength is not the real game's)
+        if (!trial) {
+          achieved = checkAchievements(save, result);
+          // Looks earned by this run's stars or endless loop
+          newLooks = grantCosmetics(save);
+        }
       }
     }
     persist();
@@ -272,7 +278,7 @@ export class ResultScene extends Phaser.Scene {
     // 記録（羊皮紙）
     panel(this, W / 2, 408, W - 60, 206, 'paper');
     // 自己ベストを更新した記録（初めてのランは、比べるものがないので出さない）
-    const comparable = !demo && !challenge && !prev.first;
+    const comparable = !demo && !challenge && !trial && !prev.first;
     const stats: { label: string; value: string; isNew: boolean }[] = [
       { label: t('ボス撃破'), value: `${result.stats.bossesDefeated}`, isNew: false },
       {
@@ -522,7 +528,10 @@ export class ResultScene extends Phaser.Scene {
     // 挑戦は地域を覚えない（開放していない地域のこともある）。「もう一度」は同じ挑戦
     if (!challenge) session.regionId = regionId;
     // 挑戦は装備が出ないので、倉庫があふれていても同じ挑戦はできる
-    const block = challenge ? null : sortieBlock(save);
+    // Trial: a run on the stacked board needs an origin stone there
+    const block = challenge
+      ? null
+      : sortieBlock(save, sortieBoard(save, debugMenuAllowed(), regionId));
     const again = () => {
       if (!block && challenge) session.challenge = challenge;
       this.scene.start(block ? 'Loadout' : 'Run');

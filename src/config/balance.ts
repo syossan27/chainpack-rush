@@ -76,6 +76,8 @@ export interface ChainRules {
   staggerRatio: number;
   /** 連鎖のこの段数までは無防備にならない（0 = 連鎖中はずっと無防備。短い連鎖を安全にする） */
   guardSteps: number;
+  /** Trial: when the aimed enemy dies, the branch moves on to the next enemy and keeps counting */
+  keepCountOnKill: boolean;
 }
 
 export const CHAIN_RULES: ChainRules = {
@@ -86,7 +88,23 @@ export const CHAIN_RULES: ChainRules = {
   stagger: true,
   staggerRatio: 0.15,
   guardSteps: 3,
+  keepCountOnKill: false,
 };
+
+/**
+ * Trial (stacked board): a small board where a cell holds a stack of gear of one element. The
+ * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
+ */
+export const STACK = {
+  width: 4,
+  height: 3,
+  /** Items per cell */
+  max: 3,
+  /** Damage / defense multiplier by position from the bottom */
+  posMult: [1, 1.5, 2],
+  /** Seconds between rings inside a stack (between cells it is the item's relay, 0.2 s) */
+  ringRelay: 0.1,
+} as const;
 
 export const CHAIN_RULES_OFF: ChainRules = {
   ...CHAIN_RULES,

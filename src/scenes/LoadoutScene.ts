@@ -21,7 +21,17 @@ import {
   type ChallengeNow,
 } from '../core/challenge';
 import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
-import { devChallengeOpen } from '../platform/debug';
+import { debugMenuAllowed, devChallengeOpen } from '../platform/debug';
+import { enterTrialEdit, leaveTrialEdit, stackSwitchOn } from '../core/trial';
+import {
+  stackAt,
+  stackMove,
+  stackPut,
+  stackShift,
+  stackTake,
+  type StackBlock,
+} from '../core/stack';
+import { STACK } from '../config/balance';
 import {
   consumableSlots,
   equippedUids,
@@ -77,6 +87,8 @@ export class LoadoutScene extends Phaser.Scene {
   private info!: Phaser.GameObjects.Text;
   /** ルートの選択（起点の発火順の添字。null は全部） */
   private focus: number | null = null;
+  /** Trial: the stacked board is being edited (home screen switch on) */
+  private stackMode = false;
   private routeBar!: Phaser.GameObjects.Container;
   private routeText!: Phaser.GameObjects.Text;
   /** Width the route summary may use (up to the diagnosis button) */
@@ -120,6 +132,16 @@ export class LoadoutScene extends Phaser.Scene {
       persist();
       this.events.once('shutdown', () => {
         leaveChallengeEdit(getSave());
+        persist();
+      });
+    }
+    // Trial: the stacked board, with the home screen switch on (it sits in loadout while editing)
+    this.stackMode = !this.challenge && stackSwitchOn(save, debugMenuAllowed());
+    if (this.stackMode) {
+      enterTrialEdit(save);
+      persist();
+      this.events.once('shutdown', () => {
+        leaveTrialEdit(getSave());
         persist();
       });
     }
@@ -193,7 +215,7 @@ export class LoadoutScene extends Phaser.Scene {
     // おまかせ: between the consumable slots and the scarecrow (not in the challenge, which ranks
     // arranging). With 5 slots there is no room, so 全部外す offers it instead
     this.autoBtn = null;
-    if (!this.challenge) {
+    if (!this.challenge && !this.stackMode) {
       const left = this.slotX(consumableSlots(save) - 1) + SLOT_SIZE / 2;
       const right = W - 196 - 44;
       const size = Math.min(88, right - left - 16);
@@ -472,7 +494,8 @@ export class LoadoutScene extends Phaser.Scene {
     this.routeTextMaxW = W - 132 - x - 6;
     fitText(this.routeText, this.routeTextMaxW);
     bar.add(this.routeText);
-    // 診断: いまの並べ方から、伸ばせる次の一手を出す
+    // 診断: いまの並べ方から、伸ばせる次の一手を出す（重ねる盤面では出さない: 試作）
+    if (this.stackMode) return;
     const dg = this.add
       .nineslice(W - 80, 0, SKIN.tabOn, undefined, 92, 44, SLICE.tab, SLICE.tab, 14, 14)
       .setInteractive({ useHandCursor: true });
@@ -622,6 +645,20 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const bar = this.presetBar;
     bar.removeAll(true);
+    if (this.stackMode) {
+      // Trial: the stacked board instead of the presets
+      const label = this.add
+        .text(
+          24,
+          -2,
+          t('試作: 重ねる盤面（1マス{n}つまで）', { n: STACK.max }),
+          textStyle(22, '#ffe27a'),
+        )
+        .setOrigin(0, 0.5);
+      fitText(label, W - 206 - 60 - 24);
+      bar.add(label);
+      return;
+    }
     if (this.challenge) {
       // 挑戦用の編成: 編成の切り替えの代わりに、名前と「制限に合わせる」
       const label = this.add
@@ -860,6 +897,131 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
+  /** Trial: put an item on a cell of the stacked board (an occupied cell stacks it on top) */
+  private putOnStack(uid: string, cell: number): void {
+    const save = getSave();
+    const r = stackPut(save.loadout, itemMap(save), uid, cell);
+    if (r.block) {
+      sfx('error');
+      this.showToastLine(stackBlockText(r.block));
+      return;
+    }
+    save.loadout = r.loadout;
+    this.commit();
+  }
+
+  /**
+   * Trial: a cell's stack, top first (it rings last and hits hardest). Each item can move up or
+   * down or come off; tapping its icon shows the item
+   */
+  private openStackPanel(cell: number): void {
+    const save = getSave();
+    const items = itemMap(save);
+    const stack = stackAt(save.loadout, cell);
+    if (stack.length === 0) return;
+    const H = this.scale.gameSize.height;
+    const root = this.add.container(0, 0).setDepth(2600);
+    const close = () => root.destroy();
+    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
+    shade.on('pointerup', close);
+    root.add(shade);
+    const cw = W - 50;
+    const rowH = 112;
+    const ch = 120 + stack.length * (rowH + 12) + 96;
+    const top = H / 2 - ch / 2;
+    root.add(panel(this, W / 2, H / 2, cw, ch, 'panel').setInteractive());
+    root.add(
+      fitText(
+        this.add
+          .text(W / 2, top + 48, t('重ね（下から順に鳴る）'), textStyle(30, '#ffe27a'))
+          .setOrigin(0.5),
+        cw - 40,
+      ),
+    );
+    // Apply a change, then show the stack again (or close when the cell is empty)
+    const redo = (next: Loadout) => {
+      save.loadout = next;
+      close();
+      this.commit();
+      this.openStackPanel(cell);
+    };
+    const n = stack.length;
+    [...stack].reverse().forEach((uid, i) => {
+      const pos = n - 1 - i;
+      const it = items.get(uid)!;
+      const y = top + 100 + i * (rowH + 12);
+      root.add(panel(this, W / 2, y + rowH / 2, cw - 40, rowH, 'paper'));
+      const icon = new ItemIcon(this, 92, y + rowH / 2, it, 88).setInteractive({
+        useHandCursor: true,
+      });
+      bindTap(icon, () => showItemDetail(this, it, { actions: [] }));
+      root.add(icon);
+      root.add(
+        fitText(
+          this.add.text(150, y + 22, t(getItemDef(it.defId).name), inkStyle(24)).setOrigin(0, 0),
+          250,
+        ),
+      );
+      const mult = STACK.posMult[pos]!;
+      root.add(
+        fitText(
+          this.add
+            .text(
+              150,
+              y + 62,
+              pos === n - 1
+                ? t('一番上 ×{m}（矢印はこの装備）', { m: mult })
+                : t('×{m}', { m: mult }),
+              inkStyle(18, '#8a5a10'),
+            )
+            .setOrigin(0, 0),
+          250,
+        ),
+      );
+      const bx = W - 220;
+      const up = new Button(
+        this,
+        bx,
+        y + rowH / 2,
+        '↑',
+        () => redo(stackShift(save.loadout, uid, 1)),
+        {
+          width: 64,
+          height: 60,
+          fontSize: 26,
+          skin: 'blue',
+        },
+      );
+      up.setDisabled(pos === n - 1);
+      const down = new Button(
+        this,
+        bx + 72,
+        y + rowH / 2,
+        '↓',
+        () => redo(stackShift(save.loadout, uid, -1)),
+        { width: 64, height: 60, fontSize: 26, skin: 'blue' },
+      );
+      down.setDisabled(pos === 0);
+      const off = new Button(
+        this,
+        bx + 158,
+        y + rowH / 2,
+        t('外す'),
+        () => redo(stackTake(save.loadout, items, uid)),
+        { width: 92, height: 60, fontSize: 20, skin: 'red' },
+      );
+      root.add([up, down, off]);
+    });
+    root.add(
+      new Button(this, W / 2, top + ch - 52, t('閉じる'), close, {
+        width: 220,
+        height: 64,
+        fontSize: 24,
+        skin: 'gray',
+      }),
+    );
+  }
+
   /** おまかせ: lay out the gear by the simple rule (戻す brings the previous layout back) */
   private applyAuto(): void {
     const save = getSave();
@@ -875,7 +1037,7 @@ export class LoadoutScene extends Phaser.Scene {
     const placed = save.loadout.cells.filter(Boolean).length + save.loadout.consumables.length;
     // Without the おまかせ button (no room for it), offer it here
     const auto =
-      !this.autoBtn && !this.challenge
+      !this.autoBtn && !this.challenge && !this.stackMode
         ? { label: t('おまかせ'), onTap: () => this.applyAuto(), skin: 'green' as const }
         : undefined;
     if (placed === 0) {
@@ -939,7 +1101,9 @@ export class LoadoutScene extends Phaser.Scene {
         label: t('外す'),
         skin: 'red',
         onTap: () => {
-          save.loadout = removeItem(save.loadout, items, it.uid);
+          save.loadout = this.stackMode
+            ? stackTake(save.loadout, items, it.uid)
+            : removeItem(save.loadout, items, it.uid);
           this.commit();
         },
       });
@@ -990,6 +1154,13 @@ export class LoadoutScene extends Phaser.Scene {
       const save = getSave();
       const cell = this.view.cellAt(p.x, p.y);
       if (cell < 0) return;
+      // Trial: the selected item goes on the cell (an occupied cell stacks it on top)
+      const sel = this.selected;
+      if (this.stackMode && sel && getItemDef(sel.defId).kind !== 'consumable') {
+        this.selected = null;
+        this.putOnStack(sel.uid, cell);
+        return;
+      }
       const uid = save.loadout.cells[cell];
       const it = uid ? save.inventory.find((i) => i.uid === uid) : undefined;
       if (!it) {
@@ -1034,6 +1205,11 @@ export class LoadoutScene extends Phaser.Scene {
       long.remove();
       cleanup();
       if (moved || done) return;
+      // Trial: a tap on the stacked board shows the cell's stack
+      if (this.stackMode && cell >= 0) {
+        this.openStackPanel(cell);
+        return;
+      }
       // タップ: 能力の詳細（外す・発火順の入れ替えはカードから）
       this.openDetail(it, where);
     };
@@ -1073,6 +1249,15 @@ export class LoadoutScene extends Phaser.Scene {
         save.loadout = setConsumable(save.loadout, slot, d.item.uid, consumableSlots(save));
       else if (d.fromSlot >= 0) save.loadout = removeItem(save.loadout, items, d.item.uid);
       else return;
+    } else if (this.stackMode) {
+      // Trial: a cell's stack moves as a whole (swapping with the stack there); from storage
+      // the item goes on the cell; dragged off the board the whole stack comes off
+      if (cell >= 0 && d.fromCell >= 0) save.loadout = stackMove(save.loadout, d.fromCell, cell);
+      else if (cell >= 0) return this.putOnStack(d.item.uid, cell);
+      else if (d.fromCell >= 0)
+        for (const u of stackAt(save.loadout, d.fromCell))
+          save.loadout = stackTake(save.loadout, items, u);
+      else return;
     } else if (cell >= 0) {
       save.loadout = placeItem(save.loadout, items, d.item.uid, cell);
     } else if (d.fromCell >= 0) {
@@ -1104,4 +1289,13 @@ export function sellOverflow(scene: Phaser.Scene): void {
       scene.scene.restart();
     },
   );
+}
+
+/** Trial: why an item cannot go on that cell of the stacked board */
+function stackBlockText(b: StackBlock): string {
+  return b === 'group'
+    ? t('同じ属性の装備だけ重ねられます')
+    : b === 'full'
+      ? t('1マスに重ねられるのは{n}つまで', { n: STACK.max })
+      : t('試作では起点石は1つだけ');
 }

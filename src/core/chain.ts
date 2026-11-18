@@ -2,7 +2,7 @@
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
-import { CHAIN, MERGE, RARITY } from '../config/balance';
+import { CHAIN, MERGE, RARITY, STACK } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type {
   ChainPlan,
@@ -28,6 +28,17 @@ const MS = 1000;
 
 export function chainMultiplier(step: number, cap: number = CHAIN.multCap): number {
   return Math.min(cap, ipow(CHAIN.multBase, Math.max(0, step - 1)));
+}
+
+/**
+ * Pieces that count toward the wait after a chain (and the guard): every item except origin
+ * stones. On a stacked board a stack counts once (its bottom ring), however many items it holds
+ */
+export function firedPieces(
+  steps: readonly ChainStep[],
+  isOrigin: (uid: string) => boolean,
+): number {
+  return steps.filter((s) => (s.ring ?? 0) === 0 && !isOrigin(s.uid)).length;
 }
 
 /** 起点石の種類: 線に乗った起点の効果（同じ種類の起点石は1回だけ） */
@@ -241,18 +252,53 @@ function spread(
   counts.push(0);
   expand(0, 0);
 
+  // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
+  const stackedBoard = loadout.under !== undefined;
   const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
-    const uid = loadout.cells[cell]!;
+    const top = loadout.cells[cell]!;
+    const stack = stackedBoard
+      ? [...(loadout.under?.[cell] ?? []).filter((u) => items.has(u)), top]
+      : [top];
+    let p = parent;
+    let t = tMs;
+    stack.forEach((uid, k) => {
+      if (k > 0) t += Math.round(STACK.ringRelay * MS);
+      p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1);
+    });
+    if (t > lastMs) lastMs = t;
+    expand(p, t);
+  };
+
+  /** The step before this cell's first ring: the top ring of the cell before (-1 at the origin) */
+  const prevTopIndex = (i: number): number => {
+    let j = i;
+    while (steps[j]!.parentIndex >= 0 && steps[steps[j]!.parentIndex]!.cell === steps[i]!.cell)
+      j = steps[j]!.parentIndex;
+    return steps[j]!.parentIndex;
+  };
+
+  /** One item fires. Returns its step index */
+  const ring = (
+    cell: number,
+    uid: string,
+    tMs: number,
+    parent: number,
+    branch: number,
+    pos: number | undefined,
+    isTop: boolean,
+  ): number => {
     const inst = items.get(uid)!;
     const def = getItemDef(inst.defId);
     const feeder = counts[parent]!;
     const isStep = def.kind === 'attack';
     const own = feeder + (isStep ? 1 : 0);
-    reach.set(cell, { own, feeder, parentCell: steps[parent]!.cell, isStep });
+    const first = (pos ?? 0) === 0;
+    if (first) reach.set(cell, { own, feeder, parentCell: steps[parent]!.cell, isStep });
     // Sync point: every route goes on from the longer one
-    const sp = sync.get(cell);
+    const sp = first ? sync.get(cell) : undefined;
     const count = sp ? Math.max(own, sp.count) : own;
+    const stackMult = pos === undefined ? undefined : STACK.posMult[pos]!;
     // A line that passes through another origin stone also takes that stone's effect
     const myLines =
       def.kind === 'origin' && !lines[parent]!.includes(uid)
@@ -264,7 +310,7 @@ function spread(
       step = count;
       if (count > maxStep) maxStep = count;
     } else if (def.kind === 'defense') {
-      defenseGain += defenseValue(inst, boost);
+      defenseGain += defenseValue(inst, boost) * (stackMult ?? 1);
     }
     // 合流ボーナスはここで決まり、この先へ引き継ぐ（いちばん大きいもの）
     const mergeBonus = Math.max(steps[parent]!.mergeBonus ?? 0, sp?.bonus ?? 0);
@@ -281,14 +327,18 @@ function spread(
       ...(mergeBonus > 0 ? { mergeBonus } : {}),
       origins: myLines.slice(),
       ...(boost ? { line: boost } : {}),
+      ...(pos !== undefined ? { ring: pos, stackMult } : {}),
     });
     lines.push(myLines);
     counts.push(count + (isStep ? (def.stepBoost ?? 0) : 0));
-    // 必殺技: 3つの並びで判定する
-    if (isStep) {
-      const me = steps[steps.length - 1]!;
-      const p1 = steps[me.parentIndex];
-      const p2 = p1 ? steps[p1.parentIndex] : undefined;
+    const meIndex = steps.length - 1;
+    // 必殺技: 3つの並びで判定する（重ねる盤面では、道で続く3マスの一番上どうし）
+    if (isStep && isTop) {
+      const me = steps[meIndex]!;
+      const i1 = stackedBoard ? prevTopIndex(meIndex) : me.parentIndex;
+      const i2 = i1 < 0 ? -1 : stackedBoard ? prevTopIndex(i1) : steps[i1]!.parentIndex;
+      const p1 = steps[i1];
+      const p2 = steps[i2];
       if (p1 && p2 && p1.parentIndex >= 0 && p2.parentIndex >= 0) {
         const ids = [p2, p1, me].map((x) => items.get(x.uid)!.defId);
         const tq = TECHNIQUES.find((q) => q.seq.every((opts, k) => opts.includes(ids[k]!)));
@@ -296,7 +346,7 @@ function spread(
       }
     }
     if (tMs > lastMs) lastMs = tMs;
-    expand(steps.length - 1, tMs);
+    return meIndex;
   };
 
   while (queue.length > 0) {

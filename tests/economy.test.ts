@@ -219,6 +219,40 @@ describe('economy', () => {
     expect(recordRun(s, 'grassland', r).unlocked).toBe('cave');
     expect(s.progress.best.grassland).toBe(4);
   });
+
+  it('試作ルールのランは、最大連鎖・最大ダメージの記録を変えない（回数とゴールドは数える）', () => {
+    const s = createInitialSave();
+    s.stats.maxStep = 4;
+    s.stats.maxDamage = 50;
+    const r: RunResult = {
+      reason: 'timeout',
+      usedConsumables: [],
+      progress: 1,
+      reachedLoop: 1,
+      drops: [],
+      ticks: 0,
+      stats: {
+        fires: 10,
+        maxStep: 11,
+        maxDamage: 99,
+        totalDamage: 1000,
+        bossesDefeated: 0,
+        timeGained: 0,
+        sweeps: 0,
+        gold: 7,
+      },
+    };
+    recordRun(s, 'grassland', r, { trial: true });
+    expect(s.stats.maxStep).toBe(4);
+    expect(s.stats.maxDamage).toBe(50);
+    expect(s.stats.runs).toBe(1);
+    expect(s.gold).toBe(createInitialSave().gold + 7);
+    // Nor the region's best loop (★) and unlocks
+    const far = { ...r, reachedLoop: 4, stats: { ...r.stats, bossesDefeated: 3 } };
+    expect(recordRun(s, 'grassland', far, { trial: true }).unlocked).toBeNull();
+    expect(s.progress.best.grassland).toBeUndefined();
+    expect(s.progress.unlocked).toEqual(createInitialSave().progress.unlocked);
+  });
 });
 
 describe('loadout', () => {

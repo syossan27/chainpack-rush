@@ -99,6 +99,11 @@ export interface Loadout {
   consumables: string[];
   /** 消耗品枠に入れておきたい消耗品（defId）。使い切ったら、倉庫から同じものを自動で入れ直す */
   consumableAuto?: string[];
+  /**
+   * Stacked board (trial): the items under each cell's top item, bottom first (same length as
+   * cells). The top item (cells[i]) rings last and its arrows lead on. Absent on an ordinary board
+   */
+  under?: string[][];
 }
 
 export interface ChainStep {
@@ -124,6 +129,10 @@ export interface ChainStep {
   origins?: string[];
   /** 起点石の種類の効果（この段の装備にかかる分）。効果がなければ無い */
   line?: LineBoost;
+  /** Stacked board (trial): position in the cell's stack, 0 = bottom (absent on an ordinary board) */
+  ring?: number;
+  /** Stacked board (trial): the position's multiplier (×1 / ×1.5 / ×2 from the bottom) */
+  stackMult?: number;
 }
 
 export interface ChainPlan {

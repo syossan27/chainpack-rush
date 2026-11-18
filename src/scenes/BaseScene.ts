@@ -565,20 +565,43 @@ export class BaseScene extends Phaser.Scene {
     );
 
     // Prototype (roguelite), with the debug setting on: grow the line during the run
-    if (debugMenuAllowed() && save.settings.debug)
+    if (debugMenuAllowed() && save.settings.debug) {
       this.root.add(
         new Button(
           this,
           W / 2,
-          310,
+          300,
           t('試作: ローグライト'),
           () => {
             session.proto = true;
             this.scene.start('Run');
           },
-          { width: 300, height: 60, fontSize: 22, skin: 'blue' },
+          { width: 300, height: 52, fontSize: 20, skin: 'blue' },
         ),
       );
+      // Trial rule switches for ordinary runs (the stacked board comes with the count going on)
+      const switches: ['trialKeepCount' | 'trialStack', string][] = [
+        ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
+        ['trialStack', k('試作: 重ねる盤面 {state}')],
+      ];
+      switches.forEach(([key, label], i) => {
+        const on = save.settings[key];
+        this.root.add(
+          new Button(
+            this,
+            W / 2,
+            358 + i * 58,
+            t(label, { state: on ? 'ON' : 'OFF' }),
+            () => {
+              save.settings[key] = !on;
+              persist();
+              this.render();
+            },
+            { width: 400, height: 52, fontSize: 20, skin: on ? 'blue' : 'gray' },
+          ),
+        );
+      });
+    }
 
     // 出撃
     const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {

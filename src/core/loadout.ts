@@ -10,6 +10,7 @@ function clone(l: Loadout): Loadout {
     originOrder: l.originOrder.slice(),
     consumables: l.consumables.slice(),
     ...(l.consumableAuto ? { consumableAuto: l.consumableAuto.slice() } : {}),
+    ...(l.under ? { under: l.under.map((s) => s.slice()) } : {}),
   };
 }
 
@@ -93,6 +94,7 @@ export function clearLoadout(l: Loadout): Loadout {
     cells: new Array<string | null>(l.cells.length).fill(null),
     originOrder: [],
     consumables: [],
+    ...(l.under ? { under: l.cells.map(() => []) } : {}),
   };
 }
 
