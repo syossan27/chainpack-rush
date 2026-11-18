@@ -117,6 +117,8 @@ export const MASTERY = {
   sparkPerLevel: 0.15,
   /** Damage of the element's gear per level */
   dmgPerLevel: 0.03,
+  /** The highest level (more points do nothing) */
+  maxLevel: 99,
 } as const;
 
 export const CHAIN_RULES_OFF: ChainRules = {

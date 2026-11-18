@@ -24,13 +24,13 @@ export function pointsForLevel(level: number): number {
   return (MASTERY.base * level * (level + 1)) / 2;
 }
 
-/** The level these points reach (solved directly, so a huge number from a broken save is quick) */
+/** The level these points reach, up to MASTERY.maxLevel (solved directly, so any number is quick) */
 export function masteryLevel(points: number): number {
   if (!(points > 0)) return 0;
-  // base × L(L+1)/2 ≤ points  ⇔  L ≤ (√(1 + 8·points/base) − 1) / 2
+  const top = MASTERY.maxLevel;
+  if (points >= pointsForLevel(top)) return top;
+  // base × L(L+1)/2 ≤ points  ⇔  L ≤ (√(1 + 8·points/base) − 1) / 2  (L < maxLevel here)
   const level = Math.floor((Math.sqrt(1 + 8 * (points / MASTERY.base)) - 1) / 2);
-  // Beyond exact integers there is nothing to settle (and no real save gets there)
-  if (!Number.isSafeInteger(level)) return Number.isFinite(level) ? level : 0;
   // The square root may be off by one at a boundary: one step settles it
   if (pointsForLevel(level) > points) return level - 1;
   if (pointsForLevel(level + 1) <= points) return level + 1;

@@ -24,18 +24,20 @@ describe('試作「熟練と閃き」: 熟練のレベル', () => {
     expect(masteryLevel(pointsForLevel(3) + 1)).toBe(3);
   });
 
-  it('大きな熟練でもすぐ計算でき、レベルの境目は数え上げと同じ', () => {
-    const big = 1e12;
-    const lv = masteryLevel(big);
-    expect(pointsForLevel(lv)).toBeLessThanOrEqual(big);
-    expect(pointsForLevel(lv + 1)).toBeGreaterThan(big);
-    // A broken save with a huge number must not freeze the game
-    expect(Number.isFinite(masteryLevel(1e308))).toBe(true);
+  it('レベルの境目は数え上げと同じ。上限は Lv99 で、どんなに大きな値でもそこで止まる', () => {
     for (let p = 0; p <= pointsForLevel(12) + 1; p++) {
       let slow = 0;
       while (p >= pointsForLevel(slow + 1)) slow++;
       expect(masteryLevel(p)).toBe(slow);
     }
+    const top = MASTERY.maxLevel;
+    expect(masteryLevel(pointsForLevel(top) - 1)).toBe(top - 1);
+    expect(masteryLevel(pointsForLevel(top))).toBe(top);
+    expect(masteryLevel(pointsForLevel(top + 5))).toBe(top);
+    // A broken save with a huge number: no freeze, no wrong level
+    expect(masteryLevel(1e35)).toBe(top);
+    expect(masteryLevel(Number.MAX_VALUE)).toBe(top);
+    expect(masteryLevel(Infinity)).toBe(top);
   });
 
   it('閃きの確率は 熟練レベル × 15%（0 なら閃かない、100% まで）', () => {
