@@ -12,5 +12,5 @@
   "fps": 10,
   "loop": true,
   "groundY": 55,
-  "note": "甲冑兵（左右反転して、槍を勇者側）。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。"
+  "note": "甲冑兵（左向き。槍は奥の手）。PixelLab（generate-image-v2 の土台 → animate-pixminimax の9コマから6コマ）。赤い傷の表現と小さなゴミは消し、足元を合わせた。2026-11-20: 取り込み時の左右反転で体が右を向いていたので、コマごとに反転し直した（x → 63−x、原点 x=32）"
 }
