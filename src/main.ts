@@ -20,6 +20,27 @@ import { COLORS, H, W } from './ui/theme';
 // Phaser reuses a scene's previous start data when it is started without any: after
 // start('Loadout', { challenge: true }), a plain start('Loadout') opened the challenge loadout again
 // (and start('Base') could reopen an old page). Always pass an object so each start gets only its own data.
+// Phaser 3.90's NineSlice WebGL renderer: when the vertex buffer fills partway through a nine-slice, it
+// flushes and then writes the rest one float off (the offset restarts at 0 instead of -1), so the rest
+// of the slices come out broken (a button showed only a corner: 「閉じる」 on the storage page's item
+// card). Flush first when the nine-slice would not fit, so it is never split
+type NineSliceRender = (
+  renderer: Phaser.Renderer.WebGL.WebGLRenderer,
+  src: Phaser.GameObjects.NineSlice,
+  camera: Phaser.Cameras.Scene2D.Camera,
+  parentMatrix?: Phaser.GameObjects.Components.TransformMatrix,
+) => void;
+const nineSliceProto = Phaser.GameObjects.NineSlice.prototype as unknown as {
+  renderWebGL?: NineSliceRender;
+};
+const nineSliceRender = nineSliceProto.renderWebGL;
+if (nineSliceRender)
+  nineSliceProto.renderWebGL = function (this: unknown, renderer, src, camera, parentMatrix) {
+    const pipeline = renderer.pipelines.set(src.pipeline, src);
+    if (pipeline.vertexAvailable() < src.vertices.length) pipeline.flush();
+    nineSliceRender.call(this, renderer, src, camera, parentMatrix);
+  };
+
 const sceneStart = Phaser.Scenes.ScenePlugin.prototype.start;
 Phaser.Scenes.ScenePlugin.prototype.start = function (
   this: Phaser.Scenes.ScenePlugin,
