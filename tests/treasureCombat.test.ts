@@ -139,3 +139,14 @@ describe('試作「黄金ゴブリン」: 倒すか、逃げられるか', () =>
     expect(g.fleeLeft).toBe(left);
   });
 });
+
+describe('試作「黄金ゴブリン」: 1個目はエピック以上', () => {
+  it('どの乱数でも、下限つきの戦利品はエピックかレジェンダリー', async () => {
+    const { rollLoot } = await import('../src/core/loot');
+    const { Rng } = await import('../src/core/rng');
+    for (let seed = 1; seed <= 200; seed++) {
+      const it = rollLoot(new Rng(seed), 1, `x${seed}`, true, undefined, false, 'epic');
+      expect(['epic', 'legendary']).toContain(it.rarity);
+    }
+  });
+});

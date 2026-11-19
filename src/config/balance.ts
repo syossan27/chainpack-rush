@@ -144,10 +144,11 @@ export const TREASURE = {
   /** Seconds from reaching the hero until it runs off (stopped time does not count) */
   fleeSeconds: 6,
   /**
-   * HP against the goblin enemy of the same loop. ×10 (bots, 2026-11-20): caught in every run of
-   * a region the board clears easily, about half at the region it barely holds (stacked board, cave)
+   * HP against the goblin enemy of the same loop. ×7.5 (bots, 2026-11-20, stacked board): caught in
+   * every run of a region the board clears easily; at the region it barely holds (cave) 42% with
+   * mastery from zero (no techniques yet) and 94% once the techniques are learned
    */
-  hpMult: 10,
+  hpMult: 7.5,
   /** Drops when beaten: all rare or better, the first one epic or better */
   drops: 4,
   /** Gold when beaten, in ordinary kills of the region */
