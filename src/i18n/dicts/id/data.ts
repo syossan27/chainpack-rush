@@ -516,8 +516,8 @@ export const DATA: Dict = {
   雷が効きにくい: 'Tahan Petir',
   そろいの指輪: 'Cincin Selaras',
   揃: 'Se',
-  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
-    'Jika semua perlengkapan serang di baris/kolomnya berelemen sama: Kombo +{v} tiap kena',
+  '付けた行・列の攻撃装備が全部同じ属性なら、マスが撃つたびにコンボ +{v}':
+    'Jika semua perlengkapan serang di baris/kolomnya berelemen sama: Kombo +{v} tiap petak menyerang',
   連鎖の首飾り: 'Kalung Kombo',
   鎖: 'Ko',
   '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':

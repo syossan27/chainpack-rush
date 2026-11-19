@@ -516,8 +516,8 @@ export const DATA: Dict = {
   雷が効きにくい: 'Resistent gegen Blitz',
   そろいの指輪: 'Gleichklang-Ring',
   揃: 'Gl',
-  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
-    'Haben alle Angriffsteile seiner Zeile/Spalte dasselbe Element: Kombo +{v} bei jedem Treffer',
+  '付けた行・列の攻撃装備が全部同じ属性なら、マスが撃つたびにコンボ +{v}':
+    'Haben alle Angriffsteile seiner Zeile/Spalte dasselbe Element: Kombo +{v} für jedes Feld, das auslöst',
   連鎖の首飾り: 'Kombo-Kette',
   鎖: 'Ko',
   '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':

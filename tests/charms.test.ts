@@ -61,6 +61,7 @@ function ctx(placed: Record<number, CharmInstance>, matched: number[] = []): Cha
     matched: new Set(matched),
     full: new Set(),
     depth: 3,
+    rings: new Array(12).fill(1),
   };
 }
 
@@ -98,7 +99,7 @@ describe('試作アクセサリー: スロットと判定', () => {
     const v = getCharm('match_ring')!.values.rare;
     const r = applyCharmEvent(
       1,
-      'hit',
+      'cell',
       0,
       ctx({ 0: charm('match_ring'), 4: charm('match_ring') }, [0, 4]),
     );
@@ -129,7 +130,7 @@ describe('試作アクセサリー: スロットと判定', () => {
 
   it('そろっていない線の指輪は反応しない。ほかの出来事にも反応しない', () => {
     const c = ctx({ 0: charm('match_ring') });
-    expect(applyCharmEvent(1.5, 'hit', 0, c)).toEqual({ m: 1.5, fired: [] });
+    expect(applyCharmEvent(1.5, 'cell', 0, c)).toEqual({ m: 1.5, fired: [] });
     expect(applyCharmEvent(1.5, 'combo', 0, ctx({ 0: charm('match_ring') }, [0]))).toEqual({
       m: 1.5,
       fired: [],

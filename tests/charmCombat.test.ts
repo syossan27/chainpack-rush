@@ -101,6 +101,38 @@ describe('試作アクセサリー: 戦闘のコンボ倍率', () => {
     expect(charmEvs(on).every((e) => e.slot === 4 && e.op === '+' && e.value === v)).toBe(true);
   });
 
+  it('重ねたマスでも、そろいの指輪はマスごとに1回（一番上が撃ったとき）', () => {
+    // origin → a stack of 3 torches → a stack of 3 flame staffs, on a stacked 3x1 board
+    const b = build(3, 1, [{ uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] }]);
+    const items = new Map(b.items);
+    const stack = (defId: string, cell: number, exits: ('right' | 'left')[]) => {
+      const uids = [0, 1, 2].map((k) => `${defId}${k}`);
+      for (const uid of uids)
+        items.set(uid, {
+          uid,
+          defId,
+          rarity: 'rare',
+          exits: uid.endsWith('2') ? exits : [],
+          rerollCount: 0,
+        });
+      b.loadout.cells[cell] = uids[2]!;
+      return uids.slice(0, 2);
+    };
+    const under = [[], stack('torch', 1, ['right']), stack('flame_staff', 2, [])];
+    const evs = dummyEvents({
+      seed: 7,
+      regionId: 'grassland',
+      loadout: { ...b.loadout, under },
+      items,
+      hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
+      luck: NO_LUCK,
+      charms: [null, null, null, charm('match_ring')],
+    });
+    expect(hits(evs)).toHaveLength(6);
+    // Two cells: two steps up, after the 3rd and the 6th hit
+    expect(charmEvs(evs)).toHaveLength(2);
+  });
+
   it('次のチェーンは ×1 から', () => {
     const evs = dummyEvents(rowCfg(['torch', 'flame_staff', 'torch'], 'match_ring'), 2);
     const h = hits(evs);

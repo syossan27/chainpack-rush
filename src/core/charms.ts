@@ -32,6 +32,8 @@ export interface CharmContext {
   /** Cells whose stack is full (as many items as the board's depth) */
   full: ReadonlySet<number>;
   depth: number;
+  /** How many times each cell rings (its stack; 1 for a cell of an ordinary bag) */
+  rings: readonly number[];
 }
 
 export interface CharmFire {
@@ -74,10 +76,12 @@ export function charmContext(
   const { width, height } = loadout;
   const depth = boardDepth(getBoard(loadout.board));
   const full = new Set<number>();
+  const rings = loadout.cells.map((_, cell) => cellRings(loadout, items, cell).length);
   // An ordinary bag has no stacks (an artifact there is not a full stack)
   if (loadout.under)
-    for (let cell = 0; cell < loadout.cells.length; cell++)
-      if (cellRings(loadout, items, cell).length >= depth) full.add(cell);
+    rings.forEach((n, cell) => {
+      if (n >= depth) full.add(cell);
+    });
   const matched = new Set<number>();
   for (let slot = 0; slot < width + height; slot++) {
     const elements: string[] = [];
@@ -89,7 +93,12 @@ export function charmContext(
     if (elements.length >= CHARM.minMatch && elements.every((e) => e === elements[0]))
       matched.add(slot);
   }
-  return { slots, width, matched, full, depth };
+  return { slots, width, matched, full, depth, rings };
+}
+
+/** The step is the last ring of its cell (always, on an ordinary bag) */
+export function cellTop(step: ChainStep, ctx: CharmContext): boolean {
+  return step.ring === undefined || step.ring === (ctx.rings[step.cell] ?? 1) - 1;
 }
 
 /** The step is the top of a full stack (the stack has rung all the way up) */

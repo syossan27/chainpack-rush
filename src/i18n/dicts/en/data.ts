@@ -508,8 +508,8 @@ export const DATA: Dict = {
   雷が効きにくい: 'Resists Thunder',
   そろいの指輪: 'Matching Ring',
   揃: 'Ma',
-  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
-    'If all attack gear in its row/column shares one element: Combo +{v} on every hit',
+  '付けた行・列の攻撃装備が全部同じ属性なら、マスが撃つたびにコンボ +{v}':
+    'If all attack gear in its row/column shares one element: Combo +{v} each time a cell fires',
   連鎖の首飾り: 'Combo Necklace',
   鎖: 'Co',
   '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':

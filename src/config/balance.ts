@@ -427,7 +427,7 @@ export const LOOT = {
 
 /**
  * Trial (charms): accessories on the stacked board's edge build a combo multiplier during a chain
- * (data/charms.ts, core/charms.ts). Provisional values, to be tuned with the bot
+ * (data/charms.ts, core/charms.ts). Tuned with the bot on 2026-11-20 (see the design memo)
  */
 export const CHARM = {
   /** The chain's combo multiplier never goes above this */
@@ -437,8 +437,8 @@ export const CHARM = {
   /** そろいの指輪: attack items a line needs (all of one element) */
   minMatch: 2,
   /** Chance per dropped item that a charm drops too (bosses, golden elites, treasure goblins: Rare) */
-  dropChance: 0.03,
-  dropChanceRare: 0.2,
+  dropChance: 0.05,
+  dropChanceRare: 0.25,
   /** Charm drops draw from their own random stream (seed ^ salt), so other drops never change */
   rngSalt: 0x5bd1e995,
   sell: { common: 10, rare: 40, epic: 120, legendary: 400 } as Record<Rarity, number>,

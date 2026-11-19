@@ -37,6 +37,7 @@ import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
 import {
   applyCharmEvent,
+  cellTop,
   charmContext,
   rollCharmDrop,
   stackTop,
@@ -1299,6 +1300,7 @@ export class Combat {
     const strikes = (def.hits ?? 1) * (relic === 'bell' ? 2 : 1);
     for (let h = 0; h < strikes; h++) this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
     // Trial (charms): after the step's own strikes, so they still use the multiplier before it
+    if (this.charms && cellTop(s, this.charms)) this.charmEvent(c, 'cell', s.cell);
     if (tech) this.charmEvent(c, 'tech', s.cell);
     if (this.charms && stackTop(s, this.charms)) this.charmEvent(c, 'stackTop', s.cell);
   }
@@ -1456,7 +1458,6 @@ export class Combat {
       }
     }
     // Trial (charms): once per attack, however many enemies it reached
-    if (landed) this.charmEvent(c, 'hit', mods.cell);
     if (landed && crit) this.charmEvent(c, 'crit', mods.cell);
     if (comboed) this.charmEvent(c, 'combo', mods.cell);
   }

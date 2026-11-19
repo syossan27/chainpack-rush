@@ -9,11 +9,12 @@ export type CharmId =
 
 /**
  * What a charm watches in its line:
- * hit: an attack lands (once per attack) / combo: a status combo (once per attack) /
+ * cell: an attack cell has rung (once per cell; a stack at its top) / combo: a status combo (once
+ * per attack) /
  * tech: a technique fires / crit: an attack crits (once per attack) / kill: an enemy falls (each) /
  * stackTop: the top of a full stack rings
  */
-export type CharmTrigger = 'hit' | 'combo' | 'tech' | 'crit' | 'kill' | 'stackTop';
+export type CharmTrigger = 'cell' | 'combo' | 'tech' | 'crit' | 'kill' | 'stackTop';
 
 export interface CharmDef {
   id: CharmId;
@@ -32,9 +33,9 @@ export const CHARMS: readonly CharmDef[] = [
     name: 'そろいの指輪',
     mark: '揃',
     op: '+',
-    trigger: 'hit',
-    values: { common: 0.2, rare: 0.3, epic: 0.4, legendary: 0.5 },
-    text: '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}',
+    trigger: 'cell',
+    values: { common: 0.08, rare: 0.12, epic: 0.15, legendary: 0.2 },
+    text: '付けた行・列の攻撃装備が全部同じ属性なら、マスが撃つたびにコンボ +{v}',
   },
   {
     id: 'combo_necklace',
@@ -42,7 +43,7 @@ export const CHARMS: readonly CharmDef[] = [
     mark: '鎖',
     op: '×',
     trigger: 'combo',
-    values: { common: 1.3, rare: 1.4, epic: 1.5, legendary: 1.7 },
+    values: { common: 1.2, rare: 1.25, epic: 1.35, legendary: 1.45 },
     text: '付けた行・列で状態コンボが起きるたびにコンボ ×{v}',
   },
   {
@@ -60,7 +61,7 @@ export const CHARMS: readonly CharmDef[] = [
     mark: '心',
     op: '+',
     trigger: 'crit',
-    values: { common: 0.3, rare: 0.4, epic: 0.5, legendary: 0.7 },
+    values: { common: 0.2, rare: 0.3, epic: 0.4, legendary: 0.5 },
     text: '付けた行・列の攻撃が会心になるたびにコンボ +{v}',
   },
   {
@@ -69,7 +70,7 @@ export const CHARMS: readonly CharmDef[] = [
     mark: '止',
     op: '×',
     trigger: 'kill',
-    values: { common: 1.1, rare: 1.15, epic: 1.2, legendary: 1.3 },
+    values: { common: 1.06, rare: 1.1, epic: 1.15, legendary: 1.2 },
     text: '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}',
   },
   {
@@ -78,7 +79,7 @@ export const CHARMS: readonly CharmDef[] = [
     mark: '重',
     op: '+',
     trigger: 'stackTop',
-    values: { common: 0.3, rare: 0.4, epic: 0.5, legendary: 0.7 },
+    values: { common: 0.05, rare: 0.08, epic: 0.1, legendary: 0.12 },
     text: '付けた行・列のそろった重ねが撃つたびにコンボ +{v}',
   },
 ];

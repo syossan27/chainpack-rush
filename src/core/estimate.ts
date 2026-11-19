@@ -9,7 +9,7 @@ import type { CharmTrigger } from '../data/charms';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
-import { applyCharmEvent, stackTop, type CharmContext } from './charms';
+import { applyCharmEvent, cellTop, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
 import { lineOrigin } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
@@ -114,7 +114,7 @@ export function estimateRoute(
     if (s.tech) techs.push(s.tech);
     // Trial (charms): after the step (both strikes of twin blades use the multiplier before it)
     if (charms) {
-      for (let h = 0; h < (def.hits ?? 1); h++) charmEvent('hit', s.cell);
+      if (cellTop(s, charms)) charmEvent('cell', s.cell);
       if (combo) charmEvent('combo', s.cell);
       if (s.tech) charmEvent('tech', s.cell);
       if (stackTop(s, charms)) charmEvent('stackTop', s.cell);

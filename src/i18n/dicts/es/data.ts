@@ -515,8 +515,8 @@ export const DATA: Dict = {
   雷が効きにくい: 'Resisten el Rayo',
   そろいの指輪: 'Anillo de Armonía',
   揃: 'Ar',
-  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
-    'Si todo el equipo de ataque de su fila/columna comparte elemento: Combo +{v} en cada golpe',
+  '付けた行・列の攻撃装備が全部同じ属性なら、マスが撃つたびにコンボ +{v}':
+    'Si todo el equipo de ataque de su fila/columna comparte elemento: Combo +{v} por cada casilla que se activa',
   連鎖の首飾り: 'Collar de Combo',
   鎖: 'Co',
   '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
