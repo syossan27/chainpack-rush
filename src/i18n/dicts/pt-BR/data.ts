@@ -432,10 +432,10 @@ export const DATA: Dict = {
   '甲冑兵、ゴブリン、骸骨（硬い）': 'Soldados Blindados, Goblins, Esqueletos (resistentes)',
   火山: 'Vulcão',
   '火トカゲ、溶岩スライム、火の精': 'Lagartos de Fogo, Slimes de Lava, Espíritos do Fogo',
-  '炎が効きにくい・氷と水が弱点': 'Resiste a Fogo. Fraquezas: Gelo e Água',
+  '炎と風が効きにくい・氷と水が弱点': 'Resiste a Fogo e Vento. Fraquezas: Gelo e Água',
   氷河: 'Geleira',
   '氷の狼、雪だるま、雪男（速い）': 'Lobos de Gelo, Bonecos de Neve, Iétis (rápidos)',
-  '氷が効きにくい・炎が弱点': 'Resiste a Gelo. Fraqueza: Fogo',
+  '氷と光が効きにくい・炎が弱点': 'Resiste a Gelo e Luz. Fraqueza: Fogo',
   魔王城: 'Castelo Demoníaco',
   '小悪魔、ガーゴイル、闇の魔導士': 'Diabretes, Gárgulas, Magos Sombrios',
   '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）':
@@ -509,4 +509,6 @@ export const DATA: Dict = {
   '炎の攻撃力 ×{v}': 'Ataque de Fogo ×{v}',
   '雷の攻撃力 ×{v}': 'Ataque de Raio ×{v}',
   '1マスに{v}つまで重ねられる': 'Até {v} por casa',
+  闇が効きにくい: 'Resiste a Sombra',
+  雷が効きにくい: 'Resiste a Raio',
 };

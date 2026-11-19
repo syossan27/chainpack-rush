@@ -429,10 +429,10 @@ export const DATA: Dict = {
   '甲冑兵、ゴブリン、骸骨（硬い）': 'Armored Soldiers, Goblins, Skeletons (tough)',
   火山: 'Volcano',
   '火トカゲ、溶岩スライム、火の精': 'Fire Lizards, Lava Slimes, Fire Spirits',
-  '炎が効きにくい・氷と水が弱点': 'Resists Fire; weak to Ice and Water',
+  '炎と風が効きにくい・氷と水が弱点': 'Resists Fire and Wind; weak to Ice and Water',
   氷河: 'Glacier',
   '氷の狼、雪だるま、雪男（速い）': 'Ice Wolves, Snowmen, Yetis (fast)',
-  '氷が効きにくい・炎が弱点': 'Resists Ice; weak to Fire',
+  '氷と光が効きにくい・炎が弱点': 'Resists Ice and Light; weak to Fire',
   魔王城: 'Demon Castle',
   '小悪魔、ガーゴイル、闇の魔導士': 'Imps, Gargoyles, Dark Mages',
   '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）':
@@ -504,4 +504,6 @@ export const DATA: Dict = {
   '炎の攻撃力 ×{v}': 'Fire attack ×{v}',
   '雷の攻撃力 ×{v}': 'Thunder attack ×{v}',
   '1マスに{v}つまで重ねられる': 'Stack up to {v} per cell',
+  闇が効きにくい: 'Resists Dark',
+  雷が効きにくい: 'Resists Thunder',
 };

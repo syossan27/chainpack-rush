@@ -436,10 +436,10 @@ export const DATA: Dict = {
   '甲冑兵、ゴブリン、骸骨（硬い）': 'Prajurit Zirah, Goblin, Tengkorak (tangguh)',
   火山: 'Gunung Berapi',
   '火トカゲ、溶岩スライム、火の精': 'Kadal Api, Slime Lava, Roh Api',
-  '炎が効きにくい・氷と水が弱点': 'Tahan Api; lemah terhadap Es dan Air',
+  '炎と風が効きにくい・氷と水が弱点': 'Tahan Api dan Angin; lemah terhadap Es dan Air',
   氷河: 'Gletser',
   '氷の狼、雪だるま、雪男（速い）': 'Serigala Es, Manusia Salju, Yeti (gesit)',
-  '氷が効きにくい・炎が弱点': 'Tahan Es; lemah terhadap Api',
+  '氷と光が効きにくい・炎が弱点': 'Tahan Es dan Cahaya; lemah terhadap Api',
   魔王城: 'Kastel Raja Iblis',
   '小悪魔、ガーゴイル、闇の魔導士': 'Iblis Kecil, Gargoyle, Penyihir Gelap',
   '物理と炎が効きにくい・雷が弱点（ガーゴイルは打撃が弱点）':
@@ -512,4 +512,6 @@ export const DATA: Dict = {
   '炎の攻撃力 ×{v}': 'Serangan Api ×{v}',
   '雷の攻撃力 ×{v}': 'Serangan Petir ×{v}',
   '1マスに{v}つまで重ねられる': 'Maks. {v} per petak',
+  闇が効きにくい: 'Tahan Kegelapan',
+  雷が効きにくい: 'Tahan Petir',
 };

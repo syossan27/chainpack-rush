@@ -1,6 +1,7 @@
 // 地域ごとの雑魚の出方・ボスの候補（仕様書 第4章を、周回ごとに抽選する形へ広げた）
 // 群れの中身・数・間隔と、各周回のボスは出撃ごとに抽選する（src/core/layout.ts）。
 // 地域選択には「出てくる雑魚」と「周回ごとのボス候補」を見せる。
+import type { Element } from '../core/types';
 
 export interface MobEntry {
   id: string;
@@ -31,6 +32,11 @@ export interface RegionDef {
   goldPerKill: number;
   /** 敵の得意・苦手のひとこと（地域選択に出す） */
   resistNote?: string;
+  /**
+   * Every enemy of this region takes these elements × the value (on top of its own resistances).
+   * Kept on the region, since the same enemies also appear in other regions
+   */
+  resist?: Partial<Record<Element, number>>;
 }
 
 export const REGIONS: readonly RegionDef[] = [
@@ -60,6 +66,8 @@ export const REGIONS: readonly RegionDef[] = [
     id: 'cave',
     name: '洞窟',
     mobTrend: 'コウモリ、骸骨、呪術師（群れが多い）',
+    resistNote: '闇が効きにくい',
+    resist: { dark: 0.7 },
     mobs: [
       { id: 'bat', weight: 6 },
       { id: 'skeleton', weight: 2 },
@@ -82,6 +90,8 @@ export const REGIONS: readonly RegionDef[] = [
     id: 'rampart',
     name: '城壁',
     mobTrend: '甲冑兵、ゴブリン、骸骨（硬い）',
+    resistNote: '雷が効きにくい',
+    resist: { thunder: 0.7 },
     mobs: [
       { id: 'goblin', weight: 4 },
       { id: 'armor', weight: 1, maxPerGroup: 1 },
@@ -106,7 +116,8 @@ export const REGIONS: readonly RegionDef[] = [
     id: 'volcano',
     name: '火山',
     mobTrend: '火トカゲ、溶岩スライム、火の精',
-    resistNote: '炎が効きにくい・氷と水が弱点',
+    resistNote: '炎と風が効きにくい・氷と水が弱点',
+    resist: { wind: 0.7 },
     mobs: [
       { id: 'fire_lizard', weight: 5 },
       { id: 'magma_slime', weight: 2 },
@@ -129,7 +140,8 @@ export const REGIONS: readonly RegionDef[] = [
     id: 'glacier',
     name: '氷河',
     mobTrend: '氷の狼、雪だるま、雪男（速い）',
-    resistNote: '氷が効きにくい・炎が弱点',
+    resistNote: '氷と光が効きにくい・炎が弱点',
+    resist: { light: 0.7 },
     mobs: [
       { id: 'ice_wolf', weight: 5 },
       { id: 'snowman', weight: 3 },

@@ -1340,6 +1340,7 @@ export class Combat {
             mods.tech *
             mods.bonus *
             resistMult(t.def, def.element) *
+            this.regionResist(def.element) *
             this.affixMult(c, inst, eff, t, statused, mods.origin) *
             this.masteryMult(def) *
             boardDamageMult(this.board, def.element) *
@@ -1387,6 +1388,12 @@ export class Combat {
       if (def.element === 'wind' && t.hp > 0) this.windOnPoison(c, t, uid, eff);
       if (t.hp <= 0) this.killEnemy(t, mods.relic === 'claw');
     }
+  }
+
+  /** The region's resistance to this element (not on the scarecrow, which only shows numbers) */
+  private regionResist(element: Element | undefined): number {
+    if (this.mode === 'dummy') return 1;
+    return this.region.resist?.[element ?? 'physical'] ?? 1;
   }
 
   /** Trial (mastery): the element's level adds damage to its gear */
