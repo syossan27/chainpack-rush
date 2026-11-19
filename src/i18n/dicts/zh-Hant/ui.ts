@@ -733,4 +733,6 @@ export const UI: Dict = {
   '{el} +{n}（Lv{lv}）': '{el} +{n}（Lv{lv}）',
   '熟練 {list}': '熟練 {list}',
   '閃いた！ {name}': '靈光一閃！{name}',
+  レア順: '稀有度順',
+  装備ごと: '依裝備',
 };

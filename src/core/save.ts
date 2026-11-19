@@ -10,6 +10,7 @@ import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import { getTechnique } from '../data/techniques';
 import { isElement, type MasteryData } from './mastery';
+import { ITEM_SORTS, type ItemSort } from './itemSort';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -92,6 +93,8 @@ export interface SaveData {
     trialStack: boolean;
     /** Trial switch on the home screen (debug setting on): mastery grows, techniques must spark */
     trialMastery: boolean;
+    /** The order of the storage lists (loadout, storage, fusion) */
+    itemSort: ItemSort;
   };
 }
 
@@ -190,6 +193,7 @@ export function createInitialSave(): SaveData {
       trialKeepCount: false,
       trialStack: false,
       trialMastery: false,
+      itemSort: 'rarity',
     },
   };
 }
@@ -432,6 +436,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
     if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
     if (typeof save.settings.trialMastery !== 'boolean') save.settings.trialMastery = false;
+    if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
       save.settings.gameSpeed = 1;

@@ -1,11 +1,13 @@
 // 倉庫の一覧（スクロール、種類・レアリティで絞り込み、タップ・長押し・ドラッグ）
 import { bindTap } from './kit/widgets';
 import Phaser from 'phaser';
+import { ITEM_SORTS, sortItems, type ItemSort } from '../core/itemSort';
 import { listGesture } from '../core/listGesture';
 import type { ItemInstance, ItemKind, Rarity } from '../core/types';
 import { RARITIES } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { k, t } from '../i18n';
+import { getSave, persist } from '../platform/store';
 import { ItemIcon } from './itemIcon';
 import { SKIN, SLICE } from './kit/skin';
 import { fitText, panel } from './kit/widgets';
@@ -30,10 +32,14 @@ const KIND_LABEL: Record<KindFilter, string> = {
   consumable: k('消耗品'),
 };
 
+const SORT_LABEL: Record<ItemSort, string> = {
+  rarity: k('レア順'),
+  gear: k('装備ごと'),
+};
+
 const LONG_PRESS_MS = 450;
 const FILTER_H = 58;
 const DRAG_THRESHOLD = 14;
-const RARITY_ORDER: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
 export class ItemList extends Phaser.GameObjects.Container {
   private items: ItemInstance[] = [];
@@ -122,23 +128,35 @@ export class ItemList extends Phaser.GameObjects.Container {
       this.filterBar.add([bg, text]);
     };
     const kinds: KindFilter[] = ['all', 'origin', 'attack', 'defense', 'consumable'];
-    const cw = 100;
+    const gap = 4;
+    const cw = 92;
     kinds.forEach((kind, i) =>
-      chip(12 + i * (cw + 4), cw, t(KIND_LABEL[kind]), this.kind === kind, () => {
+      chip(12 + i * (cw + gap), cw, t(KIND_LABEL[kind]), this.kind === kind, () => {
         this.kind = kind;
         this.scrollY = 0;
         this.buildFilters();
         this.render();
       }),
     );
-    // レアリティはタップで順に切り替え
+    // The rest of the row: the rarity filter and the order, each cycled by a tap
+    const restX = 12 + kinds.length * (cw + gap);
+    const rw = (W - 12 - restX - gap) / 2;
     const rs: RarityFilter[] = ['all', ...RARITIES];
     const label =
       this.rarity === 'all'
         ? t('★全部')
         : t('★{rarity}', { rarity: t(RARITY_NAMES[this.rarity]!) });
-    chip(12 + 5 * (cw + 4), W - 24 - 5 * (cw + 4), label, this.rarity !== 'all', () => {
+    chip(restX, rw, label, this.rarity !== 'all', () => {
       this.rarity = rs[(rs.indexOf(this.rarity) + 1) % rs.length]!;
+      this.scrollY = 0;
+      this.buildFilters();
+      this.render();
+    });
+    const sort = getSave().settings.itemSort;
+    chip(restX + rw + gap, rw, t(SORT_LABEL[sort]), sort !== 'rarity', () => {
+      const save = getSave();
+      save.settings.itemSort = ITEM_SORTS[(ITEM_SORTS.indexOf(sort) + 1) % ITEM_SORTS.length]!;
+      persist();
       this.scrollY = 0;
       this.buildFilters();
       this.render();
@@ -146,24 +164,15 @@ export class ItemList extends Phaser.GameObjects.Container {
   }
 
   private filtered(): ItemInstance[] {
-    return this.items
-      .filter((it) => {
-        const def = getItemDef(it.defId);
-        if (this.kind !== 'all' && def.kind !== this.kind) return false;
-        // 消耗品はレアリティを持たない（★の絞り込みには出さない）
-        if (this.rarity !== 'all' && (it.rarity !== this.rarity || def.kind === 'consumable'))
-          return false;
-        return true;
-      })
-      .sort(
-        (a, b) =>
-          // 消耗品は装備のあと（別枠）
-          Number(getItemDef(a.defId).kind === 'consumable') -
-            Number(getItemDef(b.defId).kind === 'consumable') ||
-          RARITY_ORDER[b.rarity] - RARITY_ORDER[a.rarity] ||
-          a.defId.localeCompare(b.defId) ||
-          a.uid.localeCompare(b.uid),
-      );
+    const shown = this.items.filter((it) => {
+      const def = getItemDef(it.defId);
+      if (this.kind !== 'all' && def.kind !== this.kind) return false;
+      // 消耗品はレアリティを持たない（★の絞り込みには出さない）
+      if (this.rarity !== 'all' && (it.rarity !== this.rarity || def.kind === 'consumable'))
+        return false;
+      return true;
+    });
+    return sortItems(shown, getSave().settings.itemSort);
   }
 
   private render(): void {

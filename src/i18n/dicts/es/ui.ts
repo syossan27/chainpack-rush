@@ -752,4 +752,6 @@ export const UI: Dict = {
   '{el} +{n}（Lv{lv}）': '{el} +{n} (Nv{lv})',
   '熟練 {list}': 'Maestría {list}',
   '閃いた！ {name}': '¡Inspiración! {name}',
+  レア順: 'Rareza',
+  装備ごと: 'Por equipo',
 };
