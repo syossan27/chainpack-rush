@@ -107,6 +107,54 @@ export const STACK = {
 } as const;
 
 /**
+ * Trial (relics): every boss beaten offers relics to stick on a board cell. A relic works on the gear
+ * in its cell for the rest of the run only (nothing is kept)
+ */
+export const RELIC = {
+  /** Relics offered at once (all different) */
+  offer: 3,
+  /** Seconds to choose; the run waits (no clock, no enemies) and goes on without one after this */
+  pickSeconds: 8,
+  /** 巨人の拳: damage multiplier */
+  fistMult: 2.5,
+  /** 会心の眼: crit chance added */
+  eyeCrit: 0.5,
+  /** 貫きの矢じり: enemies behind the aim also hit */
+  pierce: 2,
+  /** 加速の羽: steps added for the gear after this cell */
+  featherSteps: 2,
+  /** 吸血の牙: share of the damage dealt that heals */
+  fangHeal: 0.1,
+  /**
+   * 呼び戻しの笛: the wait before the next chain is cut to this share. With no wait at all it was
+   * far above the rest (bots, stacked board: +71% bosses in grassland, +211% in cave)
+   */
+  whistleWait: 0.5,
+  /** 守りの札: defense added each time the cell rings (it replaced 砂時計: runs end by falling) */
+  wardDefense: 5,
+} as const;
+
+/**
+ * Trial (treasure): now and then a lone 黄金ゴブリン takes a group's place. It does not attack, and
+ * runs off some seconds after it reaches the hero unless it is beaten first
+ */
+export const TREASURE = {
+  /** Chance at the start of each loop (once per run at most) */
+  chance: 0.15,
+  /** Seconds from reaching the hero until it runs off (stopped time does not count) */
+  fleeSeconds: 6,
+  /**
+   * HP against the goblin enemy of the same loop. ×10 (bots, 2026-11-20): caught in every run of
+   * a region the board clears easily, about half at the region it barely holds (stacked board, cave)
+   */
+  hpMult: 10,
+  /** Drops when beaten: all rare or better, the first one epic or better */
+  drops: 4,
+  /** Gold when beaten, in ordinary kills of the region */
+  goldKills: 10,
+} as const;
+
+/**
  * Trial (mastery): the hero's mastery per element grows with every ring of attack gear. A technique
  * is not known until it sparks: when its line-up comes, it may spark (chance by the element's level)
  */

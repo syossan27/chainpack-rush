@@ -11,6 +11,8 @@ export function rarityWeights(
   loop: number,
   rareOrBetter = false,
   regionShift = 0,
+  /** Nothing below this rarity */
+  floor: Rarity = 'common',
 ): [Rarity, number][] {
   const shift = Math.min(
     RARITY.common.baseRate,
@@ -19,13 +21,20 @@ export function rarityWeights(
   const common = rareOrBetter ? 0 : RARITY.common.baseRate - shift;
   const upperBase = 1 - RARITY.common.baseRate;
   const scale = (upperBase + shift) / upperBase;
-  return RARITIES.map((r): [Rarity, number] =>
-    r === 'common' ? [r, common] : [r, RARITY[r].baseRate * scale],
+  const below = RARITIES.indexOf(floor);
+  return RARITIES.map((r, i): [Rarity, number] =>
+    i < below ? [r, 0] : r === 'common' ? [r, common] : [r, RARITY[r].baseRate * scale],
   );
 }
 
-export function rollRarity(rng: Rng, loop: number, rareOrBetter = false, regionShift = 0): Rarity {
-  return rng.weighted(rarityWeights(loop, rareOrBetter, regionShift));
+export function rollRarity(
+  rng: Rng,
+  loop: number,
+  rareOrBetter = false,
+  regionShift = 0,
+  floor: Rarity = 'common',
+): Rarity {
+  return rng.weighted(rarityWeights(loop, rareOrBetter, regionShift, floor));
 }
 
 // ---- 系統（装備ごとに出るレアリティの幅。革鎧はコモン〜レア、鋼の鎧はエピック〜レジェンダリー など） ----
@@ -146,6 +155,8 @@ export function rollLoot(
   region: RegionLoot = { rarityShift: 0, artifactMult: 1 },
   /** Never a consumable (the first own run's promised drop goes into the backpack) */
   equipOnly = false,
+  /** Nothing below this rarity (trial: the treasure goblin's first drop) */
+  floor: Rarity = 'common',
 ): ItemInstance {
   // ごくまれにアーティファクト
   const artifactChance =
@@ -156,7 +167,7 @@ export function rollLoot(
   // 消耗品にはレアリティがないので、レア以上確定のときは装備から選ぶ
   if ((rareOrBetter || equipOnly) && kind === 'consumable') kind = 'attack';
   // レアリティを先に決め、そのレアリティで出る装備から選ぶ（系統）
-  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift);
+  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift, floor);
   const defs = ITEM_DEFS.filter(
     (d) => d.kind === kind && !d.artifact && (kind === 'consumable' || allowsRarity(d.id, rarity)),
   );

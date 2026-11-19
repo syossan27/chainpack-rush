@@ -93,6 +93,10 @@ export interface SaveData {
     trialStack: boolean;
     /** Trial switch on the home screen (debug setting on): mastery grows, techniques must spark */
     trialMastery: boolean;
+    /** Trial switch on the home screen (debug setting on): a beaten boss offers run-only relics */
+    trialRelic: boolean;
+    /** Trial switch on the home screen (debug setting on): a fleeing 黄金ゴブリン now and then */
+    trialTreasure: boolean;
     /** The order of the storage lists (loadout, storage, fusion) */
     itemSort: ItemSort;
   };
@@ -193,6 +197,8 @@ export function createInitialSave(): SaveData {
       trialKeepCount: false,
       trialStack: false,
       trialMastery: false,
+      trialRelic: false,
+      trialTreasure: false,
       itemSort: 'rarity',
     },
   };
@@ -436,6 +442,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
     if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
     if (typeof save.settings.trialMastery !== 'boolean') save.settings.trialMastery = false;
+    if (typeof save.settings.trialRelic !== 'boolean') save.settings.trialRelic = false;
+    if (typeof save.settings.trialTreasure !== 'boolean') save.settings.trialTreasure = false;
     if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)

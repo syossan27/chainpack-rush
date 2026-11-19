@@ -18,7 +18,11 @@ export function replayRun(cfg: RunConfig, inputs: readonly RunInput[]): RunResul
           ? c.useConsumable(inp.slot)
           : inp.k === 'revive'
             ? c.revive(inp.s)
-            : (c.retreat(), true);
+            : inp.k === 'relic'
+              ? c.placeRelic(inp.id, inp.cell)
+              : inp.k === 'relicSkip'
+                ? c.skipRelic()
+                : (c.retreat(), true);
       if (!ok) return null;
       i++;
     }

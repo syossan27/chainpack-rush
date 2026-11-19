@@ -1,7 +1,7 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { MONETIZE, RARITY, SIM } from '../config/balance';
+import { MONETIZE, RARITY, RELIC, SIM, TREASURE } from '../config/balance';
 import { maxMergeBonus } from '../core/chain';
 import { addPet } from '../ui/cosmeticsView';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
@@ -14,7 +14,17 @@ import {
   totalStars,
 } from '../core/economy';
 import { randomSeed } from '../core/rng';
-import { stackBoardOf, trialRules, usesMastery, usesStackBoard } from '../core/trial';
+import {
+  stackBoardOf,
+  trialRules,
+  usesMastery,
+  usesRelics,
+  usesStackBoard,
+  usesTreasure,
+} from '../core/trial';
+import { canStickRelic } from '../core/relics';
+import { getRelic, type RelicId } from '../data/relics';
+import { RelicPicker } from '../ui/relicPicker';
 import { runMastery } from '../core/mastery';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
@@ -112,6 +122,10 @@ export class RunScene extends Phaser.Scene {
   private trial = false;
   /** Trial (mastery): mastery grows and techniques must spark before they are known */
   private mastery = false;
+  /** Trial (relics): the cards a beaten boss offers (null when none is offered) */
+  private picker: RelicPicker | null = null;
+  /** Trial (relics): the marks of the relics stuck on the board */
+  private relicBadges!: Phaser.GameObjects.Container;
   private loadout!: Loadout;
   private speed = 1;
   /** ヒットストップ・スローモーション（実時間 ms） */
@@ -217,7 +231,14 @@ export class RunScene extends Phaser.Scene {
       regionId: this.regionId,
     });
     if (this.mastery) this.cfg.mastery = runMastery(save);
-    this.trial = trial !== undefined || this.mastery;
+    // Trial (relics, treasure goblin): from the home screen switches too
+    const kind = { challenge: !!this.challenge, demo: this.demo, regionId: this.regionId };
+    const relics = usesRelics(save, debugMenuAllowed(), kind);
+    if (relics) this.cfg.relics = {};
+    const treasure = usesTreasure(save, debugMenuAllowed(), kind);
+    if (treasure) this.cfg.treasure = { chance: TREASURE.chance };
+    this.picker = null;
+    this.trial = trial !== undefined || this.mastery || relics || treasure;
     if (trial) this.cfg.rules = trial;
     // No new-record banners: the trial run does not count toward the records
     if (this.trial) this.bestBefore = null;
@@ -254,6 +275,7 @@ export class RunScene extends Phaser.Scene {
     this.consumableButtons = [];
     this.trackKey = '';
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
+    this.relicBadges = this.add.container(0, 0).setDepth(46);
     this.buildHud();
     this.buildConsumables();
     this.setupBackpackTap();
@@ -551,6 +573,11 @@ export class RunScene extends Phaser.Scene {
     zone.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (this.paused || this.ending || this.inspecting) return;
       if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      // Trial (relics): while relics are offered, a tap on a cell sticks the chosen one
+      if (this.picker) {
+        this.picker.tapCell(this.view.cellAt(p.x, p.y));
+        return;
+      }
       const uid = loadout.cells[this.view.cellAt(p.x, p.y)];
       const it = uid ? this.items.get(uid) : undefined;
       if (!it) return;
@@ -589,7 +616,9 @@ export class RunScene extends Phaser.Scene {
     const halted = this.paused || this.inspecting;
     // ヒットストップ中は止め、ボス撃破のあとはしばらくスロー
     const juice = now < this.hitStopUntil ? 0 : now < this.slowUntil ? JUICE.bossSlowRate : 1;
-    const rate = this.speed * juice;
+    // Trial (relics): the choosing time runs in real time, whatever the game speed
+    const offer = this.combat.relicOffer;
+    const rate = offer ? 1 : this.speed * juice;
     if (!halted && !this.ending) {
       // ゲームスピード: 1フレームで進める固定ステップの数を倍にする（ルールの秒数は変えない）
       const maxSteps = Math.ceil(MAX_STEPS_PER_FRAME * this.speed);
@@ -610,6 +639,10 @@ export class RunScene extends Phaser.Scene {
       this.numbers.show(300 + Math.random() * 350, 280 + Math.random() * 180, Math.random() * 3000);
     }
     this.field.update(this.combat, now, halted ? 0 : rate);
+    if (offer && this.picker)
+      this.picker.setTimeLeft(
+        (offer.until - this.combat.tick) / (RELIC.pickSeconds * SIM.ticksPerSecond),
+      );
     // A special on screen holds while paused or while an item card is open
     this.field.techFx.setHalted(halted);
     this.checkBossApproach();
@@ -773,11 +806,16 @@ export class RunScene extends Phaser.Scene {
   private checkBossApproach(): void {
     const c = this.combat;
     for (const e of c.enemies) {
-      if (!e.alive || !e.def.boss || this.warned.has(e.id)) continue;
+      if (!e.alive || (!e.def.boss && !e.treasure) || this.warned.has(e.id)) continue;
       const p = this.field.enemyScreenPos(c, e);
       if (p.x > W + 160) continue;
       this.warned.add(e.id);
-      this.showWarning(t(e.def.name), c.loop);
+      if (e.treasure) {
+        // Trial (treasure): it has come into view
+        this.showBanner(t('黄金ゴブリンだ！ 逃げる前に倒せ！'), COLORS.gold);
+        sfx('openEpic');
+        hapticMedium();
+      } else this.showWarning(t(e.def.name), c.loop);
     }
   }
 
@@ -1152,9 +1190,90 @@ export class RunScene extends Phaser.Scene {
           if (this.shake) this.cameras.main.flash(260, 200, 255, 200);
           sfx('defense');
           break;
+        case 'relicOffer':
+          this.openRelicPicker(ev.ids);
+          break;
+        case 'relicStuck': {
+          this.closeRelicPicker();
+          this.drawRelicBadges();
+          const def = getRelic(ev.id);
+          if (def) this.showBanner(t('{name}を貼った！', { name: t(def.name) }), COLORS.gold);
+          const c = this.view.cellCenter(ev.cell);
+          this.effects.flash(this.view.x + c.x, this.view.y + c.y, 0xf8d040, 3, 0.4);
+          sfx('openRare');
+          hapticMedium();
+          break;
+        }
+        case 'relicSkipped':
+          this.closeRelicPicker();
+          break;
+        case 'treasure': {
+          const p = this.enemyPos(ev.enemyId);
+          if (ev.phase === 'caught') {
+            this.showBanner(t('黄金ゴブリンを倒した！'), COLORS.gold);
+            this.slowUntil = now + JUICE.bossSlowMs;
+            if (this.shake) this.cameras.main.flash(240, 255, 230, 140);
+            if (p) this.effects.coins(p.x, p.y, W - 96, 44, 16);
+            sfx('openLegend');
+            hapticSuccess();
+          } else if (ev.phase === 'fled') {
+            this.showBanner(t('黄金ゴブリンに逃げられた…'), COLORS.textDim);
+            if (p) this.effects.burst(p.x, p.y, 0xc8c0b0, 18, 260);
+            sfx('whiff');
+          }
+          break;
+        }
         default:
           break;
       }
+    }
+  }
+
+  /** Trial (relics): the cards over the field, while the run waits */
+  private openRelicPicker(ids: RelicId[]): void {
+    this.picker?.close();
+    const view = this.view;
+    this.picker = new RelicPicker(this, ids, {
+      cellAt: (x, y) => view.cellAt(x, y),
+      cellRect: (cell) => {
+        const c = view.cellCenter(cell);
+        return {
+          x: view.x + c.x - view.cell / 2,
+          y: view.y + c.y - view.cell / 2,
+          size: view.cell,
+        };
+      },
+      cellCount: this.loadout.cells.length,
+      canStick: (id, cell) => canStickRelic(this.loadout, this.items, this.combat.relics, id, cell),
+      onPick: (id, cell) => {
+        if (this.combat.placeRelic(id, cell)) this.handleEvents(this.combat.drainEvents());
+      },
+      onSkip: () => {
+        sfx('click');
+        if (this.combat.skipRelic()) this.handleEvents(this.combat.drainEvents());
+      },
+    });
+  }
+
+  private closeRelicPicker(): void {
+    this.picker?.close();
+    this.picker = null;
+  }
+
+  /** Trial (relics): a round mark at the top right of each cell with a relic */
+  private drawRelicBadges(): void {
+    this.relicBadges.removeAll(true);
+    const view = this.view;
+    for (const [cell, id] of this.combat.relics) {
+      const def = getRelic(id);
+      if (!def) continue;
+      const c = view.cellCenter(cell);
+      const x = view.x + c.x + view.cell / 2 - 15;
+      const y = view.y + c.y - view.cell / 2 + 15;
+      this.relicBadges.add([
+        this.add.circle(x, y, 14, 0x3a2a10).setStrokeStyle(3, 0xf8d040),
+        fitText(this.add.text(x, y, t(def.mark), textStyle(16, '#fff2c0')).setOrigin(0.5), 24),
+      ]);
     }
   }
 

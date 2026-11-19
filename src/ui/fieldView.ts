@@ -1,7 +1,7 @@
 // フィールドの描画（ラン・カカシで共用）。core の状態を写すだけで、core には何も書き戻さない。
 // 画面外の敵は描画だけをカリングする（core では保持し、イベント列は変わらない）。
 import Phaser from 'phaser';
-import { ELITES, FIELD, HERO, UI, type EliteId } from '../config/balance';
+import { ELITES, FIELD, HERO, SIM, TREASURE, UI, type EliteId } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
 import { getRegion } from '../data/regions';
@@ -72,6 +72,10 @@ const RAGE = {
 
 /** 精鋭の色（体の色味と名札） */
 const ELITE_TINT: Record<EliteId, number> = { tough: 0xa8b8ff, swift: 0xffa0a0, golden: 0xffe070 };
+/** Trial (treasure): the goblin's tint and its time-left gauge */
+const TREASURE_TINT = 0xffd040;
+const FLEE_COLOR = 0xfff6c0;
+const FLEE_TICKS = TREASURE.fleeSeconds * SIM.ticksPerSecond;
 const ELITE_TEXT: Record<EliteId, string> = {
   tough: '#a8c0ff',
   swift: '#ff9a9a',
@@ -554,9 +558,11 @@ export class FieldView {
               ? SEALED.tint
               : e.enraged
                 ? 0xff8070
-                : e.elite
-                  ? ELITE_TINT[e.elite]
-                  : 0xffffff,
+                : e.treasure
+                  ? TREASURE_TINT
+                  : e.elite
+                    ? ELITE_TINT[e.elite]
+                    : 0xffffff,
         );
       const barW = Math.min(120, def.frameWidth * def.displayScale * 0.6);
       // 本素材は体の高さのすぐ上、仮素材はコマの余白込みで少し下げる
@@ -623,10 +629,19 @@ export class FieldView {
           }
       }
       if (sealed) dot(SEALED.dot);
+      // Trial (treasure): the time left before it runs off, under the HP bar
+      if (e.treasure) {
+        const left = Math.max(0, e.fleeLeft / FLEE_TICKS);
+        // A dark frame keeps the bar readable over the goblin's gold head
+        s.status.fillStyle(0x0c0a12, 1).fillRect(sx - barW / 2 - 2, topY + 9, barW + 4, 10);
+        s.status
+          .fillStyle(left < 0.3 ? 0xff6040 : FLEE_COLOR, 1)
+          .fillRect(sx - barW / 2, topY + 11, barW * left, 6);
+      }
       s.tag
-        .setVisible(!!e.elite)
-        .setText(e.elite ? t(ELITES[e.elite].name) : '')
-        .setColor(e.elite ? ELITE_TEXT[e.elite] : '#ffffff')
+        .setVisible(!!e.elite || e.treasure)
+        .setText(e.treasure ? t('黄金ゴブリン') : e.elite ? t(ELITES[e.elite].name) : '')
+        .setColor(e.treasure ? '#ffe27a' : e.elite ? ELITE_TEXT[e.elite] : '#ffffff')
         .setPosition(sx + barW / 2 - 4, topY - 6)
         .setDepth(32);
       s.aim

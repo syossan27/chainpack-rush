@@ -32,6 +32,26 @@ export function usesMastery(save: SaveData, allowed: boolean, run: RunKind): boo
   return masterySwitchOn(save, allowed) && ordinary(run);
 }
 
+/** The relic switch is on (and works in this build) */
+export function relicSwitchOn(save: SaveData, allowed: boolean): boolean {
+  return allowed && save.settings.debug && save.settings.trialRelic;
+}
+
+/** A beaten boss offers run-only relics in this run (trial) */
+export function usesRelics(save: SaveData, allowed: boolean, run: RunKind): boolean {
+  return relicSwitchOn(save, allowed) && ordinary(run);
+}
+
+/** The treasure goblin switch is on (and works in this build) */
+export function treasureSwitchOn(save: SaveData, allowed: boolean): boolean {
+  return allowed && save.settings.debug && save.settings.trialTreasure;
+}
+
+/** A fleeing treasure goblin may take a group's place in this run (trial) */
+export function usesTreasure(save: SaveData, allowed: boolean, run: RunKind): boolean {
+  return treasureSwitchOn(save, allowed) && ordinary(run);
+}
+
 /** This run uses the stacked board (trial) */
 export function usesStackBoard(save: SaveData, allowed: boolean, run: RunKind): boolean {
   return stackSwitchOn(save, allowed) && ordinary(run);

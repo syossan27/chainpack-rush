@@ -19,20 +19,25 @@ import {
   STATUS,
   POISON,
   PROGRESS,
+  RELIC,
   TIME_BONUS,
+  TREASURE,
   type ChainRules,
 } from '../config/balance';
 import { SCARECROW_ID, getEnemyDef, type EnemyDef } from '../data/enemies';
 import { getItemDef } from '../data/items';
 import { TECHNIQUE_MULT, getTechnique } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
+import type { RelicId } from '../data/relics';
 import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { sparkChance } from './mastery';
+import { canStickRelic, rollRelicOffer } from './relics';
 import { Rng, ipow } from './rng';
+import { stackAt } from './stack';
 import type {
   Area,
   ChainPlan,
@@ -80,6 +85,10 @@ export interface RunConfig {
   firstRun?: boolean;
   /** Trial (mastery): the hero's levels per element and the techniques learned so far */
   mastery?: RunMastery;
+  /** Trial (relics): a beaten boss offers relics. `stuck` are on the board from the start (bots) */
+  relics?: { stuck?: readonly (readonly [number, RelicId])[] };
+  /** Trial (treasure): the chance per loop that a lone treasure goblin takes a group's place */
+  treasure?: { chance: number };
 }
 
 /** Trial (mastery): what a run starts with (see core/mastery.ts) */
@@ -119,6 +128,10 @@ export interface EnemyState {
   slowUntil: number;
   /** 粉砕: この tick まで「一撃○○未満を無効」が効かない */
   guardBrokenUntil: number;
+  /** Trial (treasure): the fleeing treasure goblin (does not attack) */
+  treasure: boolean;
+  /** Trial (treasure): ticks left at the hero before it runs off */
+  fleeLeft: number;
 }
 
 /** timeout: 時間切れ、dead: 力尽きた、retreat: プレイヤーが撤退した（戦利品は持ち帰る） */
@@ -224,7 +237,13 @@ export type CombatEvent =
       seconds: number; // 実際に増えた秒数（上限で削られた後）
       capped: boolean;
     }
-  | { type: 'runEnd'; tick: number; reason: EndReason; reachedLoop: number };
+  | { type: 'runEnd'; tick: number; reason: EndReason; reachedLoop: number }
+  /** Trial (relics): a beaten boss offers these; the run waits until one is stuck or skipped */
+  | { type: 'relicOffer'; tick: number; ids: RelicId[] }
+  | { type: 'relicStuck'; tick: number; id: RelicId; cell: number }
+  | { type: 'relicSkipped'; tick: number }
+  /** Trial (treasure): the goblin came, was beaten, or ran off */
+  | { type: 'treasure'; tick: number; enemyId: number; phase: 'appear' | 'caught' | 'fled' };
 
 export type TimeBonusReason = 'boss' | 'sweep' | 'consumable';
 
@@ -261,7 +280,10 @@ export interface RunResult {
 export type RunInput =
   | { t: number; k: 'use'; slot: number }
   | { t: number; k: 'retreat' }
-  | { t: number; k: 'revive'; s: number };
+  | { t: number; k: 'revive'; s: number }
+  /** Trial (relics) */
+  | { t: number; k: 'relic'; id: RelicId; cell: number }
+  | { t: number; k: 'relicSkip' };
 
 interface ExecInfo {
   eff: number; // 実際の段数（狙いが変わると1に戻る）
@@ -280,6 +302,8 @@ interface ActiveChain {
   cut: boolean; // 狙える敵がいなくなって打ち切った、またはよろめいた
   staggered: boolean; // 被弾でよろめいて途切れた
   taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
+  /** Trial (relics): the chain reached a 呼び戻しの笛, so the wait before the next is cut */
+  recall: boolean;
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -294,6 +318,8 @@ interface StrikeMods {
   origin: string;
   /** 起点石の種類（毒・吸血の分） */
   line?: LineBoost;
+  /** Trial (relics): the relic on the cell of this gear */
+  relic?: RelicId;
 }
 
 /** 爆弾のダメージ表示用（装備の uid ではない） */
@@ -308,6 +334,9 @@ export function resistMult(
 }
 
 const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
+
+/** Trial (treasure): the enemy the treasure goblin looks like */
+const TREASURE_ENEMY = 'goblin';
 
 export class Combat {
   readonly region: RegionDef;
@@ -357,6 +386,13 @@ export class Combat {
     sweeps: 0,
   };
 
+  /** Trial (relics): the relics offered now (the run waits until `until`), or null */
+  relicOffer: { ids: RelicId[]; until: number } | null = null;
+  /** Trial (relics): the relic stuck on each cell (cell → relic) */
+  readonly relics = new Map<number, RelicId>();
+  /** Trial (treasure): the goblin came already (once per run) */
+  private treasureDone = false;
+
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
   /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
@@ -402,6 +438,7 @@ export class Combat {
     // Origins fire one at a time, even when their routes sync
     this.units = this.origins.map((o) => [o]);
     for (const p of simulateChain(cfg.loadout, cfg.items).plans) this.plans.set(p.originUid, p);
+    for (const [cell, id] of cfg.relics?.stuck ?? []) this.relics.set(cell, id);
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
       .slice(0, slots)
@@ -544,7 +581,8 @@ export class Combat {
   }
 
   useConsumable(slot: number): boolean {
-    if (this.ended) return false;
+    // Trial (relics): not while the run waits for a relic choice
+    if (this.ended || this.relicOffer) return false;
     const uid = this.consumables[slot];
     if (!uid) return false;
     const inst = this.cfg.items.get(uid);
@@ -610,6 +648,14 @@ export class Combat {
   step(): void {
     if (this.ended) return;
     const dt = SIM.fixedStep;
+    // Trial (relics): the run waits while a beaten boss's relics are offered
+    if (this.relicOffer) {
+      if (this.tick < this.relicOffer.until) {
+        this.tick++;
+        return;
+      }
+      this.closeRelicOffer();
+    }
 
     // 1. 連鎖の進行
     if (this.chain) this.advanceChain();
@@ -642,6 +688,10 @@ export class Combat {
         if (stopped || !e.aggro) continue;
         const stand = this.heroX + e.standOffset;
         if (e.x > stand) e.x = Math.max(stand, e.x - FIELD.enemySpeed * dt);
+        if (e.treasure) {
+          this.treasureWaits(e);
+          continue;
+        }
         if (this.canAttack(e)) {
           e.attackTimer += dt * (this.tick < e.slowUntil ? LIGHT_DARK.sealSlow : 1);
           if (e.attackTimer >= e.interval) {
@@ -686,6 +736,26 @@ export class Combat {
   /** このランで再開を使ったか */
   revived = false;
 
+  /** Trial (relics): stick an offered relic on a cell (false: not offered, or the cell won't take it) */
+  placeRelic(id: RelicId, cell: number): boolean {
+    const offer = this.relicOffer;
+    if (!offer || this.ended || !offer.ids.includes(id)) return false;
+    if (!canStickRelic(this.cfg.loadout, this.cfg.items, this.relics, id, cell)) return false;
+    this.inputs.push({ t: this.tick, k: 'relic', id, cell });
+    this.relics.set(cell, id);
+    this.relicOffer = null;
+    this.emit({ type: 'relicStuck', tick: this.tick, id, cell });
+    return true;
+  }
+
+  /** Trial (relics): go on without a relic */
+  skipRelic(): boolean {
+    if (!this.relicOffer || this.ended) return false;
+    this.inputs.push({ t: this.tick, k: 'relicSkip' });
+    this.closeRelicOffer();
+    return true;
+  }
+
   /** プレイヤーの撤退。ここまでの戦利品を持ち帰って終わる */
   retreat(): void {
     if (this.mode !== 'run' || this.ended) return;
@@ -709,8 +779,24 @@ export class Combat {
       this.luck.eliteChanceMax,
       this.luck.eliteChance + this.luck.eliteChancePerLoop * (this.loop - 1),
     );
-    for (const g of layout.groups) {
+    // Trial (treasure): once per run, a lone goblin may take one group's place
+    let treasureAt = -1;
+    if (
+      this.cfg.treasure &&
+      this.mode === 'run' &&
+      !this.treasureDone &&
+      layout.groups.length > 0 &&
+      this.layoutRng.next() < this.cfg.treasure.chance
+    ) {
+      treasureAt = this.layoutRng.int(layout.groups.length);
+      this.treasureDone = true;
+    }
+    for (const [gi, g] of layout.groups.entries()) {
       const group = this.nextGroup++;
+      if (gi === treasureAt) {
+        this.spawnTreasure(this.loopStartX + g.x, group);
+        continue;
+      }
       // 群れに1体まで精鋭が混ざる（後列の呪術師も対象）
       const eliteAt =
         this.mode === 'run' && this.layoutRng.next() < eliteChance
@@ -786,10 +872,62 @@ export class Combat {
       poisonAcc: 0,
       slowUntil: -1,
       guardBrokenUntil: -1,
+      treasure: false,
+      fleeLeft: 0,
     };
     this.enemies.push(e);
     this.emit({ type: 'spawn', tick: this.tick, enemyId: e.id, defId, x, escort, elite });
     return e;
+  }
+
+  /** Trial (treasure): the lone goblin, much tougher than a goblin of this loop */
+  private spawnTreasure(x: number, group: number): void {
+    const e = this.spawnEnemy(TREASURE_ENEMY, x, FIELD.frontStand, false, group);
+    e.treasure = true;
+    e.maxHp *= TREASURE.hpMult;
+    e.hp = e.maxHp;
+    e.fleeLeft = secToTicks(TREASURE.fleeSeconds);
+    this.emit({ type: 'treasure', tick: this.tick, enemyId: e.id, phase: 'appear' });
+  }
+
+  /** Trial (treasure): at the hero, the goblin's time runs out, and then it runs off */
+  private treasureWaits(e: EnemyState): void {
+    if (e.x > this.heroX + e.standOffset + 0.5) return;
+    e.fleeLeft--;
+    if (e.fleeLeft > 0) return;
+    e.alive = false;
+    this.emit({
+      type: 'enemyDeath',
+      tick: this.tick,
+      enemyId: e.id,
+      defId: e.defId,
+      boss: false,
+      fled: true,
+    });
+    this.emit({ type: 'treasure', tick: this.tick, enemyId: e.id, phase: 'fled' });
+  }
+
+  /** Trial (relics): a beaten boss offers relics; the run waits for a choice */
+  private openRelicOffer(): void {
+    const ids = rollRelicOffer(this.rng);
+    this.relicOffer = { ids, until: this.tick + secToTicks(RELIC.pickSeconds) };
+    this.emit({ type: 'relicOffer', tick: this.tick, ids });
+  }
+
+  private closeRelicOffer(): void {
+    this.relicOffer = null;
+    this.emit({ type: 'relicSkipped', tick: this.tick });
+  }
+
+  /** Trial (relics): a cell with a 呼び戻しの笛 or a 守りの札 rang */
+  private relicRing(c: ActiveChain, relic: RelicId | undefined): void {
+    if (relic === 'whistle') c.recall = true;
+    if (relic === 'ward') this.defense = Math.min(this.maxHp, this.defense + RELIC.wardDefense);
+  }
+
+  /** The step is the top of its cell (always, on an ordinary board) */
+  private topOfCell(s: ChainStep): boolean {
+    return s.ring === undefined || s.ring === stackAt(this.cfg.loadout, s.cell).length - 1;
   }
 
   private currentBoss(): EnemyState | undefined {
@@ -909,6 +1047,7 @@ export class Combat {
       cut: false,
       staggered: false,
       taken: 0,
+      recall: false,
     };
     this.atb = 0;
     this.chainSerial++;
@@ -996,6 +1135,11 @@ export class Combat {
     } else {
       this.atb = 0;
     }
+    // Trial (relics): a 呼び戻しの笛 on the way cuts the wait before the next chain
+    if (c.recall) {
+      const full = this.cfg.hero.atbTime;
+      this.atb = full - (full - this.atb) * RELIC.whistleWait;
+    }
   }
 
   private executeStep(c: ActiveChain, index: number): void {
@@ -1004,6 +1148,8 @@ export class Combat {
     const def = getItemDef(inst.defId);
     const parent = s.parentIndex >= 0 ? c.exec[s.parentIndex]! : null;
     const fromCell = s.parentIndex >= 0 ? c.plan.steps[s.parentIndex]!.cell : null;
+    // Trial (relics): the relic on this cell works on the gear in it
+    const relic = this.relics.size > 0 ? this.relics.get(s.cell) : undefined;
 
     // Sync point: the count goes on from the longer route, unless a kill already restarted it
     const sync = s.mergeArrived !== undefined;
@@ -1013,6 +1159,7 @@ export class Combat {
       const aim = parent ? parent.aim : (this.targetOrder()[0]?.id ?? null);
       const eff = Math.max(parent ? parent.eff : 0, lift);
       c.exec[index] = { eff, aim, reset: parent?.reset ?? false };
+      this.relicRing(c, relic);
       if (sync) this.emitMerge(s, aim);
       this.emit({
         type: 'step',
@@ -1042,9 +1189,12 @@ export class Combat {
     const counts = parent && (parent.aim === aimId || this.rules.keepCountOnKill);
     const eff = counts ? Math.max(parent.eff + 1, lift) : 1;
     if (sync) this.emitMerge(s, aimId);
+    this.relicRing(c, relic);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
+    // Trial (relics): 加速の羽 does the same, once per cell (from the top of a stack)
+    const feather = relic === 'feather' && this.topOfCell(s) ? RELIC.featherSteps : 0;
     c.exec[index] = {
-      eff: eff + (def.stepBoost ?? 0),
+      eff: eff + (def.stepBoost ?? 0) + feather,
       aim: aimId,
       reset: eff < (s.step ?? 0),
     };
@@ -1073,7 +1223,8 @@ export class Combat {
       this.luck.critChance +
       (def.critBonus ?? 0) +
       affixValue(inst, 'keen') / 100 +
-      (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0);
+      (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0) +
+      (relic === 'eye' ? RELIC.eyeCrit : 0);
     // 必殺技: 決まった並びの3つ目。止めずに、この一撃だけ強くする
     const tech = this.knownTech(s.tech, aim.id, s.uid);
     const techMult = tech ? TECHNIQUE_MULT : 1;
@@ -1085,9 +1236,10 @@ export class Combat {
       bonus: (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1),
       origin: lineOrigin(c.plan, index),
       line: s.line,
+      ...(relic ? { relic } : {}),
     };
-    for (let h = 0; h < (def.hits ?? 1); h++)
-      this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
+    const strikes = (def.hits ?? 1) * (relic === 'bell' ? 2 : 1);
+    for (let h = 0; h < strikes; h++) this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
   }
 
   /**
@@ -1137,8 +1289,11 @@ export class Combat {
     }
     const crit = (def.atk ?? 0) > 0 && this.rng.next() < critChance;
     const aimCombo = findCombo(def.element, aim.statuses);
-    const area = effectiveArea(def.area ?? 'single', aimCombo);
-    const targets = this.resolveTargets(aim, area, def.pierce ?? 0);
+    const baseArea = effectiveArea(def.area ?? 'single', aimCombo);
+    // Trial (relics): 薙ぎ払いの紋 widens a single or splash attack, 貫きの矢じり pierces further
+    const area = mods.relic === 'sweep' && baseArea !== 'all' ? 'sweep' : baseArea;
+    const pierce = (def.pierce ?? 0) + (mods.relic === 'pierce' ? RELIC.pierce : 0);
+    const targets = this.resolveTargets(aim, area, pierce);
     for (const t of targets) {
       const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
@@ -1174,6 +1329,7 @@ export class Combat {
             resistMult(t.def, def.element) *
             this.affixMult(c, inst, eff, t, statused, mods.origin) *
             this.masteryMult(def) *
+            (mods.relic === 'fist' ? RELIC.fistMult : 1) *
             100,
         ) / 100;
       if (raw > 0) {
@@ -1195,6 +1351,8 @@ export class Combat {
           c.totalDamage += dmg;
           this.stats.totalDamage += dmg;
           if (dmg > this.stats.maxDamage) this.stats.maxDamage = dmg;
+          // Trial (relics): 吸血の牙
+          if (mods.relic === 'fang') this.hp = Math.min(this.maxHp, this.hp + dmg * RELIC.fangHeal);
           // 吸血: 与えた分の一部を回復
           if (def.lifesteal)
             this.hp = Math.min(
@@ -1213,7 +1371,7 @@ export class Combat {
         for (const st of ['wet', 'oil', 'frozen'] as const) this.applyStatus(t, st);
       // 風: 毒の敵に毒を重ねる。重ね切った敵なら毒爆
       if (def.element === 'wind' && t.hp > 0) this.windOnPoison(c, t, uid, eff);
-      if (t.hp <= 0) this.killEnemy(t);
+      if (t.hp <= 0) this.killEnemy(t, mods.relic === 'claw');
     }
   }
 
@@ -1355,7 +1513,8 @@ export class Combat {
     this.emit({ type: 'statusApplied', tick: this.tick, enemyId: e.id, status });
   }
 
-  private killEnemy(e: EnemyState): void {
+  /** sureDrop: beaten by gear with a 金の爪 (trial), so it always drops */
+  private killEnemy(e: EnemyState, sureDrop = false): void {
     if (!e.alive) return;
     e.alive = false;
     e.hp = 0;
@@ -1371,15 +1530,25 @@ export class Combat {
     // ゴールド: 地域ごとの1体あたり（ボスは多め）。お供からは出ない
     if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot)
       this.stats.gold =
-        (this.stats.gold ?? 0) + this.region.goldPerKill * (e.def.boss ? PROGRESS.bossGold : 1);
+        (this.stats.gold ?? 0) +
+        this.region.goldPerKill *
+          (e.def.boss ? PROGRESS.bossGold : e.treasure ? TREASURE.goldKills : 1);
+    if (e.treasure)
+      this.emit({ type: 'treasure', tick: this.tick, enemyId: e.id, phase: 'caught' });
     // エンドレスは装備を落とさない
     if (!e.escort && this.mode === 'run' && !this.cfg.demo && !this.noLoot) {
       const roll = this.rng.next();
       // The first own run never ends empty-handed (the roll is still drawn, as in any run)
       const promised = !!this.cfg.firstRun && this.drops.length === 0;
-      if (roll < e.def.dropRate || e.elite === 'golden' || promised) {
-        const count = e.def.boss ? LOOT.bossDrops : e.elite ? ELITES[e.elite].drops : 1;
-        const rareOrBetter = e.def.boss || e.elite === 'golden';
+      if (roll < e.def.dropRate || e.elite === 'golden' || promised || sureDrop || e.treasure) {
+        const count = e.def.boss
+          ? LOOT.bossDrops
+          : e.treasure
+            ? TREASURE.drops
+            : e.elite
+              ? ELITES[e.elite].drops
+              : 1;
+        const rareOrBetter = e.def.boss || e.elite === 'golden' || e.treasure;
         for (let k = 0; k < count; k++) {
           const item = rollLoot(
             this.rng,
@@ -1388,14 +1557,16 @@ export class Combat {
             rareOrBetter,
             this.region.loot,
             promised,
+            // Trial (treasure): the first of the goblin's drops is epic or better
+            e.treasure && k === 0 ? 'epic' : undefined,
           );
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
         }
       }
     }
-    // 一網打尽: 群れの全員を同じ1回の連鎖で倒した
-    if (!e.escort && !e.def.boss && this.chain && this.mode === 'run') {
+    // 一網打尽: 群れの全員を同じ1回の連鎖で倒した (the lone treasure goblin does not count)
+    if (!e.escort && !e.def.boss && !e.treasure && this.chain && this.mode === 'run') {
       const members = this.enemies.filter((o) => o.group === e.group);
       if (members.every((o) => !o.alive && o.killedBy === this.chainSerial)) {
         this.stats.sweeps++;
@@ -1425,6 +1596,7 @@ export class Combat {
       this.loopStartX = this.heroX + FIELD.loopGap;
       this.enemies = this.enemies.filter((x) => x.alive);
       this.startLoop();
+      if (this.cfg.relics && this.mode === 'run') this.openRelicOffer();
     }
   }
 

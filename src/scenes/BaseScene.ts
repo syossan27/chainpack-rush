@@ -567,10 +567,14 @@ export class BaseScene extends Phaser.Scene {
     // Trial rule switches for ordinary runs, with the debug setting on (the stacked board comes
     // with the count going on)
     if (debugMenuAllowed() && save.settings.debug) {
-      const switches: ['trialKeepCount' | 'trialStack' | 'trialMastery', string][] = [
+      type TrialKey =
+        'trialKeepCount' | 'trialStack' | 'trialMastery' | 'trialRelic' | 'trialTreasure';
+      const switches: [TrialKey, string][] = [
         ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
         ['trialStack', k('試作: 重ねる盤面 {state}')],
         ['trialMastery', k('試作: 熟練と閃き {state}')],
+        ['trialRelic', k('試作: レリック {state}')],
+        ['trialTreasure', k('試作: 黄金ゴブリン {state}')],
       ];
       switches.forEach(([key, label], i) => {
         const on = save.settings[key];
