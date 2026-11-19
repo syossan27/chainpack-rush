@@ -5,9 +5,11 @@
 import { LUCK, POISON, STATUS } from '../config/balance';
 import { getItemDef } from '../data/items';
 import { getBoard, type BoardId } from '../data/boards';
+import type { CharmTrigger } from '../data/charms';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
+import { applyCharmEvent, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
 import { lineOrigin } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
@@ -21,6 +23,11 @@ export interface RouteEstimate {
   combos: number;
   /** 成立している必殺技（id） */
   techs: string[];
+  /**
+   * Trial (charms): the combo multiplier at the end of the route (1 without charms). Crits and
+   * kills are left out: they depend on luck and the enemy's health
+   */
+  charmPeak: number;
 }
 
 export function estimateRoute(
@@ -29,6 +36,8 @@ export function estimateRoute(
   attackMult: number,
   /** Trial (stacked board): the board's damage trait counts too */
   board?: BoardId,
+  /** Trial (charms): the edge charms build a combo multiplier along the route */
+  charms?: CharmContext,
 ): RouteEstimate {
   const boardDef = getBoard(board);
   const statuses = new Set<Status>();
@@ -39,6 +48,10 @@ export function estimateRoute(
   let fromCombos = 0;
   let combos = 0;
   const techs: string[] = [];
+  let charmM = 1;
+  const charmEvent = (trigger: CharmTrigger, cell: number) => {
+    if (charms) charmM = applyCharmEvent(charmM, trigger, cell, charms).m;
+  };
   for (const [index, s] of plan.steps.entries()) {
     if (s.step === null) continue;
     const inst = items.get(s.uid);
@@ -76,7 +89,7 @@ export function estimateRoute(
       LUCK.critChance + (def.critBonus ?? 0) + affixValue(inst, 'keen') / 100,
     );
     const critAvg = 1 + critChance * (LUCK.critMult - 1);
-    const hit = base * m * critAvg * (def.hits ?? 1) * (s.tech ? TECHNIQUE_MULT : 1);
+    const hit = base * m * critAvg * (def.hits ?? 1) * (s.tech ? TECHNIQUE_MULT : 1) * charmM;
     total += hit;
     // 毒: 時間でじわじわ与える分（敵が先に倒れることもあるので半分に見積もる）
     if (def.applies === 'poison') {
@@ -99,8 +112,15 @@ export function estimateRoute(
     }
     if (combo) fromCombos += hit - hit / combo.mult;
     if (s.tech) techs.push(s.tech);
+    // Trial (charms): after the step (both strikes of twin blades use the multiplier before it)
+    if (charms) {
+      for (let h = 0; h < (def.hits ?? 1); h++) charmEvent('hit', s.cell);
+      if (combo) charmEvent('combo', s.cell);
+      if (s.tech) charmEvent('tech', s.cell);
+      if (stackTop(s, charms)) charmEvent('stackTop', s.cell);
+    }
     if (def.applies) statuses.add(def.applies);
     if (def.appliesAll) for (const st of ['wet', 'oil', 'frozen'] as const) statuses.add(st);
   }
-  return { total, fromCombos, combos, techs };
+  return { total, fromCombos, combos, techs, charmPeak: charmM };
 }

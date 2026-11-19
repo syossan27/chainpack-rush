@@ -11,7 +11,9 @@ import {
   type CharmInstance,
   type CharmSlots,
 } from '../src/core/charms';
-import type { ItemInstance, Loadout } from '../src/core/types';
+import { simulateChain } from '../src/core/chain';
+import { estimateRoute } from '../src/core/estimate';
+import type { Dir, ItemInstance, Loadout } from '../src/core/types';
 import type { BoardDef, BoardId } from '../src/data/boards';
 import { getCharm, type CharmId } from '../src/data/charms';
 import { build } from './helpers';
@@ -152,5 +154,49 @@ describe('試作アクセサリー: スロットと判定', () => {
     // cell 5 is on column 1 and row 1 (slot 5): slot 0 and slot 4 are elsewhere
     const c = ctx({ 0: charm('tech_bangle'), 4: charm('tech_bangle') });
     expect(applyCharmEvent(1, 'tech', 5, c).fired).toEqual([]);
+  });
+});
+
+/** origin → these items to the right (4 wide), estimated with the given charms on the row */
+function estimateRow(defIds: string[], onRow: CharmId[] = []) {
+  const b = build(4, 1, [
+    { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+    ...defIds.map((defId, i) => ({
+      uid: `i${i}`,
+      defId,
+      x: i + 1,
+      y: 0,
+      exits: i + 1 < defIds.length ? (['right'] as Dir[]) : [],
+    })),
+  ]);
+  const plan = simulateChain(b.loadout, b.items).plans[0]!;
+  // The row slot (4) only: several charms there would replace each other, so one per call
+  const ctx = onRow.length
+    ? charmContext(slots(4, 1, { 4: charm(onRow[0]!) }), b.loadout, b.items)
+    : undefined;
+  return estimateRoute(plan, b.items, 1, undefined, ctx);
+}
+
+describe('試作アクセサリー: 配置画面の予想', () => {
+  it('予想にもそろいの指輪が入る', () => {
+    const v = getCharm('match_ring')!.values.rare;
+    const row = ['torch', 'flame_staff', 'torch'];
+    // Each step's own estimate: the route cut after it, minus the route cut before it
+    const upTo = (n: number) => (n === 0 ? 0 : estimateRow(row.slice(0, n)).total);
+    const [t1, t2, t3] = [1, 2, 3].map((n) => upTo(n) - upTo(n - 1));
+    const est = estimateRow(row, ['match_ring']);
+    expect(est.total).toBeCloseTo(t1! + (1 + v) * t2! + (1 + 2 * v) * t3!, 6);
+    expect(est.charmPeak).toBeCloseTo(1 + 3 * v, 10);
+    expect(estimateRow(row).charmPeak).toBe(1);
+  });
+
+  it('会心ととどめは予想に入れない', () => {
+    const row = ['torch', 'flame_staff', 'torch'];
+    const off = estimateRow(row).total;
+    for (const id of ['crit_earring', 'finish_pin'] as const) {
+      const est = estimateRow(row, [id]);
+      expect(est.total).toBeCloseTo(off, 6);
+      expect(est.charmPeak).toBe(1);
+    }
   });
 });
