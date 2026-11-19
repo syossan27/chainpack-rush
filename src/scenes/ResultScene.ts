@@ -371,10 +371,8 @@ export class ResultScene extends Phaser.Scene {
         this.stamp(x + lbl.displayWidth + 30, y + 2, 'NEW!', 500 + i * 120, 15);
       }
     });
-    // A trial run does not count toward the region's best loop
-    if (
-      challenge ? challengeBest : !demo && !trial && !prev.first && result.reachedLoop > prev.loop
-    )
+    // A trial run counts toward the region's best loop too (only its chain / damage records do not)
+    if (challenge ? challengeBest : !demo && !prev.first && result.reachedLoop > prev.loop)
       this.stamp(W / 2 + 200, 220, t('自己ベスト！'), 400);
     // 地域の★（3・6・10周目のボス撃破）。★ごとに攻撃+3%・最大HP+5
     const gained = demo || challenge ? 0 : regionStars(save, regionId) - prev.stars;

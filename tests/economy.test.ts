@@ -220,7 +220,7 @@ describe('economy', () => {
     expect(s.progress.best.grassland).toBe(4);
   });
 
-  it('試作ルールのランは、最大連鎖・最大ダメージの記録を変えない（回数とゴールドは数える）', () => {
+  it('試作ルールのランは、最大連鎖・最大ダメージの記録を変えない（回数・ゴールド・★・地域の開放は数える）', () => {
     const s = createInitialSave();
     s.stats.maxStep = 4;
     s.stats.maxDamage = 50;
@@ -247,11 +247,13 @@ describe('economy', () => {
     expect(s.stats.maxDamage).toBe(50);
     expect(s.stats.runs).toBe(1);
     expect(s.gold).toBe(createInitialSave().gold + 7);
-    // Nor the region's best loop (★) and unlocks
+    // The region's best loop (★) and the next region's unlock still count (trials are how the
+    // game is played while they are tried, so progress must not stall)
     const far = { ...r, reachedLoop: 4, stats: { ...r.stats, bossesDefeated: 3 } };
-    expect(recordRun(s, 'grassland', far, { trial: true }).unlocked).toBeNull();
-    expect(s.progress.best.grassland).toBeUndefined();
-    expect(s.progress.unlocked).toEqual(createInitialSave().progress.unlocked);
+    expect(recordRun(s, 'grassland', far, { trial: true }).unlocked).toBe('cave');
+    expect(s.progress.best.grassland).toBe(4);
+    expect(s.progress.unlocked).toContain('cave');
+    expect(s.stats.maxStep).toBe(4);
   });
 });
 
