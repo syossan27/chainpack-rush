@@ -215,7 +215,7 @@ export class FieldView {
     // footY: the enemy's feet (a lightning bolt runs down to here)
     const footY = RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY;
     return {
-      x: this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX,
+      x: this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX + e.row * RUN_LAYOUT.rowOffsetX,
       y: footY - h * 0.6,
       footY,
     };
@@ -531,7 +531,7 @@ export class FieldView {
       }
       visible++;
       const def = UNIT_SPRITES[e.defId]!;
-      const sx = this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX;
+      const sx = this.screenX(c, e.x) + RUN_LAYOUT.enemyDrawOffsetX + e.row * RUN_LAYOUT.rowOffsetX;
       const footY = RUN_LAYOUT.footY - e.row * RUN_LAYOUT.rowOffsetY;
       const hgt = (def.bodyHeight ?? def.frameHeight) * def.displayScale;
       // 本素材はアニメが跳ねるので揺らさない。アニメの速さはゲームの速さに合わせる
