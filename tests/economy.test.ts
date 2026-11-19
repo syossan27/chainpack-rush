@@ -254,6 +254,10 @@ describe('economy', () => {
     expect(s.progress.best.grassland).toBe(4);
     expect(s.progress.unlocked).toContain('cave');
     expect(s.stats.maxStep).toBe(4);
+    // Never the endless best (trials are for ordinary runs only)
+    const before = { ...s.endless };
+    expect(recordRun(s, 'endless', far, { trial: true }).unlocked).toBeNull();
+    expect(s.endless).toEqual(before);
   });
 });
 

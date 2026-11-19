@@ -471,6 +471,8 @@ export function recordRun(
   }
   // エンドレス: 地域の記録・開放とは別に、自己ベスト（到達周回、同じなら合計ダメージ）
   if (regionId === ENDLESS.id) {
+    // Trials are for ordinary runs only: an endless best never comes from one
+    if (opts.trial) return { unlocked: null };
     const e = save.endless;
     const dmg = Math.round(result.stats.totalDamage);
     if (
