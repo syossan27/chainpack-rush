@@ -768,4 +768,8 @@ export const UI: Dict = {
   'アーティファクトは売れません（1種類につき1つ）': "Artifacts can't be sold (one of each)",
   '試作: アクセサリー {state}': 'Prototype: Accessories {state}',
   'コンボ ×{m}': 'Combo ×{m}',
+  外してから売れます: 'Take it off first to sell it',
+  アクセサリーはまだありません: 'No accessories yet',
+  'アクセサリー（{n}/{max}）': 'Accessories ({n}/{max})',
+  '{route}・コンボ ×{m}': '{route} · Combo ×{m}',
 };

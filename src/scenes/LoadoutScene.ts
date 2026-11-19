@@ -23,12 +23,24 @@ import {
 import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
 import { debugMenuAllowed, devChallengeOpen } from '../platform/debug';
 import {
+  charmSwitchOn,
   enterTrialEdit,
   leaveTrialEdit,
   masterySwitchOn,
   stackSwitchOn,
   switchTrialBoard,
 } from '../core/trial';
+import {
+  boardCharmSlots,
+  charmEquipped,
+  charmSellPrice,
+  equipCharm,
+  sellCharm,
+} from '../core/charmSave';
+import { charmContext, charmLit, type CharmContext, type CharmInstance } from '../core/charms';
+import { getCharm } from '../data/charms';
+import { CharmStrip } from '../ui/charmStrip';
+import { CharmList, charmText } from '../ui/charmList';
 import { boardDepth, boardPosMult, ownedBoards } from '../core/boards';
 import { BOARDS, getBoard } from '../data/boards';
 import { boardTraitText } from '../ui/boardText';
@@ -97,6 +109,11 @@ export class LoadoutScene extends Phaser.Scene {
   private focus: number | null = null;
   /** Trial: the stacked board is being edited (home screen switch on) */
   private stackMode = false;
+  /** Trial (charms): the edge slots, the charm case and the chosen slot (null: switch off) */
+  private charmStrip: CharmStrip | null = null;
+  private charmList: CharmList | null = null;
+  private charmSlot: number | null = null;
+  private charmCtx: CharmContext | undefined;
   private routeBar!: Phaser.GameObjects.Container;
   private routeText!: Phaser.GameObjects.Text;
   /** Width the route summary may use (up to the diagnosis button) */
@@ -134,6 +151,11 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     this.drag = null;
     this.selected = null;
+    // Trial (charms): made again below when the switch is on (a restart keeps old fields)
+    this.charmStrip = null;
+    this.charmList = null;
+    this.charmSlot = null;
+    this.charmCtx = undefined;
     // 挑戦用の編成: 画面を出ている間だけ loadout と入れ替える（出るときに戻す）
     if (this.challenge) {
       enterChallengeEdit(save);
@@ -184,7 +206,7 @@ export class LoadoutScene extends Phaser.Scene {
       },
     );
     this.focus = null;
-    this.routeBar = this.add.container(0, this.view.y + this.view.gridHeight + 30);
+    this.routeBar = this.add.container(0, this.routeBarY());
     this.info = this.add
       .text(W / 2, 0, '', {
         ...textStyle(18, COLORS.textDim),
@@ -216,6 +238,21 @@ export class LoadoutScene extends Phaser.Scene {
             : null
           : presetMark(getSave(), this.presetUses, it.uid),
     );
+    // Trial (charms): slots on the stacked board's edge; the case covers the item list while a
+    // slot is chosen
+    if (this.stackMode && charmSwitchOn(save, debugMenuAllowed())) {
+      const board = getBoard(save.loadout.board);
+      this.charmStrip = new CharmStrip(this, this.view, board, boardCharmSlots(save, board.id), {
+        // A tall board leaves no room for full slots above the route bar
+        compact: save.loadout.height >= 4,
+        onTapSlot: (slot) => this.tapCharmSlot(slot),
+      });
+      this.charmList = new CharmList(this, LOADOUT_LAYOUT.listTop, LOADOUT_LAYOUT.listBottom, {
+        onTap: (c) => this.putCharm(c),
+        onLongPress: (c) => this.charmDetail(c),
+        onBack: () => this.chooseCharmSlot(null),
+      }).setVisible(false);
+    }
     const scare = this.add.image(0, 6, 'scarecrow').setScale(1.3);
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
       this.scene.start('Dummy'),
@@ -330,6 +367,18 @@ export class LoadoutScene extends Phaser.Scene {
     this.presetUses = otherPresetUse(save);
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
+    // Trial (charms): what the slots react to on this layout (the estimate uses it too)
+    if (this.charmStrip) {
+      const slots = boardCharmSlots(save, save.loadout.board ?? 'standard');
+      this.charmCtx = charmContext(slots, save.loadout, items);
+      const ctx = this.charmCtx;
+      this.charmStrip.setSlots(slots);
+      this.charmStrip.setLit(new Set(slots.map((_, i) => i).filter((i) => charmLit(i, ctx))));
+      this.charmList?.setCharms(
+        save.charms ?? [],
+        new Set(slots.flatMap((c) => (c ? [c.uid] : []))),
+      );
+    }
     const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
     if (save.settings.showRoutes)
@@ -356,7 +405,7 @@ export class LoadoutScene extends Phaser.Scene {
       save.loadout.cells.every((c) => !c) && save.loadout.consumables.length === 0,
     );
     this.info.setVisible(save.loadout.height < 5);
-    this.routeBar.setY(this.view.y + this.view.gridHeight + 30);
+    this.routeBar.setY(this.routeBarY());
     this.info.setY(this.routeBar.y + 32);
     const block = sortieBlock(save);
     const bad = this.challenge ? checkRules(save.loadout, items, this.challenge.def.rules) : [];
@@ -472,7 +521,9 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const items = itemMap(save);
     const u = heroStats(save).attackMult;
-    const est = preview.plans.map((p) => estimateRoute(p, items, u, save.loadout.board));
+    const est = preview.plans.map((p) =>
+      estimateRoute(p, items, u, save.loadout.board, this.charmCtx),
+    );
     const summary = (() => {
       if (!shown) return { text: t('番号を選ぶと表示に戻す'), color: COLORS.textDim };
       if (preview.plans.length === 0)
@@ -503,6 +554,13 @@ export class LoadoutScene extends Phaser.Scene {
         color: routeCss(this.focus),
       };
     })();
+    // Trial (charms): the combo multiplier the route builds up to
+    const peak =
+      this.focus === null
+        ? Math.max(1, ...est.map((e) => e.charmPeak))
+        : (est[this.focus]?.charmPeak ?? 1);
+    if (shown && preview.plans.length > 0 && peak > 1)
+      summary.text = t('{route}・コンボ ×{m}', { route: summary.text, m: peak.toFixed(1) });
     this.routeText = this.add
       .text(W - 132, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
@@ -825,6 +883,78 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   /** 画面下の一時的なお知らせ */
+  /** Under the board, or under the charm slots when they are full size */
+  private routeBarY(): number {
+    const under = this.view.y + this.view.gridHeight;
+    if (!this.charmStrip) return under + 30;
+    // Compact badges sit on the frame's edge: just clear them (a 5-row board has no room left above
+    // the consumable slots, so its bar clears them only partly)
+    const h = getSave().loadout.height;
+    return h >= 5 ? under + 44 : h >= 4 ? under + 50 : this.charmStrip.bottom + 30;
+  }
+
+  /** Trial (charms): choose an edge slot (the charm case replaces the item list) or none */
+  private chooseCharmSlot(slot: number | null): void {
+    this.charmSlot = slot;
+    this.charmStrip?.setSelected(slot);
+    this.charmList?.setVisible(slot !== null);
+    this.list.setVisible(slot === null);
+  }
+
+  /** Trial (charms): a tap on a slot chooses it; a tap on the chosen one takes its charm off */
+  private tapCharmSlot(slot: number): void {
+    sfx('click');
+    if (this.charmSlot !== slot) {
+      this.chooseCharmSlot(slot);
+      return;
+    }
+    const save = getSave();
+    const board = save.loadout.board ?? 'standard';
+    if (boardCharmSlots(save, board)[slot]) {
+      equipCharm(save, board, slot, null);
+      persist();
+    }
+    this.chooseCharmSlot(null);
+    this.refresh();
+  }
+
+  /** Trial (charms): put a charm from the case into the chosen slot */
+  private putCharm(c: CharmInstance): void {
+    if (this.charmSlot === null) return;
+    const save = getSave();
+    if (!equipCharm(save, save.loadout.board ?? 'standard', this.charmSlot, c.uid)) return;
+    sfx('click');
+    persist();
+    this.chooseCharmSlot(null);
+    this.refresh();
+  }
+
+  /** Trial (charms): what a charm does, and selling it (not while it is worn on any board) */
+  private charmDetail(c: CharmInstance): void {
+    const def = getCharm(c.defId);
+    if (!def) return;
+    const save = getSave();
+    if (charmEquipped(save, c.uid)) {
+      this.showToastLine(t('外してから売れます'));
+      return;
+    }
+    const price = charmSellPrice(c);
+    confirmDialog(
+      this,
+      t(def.name),
+      charmText(c),
+      t('売る {price}G', { price }),
+      () => {
+        if (sellCharm(getSave(), c.uid) > 0) {
+          sfx('drop');
+          persist();
+          this.refresh();
+        }
+      },
+      'gold',
+    );
+  }
+
   private showToastLine(msg: string): void {
     const line = fitText(
       this.add
@@ -864,7 +994,9 @@ export class LoadoutScene extends Phaser.Scene {
       fitText(
         this.add.text(30, -18, t('消耗品|slots'), textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
         92,
-      ),
+      )
+        // Trial (charms): a 5-row board's route bar comes down over this label
+        .setVisible(!(this.charmStrip && save.loadout.height >= 5)),
     );
     // 覚えている消耗品のうち、いま枠に入っていないもの（空いた枠にうすく出す）
     const ghosts = (save.loadout.consumableAuto ?? []).slice();
