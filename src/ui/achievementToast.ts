@@ -8,7 +8,10 @@ import { t } from '../i18n';
 import { boardTraitText } from './boardText';
 import { cosmeticTexture } from './cosmeticsView';
 import { fitText } from './kit/widgets';
-import { textStyle } from './theme';
+import { rarityCss, textStyle } from './theme';
+import { getCharm } from '../data/charms';
+import type { CharmInstance } from '../core/charms';
+import { charmText } from './charmList';
 
 const HOLD_MS = 1700;
 /** Time from one card to the next (a later list of cards can start after this many steps) */
@@ -140,5 +143,56 @@ export function showNewBoards(
       w - 36 - tag.width - 16,
     );
     root.add([tag, name, trait, desc]);
+  });
+}
+
+/**
+ * Trial (charms): the charms a run brought home, one card each, and a last card when the case was
+ * full and some were sold
+ */
+export function showNewCharms(
+  scene: Phaser.Scene,
+  added: readonly CharmInstance[],
+  soldCount: number,
+  gold: number,
+  y = 150,
+  delay = 0,
+): void {
+  dropCards(scene, added.length + (soldCount > 0 ? 1 : 0), y, delay, (i, root, w) => {
+    const c = added[i];
+    const def = c ? getCharm(c.defId) : undefined;
+    if (!c || !def) {
+      root.add(
+        fitText(
+          scene.add
+            .text(
+              0,
+              0,
+              t('アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）', {
+                n: soldCount,
+                gold,
+              }),
+              textStyle(20, '#ffd25a'),
+            )
+            .setOrigin(0.5),
+          w - 36,
+        ),
+      );
+      return;
+    }
+    const tag = scene.add
+      .text(-w / 2 + 18, -30, t('アクセサリーを手に入れた！'), textStyle(20, '#7fe0ff'))
+      .setOrigin(0, 0.5);
+    const name = fitText(
+      scene.add
+        .text(-w / 2 + 18, 0, t(def.name), textStyle(28, rarityCss(c.rarity)))
+        .setOrigin(0, 0.5),
+      w - 36,
+    );
+    const desc = fitText(
+      scene.add.text(-w / 2 + 18, 30, charmText(c), textStyle(16, '#c8c0d8')).setOrigin(0, 0.5),
+      w - 36,
+    );
+    root.add([tag, name, desc]);
   });
 }

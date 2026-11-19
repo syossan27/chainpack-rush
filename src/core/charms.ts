@@ -7,9 +7,11 @@
 // above CHARM.cap.
 import { CHARM } from '../config/balance';
 import { getBoard, type BoardDef } from '../data/boards';
-import { getCharm, type CharmId, type CharmTrigger } from '../data/charms';
+import { CHARMS, getCharm, type CharmId, type CharmTrigger } from '../data/charms';
 import { getItemDef } from '../data/items';
 import { boardDepth, boardSize, isHole } from './boards';
+import { rollRarity, type RegionLoot } from './loot';
+import type { Rng } from './rng';
 import { cellRings } from './stack';
 import type { ChainStep, ItemInstance, Loadout, Rarity } from './types';
 
@@ -125,4 +127,24 @@ export function charmLit(slot: number, ctx: CharmContext): boolean {
     return slotCells(slot, ctx.width, height).some((cell) => ctx.full.has(cell));
   }
   return false;
+}
+
+/**
+ * A charm drop for one dropped item, or null. `rareOrBetter`: a boss, golden elite or treasure
+ * goblin (likelier, and rare or better). `sure`: always drops (the first boss for a player with no
+ * charms). The uid is left empty for the run to fill
+ */
+export function rollCharmDrop(
+  rng: Rng,
+  loop: number,
+  rareOrBetter: boolean,
+  region: RegionLoot,
+  sure: boolean,
+): CharmInstance | null {
+  const chance = (rareOrBetter ? CHARM.dropChanceRare : CHARM.dropChance) * region.artifactMult;
+  // Always drawn, so a sure drop does not shift what comes after it
+  const roll = rng.next();
+  if (!sure && roll >= chance) return null;
+  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift);
+  return { uid: '', defId: rng.pick(CHARMS).id, rarity };
 }

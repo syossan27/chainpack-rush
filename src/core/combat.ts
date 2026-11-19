@@ -4,6 +4,7 @@ import {
   AREA,
   BOSS,
   CHAIN_RULES,
+  CHARM,
   ELITES,
   LUCK,
   MASTERY,
@@ -37,8 +38,10 @@ import { boardDamageMult } from './boards';
 import {
   applyCharmEvent,
   charmContext,
+  rollCharmDrop,
   stackTop,
   type CharmContext,
+  type CharmInstance,
   type CharmSlots,
 } from './charms';
 import type { CharmTrigger } from '../data/charms';
@@ -101,8 +104,13 @@ export interface RunConfig {
   relics?: { stuck?: readonly (readonly [number, RelicId])[] };
   /** Trial (treasure): the chance per loop that a lone treasure goblin takes a group's place */
   treasure?: { chance: number };
-  /** Trial (charms): the charm in each edge slot of the board (columns, then rows) */
+  /**
+   * Trial (charms): the charm in each edge slot of the board (columns, then rows). Its presence also
+   * lets charms drop (from their own random stream)
+   */
   charms?: CharmSlots;
+  /** Trial (charms): the player has none yet, so the first boss beaten surely drops one */
+  charmSure?: boolean;
 }
 
 /** Trial (mastery): what a run starts with (see core/mastery.ts) */
@@ -215,6 +223,8 @@ export type CombatEvent =
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
   /** Trial (charms): a charm in `slot` raised the chain's combo multiplier to m */
   | { type: 'charm'; tick: number; slot: number; op: '+' | '×'; value: number; m: number }
+  /** Trial (charms): an enemy dropped a charm */
+  | { type: 'charmDrop'; tick: number; enemyId: number; charm: CharmInstance }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
   | {
       type: 'enemyDeath';
@@ -286,6 +296,8 @@ export interface RunResult {
   progress: number;
   reachedLoop: number;
   drops: ItemInstance[];
+  /** Trial (charms): charms picked up (only when the run had charms on) */
+  charms?: CharmInstance[];
   stats: RunStats;
   ticks: number;
   /** プレイヤーの操作（ランキングでサーバーが同じランを再生するのに使う） */
@@ -421,6 +433,9 @@ export class Combat {
   private readonly board: BoardDef;
   /** Trial (charms): what the edge charms react to (null: no charms, nothing changes) */
   private readonly charms: CharmContext | null;
+  /** Trial (charms): charm drops draw from here, so every other drop stays as it was */
+  private readonly charmRng: Rng | null;
+  private readonly charmDrops: CharmInstance[] = [];
   /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
   private readonly learned: Set<string> | null;
   private readonly origins: string[];
@@ -444,6 +459,7 @@ export class Combat {
     this.charms = cfg.charms?.some((c) => c !== null)
       ? charmContext(cfg.charms, cfg.loadout, cfg.items)
       : null;
+    this.charmRng = cfg.charms ? new Rng((cfg.seed ^ CHARM.rngSalt) >>> 0) : null;
     this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
     if (cfg.mastery) {
       this.stats.rings = {};
@@ -597,6 +613,7 @@ export class Combat {
       reason: this.ended ?? 'timeout',
       reachedLoop: this.reachedLoop,
       drops: this.drops.slice(),
+      ...(this.cfg.charms ? { charms: this.charmDrops.slice() } : {}),
       stats: { ...this.stats, bossesDefeated: this.bossesDefeated },
       ticks: this.tick,
       inputs: this.inputs.slice(),
@@ -1639,8 +1656,12 @@ export class Combat {
           if (getItemDef(item.defId).artifact) this.artifactsOwned.add(item.defId);
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
+          this.dropCharm(e, rareOrBetter, false);
         }
       }
+      // Trial (charms): a player with none gets one from the first boss
+      if (e.def.boss && this.cfg.charmSure && this.charmDrops.length === 0)
+        this.dropCharm(e, true, true);
     }
     // 一網打尽: 群れの全員を同じ1回の連鎖で倒した (the lone treasure goblin does not count)
     if (!e.escort && !e.def.boss && !e.treasure && this.chain && this.mode === 'run') {
@@ -1675,6 +1696,16 @@ export class Combat {
       this.startLoop();
       if (this.cfg.relics && this.mode === 'run') this.openRelicOffer();
     }
+  }
+
+  /** Trial (charms): maybe a charm comes with a dropped item (never without charms on) */
+  private dropCharm(e: EnemyState, rareOrBetter: boolean, sure: boolean): void {
+    if (!this.charmRng) return;
+    const c = rollCharmDrop(this.charmRng, e.loop, rareOrBetter, this.region.loot, sure);
+    if (!c) return;
+    const charm = { ...c, uid: `charm-${this.charmDrops.length + 1}` };
+    this.charmDrops.push(charm);
+    this.emit({ type: 'charmDrop', tick: this.tick, enemyId: e.id, charm });
   }
 
   /** 出撃時間をのばす（上限 TIME_BONUS.maxRunTime）。実際に増えた分をイベントで出す */

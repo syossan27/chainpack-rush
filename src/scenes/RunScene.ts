@@ -246,8 +246,11 @@ export class RunScene extends Phaser.Scene {
     const treasure = usesTreasure(save, debugMenuAllowed(), kind);
     if (treasure) this.cfg.treasure = { chance: TREASURE.chance };
     // Trial (charms): the charms on the board's edge (they need the stacked board, already a trial)
-    if (usesCharms(save, debugMenuAllowed(), kind))
+    if (usesCharms(save, debugMenuAllowed(), kind)) {
       this.cfg.charms = boardCharmSlots(save, loadout.board ?? 'standard');
+      // A player with no charms yet surely gets one from the first boss
+      if (!save.charms?.length) this.cfg.charmSure = true;
+    }
     this.picker = null;
     this.trial = trial !== undefined || this.mastery || relics || treasure;
     if (trial) this.cfg.rules = trial;
@@ -1154,6 +1157,10 @@ export class RunScene extends Phaser.Scene {
         case 'charm':
           this.charmStrip?.pulse(ev.slot, charmStepLabel(ev.op, ev.value));
           this.charmStrip?.showMeter(ev.m);
+          break;
+        case 'charmDrop':
+          this.showBanner(t('アクセサリー！'), '#ffd25a');
+          sfx('openEpic');
           break;
         case 'chainEnd':
           this.field.aimId = null;

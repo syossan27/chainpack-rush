@@ -61,3 +61,26 @@ export function sellCharm(save: SaveData, uid: string): number {
   save.gold += price;
   return price;
 }
+
+/**
+ * The charms a run picked up go into the case, in the order they dropped. When the case is full the
+ * rest are sold for gold (said on the result screen)
+ */
+export function acceptCharms(
+  save: SaveData,
+  drops: readonly CharmInstance[],
+): { added: CharmInstance[]; sold: CharmInstance[]; gold: number } {
+  const added: CharmInstance[] = [];
+  const sold: CharmInstance[] = [];
+  const owned = (save.charms ??= []);
+  for (const d of drops) {
+    if (owned.length < CHARM.capacity) {
+      const c: CharmInstance = { uid: `c${save.nextUid++}`, defId: d.defId, rarity: d.rarity };
+      owned.push(c);
+      added.push(c);
+    } else sold.push(d);
+  }
+  const gold = sold.reduce((sum, c) => sum + charmSellPrice(c), 0);
+  save.gold += gold;
+  return { added, sold, gold };
+}

@@ -780,4 +780,8 @@ export const UI: Dict = {
   アクセサリーはまだありません: 'Belum ada aksesori',
   'アクセサリー（{n}/{max}）': 'Aksesori ({n}/{max})',
   '{route}・コンボ ×{m}': '{route} · Kombo ×{m}',
+  'アクセサリー！': 'Aksesori!',
+  'アクセサリーを手に入れた！': 'Dapat aksesori!',
+  'アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）':
+    'Kotak aksesori penuh: {n} dijual (+{gold}G)',
 };

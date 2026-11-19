@@ -6,8 +6,10 @@ import {
   TOAST_STEP_MS,
   showAchievements,
   showNewBoards,
+  showNewCharms,
   showNewLooks,
 } from '../ui/achievementToast';
+import { acceptCharms } from '../core/charmSave';
 import { grantCosmetics } from '../core/cosmeticRewards';
 import { checkAchievements } from '../core/achievements';
 import type { AchievementDef } from '../data/achievements';
@@ -184,10 +186,13 @@ export class ResultScene extends Phaser.Scene {
     let mastery: { gains: MasteryGain[]; learned: string[] } | null = null;
     let newLooks: string[] = [];
     let newBoards: BoardDef[] = [];
+    // Trial (charms): the charms brought home (and any sold because the case was full)
+    let charmsGot: ReturnType<typeof acceptCharms> | null = null;
     if (demo) markDemoDone();
     else {
       consumeItems(save, result.usedConsumables);
       added = acceptLoot(save, result.drops);
+      if (result.charms?.length) charmsGot = acceptCharms(save, result.charms);
       // 使い切った消耗品の枠へ、倉庫（今回の戦利品も含む）から同じものを入れ直す
       refilled = refillConsumables(save).length;
       // 自動売却（倉庫で設定したレアリティ以下）
@@ -403,6 +408,16 @@ export class ResultScene extends Phaser.Scene {
         newBoards,
         62,
         1400 + (achieved.length + newLooks.length) * TOAST_STEP_MS,
+      );
+    // Trial (charms): after the board cards, which come from the same kind of run
+    if (charmsGot)
+      showNewCharms(
+        this,
+        charmsGot.added,
+        charmsGot.sold.length,
+        charmsGot.gold,
+        62,
+        1400 + (achieved.length + newLooks.length + newBoards.length) * TOAST_STEP_MS,
       );
     // Notices between the stats and the loot ribbon, stacked so they never overlap
     const notes: Note[] = [];

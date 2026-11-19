@@ -780,4 +780,8 @@ export const UI: Dict = {
   アクセサリーはまだありません: 'Ainda não há acessórios',
   'アクセサリー（{n}/{max}）': 'Acessórios ({n}/{max})',
   '{route}・コンボ ×{m}': '{route} · Combo ×{m}',
+  'アクセサリー！': 'Acessório!',
+  'アクセサリーを手に入れた！': 'Conseguiu um acessório!',
+  'アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）':
+    'Estojo de acessórios cheio: {n} vendido(s) (+{gold}G)',
 };
