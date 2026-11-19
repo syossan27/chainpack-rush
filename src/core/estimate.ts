@@ -114,8 +114,9 @@ export function estimateRoute(
     if (s.tech) techs.push(s.tech);
     // Trial (charms): after the step (both strikes of twin blades use the multiplier before it)
     if (charms) {
-      if (cellTop(s, charms)) charmEvent('cell', s.cell);
+      // The battle's order: a combo during the attack, then the cell, technique and stack
       if (combo) charmEvent('combo', s.cell);
+      if (cellTop(s, charms)) charmEvent('cell', s.cell);
       if (s.tech) charmEvent('tech', s.cell);
       if (stackTop(s, charms)) charmEvent('stackTop', s.cell);
     }

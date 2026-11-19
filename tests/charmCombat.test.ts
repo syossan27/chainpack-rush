@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { NO_LUCK } from '../src/config/balance';
-import type { CharmInstance, CharmSlots } from '../src/core/charms';
+import { charmContext, type CharmInstance, type CharmSlots } from '../src/core/charms';
+import { simulateChain } from '../src/core/chain';
+import { estimateRoute } from '../src/core/estimate';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { getCharm, type CharmId } from '../src/data/charms';
 import { build } from './helpers';
@@ -201,5 +203,34 @@ describe('試作アクセサリー: 戦闘のコンボ倍率', () => {
     const multi = [...byTick.values()].filter((n) => n.kills >= 2);
     expect(multi.length).toBeGreaterThan(0);
     for (const n of byTick.values()) expect(n.charms).toBe(n.kills);
+  });
+});
+
+describe('試作アクセサリー: 予想と戦闘が同じ計算をする', () => {
+  it('同じマスで + と × が反応しても、予想の最後の倍率は戦闘と同じ', () => {
+    // 3x2: origin (0,0) → canteen (1,0) down → thunder (1,1) right → thunder (2,1)
+    const b = build(3, 2, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'w', defId: 'canteen', x: 1, y: 0, exits: ['down'] },
+      { uid: 't1', defId: 'thunder_staff', x: 1, y: 1, exits: ['right'], rarity: 'rare' },
+      { uid: 't2', defId: 'thunder_staff', x: 2, y: 1, exits: [], rarity: 'rare' },
+    ]);
+    // A necklace on column 1 and a ring on row 1: the shock at cell 4 reaches both
+    const slots: CharmSlots = [null, charm('combo_necklace'), null, null, charm('match_ring')];
+    const plan = simulateChain(b.loadout, b.items).plans[0]!;
+    const est = estimateRoute(plan, b.items, 1, undefined, charmContext(slots, b.loadout, b.items));
+    const evs = dummyEvents({
+      seed: 1,
+      regionId: 'grassland',
+      loadout: b.loadout,
+      items: b.items,
+      hero: { ...BASE_HERO_STATS, maxHp: 1e9 },
+      luck: NO_LUCK,
+      charms: slots,
+    });
+    const battle = charmEvs(evs);
+    expect(battle.some((e) => e.op === '×')).toBe(true);
+    expect(battle.some((e) => e.op === '+')).toBe(true);
+    expect(est.charmPeak).toBeCloseTo(battle.at(-1)!.m, 10);
   });
 });
