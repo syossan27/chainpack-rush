@@ -506,4 +506,28 @@ export const DATA: Dict = {
   '1マスに{v}つまで重ねられる': 'Stack up to {v} per cell',
   闇が効きにくい: 'Resists Dark',
   雷が効きにくい: 'Resists Thunder',
+  そろいの指輪: 'Matching Ring',
+  揃: 'Ma',
+  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
+    'If all attack gear in its row/column shares one element: Combo +{v} on every hit',
+  連鎖の首飾り: 'Combo Necklace',
+  鎖: 'Co',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
+    'Combo ×{v} on every status combo in its row/column',
+  技の腕輪: 'Special Bangle',
+  技: 'Sp',
+  '付けた行・列で必殺技が出るたびにコンボ +{v}':
+    'Combo +{v} on every Special Move in its row/column',
+  会心のピアス: 'Critical Earring',
+  心: 'Cr',
+  '付けた行・列の攻撃が会心になるたびにコンボ +{v}':
+    'Combo +{v} on every critical hit in its row/column',
+  とどめの髪飾り: 'Finishing Pin',
+  止: 'Fn',
+  '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}':
+    'Combo ×{v} for every enemy beaten from its row/column',
+  重ねの護符: 'Stack Amulet',
+  重: 'St',
+  '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
+    'Combo +{v} each time a full stack in its row/column fires',
 };

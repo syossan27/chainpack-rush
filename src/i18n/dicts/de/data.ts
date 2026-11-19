@@ -514,4 +514,28 @@ export const DATA: Dict = {
   '1マスに{v}つまで重ねられる': 'Bis zu {v} pro Feld',
   闇が効きにくい: 'Resistent gegen Schatten',
   雷が効きにくい: 'Resistent gegen Blitz',
+  そろいの指輪: 'Gleichklang-Ring',
+  揃: 'Gl',
+  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
+    'Haben alle Angriffsteile seiner Zeile/Spalte dasselbe Element: Kombo +{v} bei jedem Treffer',
+  連鎖の首飾り: 'Kombo-Kette',
+  鎖: 'Ko',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
+    'Kombo ×{v} bei jeder Zustandskombo in seiner Zeile/Spalte',
+  技の腕輪: 'Spezial-Armreif',
+  技: 'Sp',
+  '付けた行・列で必殺技が出るたびにコンボ +{v}':
+    'Kombo +{v} bei jedem Spezialangriff in seiner Zeile/Spalte',
+  会心のピアス: 'Kritischer Ohrring',
+  心: 'Kr',
+  '付けた行・列の攻撃が会心になるたびにコンボ +{v}':
+    'Kombo +{v} bei jedem kritischen Treffer in seiner Zeile/Spalte',
+  とどめの髪飾り: 'Gnadenspange',
+  止: 'Gn',
+  '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}':
+    'Kombo ×{v} für jeden Gegner, den seine Zeile/Spalte besiegt',
+  重ねの護符: 'Stapelamulett',
+  重: 'St',
+  '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
+    'Kombo +{v}, wenn ein voller Stapel seiner Zeile/Spalte auslöst',
 };

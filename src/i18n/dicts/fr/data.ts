@@ -514,4 +514,28 @@ export const DATA: Dict = {
   '1マスに{v}つまで重ねられる': 'Jusqu’à {v} par case',
   闇が効きにくい: 'Résiste aux Ténèbres',
   雷が効きにくい: 'Résiste à la Foudre',
+  そろいの指輪: "Anneau d'harmonie",
+  揃: 'Ha',
+  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
+    "Si tout l'équipement d'attaque de sa ligne/colonne partage un élément : Combo +{v} à chaque coup",
+  連鎖の首飾り: 'Collier de combo',
+  鎖: 'Co',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
+    "Combo ×{v} à chaque combo d'état sur sa ligne/colonne",
+  技の腕輪: 'Bracelet spécial',
+  技: 'Sp',
+  '付けた行・列で必殺技が出るたびにコンボ +{v}':
+    'Combo +{v} à chaque coup spécial sur sa ligne/colonne',
+  会心のピアス: 'Boucle critique',
+  心: 'Cr',
+  '付けた行・列の攻撃が会心になるたびにコンボ +{v}':
+    'Combo +{v} à chaque coup critique sur sa ligne/colonne',
+  とどめの髪飾り: 'Barrette fatale',
+  止: 'Fa',
+  '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}':
+    'Combo ×{v} pour chaque ennemi vaincu depuis sa ligne/colonne',
+  重ねの護符: 'Amulette de pile',
+  重: 'Pi',
+  '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
+    "Combo +{v} chaque fois qu'une pile complète de sa ligne/colonne se déclenche",
 };

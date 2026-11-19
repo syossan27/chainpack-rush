@@ -426,6 +426,25 @@ export const LOOT = {
 } as const;
 
 /**
+ * Trial (charms): accessories on the stacked board's edge build a combo multiplier during a chain
+ * (data/charms.ts, core/charms.ts). Provisional values, to be tuned with the bot
+ */
+export const CHARM = {
+  /** The chain's combo multiplier never goes above this */
+  cap: 20,
+  /** How many charms the charm case holds (more are sold when a run ends) */
+  capacity: 30,
+  /** そろいの指輪: attack items a line needs (all of one element) */
+  minMatch: 2,
+  /** Chance per dropped item that a charm drops too (bosses, golden elites, treasure goblins: Rare) */
+  dropChance: 0.03,
+  dropChanceRare: 0.2,
+  /** Charm drops draw from their own random stream (seed ^ salt), so other drops never change */
+  rngSalt: 0x5bd1e995,
+  sell: { common: 10, rare: 40, epic: 120, legendary: 400 } as Record<Rarity, number>,
+} as const;
+
+/**
  * 合成: 同じ装備・同じレアリティを3つで、1つ上のレアリティに（追加効果・出口は振り直し）。
  * 上のレアリティほど成功しにくい。失敗すると、材料と同じレアリティのランダムな装備が1つ手に入る
  */

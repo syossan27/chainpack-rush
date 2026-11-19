@@ -514,4 +514,27 @@ export const DATA: Dict = {
   '1マスに{v}つまで重ねられる': 'Maks. {v} per petak',
   闇が効きにくい: 'Tahan Kegelapan',
   雷が効きにくい: 'Tahan Petir',
+  そろいの指輪: 'Cincin Selaras',
+  揃: 'Se',
+  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
+    'Jika semua perlengkapan serang di baris/kolomnya berelemen sama: Kombo +{v} tiap kena',
+  連鎖の首飾り: 'Kalung Kombo',
+  鎖: 'Ko',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
+    'Kombo ×{v} tiap kombo status di baris/kolomnya',
+  技の腕輪: 'Gelang Jurus',
+  技: 'Ju',
+  '付けた行・列で必殺技が出るたびにコンボ +{v}': 'Kombo +{v} tiap Jurus Spesial di baris/kolomnya',
+  会心のピアス: 'Anting Kritikal',
+  心: 'Kr',
+  '付けた行・列の攻撃が会心になるたびにコンボ +{v}':
+    'Kombo +{v} tiap serangan kritikal di baris/kolomnya',
+  とどめの髪飾り: 'Jepit Penutup',
+  止: 'Pe',
+  '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}':
+    'Kombo ×{v} tiap musuh dikalahkan dari baris/kolomnya',
+  重ねの護符: 'Jimat Tumpuk',
+  重: 'Tu',
+  '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
+    'Kombo +{v} tiap tumpukan penuh di baris/kolomnya menyerang',
 };

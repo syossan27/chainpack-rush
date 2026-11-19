@@ -511,4 +511,28 @@ export const DATA: Dict = {
   '1マスに{v}つまで重ねられる': 'Até {v} por casa',
   闇が効きにくい: 'Resiste a Sombra',
   雷が効きにくい: 'Resiste a Raio',
+  そろいの指輪: 'Anel da Harmonia',
+  揃: 'Ha',
+  '付けた行・列の攻撃装備が全部同じ属性なら、当たるたびにコンボ +{v}':
+    'Se todo o equipamento de ataque da sua linha/coluna tiver o mesmo elemento: Combo +{v} a cada acerto',
+  連鎖の首飾り: 'Colar de Combo',
+  鎖: 'Co',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
+    'Combo ×{v} a cada combo de status na sua linha/coluna',
+  技の腕輪: 'Bracelete Especial',
+  技: 'Es',
+  '付けた行・列で必殺技が出るたびにコンボ +{v}':
+    'Combo +{v} a cada Golpe Especial na sua linha/coluna',
+  会心のピアス: 'Brinco Crítico',
+  心: 'Cr',
+  '付けた行・列の攻撃が会心になるたびにコンボ +{v}':
+    'Combo +{v} a cada acerto crítico na sua linha/coluna',
+  とどめの髪飾り: 'Presilha Final',
+  止: 'Fi',
+  '付けた行・列の攻撃で敵を倒すたびにコンボ ×{v}':
+    'Combo ×{v} a cada inimigo derrotado pela sua linha/coluna',
+  重ねの護符: 'Amuleto da Pilha',
+  重: 'Pi',
+  '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
+    'Combo +{v} sempre que uma pilha completa da sua linha/coluna dispara',
 };
