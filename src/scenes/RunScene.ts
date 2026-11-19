@@ -18,6 +18,7 @@ import { randomSeed } from '../core/rng';
 import {
   stackBoardOf,
   trialRules,
+  usesCharms,
   usesMastery,
   usesRelics,
   usesStackBoard,
@@ -43,6 +44,9 @@ import { session, type ChallengeSortie } from '../platform/session';
 import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
+import { CharmStrip, charmStepLabel } from '../ui/charmStrip';
+import { boardCharmSlots } from '../core/charmSave';
+import { getBoard } from '../data/boards';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
 import {
@@ -125,6 +129,8 @@ export class RunScene extends Phaser.Scene {
   private mastery = false;
   /** Trial (relics): the cards a beaten boss offers (null when none is offered) */
   private picker: RelicPicker | null = null;
+  /** Trial (charms): the edge slots and the combo meter (null: not in this run) */
+  private charmStrip: CharmStrip | null = null;
   /** Trial (relics): the marks of the relics stuck on the board */
   private relicBadges!: Phaser.GameObjects.Container;
   private loadout!: Loadout;
@@ -239,6 +245,9 @@ export class RunScene extends Phaser.Scene {
     if (relics) this.cfg.relics = {};
     const treasure = usesTreasure(save, debugMenuAllowed(), kind);
     if (treasure) this.cfg.treasure = { chance: TREASURE.chance };
+    // Trial (charms): the charms on the board's edge (they need the stacked board, already a trial)
+    if (usesCharms(save, debugMenuAllowed(), kind))
+      this.cfg.charms = boardCharmSlots(save, loadout.board ?? 'standard');
     this.picker = null;
     this.trial = trial !== undefined || this.mastery || relics || treasure;
     if (trial) this.cfg.rules = trial;
@@ -277,6 +286,12 @@ export class RunScene extends Phaser.Scene {
     this.consumableButtons = [];
     this.trackKey = '';
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
+    this.charmStrip = this.cfg.charms
+      ? new CharmStrip(this, this.view, getBoard(loadout.board), this.cfg.charms, {
+          compact: true,
+          meterAt: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.groundY - 262 },
+        }).setDepth(42)
+      : null;
     this.relicBadges = this.add.container(0, 0).setDepth(46);
     this.buildHud();
     this.buildConsumables();
@@ -1136,9 +1151,14 @@ export class RunScene extends Phaser.Scene {
             if (this.shake) this.cameras.main.shake(80, 0.004);
           }
           break;
+        case 'charm':
+          this.charmStrip?.pulse(ev.slot, charmStepLabel(ev.op, ev.value));
+          this.charmStrip?.showMeter(ev.m);
+          break;
         case 'chainEnd':
           this.field.aimId = null;
           this.endChainCount(ev.totalDamage);
+          this.charmStrip?.hideMeter();
           if (ev.staggered) {
             this.showBanner(t('よろめき！'), COLORS.textWarn);
             if (this.shake) this.cameras.main.shake(160, 0.008);

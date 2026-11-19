@@ -5,7 +5,10 @@ import { SIM } from '../config/balance';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { heroStats, itemMap } from '../core/economy';
 import type { ItemInstance, Loadout } from '../core/types';
-import { stackBoardOf, stackSwitchOn } from '../core/trial';
+import { charmSwitchOn, stackBoardOf, stackSwitchOn } from '../core/trial';
+import { boardCharmSlots } from '../core/charmSave';
+import { getBoard } from '../data/boards';
+import { CharmStrip, charmStepLabel } from '../ui/charmStrip';
 import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
 import { debugMenuAllowed, devRage } from '../platform/debug';
@@ -40,6 +43,8 @@ export class DummyScene extends Phaser.Scene {
   private mergeBonus = 0;
   /** The board to try: the stacked board while that trial switch is on */
   private board!: Loadout;
+  /** Trial (charms): the edge slots and the combo meter (null: the switch is off) */
+  private charmStrip: CharmStrip | null = null;
 
   constructor() {
     super('Dummy');
@@ -50,6 +55,10 @@ export class DummyScene extends Phaser.Scene {
     this.items = itemMap(save);
     this.board = stackSwitchOn(save, debugMenuAllowed()) ? stackBoardOf(save) : save.loadout;
     this.cameras.main.setBackgroundColor(COLORS.bg);
+    // Trial (charms): the charms on this board's edge build the combo multiplier here too
+    const charms = charmSwitchOn(save, debugMenuAllowed())
+      ? boardCharmSlots(save, this.board.board ?? 'standard')
+      : undefined;
     this.combat = new Combat({
       seed: 1,
       regionId: session.regionId ?? REGIONS[0]!.id,
@@ -57,6 +66,7 @@ export class DummyScene extends Phaser.Scene {
       items: this.items,
       hero: save ? heroStats(save) : BASE_HERO_STATS,
       mode: 'dummy',
+      ...(charms ? { charms } : {}),
     });
     // Development only: an angry dummy, to check the angry boss look
     if (devRage()) for (const e of this.combat.enemies) e.enraged = true;
@@ -70,6 +80,12 @@ export class DummyScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(40);
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, this.board, this.items).setDepth(41);
+    this.charmStrip = charms
+      ? new CharmStrip(this, this.view, getBoard(this.board.board), charms, {
+          compact: true,
+          meterAt: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.groundY - 262 },
+        }).setDepth(42)
+      : null;
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
     this.add.existing(ribbon(this, W / 2, 50, t('カカシで試し撃ち'), 360).setDepth(70));
     panel(this, 230, RUN_LAYOUT.middleTop + 86, 420, 140, 'inset').setDepth(70);
@@ -197,11 +213,15 @@ export class DummyScene extends Phaser.Scene {
         sfx('hit');
       } else if (ev.type === 'technique') {
         this.showTechnique(getTechnique(ev.id), ev.enemyId);
+      } else if (ev.type === 'charm') {
+        this.charmStrip?.pulse(ev.slot, charmStepLabel(ev.op, ev.value));
+        this.charmStrip?.showMeter(ev.m);
       } else if (ev.type === 'combo') {
         this.comboLabel.push(t(ev.label));
         sfxCombo(ev.name);
         hapticMedium();
       } else if (ev.type === 'chainEnd') {
+        this.charmStrip?.hideMeter();
         this.stats.setText(
           [
             t('総ダメージ {n}', { n: Math.round(ev.totalDamage) }),
