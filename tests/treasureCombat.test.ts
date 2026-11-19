@@ -7,6 +7,7 @@ import {
   type EnemyState,
   type RunConfig,
 } from '../src/core/combat';
+import { getEnemyDef } from '../src/data/enemies';
 import { getRegion } from '../src/data/regions';
 import { build } from './helpers';
 
@@ -68,6 +69,13 @@ describe('試作「黄金ゴブリン」: 出てくるとき', () => {
     expect(g.defId).toBe('goblin');
     expect(c.enemies.filter((e) => e.group === g.group)).toHaveLength(1);
     expect(c.drainEvents().some((e) => e.type === 'treasure' && e.phase === 'appear')).toBe(true);
+  });
+
+  it('硬さは、同じ周回のゴブリンの TREASURE.hpMult 倍', () => {
+    const g = goblinOf(new Combat(cfg()))!;
+    const plain = getEnemyDef('goblin').hp * getRegion('grassland').power.hp;
+    expect(g.maxHp).toBeCloseTo(plain * TREASURE.hpMult, 6);
+    expect(g.hp).toBe(g.maxHp);
   });
 
   it('1回の出撃で1度まで（次の周回には出ない）', () => {
