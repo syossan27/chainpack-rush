@@ -10,10 +10,14 @@ import {
 } from '../src/core/stack';
 import type { ItemInstance, Loadout } from '../src/core/types';
 
-const item = (uid: string, defId: string): ItemInstance => ({
+const item = (
+  uid: string,
+  defId: string,
+  rarity: ItemInstance['rarity'] = 'common',
+): ItemInstance => ({
   uid,
   defId,
-  rarity: 'common',
+  rarity,
   exits: ['right'],
   rerollCount: 0,
 });
@@ -28,6 +32,11 @@ const items = new Map(
     item('f1', 'torch'),
     item('d1', 'wood_shield'),
     item('d2', 'iron_shield'),
+    item('d3', 'wood_shield'),
+    item('s5', 'sword', 'rare'),
+    item('s6', 'sword', 'epic'),
+    item('a1', 'dragon_fang', 'legendary'),
+    item('a2', 'dragon_fang', 'legendary'),
   ].map((i) => [i.uid, i]),
 );
 
@@ -38,26 +47,37 @@ function put(l: Loadout, uid: string, cell: number): Loadout {
 }
 
 describe('重ねる盤面（試作）: 置き方', () => {
-  it('空きマスに置き、同じ属性なら上に重なる（3つまで）', () => {
+  it('空きマスに置き、同じ装備なら上に重なる（レアリティは問わない、3つまで）', () => {
     let l = emptyStackBoard();
     expect([l.width, l.height]).toEqual([4, 3]);
     l = put(l, 's1', 1);
+    l = put(l, 's5', 1);
     l = put(l, 's2', 1);
-    l = put(l, 's3', 1);
-    expect(stackAt(l, 1)).toEqual(['s1', 's2', 's3']);
-    expect(l.cells[1]).toBe('s3');
-    expect(stackPut(l, items, 's4', 1).block).toBe('full');
+    expect(stackAt(l, 1)).toEqual(['s1', 's5', 's2']);
+    expect(l.cells[1]).toBe('s2');
+    expect(stackPut(l, items, 's6', 1).block).toBe('full');
   });
 
-  it('属性が違う・防具と攻撃・起点石は重ならない', () => {
+  it('違う装備は同じ属性でも重ならない。防具も同じ物だけ。起点石は重ならない', () => {
     let l = put(emptyStackBoard(), 's1', 1);
+    expect(stackPut(l, items, 's3', 1).block).toBe('group');
+    expect(stackPut(l, items, 's4', 1).block).toBe('group');
     expect(stackPut(l, items, 'f1', 1).block).toBe('group');
     expect(stackPut(l, items, 'd1', 1).block).toBe('group');
     l = put(l, 'o1', 0);
     expect(stackPut(l, items, 's2', 0).block).toBe('group');
     l = put(l, 'd1', 2);
-    l = put(l, 'd2', 2);
-    expect(stackAt(l, 2)).toEqual(['d1', 'd2']);
+    expect(stackPut(l, items, 'd2', 2).block).toBe('group');
+    l = put(l, 'd3', 2);
+    expect(stackAt(l, 2)).toEqual(['d1', 'd3']);
+  });
+
+  it('アーティファクトは重ねられない（同じものどうしでも、上にも下にも）。理由は別に知らせる', () => {
+    let l = put(emptyStackBoard(), 'a1', 6);
+    expect(stackPut(l, items, 'a2', 6).block).toBe('artifact');
+    expect(stackPut(l, items, 's1', 6).block).toBe('artifact');
+    l = put(l, 's1', 7);
+    expect(stackPut(l, items, 'a1', 7).block).toBe('artifact');
   });
 
   it('起点石は盤面に1つだけ', () => {
@@ -72,19 +92,19 @@ describe('重ねる盤面（試作）: 置き方', () => {
 
   it('外すと下の装備が一番上になる。重ねの中で上下を入れ替えられる', () => {
     let l = emptyStackBoard();
-    for (const u of ['s1', 's2', 's3']) l = put(l, u, 5);
+    for (const u of ['s1', 's2', 's5']) l = put(l, u, 5);
     l = stackShift(l, 's1', 1);
-    expect(stackAt(l, 5)).toEqual(['s2', 's1', 's3']);
+    expect(stackAt(l, 5)).toEqual(['s2', 's1', 's5']);
     l = stackShift(l, 's1', 1);
-    expect(stackAt(l, 5)).toEqual(['s2', 's3', 's1']);
+    expect(stackAt(l, 5)).toEqual(['s2', 's5', 's1']);
     expect(l.cells[5]).toBe('s1');
     // Already at the top: nothing moves
-    expect(stackAt(stackShift(l, 's1', 1), 5)).toEqual(['s2', 's3', 's1']);
+    expect(stackAt(stackShift(l, 's1', 1), 5)).toEqual(['s2', 's5', 's1']);
     l = stackTake(l, items, 's1');
-    expect(stackAt(l, 5)).toEqual(['s2', 's3']);
+    expect(stackAt(l, 5)).toEqual(['s2', 's5']);
     l = stackTake(l, items, 's2');
-    expect(stackAt(l, 5)).toEqual(['s3']);
-    l = stackTake(l, items, 's3');
+    expect(stackAt(l, 5)).toEqual(['s5']);
+    l = stackTake(l, items, 's5');
     expect(stackAt(l, 5)).toEqual([]);
   });
 
@@ -108,26 +128,28 @@ describe('重ねる盤面（試作）: 置き方', () => {
     expect(stackAt(l, 4)).toEqual(['s1']);
   });
 
-  it('読み直すと、決まりに合わない重ねは直る（起点石はひとりで1マス、重ねは同じ属性だけ）', () => {
+  it('読み直すと、決まりに合わない重ねは直る（起点石とアーティファクトはひとりで1マス、重ねは同じ装備だけ）', () => {
     const rec: Loadout = {
       ...emptyStackBoard(),
-      cells: ['s1', 'o2', 's2', ...new Array<string | null>(9).fill(null)],
-      under: [['o1'], ['s3'], ['f1', 's4'], ...Array.from({ length: 9 }, () => [])],
+      cells: ['s1', 'o2', 's2', 'a1', ...new Array<string | null>(8).fill(null)],
+      under: [['o1'], ['s3'], ['f1', 's4', 's5'], ['s6'], ...Array.from({ length: 8 }, () => [])],
       originOrder: ['o2'],
     };
     const back = restoreStackBoard(rec, items, 3);
     expect(stackAt(back, 0)).toEqual(['s1']);
     expect(stackAt(back, 1)).toEqual(['o2']);
-    expect(stackAt(back, 2)).toEqual(['s4', 's2']);
+    // The old rule (one element) let a dagger, a torch and a greatsword in: only the swords stay
+    expect(stackAt(back, 2)).toEqual(['s5', 's2']);
+    expect(stackAt(back, 3)).toEqual(['a1']);
     expect(back.originOrder).toEqual(['o2']);
   });
 
   it('読み直すと、もう持っていない装備は抜けて、下の装備が上がる', () => {
     let l = emptyStackBoard();
-    for (const u of ['s1', 's2', 's3']) l = put(l, u, 2);
+    for (const u of ['s1', 's2', 's5']) l = put(l, u, 2);
     l = put(l, 'o1', 0);
     const owned = new Map(items);
-    owned.delete('s3');
+    owned.delete('s5');
     owned.delete('s1');
     const back = restoreStackBoard(JSON.parse(JSON.stringify(l)) as Loadout, owned, 3);
     expect(stackAt(back, 2)).toEqual(['s2']);

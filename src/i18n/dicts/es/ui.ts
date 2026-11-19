@@ -271,7 +271,9 @@ export const UI: Dict = {
   '重ね（下から順に鳴る）': 'Pila (se activa de abajo arriba)',
   '一番上 ×{m}（矢印はこの装備）': 'Arriba ×{m} (sus flechas siguen)',
   '×{m}': '×{m}',
-  同じ属性の装備だけ重ねられます: 'Solo se apila equipo del mismo elemento',
+  同じ装備だけ重ねられます: 'Solo se apila el mismo equipo',
+  'アーティファクトは重ねられません（1つで3回鳴ります）':
+    'Los artefactos no se apilan (uno suena 3 veces)',
   '1マスに重ねられるのは{n}つまで': 'Hasta {n} por casilla',
   試作では起点石は1つだけ: 'Solo una Piedra de Origen en el prototipo',
   デバッグ機能: 'Modo de depuración',

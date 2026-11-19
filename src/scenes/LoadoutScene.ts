@@ -1302,8 +1302,10 @@ export function sellOverflow(scene: Phaser.Scene): void {
 /** Trial: why an item cannot go on that cell of the stacked board */
 function stackBlockText(b: StackBlock): string {
   return b === 'group'
-    ? t('同じ属性の装備だけ重ねられます')
-    : b === 'full'
-      ? t('1マスに重ねられるのは{n}つまで', { n: STACK.max })
-      : t('試作では起点石は1つだけ');
+    ? t('同じ装備だけ重ねられます')
+    : b === 'artifact'
+      ? t('アーティファクトは重ねられません（1つで3回鳴ります）')
+      : b === 'full'
+        ? t('1マスに重ねられるのは{n}つまで', { n: STACK.max })
+        : t('試作では起点石は1つだけ');
 }

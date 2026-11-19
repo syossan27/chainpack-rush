@@ -4,11 +4,14 @@ import { STACK } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type { ItemInstance, Loadout } from './types';
 
-/** Which items may share a cell: attack gear of one element, or defense gear. Null never stacks */
+/**
+ * Which items may share a cell: the same gear (any rarity). Null never stacks: origin stones,
+ * consumables, and artifacts (there is one of each; it rings as a full stack instead, see chain)
+ */
 export function stackGroup(it: ItemInstance): string | null {
   const def = getItemDef(it.defId);
-  if (def.kind === 'attack') return `attack:${def.element ?? 'physical'}`;
-  if (def.kind === 'defense') return 'defense';
+  if (def.artifact) return null;
+  if (def.kind === 'attack' || def.kind === 'defense') return def.id;
   return null;
 }
 
@@ -16,6 +19,21 @@ export function stackGroup(it: ItemInstance): string | null {
 export function stackAt(l: Loadout, cell: number): string[] {
   const top = l.cells[cell];
   return top ? [...(l.under?.[cell] ?? []), top] : [];
+}
+
+/**
+ * What a cell rings, bottom → top: its stack, or an artifact alone three times (an artifact cannot
+ * be stacked, there is one of each, so it rings as a full stack)
+ */
+export function cellRings(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  cell: number,
+): string[] {
+  const s = stackAt(l, cell).filter((u) => items.has(u));
+  const only = s.length === 1 ? items.get(s[0]!) : undefined;
+  if (only && getItemDef(only.defId).artifact) return new Array<string>(STACK.max).fill(only.uid);
+  return s;
 }
 
 /** Every item on the board: the tops and the items under them */
@@ -70,8 +88,8 @@ function pull(l: Loadout, uid: string): void {
   }
 }
 
-/** Why an item cannot go on a cell: another element, a full stack, or a second origin stone */
-export type StackBlock = 'group' | 'full' | 'origin';
+/** Why an item cannot go on a cell: other gear, an artifact, a full stack, or a second origin stone */
+export type StackBlock = 'group' | 'artifact' | 'full' | 'origin';
 
 /** Put an item on a cell: an empty cell takes it, an occupied cell stacks it on top */
 export function stackPut(
@@ -93,8 +111,10 @@ export function stackPut(
     if (def.kind === 'origin' && other) return { loadout: l, block: 'origin' };
     setStack(out, cell, [uid]);
   } else {
+    const under = items.get(here[0]!)!;
+    if (def.artifact || getItemDef(under.defId).artifact) return { loadout: l, block: 'artifact' };
     const g = stackGroup(it);
-    if (g === null || g !== stackGroup(items.get(here[0]!)!)) return { loadout: l, block: 'group' };
+    if (g === null || g !== stackGroup(under)) return { loadout: l, block: 'group' };
     if (here.length >= STACK.max) return { loadout: l, block: 'full' };
     setStack(out, cell, [...here, uid]);
   }

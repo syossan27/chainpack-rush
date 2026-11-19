@@ -241,3 +241,32 @@ describe('試作「レリック」: 貼ったマスの装備に効く', () => {
     expect(kills).toBeGreaterThan(0);
   });
 });
+
+describe('試作「レリック」: 重ねる盤面', () => {
+  it('加速の羽は、アーティファクト（ひとりで3回鳴る）のマスでも1回だけ、最後に効く', () => {
+    const b = build(3, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'art', defId: 'dragon_fang', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
+      { uid: 'next', defId: 'sword', x: 2, y: 0, exits: [] },
+    ]);
+    const loadout = { ...b.loadout, under: b.loadout.cells.map(() => []) };
+    const step = (stuck: [number, RelicId][]) => {
+      const c = new Combat(cfg({ loadout, items: b.items, mode: 'dummy', relics: { stuck } }));
+      c.fireNext();
+      const evs = c.drainEvents();
+      for (let i = 0; i < 60 * 5; i++) {
+        c.step();
+        evs.push(...c.drainEvents());
+      }
+      return {
+        art: hits(evs, 'art').map((h) => h.step),
+        next: hits(evs, 'next')[0]!.step,
+      };
+    };
+    const plain = step([]);
+    expect(plain.art).toEqual([1, 2, 3]);
+    const fed = step([[1, 'feather']]);
+    expect(fed.art).toEqual([1, 2, 3]);
+    expect(fed.next).toBe(plain.next + RELIC.featherSteps);
+  });
+});

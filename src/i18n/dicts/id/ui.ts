@@ -272,7 +272,9 @@ export const UI: Dict = {
   '重ね（下から順に鳴る）': 'Tumpukan (berbunyi dari bawah ke atas)',
   '一番上 ×{m}（矢印はこの装備）': 'Teratas ×{m} (panahnya dari item ini)',
   '×{m}': '×{m}',
-  同じ属性の装備だけ重ねられます: 'Hanya perlengkapan berelemen sama yang bisa ditumpuk',
+  同じ装備だけ重ねられます: 'Hanya perlengkapan yang sama yang bisa ditumpuk',
+  'アーティファクトは重ねられません（1つで3回鳴ります）':
+    'Artefak tidak bisa ditumpuk (satu berbunyi 3 kali)',
   '1マスに重ねられるのは{n}つまで': 'Maks. {n} per petak',
   試作では起点石は1つだけ: 'Hanya satu Batu Asal di prototipe',
   デバッグ機能: 'Mode Debug',

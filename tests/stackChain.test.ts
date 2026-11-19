@@ -233,3 +233,29 @@ describe('重ねる盤面（試作）: 連鎖', () => {
     expect(at(2) / at(1)).toBeCloseTo(1.2 * 1.5);
   });
 });
+
+describe('重ねる盤面（試作）: アーティファクトは1個で山3つぶん', () => {
+  it('重ねる盤面では、ひとりで3回鳴る（×1 / ×1.5 / ×2）。ふつうの盤面では1回', () => {
+    const placed: Placed[] = [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'art', defId: 'dragon_fang', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
+      { uid: 'next', defId: 'sword', x: 2, y: 0, exits: [] },
+    ];
+    const { loadout, items } = stacked(3, 1, placed, {});
+    const rows = planChain(loadout, items, 'o')
+      .steps.slice(1)
+      .map((s) => [s.uid, s.step, s.ring, s.stackMult]);
+    expect(rows).toEqual([
+      ['art', 1, 0, 1],
+      ['art', 2, 1, 1.5],
+      ['art', 3, 2, 2],
+      ['next', 4, 0, 1],
+    ]);
+    const plain = build(3, 1, placed);
+    expect(planChain(plain.loadout, plain.items, 'o').steps.map((s) => s.uid)).toEqual([
+      'o',
+      'art',
+      'next',
+    ]);
+  });
+});

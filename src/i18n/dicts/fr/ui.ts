@@ -274,7 +274,9 @@ export const UI: Dict = {
   '重ね（下から順に鳴る）': 'Pile (se déclenche de bas en haut)',
   '一番上 ×{m}（矢印はこの装備）': 'Haut ×{m} (ses flèches mènent la suite)',
   '×{m}': '×{m}',
-  同じ属性の装備だけ重ねられます: 'Seul un équipement du même élément peut s’empiler',
+  同じ装備だけ重ねられます: 'Seul un équipement identique peut s’empiler',
+  'アーティファクトは重ねられません（1つで3回鳴ります）':
+    'Les artefacts ne s’empilent pas (un seul sonne 3 fois)',
   '1マスに重ねられるのは{n}つまで': 'Jusqu’à {n} par case',
   試作では起点石は1つだけ: 'Une seule Pierre d’Origine dans le prototype',
   デバッグ機能: 'Mode débogage',

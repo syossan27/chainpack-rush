@@ -15,6 +15,7 @@ import type {
   Loadout,
 } from './types';
 import { DIRS } from './types';
+import { cellRings } from './stack';
 
 const DIR_DELTA: Record<Dir, readonly [number, number]> = {
   up: [0, -1],
@@ -264,10 +265,7 @@ function spread(
   const stackedBoard = loadout.under !== undefined;
   const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
-    const top = loadout.cells[cell]!;
-    const stack = stackedBoard
-      ? [...(loadout.under?.[cell] ?? []).filter((u) => items.has(u)), top]
-      : [top];
+    const stack = stackedBoard ? cellRings(loadout, items, cell) : [loadout.cells[cell]!];
     let p = parent;
     let t = tMs;
     stack.forEach((uid, k) => {

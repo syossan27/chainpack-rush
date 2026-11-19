@@ -268,7 +268,9 @@ export const UI: Dict = {
   '重ね（下から順に鳴る）': 'Stack (rings from the bottom up)',
   '一番上 ×{m}（矢印はこの装備）': 'Top ×{m} (its arrows lead on)',
   '×{m}': '×{m}',
-  同じ属性の装備だけ重ねられます: 'Only gear of the same element can stack',
+  同じ装備だけ重ねられます: 'Only the same gear can stack',
+  'アーティファクトは重ねられません（1つで3回鳴ります）':
+    'Artifacts can’t stack (one rings 3 times)',
   '1マスに重ねられるのは{n}つまで': 'Up to {n} per cell',
   試作では起点石は1つだけ: 'Only one Origin Stone in the prototype',
   デバッグ機能: 'Debug Mode',

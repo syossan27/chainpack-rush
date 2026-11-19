@@ -37,7 +37,7 @@ import { rollLoot } from './loot';
 import { sparkChance } from './mastery';
 import { canStickRelic, rollRelicOffer } from './relics';
 import { Rng, ipow } from './rng';
-import { stackAt } from './stack';
+import { cellRings } from './stack';
 import type {
   Area,
   ChainPlan,
@@ -925,9 +925,12 @@ export class Combat {
     if (relic === 'ward') this.defense = Math.min(this.maxHp, this.defense + RELIC.wardDefense);
   }
 
-  /** The step is the top of its cell (always, on an ordinary board) */
+  /** The step is the last ring of its cell (always, on an ordinary board) */
   private topOfCell(s: ChainStep): boolean {
-    return s.ring === undefined || s.ring === stackAt(this.cfg.loadout, s.cell).length - 1;
+    return (
+      s.ring === undefined ||
+      s.ring === cellRings(this.cfg.loadout, this.cfg.items, s.cell).length - 1
+    );
   }
 
   private currentBoss(): EnemyState | undefined {

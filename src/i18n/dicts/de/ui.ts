@@ -271,7 +271,9 @@ export const UI: Dict = {
   '重ね（下から順に鳴る）': 'Stapel (löst von unten nach oben aus)',
   '一番上 ×{m}（矢印はこの装備）': 'Oben ×{m} (seine Pfeile führen weiter)',
   '×{m}': '×{m}',
-  同じ属性の装備だけ重ねられます: 'Nur Ausrüstung desselben Elements lässt sich stapeln',
+  同じ装備だけ重ねられます: 'Nur gleiche Ausrüstung lässt sich stapeln',
+  'アーティファクトは重ねられません（1つで3回鳴ります）':
+    'Artefakte lassen sich nicht stapeln (eins klingt 3-mal)',
   '1マスに重ねられるのは{n}つまで': 'Bis zu {n} pro Feld',
   試作では起点石は1つだけ: 'Im Prototyp nur ein Ursprungsstein',
   デバッグ機能: 'Debug-Modus',
