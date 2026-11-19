@@ -12,6 +12,8 @@ import { getTechnique } from '../data/techniques';
 import { isElement, type MasteryData } from './mastery';
 import { ITEM_SORTS, type ItemSort } from './itemSort';
 import { isBoardId, type BoardId } from '../data/boards';
+import { isCharmId } from '../data/charms';
+import type { CharmInstance } from './charms';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -50,7 +52,14 @@ export interface SaveData {
   /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
   challengeLoadout: Loadout | null;
   /** Trial: the stacked boards in use and each board's layout (apart from the ordinary loadouts) */
-  trialBoards?: { active: BoardId; layouts: Partial<Record<BoardId, Loadout>> };
+  trialBoards?: {
+    active: BoardId;
+    layouts: Partial<Record<BoardId, Loadout>>;
+    /** Trial (charms): each board's edge slots (charm uids; columns, then rows) */
+    charms?: Partial<Record<BoardId, (string | null)[]>>;
+  };
+  /** Trial (charms): the charm case (charms carried home) */
+  charms?: CharmInstance[];
   /** Trial: the stacked board is being edited and sits in loadout for now */
   editingTrial?: boolean;
   /** Trial (mastery): the hero's mastery per element and the techniques learned by a spark */
@@ -98,6 +107,8 @@ export interface SaveData {
     trialRelic: boolean;
     /** Trial switch on the home screen (debug setting on): a fleeing 黄金ゴブリン now and then */
     trialTreasure: boolean;
+    /** Trial switch on the home screen (debug setting on): charms on the stacked board's edge */
+    trialCharm: boolean;
     /** The order of the storage lists (loadout, storage, fusion) */
     itemSort: ItemSort;
   };
@@ -200,6 +211,7 @@ export function createInitialSave(): SaveData {
       trialMastery: false,
       trialRelic: false,
       trialTreasure: false,
+      trialCharm: false,
       itemSort: 'rarity',
     },
   };
@@ -257,10 +269,40 @@ function readTrialBoards(data: Record<string, unknown>): Pick<SaveData, 'trialBo
         const l = isBoardId(id) ? readLoadoutRec(v) : null;
         if (l && isBoardId(id)) layouts[id] = l;
       }
-    return { trialBoards: { active: isBoardId(tb.active) ? tb.active : 'standard', layouts } };
+    const charms = readBoardCharms(tb.charms);
+    return {
+      trialBoards: {
+        active: isBoardId(tb.active) ? tb.active : 'standard',
+        layouts,
+        ...(charms ? { charms } : {}),
+      },
+    };
   }
   const old = data.trialLoadout ? readLoadoutRec(data.trialLoadout) : null;
   return old ? { trialBoards: { active: 'standard', layouts: { standard: old } } } : {};
+}
+
+/** Trial (charms): each board's slots, as arrays of charm uids or null (checked again on use) */
+function readBoardCharms(v: unknown): Partial<Record<BoardId, (string | null)[]>> | undefined {
+  if (!isObj(v)) return undefined;
+  const out: Partial<Record<BoardId, (string | null)[]>> = {};
+  for (const [id, slots] of Object.entries(v))
+    if (isBoardId(id) && Array.isArray(slots))
+      out[id] = slots.map((u) => (typeof u === 'string' ? u : null));
+  return out;
+}
+
+/** Trial (charms): known charms with a real rarity, each uid once */
+function readCharms(v: unknown[]): CharmInstance[] {
+  const seen = new Set<string>();
+  const out: CharmInstance[] = [];
+  for (const c of v) {
+    if (!isObj(c) || typeof c.uid !== 'string' || seen.has(c.uid)) continue;
+    if (!isCharmId(c.defId) || !RARITIES.includes(c.rarity as Rarity)) continue;
+    seen.add(c.uid);
+    out.push({ uid: c.uid, defId: c.defId, rarity: c.rarity as Rarity });
+  }
+  return out;
 }
 
 /** 消耗品の自動補充の記録（古いセーブにはない） */
@@ -393,6 +435,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
       ...readTrialBoards(data),
+      ...(Array.isArray(data.charms) ? { charms: readCharms(data.charms) } : {}),
       rankSent: isObj(data.rankSent)
         ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
             string,
@@ -465,6 +508,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.trialMastery !== 'boolean') save.settings.trialMastery = false;
     if (typeof save.settings.trialRelic !== 'boolean') save.settings.trialRelic = false;
     if (typeof save.settings.trialTreasure !== 'boolean') save.settings.trialTreasure = false;
+    if (typeof save.settings.trialCharm !== 'boolean') save.settings.trialCharm = false;
     if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)

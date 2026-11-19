@@ -774,4 +774,5 @@ export const UI: Dict = {
   配置画面で切り替えられます: 'Troque de tabuleiro na tela Equipar',
   売れません: 'Não vende',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefatos não podem ser vendidos (um de cada)',
+  '試作: アクセサリー {state}': 'Protótipo: Acessórios {state}',
 };

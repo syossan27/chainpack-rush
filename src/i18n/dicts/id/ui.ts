@@ -774,4 +774,5 @@ export const UI: Dict = {
   配置画面で切り替えられます: 'Ganti papan di layar Susun',
   売れません: 'Tak bisa dijual',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefak tak bisa dijual (satu per jenis)',
+  '試作: アクセサリー {state}': 'Prototipe: Aksesori {state}',
 };

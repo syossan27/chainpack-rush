@@ -54,6 +54,16 @@ export function usesTreasure(save: SaveData, allowed: boolean, run: RunKind): bo
   return treasureSwitchOn(save, allowed) && ordinary(run);
 }
 
+/** The charm switch is on, and works: charms sit on the stacked board's edge, so it needs that too */
+export function charmSwitchOn(save: SaveData, allowed: boolean): boolean {
+  return stackSwitchOn(save, allowed) && save.settings.trialCharm;
+}
+
+/** This run builds the combo multiplier with charms and may drop them (trial) */
+export function usesCharms(save: SaveData, allowed: boolean, run: RunKind): boolean {
+  return charmSwitchOn(save, allowed) && ordinary(run);
+}
+
 /** This run uses the stacked board (trial) */
 export function usesStackBoard(save: SaveData, allowed: boolean, run: RunKind): boolean {
   return stackSwitchOn(save, allowed) && ordinary(run);
@@ -97,6 +107,7 @@ export function stackBoardOf(save: SaveData): Loadout {
 function storeEditedBoard(save: SaveData): void {
   const id = save.loadout.board ?? 'standard';
   save.trialBoards = {
+    ...save.trialBoards,
     active: save.trialBoards?.active ?? 'standard',
     layouts: {
       ...save.trialBoards?.layouts,
@@ -109,7 +120,7 @@ function storeEditedBoard(save: SaveData): void {
 export function switchTrialBoard(save: SaveData, id: BoardId): boolean {
   if (!ownedBoards(save).some((b) => b.id === id)) return false;
   if (save.editingTrial) storeEditedBoard(save);
-  save.trialBoards = { active: id, layouts: save.trialBoards?.layouts ?? {} };
+  save.trialBoards = { ...save.trialBoards, active: id, layouts: save.trialBoards?.layouts ?? {} };
   if (save.editingTrial) save.loadout = storedBoard(save, id);
   return true;
 }

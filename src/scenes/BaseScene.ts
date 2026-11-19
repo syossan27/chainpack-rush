@@ -569,13 +569,19 @@ export class BaseScene extends Phaser.Scene {
     // with the count going on)
     if (debugMenuAllowed() && save.settings.debug) {
       type TrialKey =
-        'trialKeepCount' | 'trialStack' | 'trialMastery' | 'trialRelic' | 'trialTreasure';
+        | 'trialKeepCount'
+        | 'trialStack'
+        | 'trialMastery'
+        | 'trialRelic'
+        | 'trialTreasure'
+        | 'trialCharm';
       const switches: [TrialKey, string][] = [
         ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
         ['trialStack', k('試作: 重ねる盤面 {state}')],
         ['trialMastery', k('試作: 熟練と閃き {state}')],
         ['trialRelic', k('試作: レリック {state}')],
         ['trialTreasure', k('試作: 黄金ゴブリン {state}')],
+        ['trialCharm', k('試作: アクセサリー {state}')],
       ];
       switches.forEach(([key, label], i) => {
         const on = save.settings[key];
