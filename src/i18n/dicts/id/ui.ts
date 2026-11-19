@@ -770,5 +770,6 @@ export const UI: Dict = {
   どの装備のマスにも貼れる: 'Untuk peralatan apa pun',
   ここは盤面の外です: 'Itu di luar papan',
   '地域を抜けると、新しい盤面がもらえます': 'Tuntaskan wilayah untuk mendapat papan baru',
-  '「{name}」を手に入れた！配置画面で選べます': 'Dapat {name}! Pilih di layar Susun',
+  '新しい盤面！': 'Papan baru!',
+  配置画面で切り替えられます: 'Ganti papan di layar Susun',
 };

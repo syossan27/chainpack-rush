@@ -768,5 +768,6 @@ export const UI: Dict = {
   どの装備のマスにも貼れる: 'Va en cualquier equipo',
   ここは盤面の外です: 'Eso está fuera del tablero',
   '地域を抜けると、新しい盤面がもらえます': 'Supera una región para ganar un tablero nuevo',
-  '「{name}」を手に入れた！配置画面で選べます': '¡Conseguiste el {name}! Elígelo en Equipar',
+  '新しい盤面！': '¡Nuevo tablero!',
+  配置画面で切り替えられます: 'Cambia de tablero en Equipar',
 };

@@ -8,6 +8,7 @@ import {
   stackShift,
   stackTake,
 } from '../src/core/stack';
+import { clearLoadout, cycleOriginOrder, removeItem, setConsumable } from '../src/core/loadout';
 import type { ItemInstance, Loadout } from '../src/core/types';
 
 const item = (
@@ -171,6 +172,14 @@ describe('試作「盤面の種類」: 形と深さ', () => {
     const l = emptyStackBoard('crystal');
     expect(stackPut(l, items, 's1', 0).block).toBe('hole');
     expect(stackPut(l, items, 's1', 2).block).toBeNull();
+  });
+
+  it('全部外す・消耗品枠・発火順の操作をしても、盤面の種類は変わらない', () => {
+    const l = stackPut(emptyStackBoard('crystal'), items, 's1', 2).loadout;
+    expect(clearLoadout(l).board).toBe('crystal');
+    expect(setConsumable(l, 0, null, 3).board).toBe('crystal');
+    expect(removeItem(l, items, 's1').board).toBe('crystal');
+    expect(cycleOriginOrder(l, 's1').board).toBe('crystal');
   });
 
   it('重なりごと動かす先が穴なら、動かさない', () => {

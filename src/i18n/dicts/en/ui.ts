@@ -762,5 +762,6 @@ export const UI: Dict = {
   どの装備のマスにも貼れる: 'Goes on any gear',
   ここは盤面の外です: 'That’s outside the board',
   '地域を抜けると、新しい盤面がもらえます': 'Clear a region to earn a new board',
-  '「{name}」を手に入れた！配置画面で選べます': 'Got the {name}! Pick it on the Loadout screen',
+  '新しい盤面！': 'New Board!',
+  配置画面で切り替えられます: 'Switch boards on the Loadout screen',
 };

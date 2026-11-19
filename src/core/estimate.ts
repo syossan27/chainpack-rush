@@ -4,8 +4,10 @@
 // 毒は「時間で与える分の半分」と見積もる。風で重ねた毒・毒爆もその見積もりの上に足す（おおよそ）。
 import { LUCK, POISON, STATUS } from '../config/balance';
 import { getItemDef } from '../data/items';
+import { getBoard, type BoardId } from '../data/boards';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
+import { boardDamageMult } from './boards';
 import { computeDamage, findCombo } from './damage';
 import { lineOrigin } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
@@ -25,7 +27,10 @@ export function estimateRoute(
   plan: ChainPlan,
   items: ReadonlyMap<string, ItemInstance>,
   attackMult: number,
+  /** Trial (stacked board): the board's damage trait counts too */
+  board?: BoardId,
 ): RouteEstimate {
+  const boardDef = getBoard(board);
   const statuses = new Set<Status>();
   // Poison per second of one layer, and how many layers wind has stacked
   let poisonDps = 0;
@@ -65,6 +70,7 @@ export function estimateRoute(
     }
     // 合流ボーナス（合流したマスから先の本流）と、起点石の種類
     m *= (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1);
+    m *= boardDamageMult(boardDef, def.element);
     const critChance = Math.min(
       1,
       LUCK.critChance + (def.critBonus ?? 0) + affixValue(inst, 'keen') / 100,

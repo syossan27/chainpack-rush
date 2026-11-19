@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { NO_LUCK } from '../src/config/balance';
+import { simulateChain } from '../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
+import { estimateRoute } from '../src/core/estimate';
 import type { Loadout } from '../src/core/types';
 import { getBoard, type BoardId } from '../src/data/boards';
 import { build } from './helpers';
@@ -78,5 +80,20 @@ describe('試作「盤面の種類」: 戦闘での特徴', () => {
     const plain = wait(board(undefined));
     expect(wait(board('gale'))).toBeCloseTo(plain * getBoard('gale').wait!, -1);
     expect(wait(board('gale'))).toBeLessThan(plain);
+  });
+});
+
+describe('試作「盤面の種類」: 配置画面の見積もり', () => {
+  it('見積もりにも盤面の倍率がかかる（小さな盤面は全部、炎の盤面は炎だけ）', () => {
+    const est = (id: BoardId | undefined) => {
+      const cfg = board(id);
+      const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
+      return estimateRoute(plan, cfg.items, 1, id);
+    };
+    const plain = est(undefined).total;
+    expect(est('standard').total).toBeCloseTo(plain, 6);
+    expect(est('small').total).toBeCloseTo(plain * getBoard('small').damage!, 6);
+    expect(est('flame').total).toBeGreaterThan(plain);
+    expect(est('flame').total).toBeLessThan(plain * getBoard('flame').elements!.fire!);
   });
 });

@@ -769,5 +769,6 @@ export const UI: Dict = {
   ここは盤面の外です: 'Das liegt außerhalb des Bretts',
   '地域を抜けると、新しい盤面がもらえます':
     'Schließe ein Gebiet ab, um ein neues Brett zu erhalten',
-  '「{name}」を手に入れた！配置画面で選べます': '{name} erhalten! Wähle es beim Packen',
+  '新しい盤面！': 'Neues Brett!',
+  配置画面で切り替えられます: 'Wechsle das Brett beim Packen',
 };

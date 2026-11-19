@@ -776,5 +776,6 @@ export const UI: Dict = {
   どの装備のマスにも貼れる: "Sur n'importe quel équipement",
   ここは盤面の外です: 'C’est hors du plateau',
   '地域を抜けると、新しい盤面がもらえます': 'Termine une région pour gagner un nouveau plateau',
-  '「{name}」を手に入れた！配置画面で選べます': '{name} obtenu ! Choisis-le dans l’écran Équiper',
+  '新しい盤面！': 'Nouveau plateau !',
+  配置画面で切り替えられます: 'Change de plateau dans l’écran Équiper',
 };

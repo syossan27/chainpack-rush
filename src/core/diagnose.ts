@@ -42,7 +42,7 @@ function score(loadout: Loadout, items: ReadonlyMap<string, ItemInstance>, mult:
   let techs = 0;
   let maxStep = 0;
   for (const p of plans) {
-    const e = estimateRoute(p, items, mult);
+    const e = estimateRoute(p, items, mult, loadout.board);
     total += e.total;
     combos += e.combos;
     techs += e.techs.length;

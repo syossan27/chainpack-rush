@@ -2,7 +2,12 @@
 import { markDemoDone, runTutorial } from '../ui/tutorial';
 import { sfx } from '../audio/sfx';
 import { PROGRESS } from '../config/balance';
-import { TOAST_STEP_MS, showAchievements, showNewLooks } from '../ui/achievementToast';
+import {
+  TOAST_STEP_MS,
+  showAchievements,
+  showNewBoards,
+  showNewLooks,
+} from '../ui/achievementToast';
 import { grantCosmetics } from '../core/cosmeticRewards';
 import { checkAchievements } from '../core/achievements';
 import type { AchievementDef } from '../data/achievements';
@@ -96,12 +101,16 @@ export class ResultScene extends Phaser.Scene {
    * Trial (mastery): between the record and the loot — techniques learned by a spark, then the
    * elements that grew most (a level up is marked and pulses)
    */
-  /** Lines under the stats, centred on y 530 (closer together when there are many) */
+  /**
+   * Lines between the stats panel (bottom ≈ 508) and the loot ribbon (top ≈ 566): one at 530, two
+   * 34 apart, three smaller and 22 apart
+   */
   private showNotes(notes: readonly Note[]): void {
-    const gap = notes.length > 3 ? 27 : 34;
-    const y0 = 530 - (gap * (notes.length - 1)) / 2;
+    const many = notes.length > 2;
+    const gap = many ? 22 : 34;
+    const y0 = many ? 513 : 530 - (gap * (notes.length - 1)) / 2;
     notes.forEach((n, i) => {
-      const size = notes.length > 3 ? Math.min(n.size, 22) : n.size;
+      const size = many ? Math.min(n.size, 18) : n.size;
       const line = fitText(
         this.add.text(W / 2, y0 + i * gap, n.text, textStyle(size, n.color)).setOrigin(0.5),
         W - 40,
@@ -386,6 +395,15 @@ export class ResultScene extends Phaser.Scene {
     // After the achievement cards, so the two never overlap
     if (newLooks.length > 0)
       showNewLooks(this, newLooks, 62, 1400 + achieved.length * TOAST_STEP_MS);
+    // Trial (board shapes): a run of the stacked board earns no achievements or looks, so the
+    // board's card comes after any that did
+    if (newBoards.length > 0)
+      showNewBoards(
+        this,
+        newBoards,
+        62,
+        1400 + (achieved.length + newLooks.length) * TOAST_STEP_MS,
+      );
     // Notices between the stats and the loot ribbon, stacked so they never overlap
     const notes: Note[] = [];
     if (unlocked)
@@ -393,14 +411,6 @@ export class ResultScene extends Phaser.Scene {
         text: t('新しい地域「{region}」が開放された！', { region: t(getRegion(unlocked).name) }),
         size: 28,
         color: COLORS.accentText,
-      });
-    if (newBoards.length > 0)
-      notes.push({
-        text: t('「{name}」を手に入れた！配置画面で選べます', {
-          name: newBoards.map((b) => t(b.name)).join(t('・|sep')),
-        }),
-        size: 22,
-        color: '#ffe27a',
       });
     if (mastery) notes.push(...masteryNotes(mastery));
     this.showNotes(notes);

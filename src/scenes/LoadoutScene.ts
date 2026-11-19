@@ -29,8 +29,9 @@ import {
   stackSwitchOn,
   switchTrialBoard,
 } from '../core/trial';
-import { boardDepth, boardPosMult, boardValue, ownedBoards } from '../core/boards';
-import { BOARDS, getBoard, type BoardDef } from '../data/boards';
+import { boardDepth, boardPosMult, ownedBoards } from '../core/boards';
+import { BOARDS, getBoard } from '../data/boards';
+import { boardTraitText } from '../ui/boardText';
 import {
   stackAt,
   stackMove,
@@ -471,7 +472,7 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const items = itemMap(save);
     const u = heroStats(save).attackMult;
-    const est = preview.plans.map((p) => estimateRoute(p, items, u));
+    const est = preview.plans.map((p) => estimateRoute(p, items, u, save.loadout.board));
     const summary = (() => {
       if (!shown) return { text: t('番号を選ぶと表示に戻す'), color: COLORS.textDim };
       if (preview.plans.length === 0)
@@ -1350,9 +1351,4 @@ function stackBlockText(b: StackBlock, depth: number): string {
         : b === 'hole'
           ? t('ここは盤面の外です')
           : t('試作では起点石は1つだけ');
-}
-
-/** Trial: what the board's trait does (none for the standard board) */
-export function boardTraitText(def: BoardDef): string | undefined {
-  return def.text ? t(def.text, { v: boardValue(def) ?? '' }) : undefined;
 }

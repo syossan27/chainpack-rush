@@ -11,6 +11,7 @@ function clone(l: Loadout): Loadout {
     consumables: l.consumables.slice(),
     ...(l.consumableAuto ? { consumableAuto: l.consumableAuto.slice() } : {}),
     ...(l.under ? { under: l.under.map((s) => s.slice()) } : {}),
+    ...(l.board ? { board: l.board } : {}),
   };
 }
 
@@ -95,6 +96,7 @@ export function clearLoadout(l: Loadout): Loadout {
     originOrder: [],
     consumables: [],
     ...(l.under ? { under: l.cells.map(() => []) } : {}),
+    ...(l.board ? { board: l.board } : {}),
   };
 }
 

@@ -1,9 +1,11 @@
 // 実績達成の知らせ: 画面の上から金の札が1枚ずつ降りてきて、少し置いて消える（操作は止めない）
 import Phaser from 'phaser';
 import type { AchievementDef } from '../data/achievements';
+import type { BoardDef } from '../data/boards';
 import { getCosmetic } from '../core/cosmetics';
 import { sfx } from '../audio/sfx';
 import { t } from '../i18n';
+import { boardTraitText } from './boardText';
 import { cosmeticTexture } from './cosmeticsView';
 import { fitText } from './kit/widgets';
 import { textStyle } from './theme';
@@ -108,5 +110,35 @@ export function showNewLooks(
       w - 36 - tag.width - 16,
     );
     root.add([tag, name, desc]);
+  });
+}
+
+/** Trial (board shapes): a board earned by clearing a region, in the same card */
+export function showNewBoards(
+  scene: Phaser.Scene,
+  list: readonly BoardDef[],
+  y = 150,
+  delay = 0,
+): void {
+  dropCards(scene, list.length, y, delay, (i, root, w) => {
+    const def = list[i]!;
+    const tag = scene.add
+      .text(-w / 2 + 18, -30, t('新しい盤面！'), textStyle(20, '#7fe0ff'))
+      .setOrigin(0, 0.5);
+    const trait = scene.add
+      .text(w / 2 - 18, 12, boardTraitText(def) ?? '', textStyle(20, '#ffd25a'))
+      .setOrigin(1, 0.5);
+    fitText(trait, w / 2 - 18);
+    const name = fitText(
+      scene.add.text(-w / 2 + 18, 12, t(def.name), textStyle(30, '#ffe27a')).setOrigin(0, 0.5),
+      w - 36 - trait.displayWidth - 16,
+    );
+    const desc = fitText(
+      scene.add
+        .text(w / 2 - 18, -30, t('配置画面で切り替えられます'), textStyle(15, '#c8c0d8'))
+        .setOrigin(1, 0.5),
+      w - 36 - tag.width - 16,
+    );
+    root.add([tag, name, trait, desc]);
   });
 }
