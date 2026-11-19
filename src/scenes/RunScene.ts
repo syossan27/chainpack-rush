@@ -1158,10 +1158,17 @@ export class RunScene extends Phaser.Scene {
           this.charmStrip?.pulse(ev.slot, charmStepLabel(ev.op, ev.value));
           this.charmStrip?.showMeter(ev.m);
           break;
-        case 'charmDrop':
-          this.showBanner(t('アクセサリー！'), '#ffd25a');
+        case 'charmDrop': {
+          // Over the enemy, like an item drop (a boss's drop comes with the boss banner)
+          const p = this.enemyPos(ev.enemyId);
+          if (p) {
+            this.numbers.showText(p.x, p.y - 80, t('アクセサリー！'), 28, '#ffd25a');
+            this.effects.burst(p.x, p.y, 0xffd25a, 30, 380);
+          }
           sfx('openEpic');
+          hapticSuccess();
           break;
+        }
         case 'chainEnd':
           this.field.aimId = null;
           this.endChainCount(ev.totalDamage);
