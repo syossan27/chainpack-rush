@@ -34,6 +34,14 @@ import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
+import {
+  applyCharmEvent,
+  charmContext,
+  stackTop,
+  type CharmContext,
+  type CharmSlots,
+} from './charms';
+import type { CharmTrigger } from '../data/charms';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { sparkChance } from './mastery';
@@ -93,6 +101,8 @@ export interface RunConfig {
   relics?: { stuck?: readonly (readonly [number, RelicId])[] };
   /** Trial (treasure): the chance per loop that a lone treasure goblin takes a group's place */
   treasure?: { chance: number };
+  /** Trial (charms): the charm in each edge slot of the board (columns, then rows) */
+  charms?: CharmSlots;
 }
 
 /** Trial (mastery): what a run starts with (see core/mastery.ts) */
@@ -203,6 +213,8 @@ export type CombatEvent =
       dot?: boolean;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
+  /** Trial (charms): a charm in `slot` raised the chain's combo multiplier to m */
+  | { type: 'charm'; tick: number; slot: number; op: '+' | '×'; value: number; m: number }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
   | {
       type: 'enemyDeath';
@@ -308,6 +320,8 @@ interface ActiveChain {
   taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
   /** Trial (relics): the chain reached a 呼び戻しの笛, so the wait before the next is cut */
   recall: boolean;
+  /** Trial (charms): the combo multiplier (×1 at the start of every chain) */
+  charmM: number;
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -324,6 +338,8 @@ interface StrikeMods {
   line?: LineBoost;
   /** Trial (relics): the relic on the cell of this gear */
   relic?: RelicId;
+  /** The cell of this gear (the charms of its column and row react to it) */
+  cell: number;
 }
 
 /** 爆弾のダメージ表示用（装備の uid ではない） */
@@ -403,6 +419,8 @@ export class Combat {
   private readonly artifactsOwned: Set<string>;
   /** Trial (stacked board): which board the gear sits on (its trait works in combat) */
   private readonly board: BoardDef;
+  /** Trial (charms): what the edge charms react to (null: no charms, nothing changes) */
+  private readonly charms: CharmContext | null;
   /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
   private readonly learned: Set<string> | null;
   private readonly origins: string[];
@@ -423,6 +441,9 @@ export class Combat {
     this.cfg = cfg;
     this.artifactsOwned = new Set(cfg.ownedArtifacts);
     this.board = getBoard(cfg.loadout.board);
+    this.charms = cfg.charms?.some((c) => c !== null)
+      ? charmContext(cfg.charms, cfg.loadout, cfg.items)
+      : null;
     this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
     if (cfg.mastery) {
       this.stats.rings = {};
@@ -1066,6 +1087,7 @@ export class Combat {
       staggered: false,
       taken: 0,
       recall: false,
+      charmM: 1,
     };
     this.atb = 0;
     this.chainSerial++;
@@ -1255,9 +1277,21 @@ export class Combat {
       origin: lineOrigin(c.plan, index),
       line: s.line,
       ...(relic ? { relic } : {}),
+      cell: s.cell,
     };
     const strikes = (def.hits ?? 1) * (relic === 'bell' ? 2 : 1);
     for (let h = 0; h < strikes; h++) this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
+    // Trial (charms): after the step's own strikes, so they still use the multiplier before it
+    if (tech) this.charmEvent(c, 'tech', s.cell);
+    if (this.charms && stackTop(s, this.charms)) this.charmEvent(c, 'stackTop', s.cell);
+  }
+
+  /** Trial (charms): an event in a cell raises the chain's combo multiplier (no charms: nothing) */
+  private charmEvent(c: ActiveChain, trigger: CharmTrigger, cell: number): void {
+    if (!this.charms) return;
+    const r = applyCharmEvent(c.charmM, trigger, cell, this.charms);
+    c.charmM = r.m;
+    for (const f of r.fired) this.emit({ type: 'charm', tick: this.tick, ...f });
   }
 
   /**
@@ -1312,10 +1346,15 @@ export class Combat {
     const area = mods.relic === 'sweep' && baseArea !== 'all' ? 'sweep' : baseArea;
     const pierce = (def.pierce ?? 0) + (mods.relic === 'pierce' ? RELIC.pierce : 0);
     const targets = this.resolveTargets(aim, area, pierce);
+    // Trial (charms): the whole attack uses the multiplier as it was when the attack began
+    const charmM = c.charmM;
+    let landed = false;
+    let comboed = false;
     for (const t of targets) {
       const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
       if (combo) {
+        comboed = true;
         t.statuses.delete(combo.status);
         this.emit({
           type: 'combo',
@@ -1350,9 +1389,11 @@ export class Combat {
             this.masteryMult(def) *
             boardDamageMult(this.board, def.element) *
             (mods.relic === 'fist' ? RELIC.fistMult : 1) *
+            charmM *
             100,
         ) / 100;
       if (raw > 0) {
+        landed = true;
         const nullified = this.guardStops(t, raw);
         const dmg = nullified ? 0 : raw;
         this.emit({
@@ -1391,8 +1432,16 @@ export class Combat {
         for (const st of ['wet', 'oil', 'frozen'] as const) this.applyStatus(t, st);
       // 風: 毒の敵に毒を重ねる。重ね切った敵なら毒爆
       if (def.element === 'wind' && t.hp > 0) this.windOnPoison(c, t, uid, eff);
-      if (t.hp <= 0) this.killEnemy(t, mods.relic === 'claw');
+      if (t.hp <= 0 && t.alive) {
+        this.killEnemy(t, mods.relic === 'claw');
+        // Trial (charms): とどめ counts every enemy this attack beats
+        this.charmEvent(c, 'kill', mods.cell);
+      }
     }
+    // Trial (charms): once per attack, however many enemies it reached
+    if (landed) this.charmEvent(c, 'hit', mods.cell);
+    if (landed && crit) this.charmEvent(c, 'crit', mods.cell);
+    if (comboed) this.charmEvent(c, 'combo', mods.cell);
   }
 
   /** The region's resistance to this element (not on the scarecrow, which only shows numbers) */
