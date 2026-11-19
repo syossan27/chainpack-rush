@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
 import { simulateChain } from '../core/chain';
 import { computeDamage } from '../core/damage';
-import { heroStats, sellPrice, toggleLock } from '../core/economy';
+import { heroStats, sellable, sellPrice, toggleLock } from '../core/economy';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { k, t } from '../i18n';
 import { getSave, persist } from '../platform/store';
@@ -111,7 +111,7 @@ export function describeItem(it: ItemInstance): string[] {
   }
   lines.push(t(def.description));
   if (it.rerollCount > 0) lines.push(t('付け直し {n}回', { n: it.rerollCount }));
-  lines.push(t('売却 {price}G', { price: sellPrice(it) }));
+  if (sellable(getSave(), it)) lines.push(t('売却 {price}G', { price: sellPrice(it) }));
   return lines;
 }
 
@@ -434,7 +434,8 @@ export function showItemDetail(
   });
   card.add(desc);
   y += desc.height + 18;
-  const meta = [t('売却 {price}G', { price: sellPrice(it) })];
+  // An artifact cannot be sold (one of each type), so it shows no price
+  const meta = sellable(getSave(), it) ? [t('売却 {price}G', { price: sellPrice(it) })] : [];
   if (it.rerollCount > 0) meta.push(t('付け直し {n}回', { n: it.rerollCount }));
   // Ends before the lock button (consumables have none)
   const metaMaxW =

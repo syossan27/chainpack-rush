@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { CHAIN, ECONOMY, HERO, LOOT, NO_LUCK, RARITY } from '../src/config/balance';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
-import { canReorient, rerollCost, sellPrice, specifyExits } from '../src/core/economy';
+import {
+  canReorient,
+  doubleLoot,
+  overflowSellPlan,
+  rerollCost,
+  sellable,
+  sellItems,
+  sellPrice,
+  specifyExits,
+} from '../src/core/economy';
 import { ARTIFACT_DEFS, createItem, rollLoot } from '../src/core/loot';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
 import { getItemDef } from '../src/data/items';
+import { getRegion } from '../src/data/regions';
 import { build, type Placed } from './helpers';
 
 const dummy = (placed: Placed[], extra: Partial<ConstructorParameters<typeof Combat>[0]> = {}) => {
@@ -191,5 +201,106 @@ describe('アーティファクトの付け直し', () => {
     expect(s.gold).toBe(1e6 - ECONOMY.artifactReroll * ECONOMY.specifyCostMult);
     const it = deserializeSave(serializeSave(s)).inventory.find((i) => i.uid === 'df')!;
     expect(it.exits).toEqual(['down']);
+  });
+});
+
+describe('アーティファクトは1種類につき1つ', () => {
+  const always = { rarityShift: 0, artifactMult: 1e9 };
+
+  it('持っている種類は出ない。全種類持っていれば、ふつうの装備が出る', () => {
+    const rng = new Rng(9);
+    const keep = ARTIFACT_DEFS[0]!.id;
+    const owned = new Set(ARTIFACT_DEFS.slice(1).map((d) => d.id));
+    for (let i = 0; i < 50; i++)
+      expect(rollLoot(rng, 1, 'a', false, always, false, undefined, owned).defId).toBe(keep);
+    const all = new Set(ARTIFACT_DEFS.map((d) => d.id));
+    for (let i = 0; i < 50; i++)
+      expect(
+        getItemDef(rollLoot(rng, 1, 'b', false, always, false, undefined, all).defId).artifact,
+      ).toBeUndefined();
+  });
+
+  it('ランの中でも、持っている種類と、そのランで出た種類は出ない', () => {
+    const region = getRegion('grassland');
+    const before = region.loot;
+    (region as { loot: typeof before }).loot = always;
+    try {
+      const owned = ARTIFACT_DEFS.slice(2).map((d) => d.id);
+      const { loadout, items } = build(3, 1, [
+        { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+        { uid: 's', defId: 'greatsword', x: 1, y: 0, exits: [], rarity: 'legendary' },
+      ]);
+      const c = new Combat({
+        seed: 4,
+        regionId: 'grassland',
+        loadout,
+        items,
+        hero: { ...BASE_HERO_STATS, maxHp: 1e9, attackMult: 50 },
+        ownedArtifacts: owned,
+      });
+      while (!c.ended) {
+        c.step();
+        c.drainEvents();
+      }
+      const got = c
+        .result()
+        .drops.map((d) => d.defId)
+        .filter((id) => getItemDef(id).artifact);
+      expect(got.length).toBe(2);
+      expect(new Set(got).size).toBe(2);
+      for (const id of got) expect(owned).not.toContain(id);
+    } finally {
+      (region as { loot: typeof before }).loot = before;
+    }
+  });
+
+  it('広告の「戦利品2倍」も、倉庫にある種類と、いま出た種類は出さない', () => {
+    const region = getRegion('grassland');
+    const before = region.loot;
+    (region as { loot: typeof before }).loot = always;
+    try {
+      const s = createInitialSave();
+      const rng = new Rng(5);
+      s.inventory.push(createItem(rng, ARTIFACT_DEFS[0]!.id, 'legendary', 'have'));
+      const added = doubleLoot(s, ARTIFACT_DEFS.length + 3, 'grassland', 1, rng);
+      const arts = added.map((i) => i.defId).filter((id) => getItemDef(id).artifact);
+      expect(arts).not.toContain(ARTIFACT_DEFS[0]!.id);
+      expect(new Set(arts).size).toBe(arts.length);
+      expect(arts.length).toBe(ARTIFACT_DEFS.length - 1);
+    } finally {
+      (region as { loot: typeof before }).loot = before;
+    }
+  });
+
+  it('売れない（古いセーブで2つ以上ある種類は、余りの分だけ売れる）', () => {
+    const s = createInitialSave();
+    const rng = new Rng(6);
+    const id = ARTIFACT_DEFS[0]!.id;
+    s.inventory.push(createItem(rng, ARTIFACT_DEFS[1]!.id, 'legendary', 'one'));
+    s.inventory.push(
+      createItem(rng, id, 'legendary', 'x1'),
+      createItem(rng, id, 'legendary', 'x2'),
+    );
+    const one = s.inventory.find((i) => i.uid === 'one')!;
+    expect(sellable(s, one)).toBe(false);
+    expect(sellItems(s, ['one'])).toBe(0);
+    expect(s.inventory.some((i) => i.uid === 'one')).toBe(true);
+    expect(
+      sellable(
+        s,
+        s.inventory.find((i) => i.uid === 'x1')!,
+      ),
+    ).toBe(true);
+    sellItems(s, ['x1', 'x2']);
+    expect(s.inventory.filter((i) => i.defId === id)).toHaveLength(1);
+  });
+
+  it('倉庫があふれたときの売る候補にも入らない', () => {
+    const s = createInitialSave();
+    const rng = new Rng(7);
+    s.inventory.push(createItem(rng, ARTIFACT_DEFS[0]!.id, 'legendary', 'art'));
+    for (let i = 0; i < 80; i++) s.inventory.push(createItem(rng, 'potion', 'common', `p${i}`));
+    for (let i = 0; i < 80; i++) s.inventory.push(createItem(rng, 'sword', 'legendary', `l${i}`));
+    expect(overflowSellPlan(s).uids).not.toContain('art');
   });
 });

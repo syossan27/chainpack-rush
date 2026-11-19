@@ -15,6 +15,7 @@ import {
   recordAd,
   rerollCost,
   rerollItem,
+  sellable,
   sellItems,
   sellPrice,
   specifyExits,
@@ -688,10 +689,14 @@ export class BaseScene extends Phaser.Scene {
             ? []
             : [this.synthAction(it, () => openDetail(it))]),
           {
-            label: it.locked ? t('ロック中') : t('売る {price}G', { price: sellPrice(it) }),
+            label: it.locked
+              ? t('ロック中')
+              : !sellable(save, it)
+                ? t('売れません')
+                : t('売る {price}G', { price: sellPrice(it) }),
             skin: 'gold',
             icon: 'coin',
-            disabled: !!it.locked,
+            disabled: !!it.locked || !sellable(save, it),
             onTap: () => {
               const sell = () => {
                 const g = sellItems(save, [it.uid]);
@@ -750,6 +755,15 @@ export class BaseScene extends Phaser.Scene {
             sfx('error');
             this.showToast(t('ほかの編成で使っている装備です（詳細から売れます）'), true);
             return;
+          }
+          // Artifacts: one of each type stays (only an older save's extra copy can go)
+          if (getItemDef(it.defId).artifact && !pick.has(it.uid)) {
+            const same = save.inventory.filter((o) => o.defId === it.defId);
+            if (same.filter((o) => pick.has(o.uid)).length >= same.length - 1) {
+              sfx('error');
+              this.showToast(t('アーティファクトは売れません（1種類につき1つ）'), true);
+              return;
+            }
           }
           if (pick.has(it.uid)) pick.delete(it.uid);
           else pick.add(it.uid);

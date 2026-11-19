@@ -85,6 +85,8 @@ export interface RunConfig {
   noLoot?: boolean;
   /** First own run after the demo: the first enemy killed always drops an equipment piece */
   firstRun?: boolean;
+  /** Artifact types the player already has: they never drop (one of each type) */
+  ownedArtifacts?: readonly string[];
   /** Trial (mastery): the hero's levels per element and the techniques learned so far */
   mastery?: RunMastery;
   /** Trial (relics): a beaten boss offers relics. `stuck` are on the board from the start (bots) */
@@ -397,6 +399,8 @@ export class Combat {
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
+  /** Artifact types the player has, plus those dropped in this run (one of each type) */
+  private readonly artifactsOwned: Set<string>;
   /** Trial (stacked board): which board the gear sits on (its trait works in combat) */
   private readonly board: BoardDef;
   /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
@@ -417,6 +421,7 @@ export class Combat {
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
+    this.artifactsOwned = new Set(cfg.ownedArtifacts);
     this.board = getBoard(cfg.loadout.board);
     this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
     if (cfg.mastery) {
@@ -1580,7 +1585,9 @@ export class Combat {
             promised,
             // Trial (treasure): the first of the goblin's drops is epic or better
             e.treasure && k === 0 ? 'epic' : undefined,
+            this.artifactsOwned,
           );
+          if (getItemDef(item.defId).artifact) this.artifactsOwned.add(item.defId);
           this.drops.push(item);
           this.emit({ type: 'drop', tick: this.tick, enemyId: e.id, item });
         }

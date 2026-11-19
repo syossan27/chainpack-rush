@@ -778,4 +778,7 @@ export const UI: Dict = {
   '地域を抜けると、新しい盤面がもらえます': 'Termine une région pour gagner un nouveau plateau',
   '新しい盤面！': 'Nouveau plateau !',
   配置画面で切り替えられます: 'Change de plateau dans l’écran Équiper',
+  売れません: 'Invendable',
+  'アーティファクトは売れません（1種類につき1つ）':
+    'Impossible de vendre un artefact (un seul de chaque)',
 };

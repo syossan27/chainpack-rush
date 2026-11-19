@@ -771,4 +771,7 @@ export const UI: Dict = {
     'Schließe ein Gebiet ab, um ein neues Brett zu erhalten',
   '新しい盤面！': 'Neues Brett!',
   配置画面で切り替えられます: 'Wechsle das Brett beim Packen',
+  売れません: 'Unverkäuflich',
+  'アーティファクトは売れません（1種類につき1つ）':
+    'Artefakte kann man nicht verkaufen (je eins pro Art)',
 };

@@ -118,6 +118,20 @@ export function toggleLock(save: SaveData, uid: string): boolean {
   return true;
 }
 
+/** Artifact types in storage (one of each type can be had) */
+export function ownedArtifactIds(save: SaveData): string[] {
+  return [...new Set(save.inventory.map((i) => i.defId).filter((d) => getItemDef(d).artifact))];
+}
+
+/**
+ * Artifacts cannot be sold (there is only one of each type). A second copy of a type, which only an
+ * older save can hold, can still be sold
+ */
+export function sellable(save: SaveData, item: ItemInstance): boolean {
+  if (!getItemDef(item.defId).artifact) return true;
+  return save.inventory.filter((i) => i.defId === item.defId).length > 1;
+}
+
 export function sellPrice(item: ItemInstance): number {
   const def = getItemDef(item.defId);
   if (def.kind === 'consumable') return LOOT.consumableSell;
@@ -156,10 +170,25 @@ export function storageCount(save: SaveData): number {
   return save.inventory.filter((i) => !eq.has(i.uid)).length;
 }
 
-/** 売る。ロック中のものは渡されても売らない */
+/** 売る。ロック中のもの・アーティファクト（余りの分を除く）は渡されても売らない */
 export function sellItems(save: SaveData, uids: readonly string[]): number {
   const locked = new Set(save.inventory.filter((i) => i.locked).map((i) => i.uid));
-  const set = new Set(uids.filter((u) => !locked.has(u)));
+  // Artifacts: only copies beyond the first of a type, counted down as they go
+  const left = new Map<string, number>();
+  for (const i of save.inventory)
+    if (getItemDef(i.defId).artifact) left.set(i.defId, (left.get(i.defId) ?? 0) + 1);
+  const byUid = new Map(save.inventory.map((i) => [i.uid, i]));
+  const set = new Set(
+    uids.filter((u) => {
+      const it = byUid.get(u);
+      if (!it || locked.has(u)) return false;
+      const n = left.get(it.defId);
+      if (n === undefined) return true;
+      if (n <= 1) return false;
+      left.set(it.defId, n - 1);
+      return true;
+    }),
+  );
   let total = 0;
   save.inventory = save.inventory.filter((it) => {
     if (!set.has(it.uid)) return true;
@@ -183,7 +212,9 @@ export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number
   const eq = equippedUids(save);
   const inPresets = otherPresetUse(save);
   const picks = save.inventory
-    .filter((i) => !eq.has(i.uid) && !i.locked && !inPresets.has(i.uid))
+    .filter(
+      (i) => !eq.has(i.uid) && !i.locked && !inPresets.has(i.uid) && !getItemDef(i.defId).artifact,
+    )
     .map((i) => ({ i, consumable: getItemDef(i.defId).kind === 'consumable' ? 1 : 0 }))
     .sort((a, b) => a.consumable - b.consumable || sellPrice(a.i) - sellPrice(b.i))
     .slice(0, over)
@@ -243,7 +274,7 @@ export function recordAd(save: SaveData, p: AdPlacement, now = new Date()): void
 
 /**
  * 「戦利品2倍」: 今回の戦利品と同じ数だけ、同じ地域・周回で抽選し直して受け取る
- * （種類もレアリティも新しく決まる。アーティファクトもふつうの確率で出る）
+ * （種類もレアリティも新しく決まる。アーティファクトもふつうの確率で出る。持っている種類は出ない）
  */
 export function doubleLoot(
   save: SaveData,
@@ -253,9 +284,22 @@ export function doubleLoot(
   rng: Rng,
 ): ItemInstance[] {
   const region = REGIONS.find((r) => r.id === regionId) ?? REGIONS[0]!;
-  const drops = Array.from({ length: Math.max(0, count) }, (_, i) =>
-    rollLoot(rng, Math.max(1, loop), `double-${i}`, false, region.loot),
-  );
+  // One of each artifact type: none the player has, and none twice in this roll
+  const owned = new Set(ownedArtifactIds(save));
+  const drops = Array.from({ length: Math.max(0, count) }, (_, i) => {
+    const it = rollLoot(
+      rng,
+      Math.max(1, loop),
+      `double-${i}`,
+      false,
+      region.loot,
+      false,
+      'common',
+      owned,
+    );
+    if (getItemDef(it.defId).artifact) owned.add(it.defId);
+    return it;
+  });
   return acceptLoot(save, drops);
 }
 

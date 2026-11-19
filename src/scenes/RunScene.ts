@@ -10,6 +10,7 @@ import {
   consumableSlots,
   heroStats,
   itemMap,
+  ownedArtifactIds,
   refillConsumables,
   totalStars,
 } from '../core/economy';
@@ -217,6 +218,7 @@ export class RunScene extends Phaser.Scene {
       consumableSlots: demo ? 0 : consumableSlots(save),
       demo: this.demo,
       firstRun: !this.demo && !this.challenge && save.stats.runs === 0,
+      ownedArtifacts: ownedArtifactIds(save),
     };
     // Trial rule from the home screen switch (debug setting on, ordinary runs only)
     const trial = trialRules(save, debugMenuAllowed(), {

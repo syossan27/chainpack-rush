@@ -770,4 +770,7 @@ export const UI: Dict = {
   '地域を抜けると、新しい盤面がもらえます': 'Supera una región para ganar un tablero nuevo',
   '新しい盤面！': '¡Nuevo tablero!',
   配置画面で切り替えられます: 'Cambia de tablero en Equipar',
+  売れません: 'No se vende',
+  'アーティファクトは売れません（1種類につき1つ）':
+    'Los artefactos no se pueden vender (uno de cada)',
 };

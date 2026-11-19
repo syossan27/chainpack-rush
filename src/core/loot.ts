@@ -157,12 +157,16 @@ export function rollLoot(
   equipOnly = false,
   /** Nothing below this rarity (trial: the treasure goblin's first drop) */
   floor: Rarity = 'common',
+  /** Artifacts the player already has (one of each type): they never drop again */
+  ownedArtifacts?: ReadonlySet<string>,
 ): ItemInstance {
-  // ごくまれにアーティファクト
+  // ごくまれにアーティファクト（持っていない種類から。全部持っていれば、ふつうの戦利品）
   const artifactChance =
     (rareOrBetter ? LOOT.artifactChanceRare : LOOT.artifactChance) * region.artifactMult;
-  if (rng.next() < artifactChance)
-    return createItem(rng, rng.pick(ARTIFACT_DEFS).id, 'legendary', uid);
+  if (rng.next() < artifactChance) {
+    const open = ARTIFACT_DEFS.filter((d) => !ownedArtifacts?.has(d.id));
+    if (open.length > 0) return createItem(rng, rng.pick(open).id, 'legendary', uid);
+  }
   let kind = rollKind(rng);
   // 消耗品にはレアリティがないので、レア以上確定のときは装備から選ぶ
   if ((rareOrBetter || equipOnly) && kind === 'consumable') kind = 'attack';

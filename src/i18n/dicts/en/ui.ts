@@ -764,4 +764,6 @@ export const UI: Dict = {
   '地域を抜けると、新しい盤面がもらえます': 'Clear a region to earn a new board',
   '新しい盤面！': 'New Board!',
   配置画面で切り替えられます: 'Switch boards on the Loadout screen',
+  売れません: "Can't Sell",
+  'アーティファクトは売れません（1種類につき1つ）': "Artifacts can't be sold (one of each)",
 };
