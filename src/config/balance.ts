@@ -102,6 +102,8 @@ export const STACK = {
   max: 3,
   /** Damage / defense multiplier by position from the bottom */
   posMult: [1, 1.5, 2],
+  /** The same for the deep board (4 per cell): the top keeps ×2 */
+  deepPosMult: [1, 1.25, 1.5, 2],
   /** Seconds between rings inside a stack (between cells it is the item's relay, 0.2 s) */
   ringRelay: 0.1,
 } as const;

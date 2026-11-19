@@ -267,13 +267,12 @@ export const UI: Dict = {
   '画面揺れ・光': 'Bildwackeln & Blitze',
   '試作: 倒しても連鎖が続く {state}': 'Prototyp: Kette zählt nach Kills weiter {state}',
   '試作: 重ねる盤面 {state}': 'Prototyp: Stapelbrett {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Prototyp: Stapelbrett (bis zu {n} pro Feld)',
   '重ね（下から順に鳴る）': 'Stapel (löst von unten nach oben aus)',
   '一番上 ×{m}（矢印はこの装備）': 'Oben ×{m} (seine Pfeile führen weiter)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Nur gleiche Ausrüstung lässt sich stapeln',
-  'アーティファクトは重ねられません（1つで3回鳴ります）':
-    'Artefakte lassen sich nicht stapeln (eins klingt 3-mal)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Artefakte lassen sich nicht stapeln (eins klingt {n}-mal)',
   '1マスに重ねられるのは{n}つまで': 'Bis zu {n} pro Feld',
   試作では起点石は1つだけ: 'Im Prototyp nur ein Ursprungsstein',
   デバッグ機能: 'Debug-Modus',
@@ -767,4 +766,8 @@ export const UI: Dict = {
   いらない: 'Verzichten',
   攻撃装備のマスに貼れる: 'Auf Angriffsausrüstung',
   どの装備のマスにも貼れる: 'Auf jede Ausrüstung',
+  ここは盤面の外です: 'Das liegt außerhalb des Bretts',
+  '地域を抜けると、新しい盤面がもらえます':
+    'Schließe ein Gebiet ab, um ein neues Brett zu erhalten',
+  '「{name}」を手に入れた！配置画面で選べます': '{name} erhalten! Wähle es beim Packen',
 };

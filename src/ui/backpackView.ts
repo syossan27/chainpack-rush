@@ -1,6 +1,7 @@
 // バックパックの描画（配置画面・ラン・カカシで共用）
 // レイヤー: マス → アイコン（出口矢印・レアリティ枠つき）→ 連鎖の線 → 光 → 段数・倍率・起点番号
 import Phaser from 'phaser';
+import { holeIn } from '../core/boards';
 import type { ChainPreview } from '../core/chain';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
@@ -40,7 +41,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
   private loadout: Loadout;
   private items: ReadonlyMap<string, ItemInstance>;
   private readonly cellLayer: Phaser.GameObjects.Container;
-  private cellImgs: Phaser.GameObjects.Image[] = [];
+  /** Each cell's tile (null: a hole of the stacked board's shape) */
+  private cellImgs: (Phaser.GameObjects.Image | null)[] = [];
   private readonly iconLayer: Phaser.GameObjects.Container;
   private readonly lineG: Phaser.GameObjects.Graphics;
   private readonly flowG: Phaser.GameObjects.Graphics;
@@ -128,6 +130,19 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.cellImgs = [];
     for (let i = 0; i < this.loadout.cells.length; i++) {
       const c = this.cellCenter(i);
+      if (holeIn(this.loadout, i)) {
+        // Trial (board shapes): outside the shape, plain frame with a faint hatch (no slot)
+        this.cellImgs.push(null);
+        const g = this.scene.add.graphics().lineStyle(2, 0xffffff, 0.06);
+        const h = (this.cell - 12) / 2;
+        // Lines x + y = d across the square (bottom-left to top-right)
+        for (const d of [-1.2 * h, -0.4 * h, 0.4 * h, 1.2 * h]) {
+          if (d >= 0) g.lineBetween(c.x + d - h, c.y + h, c.x + h, c.y + d - h);
+          else g.lineBetween(c.x - h, c.y + d + h, c.x + d + h, c.y - h);
+        }
+        this.cellLayer.add(g);
+        continue;
+      }
       const img = this.scene.add
         .image(c.x, c.y, SKIN.cellEmpty)
         .setDisplaySize(this.cell - 2, this.cell - 2);

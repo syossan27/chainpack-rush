@@ -270,13 +270,12 @@ export const UI: Dict = {
   '試作: 倒しても連鎖が続く {state}':
     'Prototype : La chaîne continue après un ennemi vaincu {state}',
   '試作: 重ねる盤面 {state}': 'Prototype : Plateau empilé {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Prototype : Plateau empilé (jusqu’à {n} par case)',
   '重ね（下から順に鳴る）': 'Pile (se déclenche de bas en haut)',
   '一番上 ×{m}（矢印はこの装備）': 'Haut ×{m} (ses flèches mènent la suite)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Seul un équipement identique peut s’empiler',
-  'アーティファクトは重ねられません（1つで3回鳴ります）':
-    'Les artefacts ne s’empilent pas (un seul sonne 3 fois)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Les artefacts ne s’empilent pas (un seul sonne {n} fois)',
   '1マスに重ねられるのは{n}つまで': 'Jusqu’à {n} par case',
   試作では起点石は1つだけ: 'Une seule Pierre d’Origine dans le prototype',
   デバッグ機能: 'Mode débogage',
@@ -775,4 +774,7 @@ export const UI: Dict = {
   いらない: 'Passer',
   攻撃装備のマスに貼れる: "Sur l'équipement d'attaque",
   どの装備のマスにも貼れる: "Sur n'importe quel équipement",
+  ここは盤面の外です: 'C’est hors du plateau',
+  '地域を抜けると、新しい盤面がもらえます': 'Termine une région pour gagner un nouveau plateau',
+  '「{name}」を手に入れた！配置画面で選べます': '{name} obtenu ! Choisis-le dans l’écran Équiper',
 };

@@ -29,9 +29,11 @@ import { getItemDef } from '../data/items';
 import { TECHNIQUE_MULT, getTechnique } from '../data/techniques';
 import { getRegion, type RegionDef } from '../data/regions';
 import type { RelicId } from '../data/relics';
+import { getBoard, type BoardDef } from '../data/boards';
 import { rollLoop, type LoopLayout } from './layout';
 import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
 import { affixValue } from './affixes';
+import { boardDamageMult } from './boards';
 import { computeDamage, effectiveArea, findCombo } from './damage';
 import { rollLoot } from './loot';
 import { sparkChance } from './mastery';
@@ -395,6 +397,8 @@ export class Combat {
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
+  /** Trial (stacked board): which board the gear sits on (its trait works in combat) */
+  private readonly board: BoardDef;
   /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
   private readonly learned: Set<string> | null;
   private readonly origins: string[];
@@ -413,6 +417,7 @@ export class Combat {
 
   constructor(cfg: RunConfig) {
     this.cfg = cfg;
+    this.board = getBoard(cfg.loadout.board);
     this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
     if (cfg.mastery) {
       this.stats.rings = {};
@@ -487,8 +492,13 @@ export class Combat {
     return this.chain.next > this.rules.guardSteps + Math.max(1, origins) - 1;
   }
 
+  /** The full gauge: the hero's time, × the board's wait (trial) */
+  private get atbFull(): number {
+    return this.cfg.hero.atbTime * (this.board.wait ?? 1);
+  }
+
   get atbRatio(): number {
-    return Math.max(0, Math.min(1, this.atb / this.cfg.hero.atbTime));
+    return Math.max(0, Math.min(1, this.atb / this.atbFull));
   }
 
   get maxHp(): number {
@@ -597,7 +607,7 @@ export class Combat {
     this.emit({ type: 'consumable', tick: this.tick, uid, defId: def.id, effect });
     switch (effect) {
       case 'rally':
-        this.atb = this.cfg.hero.atbTime;
+        this.atb = this.atbFull;
         this.fire();
         break;
       case 'timeStop':
@@ -662,8 +672,8 @@ export class Combat {
 
     // 2. ATB と発火
     if (!this.chain) {
-      this.atb = Math.min(this.cfg.hero.atbTime, this.atb + dt);
-      if (this.mode === 'run' && this.atb >= this.cfg.hero.atbTime && this.inContact()) this.fire();
+      this.atb = Math.min(this.atbFull, this.atb + dt);
+      if (this.mode === 'run' && this.atb >= this.atbFull && this.inContact()) this.fire();
     }
 
     // 3. 状態の失効と、毒のダメージ
@@ -1134,13 +1144,13 @@ export class Combat {
         ) / 100;
       const factor =
         Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
-      this.atb = this.cfg.hero.atbTime * (1 - factor);
+      this.atb = this.atbFull * (1 - factor);
     } else {
       this.atb = 0;
     }
     // Trial (relics): a 呼び戻しの笛 on the way cuts the wait before the next chain
     if (c.recall) {
-      const full = this.cfg.hero.atbTime;
+      const full = this.atbFull;
       this.atb = full - (full - this.atb) * RELIC.whistleWait;
     }
   }
@@ -1332,6 +1342,7 @@ export class Combat {
             resistMult(t.def, def.element) *
             this.affixMult(c, inst, eff, t, statused, mods.origin) *
             this.masteryMult(def) *
+            boardDamageMult(this.board, def.element) *
             (mods.relic === 'fist' ? RELIC.fistMult : 1) *
             100,
         ) / 100;

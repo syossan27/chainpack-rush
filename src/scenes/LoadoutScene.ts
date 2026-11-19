@@ -22,7 +22,15 @@ import {
 } from '../core/challenge';
 import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
 import { debugMenuAllowed, devChallengeOpen } from '../platform/debug';
-import { enterTrialEdit, leaveTrialEdit, masterySwitchOn, stackSwitchOn } from '../core/trial';
+import {
+  enterTrialEdit,
+  leaveTrialEdit,
+  masterySwitchOn,
+  stackSwitchOn,
+  switchTrialBoard,
+} from '../core/trial';
+import { boardDepth, boardPosMult, boardValue, ownedBoards } from '../core/boards';
+import { BOARDS, getBoard, type BoardDef } from '../data/boards';
 import {
   stackAt,
   stackMove,
@@ -31,7 +39,6 @@ import {
   stackTake,
   type StackBlock,
 } from '../core/stack';
-import { STACK } from '../config/balance';
 import {
   consumableSlots,
   equippedUids,
@@ -654,17 +661,8 @@ export class LoadoutScene extends Phaser.Scene {
     const bar = this.presetBar;
     bar.removeAll(true);
     if (this.stackMode) {
-      // Trial: the stacked board instead of the presets
-      const label = this.add
-        .text(
-          24,
-          -2,
-          t('試作: 重ねる盤面（1マス{n}つまで）', { n: STACK.max }),
-          textStyle(22, '#ffe27a'),
-        )
-        .setOrigin(0, 0.5);
-      fitText(label, W - 206 - 60 - 24);
-      bar.add(label);
+      // Trial: the board to arrange on instead of the presets
+      this.buildBoardBar(bar);
       return;
     }
     if (this.challenge) {
@@ -730,6 +728,48 @@ export class LoadoutScene extends Phaser.Scene {
     const label = this.add.text(nameX, -2, `${name} ✎`, textStyle(22, '#ffe27a')).setOrigin(0, 0.5);
     fitText(label, W - 206 - 53 - 8 - nameX);
     bar.add(label);
+  }
+
+  /** Trial: the board's name and trait, with ◀ ▶ to go through the owned boards */
+  private buildBoardBar(bar: Phaser.GameObjects.Container): void {
+    const save = getSave();
+    const owned = ownedBoards(save);
+    const def = getBoard(save.loadout.board);
+    const at = Math.max(
+      0,
+      owned.findIndex((b) => b.id === def.id),
+    );
+    // Up to the undo button
+    const left = 24;
+    const right = W - 206 - 53 - 8;
+    const many = owned.length > 1;
+    const step = (d: number) => {
+      const next = owned[(at + d + owned.length) % owned.length]!;
+      sfx('click');
+      if (!switchTrialBoard(getSave(), next.id)) return;
+      persist();
+      this.scene.restart();
+    };
+    if (many) {
+      const arrow = { width: 48, height: 52, fontSize: 20, skin: 'blue' } as const;
+      bar.add(new Button(this, left + 24, 0, '◀', () => step(-1), arrow));
+      bar.add(new Button(this, right - 24, 0, '▶', () => step(1), arrow));
+    }
+    const mid = (left + right) / 2;
+    const room = right - left - (many ? 2 * 56 : 0);
+    const sub =
+      boardTraitText(def) ??
+      (owned.length < BOARDS.length ? t('地域を抜けると、新しい盤面がもらえます') : '');
+    const name = this.add
+      .text(mid, sub ? -13 : -2, t(def.name), textStyle(22, '#ffe27a'))
+      .setOrigin(0.5);
+    fitText(name, room);
+    bar.add(name);
+    if (sub) {
+      const line = this.add.text(mid, 14, sub, textStyle(16, COLORS.text)).setOrigin(0.5);
+      fitText(line, room);
+      bar.add(line);
+    }
   }
 
   private changePreset(i: number): void {
@@ -911,7 +951,7 @@ export class LoadoutScene extends Phaser.Scene {
     const r = stackPut(save.loadout, itemMap(save), uid, cell);
     if (r.block) {
       sfx('error');
-      this.showToastLine(stackBlockText(r.block));
+      this.showToastLine(stackBlockText(r.block, boardDepth(getBoard(save.loadout.board))));
       return;
     }
     save.loadout = r.loadout;
@@ -970,7 +1010,7 @@ export class LoadoutScene extends Phaser.Scene {
           250,
         ),
       );
-      const mult = STACK.posMult[pos]!;
+      const mult = boardPosMult(getBoard(save.loadout.board))[pos]!;
       root.add(
         fitText(
           this.add
@@ -1299,13 +1339,20 @@ export function sellOverflow(scene: Phaser.Scene): void {
   );
 }
 
-/** Trial: why an item cannot go on that cell of the stacked board */
-function stackBlockText(b: StackBlock): string {
+/** Trial: why an item cannot go on that cell of the stacked board (depth: items per cell) */
+function stackBlockText(b: StackBlock, depth: number): string {
   return b === 'group'
     ? t('同じ装備だけ重ねられます')
     : b === 'artifact'
-      ? t('アーティファクトは重ねられません（1つで3回鳴ります）')
+      ? t('アーティファクトは重ねられません（1つで{n}回鳴ります）', { n: depth })
       : b === 'full'
-        ? t('1マスに重ねられるのは{n}つまで', { n: STACK.max })
-        : t('試作では起点石は1つだけ');
+        ? t('1マスに重ねられるのは{n}つまで', { n: depth })
+        : b === 'hole'
+          ? t('ここは盤面の外です')
+          : t('試作では起点石は1つだけ');
+}
+
+/** Trial: what the board's trait does (none for the standard board) */
+export function boardTraitText(def: BoardDef): string | undefined {
+  return def.text ? t(def.text, { v: boardValue(def) ?? '' }) : undefined;
 }

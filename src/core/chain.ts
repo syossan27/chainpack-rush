@@ -16,6 +16,8 @@ import type {
 } from './types';
 import { DIRS } from './types';
 import { cellRings } from './stack';
+import { boardPosMult } from './boards';
+import { getBoard } from '../data/boards';
 
 const DIR_DELTA: Record<Dir, readonly [number, number]> = {
   up: [0, -1],
@@ -263,6 +265,7 @@ function spread(
 
   // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
   const stackedBoard = loadout.under !== undefined;
+  const posMult = boardPosMult(getBoard(loadout.board));
   const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
     const stack = stackedBoard ? cellRings(loadout, items, cell) : [loadout.cells[cell]!];
@@ -304,7 +307,7 @@ function spread(
     // Sync point: every route goes on from the longer one
     const sp = first ? sync.get(cell) : undefined;
     const count = sp ? Math.max(own, sp.count) : own;
-    const stackMult = pos === undefined ? undefined : STACK.posMult[pos]!;
+    const stackMult = pos === undefined ? undefined : posMult[pos]!;
     // A line that passes through another origin stone also takes that stone's effect
     const myLines =
       def.kind === 'origin' && !lines[parent]!.includes(uid)

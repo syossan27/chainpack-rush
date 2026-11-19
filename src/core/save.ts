@@ -11,6 +11,7 @@ import { REGIONS } from '../data/regions';
 import { getTechnique } from '../data/techniques';
 import { isElement, type MasteryData } from './mastery';
 import { ITEM_SORTS, type ItemSort } from './itemSort';
+import { isBoardId, type BoardId } from '../data/boards';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -48,8 +49,8 @@ export interface SaveData {
   challenge: { period: number; best: number; bestLoop: number };
   /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
   challengeLoadout: Loadout | null;
-  /** Trial: the stacked board (kept apart from the ordinary loadouts) */
-  trialLoadout?: Loadout | null;
+  /** Trial: the stacked boards in use and each board's layout (apart from the ordinary loadouts) */
+  trialBoards?: { active: BoardId; layouts: Partial<Record<BoardId, Loadout>> };
   /** Trial: the stacked board is being edited and sits in loadout for now */
   editingTrial?: boolean;
   /** Trial (mastery): the hero's mastery per element and the techniques learned by a spark */
@@ -238,8 +239,28 @@ function readLoadoutRec(v: unknown): Loadout | null {
         consumables: v.consumables.filter((u): u is string => typeof u === 'string'),
         ...autoOf(v),
         ...underOf(v),
+        ...(isBoardId(v.board) ? { board: v.board } : {}),
       }
     : null;
+}
+
+/**
+ * Trial (stacked board): the boards' layouts. A save from before the board variants has one
+ * stacked board (trialLoadout): it becomes the standard board's layout
+ */
+function readTrialBoards(data: Record<string, unknown>): Pick<SaveData, 'trialBoards'> {
+  const tb = data.trialBoards;
+  if (isObj(tb)) {
+    const layouts: Partial<Record<BoardId, Loadout>> = {};
+    if (isObj(tb.layouts))
+      for (const [id, v] of Object.entries(tb.layouts)) {
+        const l = isBoardId(id) ? readLoadoutRec(v) : null;
+        if (l && isBoardId(id)) layouts[id] = l;
+      }
+    return { trialBoards: { active: isBoardId(tb.active) ? tb.active : 'standard', layouts } };
+  }
+  const old = data.trialLoadout ? readLoadoutRec(data.trialLoadout) : null;
+  return old ? { trialBoards: { active: 'standard', layouts: { standard: old } } } : {};
 }
 
 /** 消耗品の自動補充の記録（古いセーブにはない） */
@@ -371,7 +392,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
             }
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
-      ...(data.trialLoadout ? { trialLoadout: readLoadoutRec(data.trialLoadout) } : {}),
+      ...readTrialBoards(data),
       rankSent: isObj(data.rankSent)
         ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
             string,

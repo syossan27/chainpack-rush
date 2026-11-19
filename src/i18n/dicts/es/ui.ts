@@ -267,13 +267,12 @@ export const UI: Dict = {
   '画面揺れ・光': 'Sacudidas y destellos',
   '試作: 倒しても連鎖が続く {state}': 'Prototipo: La cadena sigue tras derribar {state}',
   '試作: 重ねる盤面 {state}': 'Prototipo: Tablero apilado {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Prototipo: Tablero apilado (hasta {n} por casilla)',
   '重ね（下から順に鳴る）': 'Pila (se activa de abajo arriba)',
   '一番上 ×{m}（矢印はこの装備）': 'Arriba ×{m} (sus flechas siguen)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Solo se apila el mismo equipo',
-  'アーティファクトは重ねられません（1つで3回鳴ります）':
-    'Los artefactos no se apilan (uno suena 3 veces)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Los artefactos no se apilan (uno suena {n} veces)',
   '1マスに重ねられるのは{n}つまで': 'Hasta {n} por casilla',
   試作では起点石は1つだけ: 'Solo una Piedra de Origen en el prototipo',
   デバッグ機能: 'Modo de depuración',
@@ -767,4 +766,7 @@ export const UI: Dict = {
   いらない: 'Omitir',
   攻撃装備のマスに貼れる: 'Va en equipo de ataque',
   どの装備のマスにも貼れる: 'Va en cualquier equipo',
+  ここは盤面の外です: 'Eso está fuera del tablero',
+  '地域を抜けると、新しい盤面がもらえます': 'Supera una región para ganar un tablero nuevo',
+  '「{name}」を手に入れた！配置画面で選べます': '¡Conseguiste el {name}! Elígelo en Equipar',
 };

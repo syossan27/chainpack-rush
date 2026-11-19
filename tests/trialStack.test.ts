@@ -8,6 +8,7 @@ import {
   leaveTrialEdit,
   sortieBoard,
   stackBoardOf,
+  switchTrialBoard,
   trialRules,
   usesStackBoard,
 } from '../src/core/trial';
@@ -103,5 +104,54 @@ describe('試作「重ねる盤面」の切り替えと専用の編成', () => {
     expect(stackAt(withPotion, 2)).toEqual(['sw1']);
     const cleared = clearLoadout(withPotion);
     expect(cleared.under).toEqual(cleared.cells.map(() => []));
+  });
+});
+
+describe('試作「盤面の種類」: 盤面ごとの配置', () => {
+  it('盤面ごとに配置を覚える。切り替えて戻っても残り、出撃はいま選んでいる盤面', () => {
+    const s = withSwords();
+    s.progress.unlocked.push('cave');
+    enterTrialEdit(s);
+    s.loadout = stackPut(s.loadout, itemMap(s), 'sw1', 5).loadout;
+    switchTrialBoard(s, 'gale');
+    expect(s.loadout.board).toBe('gale');
+    expect([s.loadout.width, s.loadout.height]).toEqual([5, 2]);
+    s.loadout = stackPut(s.loadout, itemMap(s), 'sw1', 0).loadout;
+    leaveTrialEdit(s);
+    expect(stackBoardOf(s).board).toBe('gale');
+    expect(stackAt(stackBoardOf(s), 0)).toEqual(['sw1']);
+    // The same sword stays in the standard board's layout too
+    switchTrialBoard(s, 'standard');
+    expect(stackAt(stackBoardOf(s), 5)).toEqual(['sw1']);
+    const back = deserializeSave(serializeSave(s));
+    expect(back.trialBoards?.active).toBe('standard');
+    switchTrialBoard(back, 'gale');
+    expect(stackAt(stackBoardOf(back), 0)).toEqual(['sw1']);
+  });
+
+  it('持っていない盤面は選べない（選んであっても標準で出る）', () => {
+    const s = withSwords();
+    switchTrialBoard(s, 'gale');
+    expect(s.trialBoards?.active ?? 'standard').toBe('standard');
+    s.trialBoards = { active: 'deep', layouts: {} };
+    expect(stackBoardOf(s).board).toBe('standard');
+  });
+
+  it('前の重ねる盤面（trialLoadout）は、標準の盤面の配置として引き継ぐ。壊れた値は捨てる', () => {
+    const s = withSwords();
+    enterTrialEdit(s);
+    s.loadout = stackPut(s.loadout, itemMap(s), 'sw2', 3).loadout;
+    leaveTrialEdit(s);
+    const data = JSON.parse(serializeSave(s)) as Record<string, unknown>;
+    const old = (data.trialBoards as { layouts: { standard: unknown } }).layouts.standard;
+    delete data.trialBoards;
+    data.trialLoadout = old;
+    const back = deserializeSave(JSON.stringify(data));
+    expect(back.trialBoards?.active).toBe('standard');
+    expect(stackAt(stackBoardOf(back), 3)).toEqual(['sw2']);
+    const bad = { ...data, trialBoards: { active: 'nope', layouts: { gale: 5, standard: old } } };
+    const fixed = deserializeSave(JSON.stringify(bad));
+    expect(fixed.trialBoards?.active).toBe('standard');
+    expect(fixed.trialBoards?.layouts.gale).toBeUndefined();
   });
 });

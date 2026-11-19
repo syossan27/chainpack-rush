@@ -268,13 +268,12 @@ export const UI: Dict = {
   '画面揺れ・光': 'Guncangan & Kilatan Layar',
   '試作: 倒しても連鎖が続く {state}': 'Prototipe: Rantai berlanjut setelah mengalahkan {state}',
   '試作: 重ねる盤面 {state}': 'Prototipe: Papan Tumpuk {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Prototipe: Papan Tumpuk (maks. {n} per petak)',
   '重ね（下から順に鳴る）': 'Tumpukan (berbunyi dari bawah ke atas)',
   '一番上 ×{m}（矢印はこの装備）': 'Teratas ×{m} (panahnya dari item ini)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Hanya perlengkapan yang sama yang bisa ditumpuk',
-  'アーティファクトは重ねられません（1つで3回鳴ります）':
-    'Artefak tidak bisa ditumpuk (satu berbunyi 3 kali)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Artefak tidak bisa ditumpuk (satu berbunyi {n} kali)',
   '1マスに重ねられるのは{n}つまで': 'Maks. {n} per petak',
   試作では起点石は1つだけ: 'Hanya satu Batu Asal di prototipe',
   デバッグ機能: 'Mode Debug',
@@ -769,4 +768,7 @@ export const UI: Dict = {
   いらない: 'Lewati',
   攻撃装備のマスに貼れる: 'Untuk peralatan serang',
   どの装備のマスにも貼れる: 'Untuk peralatan apa pun',
+  ここは盤面の外です: 'Itu di luar papan',
+  '地域を抜けると、新しい盤面がもらえます': 'Tuntaskan wilayah untuk mendapat papan baru',
+  '「{name}」を手に入れた！配置画面で選べます': 'Dapat {name}! Pilih di layar Susun',
 };

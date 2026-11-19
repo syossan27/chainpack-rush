@@ -104,6 +104,8 @@ export interface Loadout {
    * cells). The top item (cells[i]) rings last and its arrows lead on. Absent on an ordinary board
    */
   under?: string[][];
+  /** Stacked board (trial): which board it is (data/boards.ts: shape, holes, trait) */
+  board?: import('../data/boards').BoardId;
 }
 
 export interface ChainStep {

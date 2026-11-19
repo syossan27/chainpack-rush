@@ -158,3 +158,49 @@ describe('重ねる盤面（試作）: 置き方', () => {
     expect(restoreStackBoard(null, owned, 3)).toEqual(emptyStackBoard());
   });
 });
+
+describe('試作「盤面の種類」: 形と深さ', () => {
+  it('空の盤面は、その盤面の大きさと種類で作る', () => {
+    const l = emptyStackBoard('lightning');
+    expect([l.width, l.height]).toEqual([4, 5]);
+    expect(l.board).toBe('lightning');
+    expect(emptyStackBoard().board).toBe('standard');
+  });
+
+  it('穴には置けない', () => {
+    const l = emptyStackBoard('crystal');
+    expect(stackPut(l, items, 's1', 0).block).toBe('hole');
+    expect(stackPut(l, items, 's1', 2).block).toBeNull();
+  });
+
+  it('重なりごと動かす先が穴なら、動かさない', () => {
+    const l = stackPut(emptyStackBoard('crystal'), items, 's1', 2).loadout;
+    expect(stackMove(l, 2, 0)).toBe(l);
+    expect(stackAt(stackMove(l, 2, 7), 7)).toEqual(['s1']);
+  });
+
+  it('深い盤面は1マスに4つまで重ねられる', () => {
+    const more = new Map(items);
+    more.set('s7', item('s7', 'sword'));
+    let l = emptyStackBoard('deep');
+    for (const u of ['s1', 's2', 's5', 's6']) {
+      const r = stackPut(l, more, u, 4);
+      expect(r.block).toBeNull();
+      l = r.loadout;
+    }
+    expect(stackAt(l, 4)).toHaveLength(4);
+    expect(stackPut(l, more, 's7', 4).block).toBe('full');
+  });
+
+  it('読み直すと、その盤面の形に合わせる（穴のマスの装備は外れる）。大きさが違えば空にする', () => {
+    const rec: Loadout = {
+      ...emptyStackBoard('crystal'),
+      cells: ['s1', null, 's2', ...new Array<string | null>(17).fill(null)],
+    };
+    const back = restoreStackBoard(rec, items, 3, 'crystal');
+    expect(back.cells[0]).toBeNull();
+    expect(back.cells[2]).toBe('s2');
+    expect(back.board).toBe('crystal');
+    expect(restoreStackBoard(rec, items, 3, 'standard')).toEqual(emptyStackBoard('standard'));
+  });
+});

@@ -6,6 +6,8 @@ import { restoreLoadout, storeActivePreset } from './presets';
 import type { SaveData } from './save';
 import { emptyLoadout } from './save';
 import { restoreStackBoard } from './stack';
+import { ownedBoards } from './boards';
+import type { BoardId } from '../data/boards';
 import type { Loadout } from './types';
 
 interface RunKind {
@@ -69,14 +71,47 @@ export function trialRules(
   return { keepCountOnKill: true };
 }
 
-/** The stacked board as it stands (the one being edited, or the stored one checked against storage) */
-export function stackBoardOf(save: SaveData): Loadout {
-  if (save.editingTrial) return save.loadout;
+/** The board chosen for the stacked board (the standard one if that board is not owned) */
+export function activeBoardId(save: SaveData): BoardId {
+  const id = save.trialBoards?.active ?? 'standard';
+  return ownedBoards(save).some((b) => b.id === id) ? id : 'standard';
+}
+
+/** The chosen board's stored layout, checked against storage and the board's shape */
+function storedBoard(save: SaveData, id: BoardId): Loadout {
   return restoreStackBoard(
-    save.trialLoadout ?? null,
+    save.trialBoards?.layouts[id] ?? null,
     new Map(save.inventory.map((i) => [i.uid, i])),
     consumableSlots(save),
+    id,
   );
+}
+
+/** The stacked board as it stands (the one being edited, or the chosen board's stored layout) */
+export function stackBoardOf(save: SaveData): Loadout {
+  if (save.editingTrial) return save.loadout;
+  return storedBoard(save, activeBoardId(save));
+}
+
+/** Keep the board being edited (it sits in loadout) as its board's layout */
+function storeEditedBoard(save: SaveData): void {
+  const id = save.loadout.board ?? 'standard';
+  save.trialBoards = {
+    active: save.trialBoards?.active ?? 'standard',
+    layouts: {
+      ...save.trialBoards?.layouts,
+      [id]: JSON.parse(JSON.stringify(save.loadout)) as Loadout,
+    },
+  };
+}
+
+/** Choose another owned board (while editing, its layout comes into loadout). False if not owned */
+export function switchTrialBoard(save: SaveData, id: BoardId): boolean {
+  if (!ownedBoards(save).some((b) => b.id === id)) return false;
+  if (save.editingTrial) storeEditedBoard(save);
+  save.trialBoards = { active: id, layouts: save.trialBoards?.layouts ?? {} };
+  if (save.editingTrial) save.loadout = storedBoard(save, id);
+  return true;
 }
 
 /** The board an ordinary run to this region will use (for the check before a sortie) */
@@ -97,7 +132,7 @@ export function enterTrialEdit(save: SaveData): void {
 /** Editing ends: keep the stacked board and put the ordinary loadout back (also on boot) */
 export function leaveTrialEdit(save: SaveData): void {
   if (!save.editingTrial) return;
-  save.trialLoadout = JSON.parse(JSON.stringify(save.loadout)) as Loadout;
+  storeEditedBoard(save);
   delete save.editingTrial;
   // The ordinary loadout comes back at the size of the bag (not the stacked board's)
   const { width, height } = backpackSize(save.upgrades.backpack);

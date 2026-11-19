@@ -264,13 +264,12 @@ export const UI: Dict = {
   '画面揺れ・光': 'Screen Shake & Flash',
   '試作: 倒しても連鎖が続く {state}': 'Prototype: Chain Carries Over Kills {state}',
   '試作: 重ねる盤面 {state}': 'Prototype: Stacked Board {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Prototype: Stacked Board (up to {n} per cell)',
   '重ね（下から順に鳴る）': 'Stack (rings from the bottom up)',
   '一番上 ×{m}（矢印はこの装備）': 'Top ×{m} (its arrows lead on)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Only the same gear can stack',
-  'アーティファクトは重ねられません（1つで3回鳴ります）':
-    'Artifacts can’t stack (one rings 3 times)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Artifacts can’t stack (one rings {n} times)',
   '1マスに重ねられるのは{n}つまで': 'Up to {n} per cell',
   試作では起点石は1つだけ: 'Only one Origin Stone in the prototype',
   デバッグ機能: 'Debug Mode',
@@ -761,4 +760,7 @@ export const UI: Dict = {
   いらない: 'Skip',
   攻撃装備のマスに貼れる: 'Goes on attack gear',
   どの装備のマスにも貼れる: 'Goes on any gear',
+  ここは盤面の外です: 'That’s outside the board',
+  '地域を抜けると、新しい盤面がもらえます': 'Clear a region to earn a new board',
+  '「{name}」を手に入れた！配置画面で選べます': 'Got the {name}! Pick it on the Loadout screen',
 };

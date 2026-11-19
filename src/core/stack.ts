@@ -1,7 +1,8 @@
 // Trial (stacked board): editing a small board whose cells hold stacks of gear. The top item of a
 // cell is cells[i]; the items under it are under[i], bottom first. Pure: no Phaser.
-import { STACK } from '../config/balance';
+import { getBoard, type BoardId } from '../data/boards';
 import { getItemDef } from '../data/items';
+import { boardDepth, boardSize, isHole } from './boards';
 import type { ItemInstance, Loadout } from './types';
 
 /**
@@ -32,7 +33,8 @@ export function cellRings(
 ): string[] {
   const s = stackAt(l, cell).filter((u) => items.has(u));
   const only = s.length === 1 ? items.get(s[0]!) : undefined;
-  if (only && getItemDef(only.defId).artifact) return new Array<string>(STACK.max).fill(only.uid);
+  if (only && getItemDef(only.defId).artifact)
+    return new Array<string>(boardDepth(getBoard(l.board))).fill(only.uid);
   return s;
 }
 
@@ -41,15 +43,17 @@ export function boardUids(l: Loadout): string[] {
   return l.cells.flatMap((_, i) => stackAt(l, i));
 }
 
-export function emptyStackBoard(): Loadout {
-  const n = STACK.width * STACK.height;
+export function emptyStackBoard(board: BoardId = 'standard'): Loadout {
+  const { width, height } = boardSize(getBoard(board));
+  const n = width * height;
   return {
-    width: STACK.width,
-    height: STACK.height,
+    width,
+    height,
     cells: new Array<string | null>(n).fill(null),
     under: Array.from({ length: n }, () => []),
     originOrder: [],
     consumables: [],
+    board,
   };
 }
 
@@ -88,8 +92,11 @@ function pull(l: Loadout, uid: string): void {
   }
 }
 
-/** Why an item cannot go on a cell: other gear, an artifact, a full stack, or a second origin stone */
-export type StackBlock = 'group' | 'artifact' | 'full' | 'origin';
+/**
+ * Why an item cannot go on a cell: other gear, an artifact, a full stack, a second origin stone, or
+ * a hole in the board's shape
+ */
+export type StackBlock = 'group' | 'artifact' | 'full' | 'origin' | 'hole';
 
 /** Put an item on a cell: an empty cell takes it, an occupied cell stacks it on top */
 export function stackPut(
@@ -102,6 +109,8 @@ export function stackPut(
   if (!it || cell < 0 || cell >= l.cells.length) return { loadout: l, block: null };
   const def = getItemDef(it.defId);
   if (def.kind === 'consumable') return { loadout: l, block: null };
+  const board = getBoard(l.board);
+  if (isHole(board, cell)) return { loadout: l, block: 'hole' };
   const out = clone(l);
   pull(out, uid);
   const here = stackAt(out, cell);
@@ -115,7 +124,7 @@ export function stackPut(
     if (def.artifact || getItemDef(under.defId).artifact) return { loadout: l, block: 'artifact' };
     const g = stackGroup(it);
     if (g === null || g !== stackGroup(under)) return { loadout: l, block: 'group' };
-    if (here.length >= STACK.max) return { loadout: l, block: 'full' };
+    if (here.length >= boardDepth(board)) return { loadout: l, block: 'full' };
     setStack(out, cell, [...here, uid]);
   }
   syncOrigins(out, items);
@@ -125,6 +134,8 @@ export function stackPut(
 /** Move a whole stack to another cell (it swaps with the stack there) */
 export function stackMove(l: Loadout, from: number, to: number): Loadout {
   if (from === to || from < 0 || to < 0 || from >= l.cells.length || to >= l.cells.length) return l;
+  const board = getBoard(l.board);
+  if (isHole(board, from) || isHole(board, to)) return l;
   const out = clone(l);
   const a = stackAt(out, from);
   setStack(out, from, stackAt(out, to));
@@ -167,9 +178,12 @@ export function restoreStackBoard(
   rec: Loadout | null,
   owned: ReadonlyMap<string, ItemInstance>,
   consumableSlots: number,
+  board: BoardId = 'standard',
 ): Loadout {
-  if (!rec || rec.width !== STACK.width || rec.height !== STACK.height) return emptyStackBoard();
-  const out = emptyStackBoard();
+  const def = getBoard(board);
+  const { width, height } = boardSize(def);
+  if (!rec || rec.width !== width || rec.height !== height) return emptyStackBoard(board);
+  const out = emptyStackBoard(board);
   const seen = new Set<string>();
   const ok = (u: string) => {
     const it = owned.get(u);
@@ -178,7 +192,8 @@ export function restoreStackBoard(
     return true;
   };
   for (let i = 0; i < out.cells.length; i++) {
-    const s = stackAt(rec, i).filter((u) => owned.has(u));
+    // Nothing stays in a hole of the board's shape
+    const s = isHole(def, i) ? [] : stackAt(rec, i).filter((u) => owned.has(u));
     // Keep to the rules: an origin stone alone, otherwise the items of the top's group (≤ max)
     const top = s[s.length - 1];
     const g = top ? stackGroup(owned.get(top)!) : null;
@@ -187,7 +202,7 @@ export function restoreStackBoard(
         ? []
         : g === null
           ? [top]
-          : s.filter((u) => stackGroup(owned.get(u)!) === g).slice(-STACK.max);
+          : s.filter((u) => stackGroup(owned.get(u)!) === g).slice(-boardDepth(def));
     setStack(out, i, fit.filter(ok));
   }
   syncOrigins(out, owned);

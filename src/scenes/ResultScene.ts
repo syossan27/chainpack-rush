@@ -33,7 +33,9 @@ import { buildShareImage, shareImage } from '../ui/shareCard';
 import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
 import { challengeLoadoutOf } from '../core/challengeLoadout';
-import { sortieBoard } from '../core/trial';
+import { sortieBoard, stackSwitchOn } from '../core/trial';
+import { ownedBoards } from '../core/boards';
+import type { BoardDef } from '../data/boards';
 import { recordMastery, type MasteryGain } from '../core/mastery';
 import { ELEMENT_NAMES } from '../data/items';
 import { getTechnique } from '../data/techniques';
@@ -94,49 +96,26 @@ export class ResultScene extends Phaser.Scene {
    * Trial (mastery): between the record and the loot — techniques learned by a spark, then the
    * elements that grew most (a level up is marked and pulses)
    */
-  private showMastery(m: { gains: readonly MasteryGain[]; learned: readonly string[] }): void {
-    let y = 538;
-    if (m.learned.length > 0) {
-      const names = m.learned.map((id) => t(getTechnique(id)?.name ?? id)).join(' / ');
-      fitText(
-        this.add
-          .text(W / 2, 522, t('閃いた必殺技: {names}', { names }), textStyle(24, '#ffe27a'))
-          .setOrigin(0.5),
+  /** Lines under the stats, centred on y 530 (closer together when there are many) */
+  private showNotes(notes: readonly Note[]): void {
+    const gap = notes.length > 3 ? 27 : 34;
+    const y0 = 530 - (gap * (notes.length - 1)) / 2;
+    notes.forEach((n, i) => {
+      const size = notes.length > 3 ? Math.min(n.size, 22) : n.size;
+      const line = fitText(
+        this.add.text(W / 2, y0 + i * gap, n.text, textStyle(size, n.color)).setOrigin(0.5),
         W - 40,
       );
-      y = 552;
-    }
-    const top = [...m.gains].sort((a, b) => b.added - a.added).slice(0, 3);
-    if (top.length === 0) return;
-    const up = top.some((g) => g.levelAfter > g.levelBefore);
-    const list = top
-      .map((g) => {
-        const el = t(ELEMENT_NAMES[g.element] ?? g.element);
-        return g.levelAfter > g.levelBefore
-          ? t('{el} +{n}（Lv{lv}↑）', { el, n: g.added, lv: g.levelAfter })
-          : t('{el} +{n}（Lv{lv}）', { el, n: g.added, lv: g.levelAfter });
-      })
-      .join('  ');
-    const line = fitText(
-      this.add
-        .text(
-          W / 2,
-          y,
-          t('熟練 {list}', { list }),
-          textStyle(20, up ? COLORS.accentText : COLORS.text),
-        )
-        .setOrigin(0.5),
-      W - 40,
-    );
-    if (up)
-      this.tweens.add({
-        targets: line,
-        scale: line.scale * 1.08,
-        yoyo: true,
-        repeat: 3,
-        duration: 260,
-        delay: 600,
-      });
+      if (n.pulse)
+        this.tweens.add({
+          targets: line,
+          scale: line.scale * 1.08,
+          yoyo: true,
+          repeat: 3,
+          duration: 260,
+          delay: 600,
+        });
+    });
   }
 
   private stamp(x: number, y: number, text: string, delay: number, size = 20, maxW = 260): void {
@@ -195,6 +174,7 @@ export class ResultScene extends Phaser.Scene {
     let achieved: AchievementDef[] = [];
     let mastery: { gains: MasteryGain[]; learned: string[] } | null = null;
     let newLooks: string[] = [];
+    let newBoards: BoardDef[] = [];
     if (demo) markDemoDone();
     else {
       consumeItems(save, result.usedConsumables);
@@ -213,7 +193,11 @@ export class ResultScene extends Phaser.Scene {
           save.challenge = { period: challenge.period, best: score, bestLoop: result.reachedLoop };
         save.stats.runs++;
       } else {
+        const hadBoards = ownedBoards(save).map((b) => b.id);
         unlocked = recordRun(save, regionId, result, { trial }).unlocked;
+        // Trial (stacked board): clearing a region for the first time gives its board
+        if (stackSwitchOn(save, debugMenuAllowed()))
+          newBoards = ownedBoards(save).filter((b) => !hadBoards.includes(b.id));
         // Trial (mastery): the run's rings and sparks grow the hero's mastery
         if (last.mastery && result.stats.rings)
           mastery = recordMastery(save, result.stats.rings, result.stats.sparks ?? []);
@@ -402,20 +386,24 @@ export class ResultScene extends Phaser.Scene {
     // After the achievement cards, so the two never overlap
     if (newLooks.length > 0)
       showNewLooks(this, newLooks, 62, 1400 + achieved.length * TOAST_STEP_MS);
-    if (unlocked) {
-      fitText(
-        this.add
-          .text(
-            W / 2,
-            530,
-            t('新しい地域「{region}」が開放された！', { region: t(getRegion(unlocked).name) }),
-            textStyle(28, COLORS.accentText),
-          )
-          .setOrigin(0.5),
-        W - 40,
-      );
-    }
-    if (mastery) this.showMastery(mastery);
+    // Notices between the stats and the loot ribbon, stacked so they never overlap
+    const notes: Note[] = [];
+    if (unlocked)
+      notes.push({
+        text: t('新しい地域「{region}」が開放された！', { region: t(getRegion(unlocked).name) }),
+        size: 28,
+        color: COLORS.accentText,
+      });
+    if (newBoards.length > 0)
+      notes.push({
+        text: t('「{name}」を手に入れた！配置画面で選べます', {
+          name: newBoards.map((b) => t(b.name)).join(t('・|sep')),
+        }),
+        size: 22,
+        color: '#ffe27a',
+      });
+    if (mastery) notes.push(...masteryNotes(mastery));
+    this.showNotes(notes);
     let lootRibbon = ribbon(this, W / 2, 590, t('戦利品 {n}', { n: added.length }), 300).setScale(
       0.8,
     );
@@ -656,4 +644,40 @@ export class ResultScene extends Phaser.Scene {
       },
     ]);
   }
+}
+
+/** A notice line on the result screen */
+interface Note {
+  text: string;
+  size: number;
+  color: string;
+  /** Pulse it a few times (a mastery level went up) */
+  pulse?: boolean;
+}
+
+/** Trial (mastery): the techniques sparked, and the top three elements' mastery gains */
+function masteryNotes(m: { gains: readonly MasteryGain[]; learned: readonly string[] }): Note[] {
+  const out: Note[] = [];
+  if (m.learned.length > 0) {
+    const names = m.learned.map((id) => t(getTechnique(id)?.name ?? id)).join(' / ');
+    out.push({ text: t('閃いた必殺技: {names}', { names }), size: 24, color: '#ffe27a' });
+  }
+  const top = [...m.gains].sort((a, b) => b.added - a.added).slice(0, 3);
+  if (top.length === 0) return out;
+  const up = top.some((g) => g.levelAfter > g.levelBefore);
+  const list = top
+    .map((g) => {
+      const el = t(ELEMENT_NAMES[g.element] ?? g.element);
+      return g.levelAfter > g.levelBefore
+        ? t('{el} +{n}（Lv{lv}↑）', { el, n: g.added, lv: g.levelAfter })
+        : t('{el} +{n}（Lv{lv}）', { el, n: g.added, lv: g.levelAfter });
+    })
+    .join('  ');
+  out.push({
+    text: t('熟練 {list}', { list }),
+    size: 20,
+    color: up ? COLORS.accentText : COLORS.text,
+    pulse: up,
+  });
+  return out;
 }

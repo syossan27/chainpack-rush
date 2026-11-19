@@ -259,3 +259,31 @@ describe('重ねる盤面（試作）: アーティファクトは1個で山3つ
     ]);
   });
 });
+
+describe('試作「盤面の種類」: 深い盤面の連鎖', () => {
+  it('深い盤面では、4つの山が ×1・×1.25・×1.5・×2 で鳴り、アーティファクトはひとりで4回鳴る', () => {
+    const placed: Placed[] = [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'top', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'art', defId: 'dragon_fang', x: 2, y: 0, exits: [], rarity: 'legendary' },
+      off('a', 'sword'),
+      off('b', 'sword'),
+      off('c', 'sword'),
+    ];
+    const s = stacked(3, 3, placed, { top: ['a', 'b', 'c'] });
+    const loadout = { ...s.loadout, board: 'deep' as const };
+    const rows = planChain(loadout, s.items, 'o')
+      .steps.slice(1)
+      .map((x) => [x.uid, x.stackMult]);
+    expect(rows).toEqual([
+      ['a', 1],
+      ['b', 1.25],
+      ['c', 1.5],
+      ['top', 2],
+      ['art', 1],
+      ['art', 1.25],
+      ['art', 1.5],
+      ['art', 2],
+    ]);
+  });
+});

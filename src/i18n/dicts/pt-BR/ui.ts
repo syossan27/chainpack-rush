@@ -267,12 +267,12 @@ export const UI: Dict = {
   '画面揺れ・光': 'Tremor e Flash da Tela',
   '試作: 倒しても連鎖が続く {state}': 'Protótipo: Corrente continua após abates {state}',
   '試作: 重ねる盤面 {state}': 'Protótipo: Tabuleiro Empilhado {state}',
-  '試作: 重ねる盤面（1マス{n}つまで）': 'Protótipo: Tabuleiro Empilhado (até {n} por casa)',
   '重ね（下から順に鳴る）': 'Pilha (dispara de baixo para cima)',
   '一番上 ×{m}（矢印はこの装備）': 'Topo ×{m} (as setas são deste item)',
   '×{m}': '×{m}',
   同じ装備だけ重ねられます: 'Só equipamentos iguais podem empilhar',
-  'アーティファクトは重ねられません（1つで3回鳴ります）': 'Artefatos não empilham (um soa 3 vezes)',
+  'アーティファクトは重ねられません（1つで{n}回鳴ります）':
+    'Artefatos não empilham (um soa {n} vezes)',
   '1マスに重ねられるのは{n}つまで': 'Até {n} por casa',
   試作では起点石は1つだけ: 'Só uma Pedra de Origem no protótipo',
   デバッグ機能: 'Modo de depuração',
@@ -768,4 +768,7 @@ export const UI: Dict = {
   いらない: 'Pular',
   攻撃装備のマスに貼れる: 'Vai em equipamento de ataque',
   どの装備のマスにも貼れる: 'Vai em qualquer equipamento',
+  ここは盤面の外です: 'Isso está fora do tabuleiro',
+  '地域を抜けると、新しい盤面がもらえます': 'Conclua uma região para ganhar um novo tabuleiro',
+  '「{name}」を手に入れた！配置画面で選べます': 'Você ganhou o {name}! Escolha-o na tela Equipar',
 };
