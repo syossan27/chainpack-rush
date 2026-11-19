@@ -895,6 +895,13 @@ export class LoadoutScene extends Phaser.Scene {
 
   /** Trial (charms): choose an edge slot (the charm case replaces the item list) or none */
   private chooseCharmSlot(slot: number | null): void {
+    // The item picked for placing is hidden with the list: forget it, or a tap on a cell would
+    // place it unseen
+    if (slot !== null && this.selected) {
+      this.selected = null;
+      this.list.setSelected(null);
+      this.refresh();
+    }
     this.charmSlot = slot;
     this.charmStrip?.setSelected(slot);
     this.charmList?.setVisible(slot !== null);
@@ -1327,8 +1334,14 @@ export class LoadoutScene extends Phaser.Scene {
 
   private setupGridInput(): void {
     // バックパックのマス: タップ（能力の詳細／選択中を置く）、ドラッグ（移動・外す）
+    // Only as wide as the grid: the charm row slots left of it take their own taps (trial)
     const zone = this.add
-      .zone(0, LOADOUT_LAYOUT.backpackTop, W, this.view.gridHeight)
+      .zone(
+        this.view.left,
+        LOADOUT_LAYOUT.backpackTop,
+        getSave().loadout.width * this.view.cell,
+        this.view.gridHeight,
+      )
       .setOrigin(0, 0)
       .setInteractive();
     zone.on('pointerdown', (p: Phaser.Input.Pointer) => {
