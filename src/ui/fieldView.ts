@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { ELITES, FIELD, HERO, SIM, TREASURE, UI, type EliteId } from '../config/balance';
 import type { Combat, EnemyState } from '../core/combat';
 import type { Status } from '../core/types';
+import { getEnemyDef } from '../data/enemies';
 import { getRegion } from '../data/regions';
 import { t } from '../i18n';
 import {
@@ -103,6 +104,8 @@ export class FieldView {
   /** 最後に描いた敵の位置（倒れた直後の演出用） */
   /** 直近の update の速さ（止めているときは 0） */
   private lastRate = 1;
+  /** Whether the hero was running at the last update (the screen scrolls only then) */
+  private heroRunning = true;
   readonly lastSeen = new Map<number, { x: number; y: number }>();
   visibleEnemies = 0;
   /** Special technique effects (the scene calls screen() at the impact) */
@@ -244,15 +247,22 @@ export class FieldView {
     return true;
   }
 
-  /** 敵の攻撃: 本素材の攻撃モーションを1回、終わったら移動に戻す */
+  /**
+   * The looping animation: mobs always walk. A boss walks only while the hero runs (enemies stand
+   * still in the world, so they only come closer while the screen scrolls) and waits otherwise
+   */
+  private loopAnim(s: EnemySlot, boss: boolean): UnitAnimName {
+    const walks = !!UNIT_SPRITES[s.defId]?.anims?.move;
+    return walks && (!boss || this.heroRunning) ? 'move' : 'idle';
+  }
+
+  /** 敵の攻撃: 本素材の攻撃モーションを1回、終わったら移動（ボスは止まっていれば待機）に戻す */
   enemyAttack(id: number): void {
     const s = this.byId.get(id);
     if (!s?.art) return;
     if (!this.playEnemyAnim(s, 'attack')) return;
     s.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
-      if (s.id === id) {
-        if (!this.playEnemyAnim(s, 'move')) this.playEnemyAnim(s, 'idle');
-      }
+      if (s.id === id) this.playEnemyAnim(s, this.loopAnim(s, !!getEnemyDef(s.defId).boss));
     });
   }
 
@@ -443,6 +453,7 @@ export class FieldView {
   /** speed: モーションの再生速度（ゲームスピード。止めているときは 0） */
   update(c: Combat, now: number, speed = 1): void {
     this.lastRate = speed;
+    this.heroRunning = c.running;
     if (this.aura) {
       this.aura.setPosition(this.hero.x, RUN_LAYOUT.footY);
       this.aura.tick(Math.max(0, now - this.lastNow) / 1000);
@@ -521,8 +532,10 @@ export class FieldView {
           .setOrigin(origin.originX, origin.originY)
           .setScale(def.displayScale)
           .setFlipX(!def.facesLeft);
-        // ふだんのループ: 雑魚は移動、ボスは待機
-        s.art = this.playEnemyAnim(s, 'move', true) || this.playEnemyAnim(s, 'idle', true);
+        // ふだんのループ: 雑魚は移動、ボスは勇者が走っている間だけ移動（止まれば待機）
+        s.art =
+          this.playEnemyAnim(s, this.loopAnim(s, !!e.def.boss), true) ||
+          this.playEnemyAnim(s, 'idle', true);
         s.sprite.setVisible(true);
         s.hpBack.setVisible(true);
         s.hp.setVisible(true);
@@ -537,6 +550,13 @@ export class FieldView {
       // 本素材はアニメが跳ねるので揺らさない。アニメの速さはゲームの速さに合わせる
       const wob = s.art ? 0 : Math.sin(now / 160 + e.id) * 2;
       if (s.art) s.sprite.anims.timeScale = this.lastRate;
+      // A boss starts or stops walking with the hero (not in the middle of its attack)
+      if (s.art && e.def.boss) {
+        const want = animKey(def.key, this.loopAnim(s, true));
+        const cur = s.sprite.anims.currentAnim?.key;
+        if (cur !== want && cur !== animKey(def.key, 'attack'))
+          this.playEnemyAnim(s, this.loopAnim(s, true));
+      }
       this.lastSeen.set(e.id, { x: sx, y: footY - hgt * 0.6 });
       // のけぞり: 0.15秒かけて元の位置へ戻る（描画だけ。core の x は変えない）
       const kt = Math.min(1, (now - s.knockAt) / 150);

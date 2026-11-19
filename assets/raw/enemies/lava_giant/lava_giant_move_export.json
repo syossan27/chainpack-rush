@@ -1,0 +1,16 @@
+{
+  "file": "lava_giant_move.png",
+  "frameWidth": 96,
+  "frameHeight": 96,
+  "frames": 7,
+  "originX": 0.5,
+  "originY": 0.9166666666666666,
+  "originPx": [
+    48,
+    88
+  ],
+  "fps": 8,
+  "loop": true,
+  "groundY": 87,
+  "note": "歩き（左向き、その場で足踏み）。2026-11-20、待機の1コマ目から PixelLab animate-pixminimax（seed 7、8コマ）の9枚中 0〜6（最後のコマから1コマ目へ自然につながるところまで）。色は待機のまま、足元を y=87 に縦ずらしだけで合わせた（[0, 0, 1, 1, 1, 0, 0]）"
+}
