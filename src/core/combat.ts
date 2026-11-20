@@ -1320,6 +1320,8 @@ export class Combat {
    */
   private knownTech(id: string | undefined, enemyId: number, uid: string): string | undefined {
     if (!id || !this.learned || this.learned.has(id)) return id;
+    // The scarecrow tries the board as it is: nothing sparks (or is learned) there
+    if (this.mode === 'dummy') return undefined;
     const el = getTechnique(id)?.element ?? 'physical';
     const p = sparkChance(this.cfg.mastery?.levels[el] ?? 0);
     if (p <= 0 || this.rng.next() >= p) return undefined;

@@ -84,6 +84,18 @@ describe('試作「熟練と閃き」: 必殺技は閃くまで出ない', () =>
     expect(second.some((e) => e.type === 'spark')).toBe(false);
   });
 
+  it('かかしでは、覚えていない技は出ず、閃かない', () => {
+    const c = new Combat({ ...cfg({ levels: { physical: sure }, learned: [] }), mode: 'dummy' });
+    const evs: CombatEvent[] = [];
+    c.fireNext();
+    for (let i = 0; i < 600; i++) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    expect(evs.some((e) => e.type === 'hit')).toBe(true);
+    expect(evs.some((e) => e.type === 'spark' || e.type === 'technique')).toBe(false);
+  });
+
   it('覚えている必殺技は、熟練が0でも並べれば出る', () => {
     const evs = firstChain(new Combat(cfg({ levels: {}, learned: ['triple'] })));
     expect(evs.some((e) => e.type === 'technique')).toBe(true);

@@ -83,6 +83,19 @@ describe('試作アクセサリー: ドロップ', () => {
     expect(boss).toBeDefined();
   });
 
+  it('∞ ではアクセサリーが落ちない（最初のボスの確定も）', () => {
+    // Endless foes are tougher: a stronger hero beats at least one boss
+    const r = new Combat(
+      runCfg({
+        regionId: 'endless',
+        charmSure: true,
+        hero: { ...BASE_HERO_STATS, maxHp: 1e9, attackMult: 300 },
+      }),
+    ).runToEnd();
+    expect(r.stats.bossesDefeated).toBeGreaterThanOrEqual(1);
+    expect(r.charms ?? []).toEqual([]);
+  });
+
   it('noLoot・体験ラン・カカシでは出ない', () => {
     for (const extra of [{ noLoot: true }, { demo: true }] as const) {
       const r = new Combat(runCfg({ ...extra, charmSure: true })).runToEnd();
