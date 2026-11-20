@@ -88,6 +88,23 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     line: { element: 'dark', elementDamage: 15 },
     description: 'この起点から伸びる線の、闇の攻撃はダメージ +15%。',
   },
+  // Flow stones (2026-11-21): they change only how the chain flows; {…} in a text is filled by itemDescVars
+  {
+    id: 'origin_lead',
+    name: '一番槍の起点石',
+    kind: 'origin',
+    line: { lead: { cells: 3, damage: 50 } },
+    description:
+      '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。',
+  },
+  {
+    id: 'origin_far',
+    name: '彼方の起点石',
+    kind: 'origin',
+    line: { far: 2 },
+    description:
+      '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。',
+  },
 
   {
     id: 'sword',
@@ -619,6 +636,14 @@ export function getItemDef(id: string): ItemDef {
   const def = BY_ID.get(id);
   if (!def) throw new Error(`unknown item def: ${id}`);
   return def;
+}
+
+/** The numbers filled into an item's description (`{cells}`, `{v}`, …), read from its data */
+export function itemDescVars(def: ItemDef): Record<string, number> {
+  const line = def.line;
+  if (line?.lead) return { cells: line.lead.cells, v: line.lead.damage };
+  if (line?.far !== undefined) return { v: line.far };
+  return {};
 }
 
 export function defsOfKind(kind: ItemDef['kind']): ItemDef[] {

@@ -75,12 +75,26 @@ function relayMs(def: ItemDef, fx: readonly LineEffect[]): number {
   return Math.round(Math.max(CHAIN.minRelay, sec) * MS);
 }
 
+/** Where a ring sits in the chain, for the origin stones that depend on it */
+export interface FlowPos {
+  /** The cell's place among the cells that started ringing (1 = first; origin cells not counted) */
+  cellOrder: number;
+  /** Cells from the origin to this cell along the chain (the origin's neighbour is 1) */
+  dist: number;
+}
+
 /** 線の効果を、この装備についての掛け算にまとめる。効果がなければ undefined */
-export function lineBoost(def: ItemDef, fx: readonly LineEffect[]): LineBoost | undefined {
+export function lineBoost(
+  def: ItemDef,
+  fx: readonly LineEffect[],
+  pos: FlowPos,
+): LineBoost | undefined {
   const b: LineBoost = { damage: 1, defense: 1, poison: 1, lifesteal: 1 };
   for (const e of fx) {
     if (def.kind === 'attack') {
       b.damage *= 1 + (e.damage ?? 0) / 100;
+      if (e.lead && pos.cellOrder <= e.lead.cells) b.damage *= 1 + e.lead.damage / 100;
+      if (e.far) b.damage *= 1 + (e.far / 100) * pos.dist;
       if (e.element && e.element === (def.element ?? 'physical'))
         b.damage *= 1 + (e.elementDamage ?? 0) / 100;
       if (def.applies === 'poison') b.poison *= 1 + (e.poison ?? 0) / 100;
@@ -160,6 +174,8 @@ function spread(
   const steps: ChainStep[] = [];
   const lines: string[][] = []; // origin stones on the line up to each step
   const counts: number[] = []; // 各ステップ時点の段数（子へ渡す数）
+  const dists: number[] = []; // cells from the origin to each step's cell
+  let cellOrder = 0; // cells that started ringing so far (origin cells not counted)
   const visited = new Set<number>();
   const queue: Pending[] = [];
   let seq = 0;
@@ -213,6 +229,7 @@ function spread(
   });
   lines.push([originUid]);
   counts.push(0);
+  dists.push(0);
   expand(0, 0);
 
   // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
@@ -221,11 +238,14 @@ function spread(
   const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
     const stack = stackedBoard ? cellRings(loadout, items, cell) : [loadout.cells[cell]!];
+    // Counted like the guard: a cell once, origin stones not at all
+    if (getItemDef(items.get(loadout.cells[cell]!)!.defId).kind !== 'origin') cellOrder++;
+    const flow: FlowPos = { cellOrder, dist: dists[parent]! + 1 };
     let p = parent;
     let t = tMs;
     stack.forEach((uid, k) => {
       if (k > 0) t += Math.round(STACK.ringRelay * MS);
-      p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1);
+      p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1, flow);
     });
     if (t > lastMs) lastMs = t;
     expand(p, t);
@@ -248,6 +268,7 @@ function spread(
     branch: number,
     pos: number | undefined,
     isTop: boolean,
+    flow: FlowPos,
   ): number => {
     const inst = items.get(uid)!;
     const def = getItemDef(inst.defId);
@@ -261,7 +282,7 @@ function spread(
       def.kind === 'origin' && !lines[parent]!.includes(uid)
         ? [...lines[parent]!, uid]
         : lines[parent]!;
-    const boost = lineBoost(def, effectsOf(myLines));
+    const boost = lineBoost(def, effectsOf(myLines), flow);
     let step: number | null = null;
     if (isStep) {
       step = count;
@@ -284,6 +305,7 @@ function spread(
     });
     lines.push(myLines);
     counts.push(count + (isStep ? (def.stepBoost ?? 0) : 0));
+    dists.push(flow.dist);
     const meIndex = steps.length - 1;
     // 必殺技: 3つの並びで判定する（重ねる盤面では、道で続く3マスの一番上どうし）
     if (isStep && isTop) {

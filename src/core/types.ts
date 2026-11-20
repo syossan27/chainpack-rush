@@ -32,6 +32,10 @@ export interface LineEffect {
   poison?: number;
   /** 吸血の回復量 % */
   lifesteal?: number;
+  /** The first `cells` cells to ring (counted like the guard): attack damage +`damage` % */
+  lead?: { cells: number; damage: number };
+  /** Attack damage +`far` % per cell from the origin along the chain */
+  far?: number;
 }
 
 /** 線の効果を、その段の装備について掛け算にまとめたもの（1 は効果なし） */

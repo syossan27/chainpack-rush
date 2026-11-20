@@ -2236,6 +2236,8 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   origin_wind: { shape: 'stone', A: 'e', S: 't', L: 'W' },
   origin_light: { shape: 'stone', A: 'W', S: 'y', L: 'W' },
   origin_dark: { shape: 'stone', A: 'V', S: 'k', L: 'v' },
+  origin_lead: { shape: 'stone', A: 'o', S: 'B', L: 'W' },
+  origin_far: { shape: 'stone', A: 'E', S: 'F', L: 'W' },
   wind_sword: { shape: 'sword', A: 'e', S: 'E', L: 'W' },
   storm_staff: { shape: 'staff', A: 'e', S: 'F', L: 'W' },
   light_sword: { shape: 'sword', A: 'y', S: 'o', L: 'W' },

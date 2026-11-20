@@ -257,6 +257,12 @@ export const DATA: Dict = {
   闇の起点石: "Pierre d'origine des ténèbres",
   'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
     'Sur les lignes de cette Origine, les attaques de Ténèbres infligent +15% de dégâts.',
+  一番槍の起点石: "Pierre d'origine fer de lance",
+  '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
+    "Les attaques des {cells} premières cases qui sonnent dans une chaîne infligent +{v}% de dégâts (compté en cases ; les cases d'armure comptent aussi).",
+  彼方の起点石: "Pierre d'origine de l'horizon",
+  '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
+    "Plus une case est loin de l'origine, plus ses attaques sont fortes : +{v}% de dégâts par case d'écart (les cases d'armure comptent aussi).",
   剣: 'Épée',
   '基本の単体攻撃。': 'Une attaque de base sur une seule cible.',
   大剣: 'Grande épée',

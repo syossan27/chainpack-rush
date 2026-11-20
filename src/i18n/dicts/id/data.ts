@@ -258,6 +258,12 @@ export const DATA: Dict = {
   闇の起点石: 'Batu Asal Kegelapan',
   'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
     'Di garis dari Asal ini, serangan Kegelapan memberi damage +15%.',
+  一番槍の起点石: 'Batu Asal Ujung Tombak',
+  '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
+    'Serangan di {cells} petak pertama yang berbunyi dalam rantai memberi damage +{v}% (dihitung per petak; petak pelindung juga dihitung).',
+  彼方の起点石: 'Batu Asal Cakrawala',
+  '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
+    'Makin jauh petak dari asal, makin kuat serangannya: damage +{v}% untuk setiap petak (petak pelindung juga dihitung).',
   剣: 'Pedang',
   '基本の単体攻撃。': 'Serangan tunggal dasar.',
   大剣: 'Pedang Besar',

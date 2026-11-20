@@ -13,7 +13,14 @@ import type { IconName } from './kit/icons';
 import type { ButtonSkin } from './kit/skin';
 import { Button, fitText, panel } from './kit/widgets';
 import { CONSUMABLE_CSS } from './kit/skin';
-import { AREA_NAMES, ELEMENT_NAMES, RARITY_NAMES, STATUS_NAMES, getItemDef } from '../data/items';
+import {
+  AREA_NAMES,
+  ELEMENT_NAMES,
+  RARITY_NAMES,
+  STATUS_NAMES,
+  getItemDef,
+  itemDescVars,
+} from '../data/items';
 import { ItemIcon } from './itemIcon';
 import { COLORS, W, rarityCss, textStyle } from './theme';
 
@@ -109,7 +116,7 @@ export function describeItem(it: ItemInstance): string[] {
   } else if (def.kind === 'origin') {
     lines.push(t('連鎖の始まり。攻撃せず、連鎖数にも数えない'));
   }
-  lines.push(t(def.description));
+  lines.push(t(def.description, itemDescVars(def)));
   if (it.rerollCount > 0) lines.push(t('付け直し {n}回', { n: it.rerollCount }));
   if (sellable(getSave(), it)) lines.push(t('売却 {price}G', { price: sellPrice(it) }));
   return lines;
@@ -418,7 +425,7 @@ export function showItemDetail(
     card.add(lineText);
     y += lineText.height + 8;
   }
-  const desc = scene.add.text(left, y + 4, t(def.description), {
+  const desc = scene.add.text(left, y + 4, t(def.description, itemDescVars(def)), {
     ...textStyle(21, COLORS.text, false),
     wordWrap: { width: CARD_W - PAD * 2, useAdvancedWrap: true },
     lineSpacing: 4,

@@ -257,6 +257,12 @@ export const DATA: Dict = {
   闇の起点石: 'Piedra de Origen Oscura',
   'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
     'En las líneas de este Origen, los ataques de Oscuridad hacen +15% de daño.',
+  一番槍の起点石: 'Piedra de Origen Punta de Lanza',
+  '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
+    'Los ataques de las primeras {cells} casillas que suenan en una cadena hacen +{v}% de daño (se cuenta por casillas; las casillas de armadura también cuentan).',
+  彼方の起点石: 'Piedra de Origen del Horizonte',
+  '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
+    'Cuanto más lejos del origen está una casilla, más fuertes son sus ataques: +{v}% de daño por cada casilla de distancia (las casillas de armadura también cuentan).',
   剣: 'Espada',
   '基本の単体攻撃。': 'Un ataque básico a un solo objetivo.',
   大剣: 'Mandoble',

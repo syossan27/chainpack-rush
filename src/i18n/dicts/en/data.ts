@@ -255,6 +255,12 @@ export const DATA: Dict = {
   闇の起点石: 'Dark Origin Stone',
   'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
     'On lines from this Origin, Dark attacks deal +15% damage.',
+  一番槍の起点石: 'Spearhead Origin Stone',
+  '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
+    'Attacks in the first {cells} cells to ring in a chain deal +{v}% damage (counted in cells; armor cells count too).',
+  彼方の起点石: 'Horizon Origin Stone',
+  '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
+    'The farther a cell is from the origin, the stronger its attacks: +{v}% damage for each cell away (armor cells count too).',
   剣: 'Sword',
   '基本の単体攻撃。': 'A basic single-target attack.',
   大剣: 'Greatsword',
