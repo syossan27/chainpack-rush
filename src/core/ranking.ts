@@ -1,22 +1,36 @@
 // ランキングに送る記録と、その確認（純粋な関数。サーバーの Cloud Functions も同じものを使う）
 //
-// 送るもの: 乱数の種・地域・配置・置いた装備・勇者の強化と★・操作の記録・結果。
+// 送るもの: 乱数の種・地域・配置（重ねる盤面）・置いた装備・勇者の強化と★・操作の記録・結果。
+// エンドレスは熟練とアクセサリーも（ランを始めたときの値）。
 // サーバーは装備と強化が正しい範囲かを確かめ、同じランを最初から再生して、結果が一致したときだけ記録する。
-import { BACKPACK, CONSUMABLE, PROGRESS, UPGRADES } from '../config/balance';
+import { CONSUMABLE, MASTERY, PROGRESS, UPGRADES } from '../config/balance';
 import { AFFIX_COUNT, affixCandidates } from './affixes';
 import { checkRules, currentChallenge } from './challenge';
-import { BASE_HERO_STATS, type RunConfig, type RunInput, type RunResult } from './combat';
+import {
+  BASE_HERO_STATS,
+  type RunConfig,
+  type RunInput,
+  type RunMastery,
+  type RunResult,
+} from './combat';
+import { slotOpen, type CharmInstance, type CharmSlots } from './charms';
+import { isElement } from './mastery';
+import { featureRules, runFeatures } from './runRules';
+import { boardUids, restoreStackBoard } from './stack';
+import { getBoard, isBoardId, type BoardDef } from '../data/boards';
+import { isCharmId } from '../data/charms';
+import { getTechnique } from '../data/techniques';
 import { heroFrom } from './economy';
 import { allowsRarity } from './loot';
 import { replayRun, sameResult } from './replay';
 import type { SaveData } from './save';
-import { DIRS, type ItemInstance, type Loadout } from './types';
+import { DIRS, RARITIES, type ItemInstance, type Loadout } from './types';
 import { getItemDef } from '../data/items';
 import { k, locale, t } from '../i18n';
 import type { RewardBand } from './names';
 import { REGIONS } from '../data/regions';
 
-export const SUBMISSION_VERSION = 1;
+export const SUBMISSION_VERSION = 2;
 
 export type RankMode = 'challenge' | 'endless';
 
@@ -41,6 +55,10 @@ export interface ScoreSubmission {
   items: ItemInstance[];
   consumableSlots: number;
   hero: HeroBasis | null;
+  /** Endless only (null in a challenge): the hero's mastery when the run began */
+  mastery: RunMastery | null;
+  /** Endless only (null in a challenge): the charm in each edge slot when the run began */
+  charms: CharmSlots | null;
   inputs: RunInput[];
   /** 端末で出た結果 */
   claim: { totalDamage: number; reachedLoop: number; ticks: number; maxStep: number };
@@ -67,8 +85,8 @@ export function buildSubmission(
   save: SaveData,
   stars: number,
 ): ScoreSubmission {
-  const uids = new Set<string>();
-  for (const u of cfg.loadout.cells) if (u) uids.add(u);
+  // Every item on the board (the stacked ones under the tops too) and in the consumable slots
+  const uids = new Set<string>(boardUids(cfg.loadout));
   for (const u of cfg.loadout.consumables) uids.add(u);
   const items = [...uids].map((u) => cfg.items.get(u)).filter((i): i is ItemInstance => !!i);
   return {
@@ -89,6 +107,15 @@ export function buildSubmission(
             runTime: save.upgrades.runTime,
             stars,
           }
+        : null,
+    // From the run's own config: the save may have grown since (sparks, level ups, charms sold)
+    mastery:
+      mode === 'endless' && cfg.mastery
+        ? { levels: { ...cfg.mastery.levels }, learned: [...cfg.mastery.learned] }
+        : null,
+    charms:
+      mode === 'endless' && cfg.charms
+        ? cfg.charms.map((c) => (c ? { uid: c.uid, defId: c.defId, rarity: c.rarity } : null))
         : null,
     inputs: result.inputs ?? [],
     claim: {
@@ -129,11 +156,14 @@ export function verifySubmission(
     if (!okCh) return no('season');
     if (sub.seed !== okCh.seed || sub.regionId !== okCh.def.regionId) return no('challenge');
     if (sub.hero !== null) return no('hero');
+    if (sub.mastery !== null) return no('mastery');
+    if (sub.charms !== null) return no('charms');
   } else if (sub.mode === 'endless') {
     const s = endlessSeason(now);
     if (sub.season !== s && sub.season !== endlessSeason(now - 10 * 60 * 1000)) return no('season');
     if (sub.regionId !== 'endless') return no('region');
     if (!sub.hero || !validHero(sub.hero)) return no('hero');
+    if (!validMastery(sub.mastery)) return no('mastery');
   } else return no('mode');
 
   // 装備と配置
@@ -143,7 +173,6 @@ export function verifySubmission(
     items.set(it.uid, it);
   }
   const lo = sub.loadout;
-  if (!validLoadout(lo, items)) return no('loadout');
   const maxSlots =
     CONSUMABLE.baseSlots + UPGRADES.consumableSlots.effect * UPGRADES.consumableSlots.maxLevel;
   if (
@@ -152,17 +181,24 @@ export function verifySubmission(
     sub.consumableSlots > maxSlots
   )
     return no('slots');
-  if (lo.consumables.length > sub.consumableSlots) return no('slots');
+  if (!lo || !Array.isArray(lo.consumables) || lo.consumables.length > sub.consumableSlots)
+    return no('slots');
+  if (!validLoadout(lo, items, sub.consumableSlots)) return no('loadout');
   if (sub.mode === 'challenge') {
+    // A challenge is played on the standard board
+    if (lo.board !== 'standard') return no('loadout');
     const ch =
       currentChallenge(now, challengeStart) ??
       currentChallenge(now - 10 * 60 * 1000, challengeStart);
     if (ch && checkRules(lo, items, ch.def.rules).length > 0) return no('rules');
-  }
+  } else if (!validCharms(sub.charms, getBoard(lo.board))) return no('charms');
 
   // 再生して、結果が同じか
   if (!Array.isArray(sub.inputs) || sub.inputs.length > 200) return no('inputs');
   const hero = sub.hero ? heroFrom(sub.hero, sub.hero.stars) : BASE_HERO_STATS;
+  // The same rules the game uses for this kind of run (the stacked board's chain rule; endless also
+  // brings mastery, charms and relics)
+  const rules = featureRules(runFeatures(sub.mode));
   const cfg: RunConfig = {
     seed: sub.seed,
     regionId: sub.regionId,
@@ -171,6 +207,8 @@ export function verifySubmission(
     hero,
     consumableSlots: sub.consumableSlots,
     noLoot: true,
+    ...(rules ? { rules } : {}),
+    ...(sub.mode === 'endless' ? { mastery: sub.mastery!, charms: sub.charms!, relics: {} } : {}),
   };
   const r = replayRun(cfg, sub.inputs);
   if (!r) return no('replay');
@@ -237,31 +275,49 @@ function validItem(it: ItemInstance): boolean {
   return true;
 }
 
-function validLoadout(lo: Loadout, items: ReadonlyMap<string, ItemInstance>): boolean {
-  if (!lo || !Number.isInteger(lo.width) || !Number.isInteger(lo.height)) return false;
-  if (
-    lo.width < 1 ||
-    lo.height < 1 ||
-    lo.width > BACKPACK.maxWidth ||
-    lo.height > BACKPACK.maxHeight
-  )
+/**
+ * A stacked board as the game makes it: put back in order by restoreStackBoard, nothing changes
+ * (the board exists, its shape and holes, one kind of gear per cell up to the depth, one origin
+ * stone, no consumable on the board, each item once)
+ */
+function validLoadout(
+  lo: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  consumableSlots: number,
+): boolean {
+  if (!lo || !isBoardId(lo.board)) return false;
+  if (!Array.isArray(lo.cells) || !Array.isArray(lo.under) || !Array.isArray(lo.originOrder))
     return false;
-  if (!Array.isArray(lo.cells) || lo.cells.length !== lo.width * lo.height) return false;
-  const used = new Set<string>();
-  for (const u of lo.cells) {
-    if (u === null) continue;
-    const it = items.get(u);
-    if (!it || used.has(u) || getItemDef(it.defId).kind === 'consumable') return false;
-    used.add(u);
+  const shape = (l: Loadout) =>
+    JSON.stringify([l.width, l.height, l.cells, l.under, l.originOrder, l.consumables, l.board]);
+  try {
+    return shape(restoreStackBoard(lo, items, consumableSlots, lo.board)) === shape(lo);
+  } catch {
+    return false;
   }
-  if (!Array.isArray(lo.originOrder) || !lo.originOrder.every((u) => used.has(u))) return false;
-  if (!Array.isArray(lo.consumables)) return false;
-  for (const u of lo.consumables) {
-    const it = items.get(u);
-    if (!it || used.has(u) || getItemDef(it.defId).kind !== 'consumable') return false;
-    used.add(u);
-  }
-  return true;
+}
+
+/** Mastery: known elements at Lv 0–max, known techniques, each once */
+function validMastery(m: RunMastery | null): boolean {
+  if (!m || typeof m !== 'object' || typeof m.levels !== 'object' || m.levels === null)
+    return false;
+  for (const [el, lv] of Object.entries(m.levels))
+    if (!isElement(el) || !Number.isInteger(lv) || lv < 0 || lv > MASTERY.maxLevel) return false;
+  if (!Array.isArray(m.learned) || new Set(m.learned).size !== m.learned.length) return false;
+  return m.learned.every((id) => typeof id === 'string' && !!getTechnique(id));
+}
+
+/** Charms: one slot per column and row of the board, known charms on open slots, each uid once */
+function validCharms(c: CharmSlots | null, board: BoardDef): boolean {
+  const width = board.mask[0]?.length ?? 0;
+  if (!Array.isArray(c) || c.length !== width + board.mask.length) return false;
+  const seen = new Set<string>();
+  return c.every((x: CharmInstance | null, slot) => {
+    if (x === null) return true;
+    if (!x || typeof x.uid !== 'string' || seen.has(x.uid)) return false;
+    seen.add(x.uid);
+    return isCharmId(x.defId) && RARITIES.includes(x.rarity) && slotOpen(slot, board);
+  });
 }
 
 /** Season name in the current language ('challenge-3' → '挑戦 第4回', 'endless-24323' → 'エンドレス 2026年12月') */
