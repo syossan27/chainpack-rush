@@ -1,5 +1,5 @@
 // 配置画面: 上半分に盤面、下半分に倉庫。ドラッグで置き、盤面の外へドラッグで外す
-import { runTutorial } from '../ui/tutorial';
+import { runTutorial, type CoachStep } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
@@ -243,7 +243,18 @@ export class LoadoutScene extends Phaser.Scene {
 
     this.setupGridInput();
     this.refresh();
-    runTutorial(this, 'loadout', [
+    this.runBoardGuide();
+  }
+
+  /** The board screen's guide (once): storage, arrows and the one origin, stacks, charms, boards */
+  private runBoardGuide(): void {
+    const grid = {
+      x: W / 2,
+      y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
+      w: W - 120,
+      h: this.view.gridHeight + 16,
+    };
+    const steps: CoachStep[] = [
       {
         rect: {
           x: W / 2,
@@ -251,24 +262,47 @@ export class LoadoutScene extends Phaser.Scene {
           w: W - 12,
           h: LOADOUT_LAYOUT.listBottom - LOADOUT_LAYOUT.listTop + 10,
         },
-        text: t('下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう'),
+        text: t('下は倉庫。装備を少し押さえてから、\n盤面へドラッグして置こう'),
       },
       {
-        rect: {
-          x: W / 2,
-          y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
-          w: W - 120,
-          h: this.view.gridHeight + 16,
-        },
+        rect: grid,
         text: t(
-          '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！',
+          '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n起点は盤面に1つだけ！',
         ),
       },
       {
-        rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
-        text: t('「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！'),
+        rect: grid,
+        text: t('同じ装備は、同じマスに重ねられる。\n上に重ねたものほど強いよ！'),
       },
-    ]);
+    ];
+    // The edge slots (not in the challenge, which plays without charms)
+    const strip = this.charmStrip;
+    if (strip) {
+      const l = getSave().loadout;
+      // Slot centers on the screen (slotPos is in the strip's own space)
+      const ps = Array.from({ length: l.width + l.height }, (_, i) => {
+        const q = strip.slotPos(i);
+        return { x: strip.x + q.x, y: strip.y + q.y };
+      });
+      const x0 = Math.min(...ps.map((q) => q.x)) - 50;
+      const x1 = this.view.left + l.width * this.view.cell + 10;
+      const y0 = LOADOUT_LAYOUT.backpackTop - 10;
+      const y1 = Math.max(...ps.map((q) => q.y)) + 50;
+      steps.push({
+        rect: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, w: x1 - x0, h: y1 - y0 },
+        text: t('盤面のふちは、アクセサリーの枠。\n手に入れたら、ここに付けよう'),
+      });
+    }
+    if (!this.challenge)
+      steps.push({
+        rect: { x: (24 + W - 267) / 2, y: this.boardBar.y, w: W - 267 - 24 + 16, h: 60 },
+        text: t('地域を抜けると、新しい盤面がもらえる。\nもらった盤面は、ここで切り替えよう'),
+      });
+    steps.push({
+      rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
+      text: t('「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！'),
+    });
+    runTutorial(this, 'board', steps);
   }
 
   override update(): void {
@@ -917,10 +951,7 @@ export class LoadoutScene extends Phaser.Scene {
     confirmDialog(
       this,
       t('全部外す'),
-      t(
-        'バックパックと消耗品枠の {n}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。',
-        { n: placed },
-      ),
+      t('盤面と消耗品枠の {n}個をすべて倉庫に戻します。', { n: placed }),
       t('全部外す'),
       () => {
         save.loadout = clearLoadout(save.loadout);
@@ -1155,5 +1186,5 @@ function stackBlockText(b: StackBlock, depth: number): string {
         ? t('1マスに重ねられるのは{n}つまで', { n: depth })
         : b === 'hole'
           ? t('ここは盤面の外です')
-          : t('試作では起点石は1つだけ');
+          : t('起点石は盤面に1つだけ');
 }

@@ -86,7 +86,7 @@ export class StageSelectScene extends Phaser.Scene {
     if (block === 'noOrigin') {
       fitText(
         this.add
-          .text(W / 2, H - 156, t('起点がバックパックにありません'), textStyle(22, COLORS.textWarn))
+          .text(W / 2, H - 156, t('起点が盤面にありません'), textStyle(22, COLORS.textWarn))
           .setOrigin(0.5),
         W - 40,
       );

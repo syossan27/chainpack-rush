@@ -73,15 +73,11 @@ export const UI: Dict = {
 
   // src/scenes/BaseScene.ts
   基本: 'Lo básico',
-  '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。':
-    'Una cadena va desde un Origen, siguiendo sus salidas (flechas), hacia los objetos de al lado. Cuando se llena la barra bajo el héroe (Intervalo de ataque), los Orígenes se activan por turnos y los objetos conectados atacan uno tras otro.',
   '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。':
     'Una expedición dura 30 segundos. El tiempo se detiene mientras el héroe camina y solo corre durante los combates.',
   '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。':
     'Acabar con un grupo entero con una sola cadena (un KO total) suma 1.5 s, derrotar a un jefe suma 8 s y la Arena del Tiempo suma 5 s. No hay límite: cuantos más enemigos derrotes, más tiempo pelearás.',
   ダメージの決まり方: 'Cómo se calcula el daño',
-  '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
-    'Ataque × Rareza × Multiplicador de cadena × Combo × Mejoras × Bonificaciones × Crítico (±10% de variación)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rareza: Común ×1, Raro ×1.5, Épico ×2.5, Legendario ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
@@ -107,8 +103,6 @@ export const UI: Dict = {
   必殺技: 'Golpes Especiales',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'Cuando una cadena pasa en orden por 3 objetos concretos, el 3.er golpe se convierte en un Golpe Especial (daño ×2.5 y el héroe se lanza al ataque). En la pantalla "Equipar", esa casilla muestra "Especial".',
-  '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
-    '• Golpes Especiales en total: {n}. La primera vez que hagas uno, verás "¡Golpe Especial descubierto!" y su receta se añadirá al "Compendio" de la Base. De los que aún no descubres, el Compendio solo muestra una pista.',
   短い連鎖と長い連鎖: 'Cadenas cortas y largas',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• La espera hasta la siguiente activación crece con el número de objetos que se activaron en la última cadena (las armaduras también cuentan). Las cadenas cortas van rápido; las largas pegan fuerte.',
@@ -131,10 +125,6 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Almacén, Herrería y Fusión',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Los espacios de consumibles recuerdan lo que pusiste. Cuando gastas uno en una expedición, se rellena solo desde el Almacén si tienes otro igual (si no tienes, el espacio muestra un "Auto" tenue y se llena cuando consigas uno). Quítalo a mano para que deje de hacerlo.',
-  '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（並べ替えは自分で。「場所を見る」で関係するマスが光ります）。':
-    '• ¿No sabes qué cambiar? Toca "Consejo" en la pantalla "Equipar". Prueba intercambios, reemplazos y casillas vacías, y te muestra lo que ayuda (tú reorganizas; "Ver dónde" ilumina las casillas).',
-  '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。':
-    '• Cambia de Conjunto con 1-5 arriba en la pantalla "Equipar" (por ejemplo, uno de Congelado y otro de Fuego). Un Conjunto solo guarda la disposición; el equipo se queda en el Almacén. Toca otra vez el Conjunto actual para cambiarle el nombre. El equipo usado en otro Conjunto lleva la marca "Conjunto ○" y no se vende con "Venta masiva" ni similares.',
   '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
     '• Con "Venta automática" en el Almacén, el botín de la rareza elegida o menor se vende solo después de cada expedición (puedes elegir conservar los objetos con ✦).',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
@@ -191,8 +181,6 @@ export const UI: Dict = {
   '✦付きは残す：オン': 'Conservar ✦: Sí',
   '✦付きは残す：オフ': 'Conservar ✦: No',
   一括売却: 'Venta masiva',
-  '装備中・ロック中・編成で使用中・アーティファクトは売りません':
-    'No se venden objetos equipados, bloqueados ni usados en un Conjunto, ni Artefactos',
   向きの付け直し: 'Reforjar',
   合成: 'Fusionar',
   この装備は向きを付け直せません: 'Este objeto no se puede reforjar',
@@ -244,7 +232,6 @@ export const UI: Dict = {
   'アーティファクトは重ねられません（1つで{n}回鳴ります）':
     'Los artefactos no se apilan (uno suena {n} veces)',
   '1マスに重ねられるのは{n}つまで': 'Hasta {n} por casilla',
-  試作では起点石は1つだけ: 'Solo una Piedra de Origen en el prototipo',
   デバッグ機能: 'Modo de depuración',
   着せ替えの見た目をすべて試せます: 'Puedes probarte todos los aspectos del Vestuario',
   言語: 'Idioma',
@@ -260,8 +247,6 @@ export const UI: Dict = {
     'Vende parte del botín después de cada expedición. Nunca vende consumibles ni Artefactos.',
   'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！':
     '¡Te damos la bienvenida!\nTu héroe avanza y pelea contra los enemigos por su cuenta. Para empezar, toca "¡Vamos!".',
-  '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
-    'En "Equipar" colocas el equipo en tu mochila. El equipo que recoges también va ahí. ¡Toca "Equipar"!',
   '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ':
     'En la Herrería puedes cambiar la dirección de las salidas de un objeto, o usar "Fusionar" con 3 objetos iguales para intentar subir de rareza.',
   '合成 {gold}G': 'Fusionar {gold}G',
@@ -280,8 +265,6 @@ export const UI: Dict = {
     'La marca "×○" indica que tienes 3 o más de ese objeto',
   '{rarity} ×3 → {target}の{to} ×1': '{rarity} ×3 → {target} ({to}) ×1',
   '{rarity} ×3 → {to} ×1': '{rarity} ×3 → {to} ×1',
-  '使える数: {n}つ（装備中・ロック中・ほかの編成で使用中は除く）':
-    'Disponibles: ×{n} (sin contar equipados, bloqueados ni usados en otros Conjuntos)',
   '成功率 {rate}%': 'Éxito: {rate}%',
   '失敗すると{rarity}のランダムな装備が1つ（追加効果・向きは新しく）':
     'Si falla: 1 objeto {rarity} aleatorio (con nuevas bonificaciones y salidas)',
@@ -343,20 +326,10 @@ export const UI: Dict = {
   まだ挑戦していません: 'Aún sin intentos',
   '装備 {n}個・起点 {origins}個': 'Equipo: {n} · Orígenes: {origins}',
   まだ組んでいません: 'Aún sin armar',
-  挑戦用の編成: 'Conjunto del Desafío',
-  この編成で挑戦できます: 'Este Conjunto está listo para el Desafío',
-  'ふだんの編成から組みました。並べ方を詰めよう':
-    'Armado a partir de tu mochila habitual. ¡Ahora afina la disposición!',
-  ふだんの編成から組む: 'Copiar mi mochila',
-  '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。':
-    'Se rearmará tu Conjunto del Desafío a partir de tu mochila habitual.\nEl equipo que no cumpla las reglas se cambiará por equipo permitido del mismo tipo.',
   組み直す: 'Rearmar',
   '出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第':
     'Solo arma algo con lo que puedas salir. Afinar la disposición depende de ti.',
-  編成する: 'Editar Conjunto',
   挑戦する: '¡Empezar!',
-  挑戦用の編成を組んでください: 'Primero arma tu Conjunto del Desafío',
-  編成が制限に合っていません: 'Tu Conjunto no cumple las reglas',
   '達成 {done} / {total}': 'Completados {done} / {total}',
   達成: 'Logrado',
   '見つけた必殺技 {found} / {total}': 'Golpes Especiales descubiertos {found} / {total}',
@@ -389,10 +362,6 @@ export const UI: Dict = {
   全部外す: 'Quitar todo',
   使えない: 'No permitido',
   挑戦へ: 'Al Desafío',
-  '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
-    'Abajo está tu Almacén. Mantén presionado un objeto un momento y luego arrástralo a la mochila.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
-    'Desde un Origen (la piedra con número), los objetos conectados atacan por turnos siguiendo las flechas. ¡Los últimos eslabones pegan más fuerte!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'Cuanto mayor el número "~", más fuerte la disposición. ¡Prueba distintas ideas!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
@@ -419,8 +388,6 @@ export const UI: Dict = {
   '消耗品|slots': 'Consumibles',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Se deshizo el último cambio',
-  'バックパックと消耗品枠の {n}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。':
-    'Se devolverá al Almacén todo lo de la mochila y los espacios de consumibles (×{n}).\nEl orden de activación de los Orígenes también se reinicia.',
   置きたいマスをタップ: 'Toca una casilla para colocarlo',
   外す: 'Quitar',
   発火順を前へ: 'Activar antes',
@@ -488,16 +455,10 @@ export const UI: Dict = {
     '¡Conseguiste equipo de los cofres!\nToca un objeto cuando se abra para ver sus estadísticas.',
   '敵を倒すと、宝箱から装備が手に入るよ。\n開いたあとにタップすると、能力が見られる':
     'Derrota enemigos para conseguir equipo de los cofres. Toca un objeto cuando se abra para ver sus estadísticas.',
-  '拾った装備は、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'Pon el equipo que encontraste en tu mochila desde "Equipar" en la Base para hacerte más fuerte.',
-  '装備を拾ったら、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'Cuando encuentres equipo, ponlo en tu mochila desde "Equipar" en la Base para hacerte más fuerte.',
 
   // src/scenes/RunScene.ts
   '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！':
     '¡Solo por esta vez, tienes equipo legendario prestado! Reúne equipo y algún día serás así de fuerte.',
-  'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
-    'Los objetos de tu mochila atacan en orden desde un Origen (la piedra con número), siguiendo las flechas. ¡Eso es una "cadena"!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Desde un Origen (la piedra con número), los objetos atacan en orden siguiendo las flechas. ¡Eso es una "cadena"! Cuanto más larga la cadena, mayor el daño.',
   '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
@@ -544,7 +505,6 @@ export const UI: Dict = {
   // src/scenes/StageSelectScene.ts
   地域を選ぶ: 'Elige una región',
   '出撃！': '¡Vamos!',
-  起点がバックパックにありません: 'No hay Origen en tu mochila',
   '出撃する地域を選ぶよ。最初は「草原」。\n奥の地域ほど敵は強いけど、\nいい装備が出やすいよ':
     'Elige a dónde ir. Empieza por "Pradera". En las regiones más profundas los enemigos son más duros, pero cae mejor equipo más a menudo.',
   '準備ができたら「出撃！」': 'Cuando quieras, toca "¡Vamos!"',
@@ -636,7 +596,6 @@ export const UI: Dict = {
   連鎖終了時に加算: 'Se suma al terminar la cadena',
   守り: 'Guardia',
   連鎖中も無防備にならない: 'Nunca vulnerable en cadenas',
-  バックパックにある限り: 'Mientras esté en tu mochila',
   この配置: 'Esta disposición',
   どの起点からも届きません: 'Ningún Origen llega aquí',
   '起点{origin}の{step}連鎖目 ×{mult}': 'Origen {origin}, eslabón {step} ×{mult}',
@@ -674,8 +633,6 @@ export const UI: Dict = {
   'タップで次へ（{n}/{total}）': 'Toca para seguir ({n}/{total})',
   'スキップ ›': 'Saltar ›',
   // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
-  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
-    'Este es el Almacén. Aquí se guardan el equipo y los consumibles que no están en tu mochila.',
   '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
     'Convierte en oro el equipo que no uses con "Elegir y vender" o "Venta masiva".',
   '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
@@ -736,4 +693,74 @@ export const UI: Dict = {
     'Se usa en {boards}.\nSi lo vendes, saldrá de ese tablero.',
   'ほかの盤面で使っている装備です（詳細から売れます）':
     'Se usa en otro tablero (puedes venderlo desde sus detalles)',
+  '盤面の起点（番号の石）から出口（矢印）をたどって、隣のマスの装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が発火し、つながった装備が順番に攻撃します。起点は盤面に1つだけ。':
+    'Una cadena va desde el Origen (la piedra con número) de tu tablero, siguiendo sus salidas (flechas), hacia los objetos de las casillas de al lado. Cuando se llena la barra bajo el héroe (Intervalo de ataque), el Origen se activa y los objetos conectados atacan uno tras otro. Solo un Origen por tablero.',
+  盤面と重ね: 'Tableros y pilas',
+  '・同じ装備は、同じマスに3つまで重ねられます（深い盤面は4つ）。重ねた装備は下から順に鳴り、上ほど強い（下から×1、×1.5、×2）。矢印の向きは一番上の装備で決まります。':
+    '• Puedes apilar hasta 3 objetos iguales en una casilla (4 en el Tablero profundo). Una pila se activa de abajo arriba, y cuanto más arriba, más fuerte (×1, ×1,5, ×2 desde abajo). El objeto de arriba decide la flecha.',
+  '・アーティファクトは重ねられませんが、1つで3回鳴ります（深い盤面は4回）。':
+    '• Los Artefactos no se apilan, pero uno solo se activa 3 veces (4 en el Tablero profundo).',
+  '・敵を倒しても連鎖は途切れません。連鎖の数もそのまま、次の敵へ続きます。':
+    '• Derrotar a un enemigo no corta la cadena. La cuenta de la cadena sigue con el siguiente enemigo.',
+  '・地域を抜けると、新しい盤面がもらえます。盤面ごとに形や得意なことがちがいます。並べ方とアクセサリーは盤面ごとに覚えていて、配置画面の上の ◀ ▶ で切り替えます。':
+    '• Supera una región para ganar un tablero nuevo. Cada tablero tiene su forma y sus puntos fuertes. Cada tablero recuerda su disposición y sus accesorios; cambia con ◀ ▶ arriba en "Equipar".',
+  '・ほかの盤面で使っている装備には、その盤面の名前の印が付きます。まとめて売る・一括売却・合成の材料には入りません。':
+    '• El equipo usado en otro tablero lleva el nombre de ese tablero. Nunca entra en "Elegir y vender", "Venta masiva" ni como material de fusión.',
+  '攻撃力 × レアリティ × 重ね × 連鎖倍率 × コンボ × アクセサリー × 熟練 × 強化 × 追加効果 × 会心（±10%ゆれる）':
+    'Ataque × Rareza × Pila × Multiplicador de cadena × Combo × Accesorios × Maestría × Mejoras × Bonificaciones × Crítico (±10% de variación)',
+  '・同じ装備がそろったら重ねる。一番上（×2）には一番強いものを。':
+    '• Cuando tengas objetos iguales, apílalos. Pon el más fuerte arriba (×2).',
+  熟練と必殺技: 'Maestría y Golpes Especiales',
+  '・装備が鳴るたびに、その属性の熟練がたまります。Lvが1上がるごとに、その属性の装備のダメージ+3%（Lv30まで）。':
+    '• Cada vez que un objeto se activa, crece la Maestría de su elemento. Cada nivel da +3% de daño al equipo de ese elemento (hasta el nivel 30).',
+  '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
+    '• Golpes Especiales en total: {n}. Al principio no tienes ninguno: aprendes uno con una "inspiración" cuando se forma su combinación. La probabilidad es el nivel de Maestría de su elemento × 15%. Un golpe aprendido es tuyo para siempre y aparece en el "Compendio" de la Base.',
+  アクセサリーとレリック: 'Accesorios y reliquias',
+  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• Los jefes, las élites doradas y los Goblins Dorados a veces sueltan accesorios. En los espacios del borde del tablero, suben el multiplicador de combo de toda la cadena cuando se cumple su condición (máx. ×20).',
+  '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
+    '• Cada vez que derrotas a un jefe, elige 1 de 3 reliquias y ponla en una casilla del tablero. Potencia el objeto de esa casilla hasta el final de la expedición.',
+  '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':
+    '• De vez en cuando aparece un Goblin Dorado durante una expedición. Derrótalo antes de que huya y soltará 4 objetos Raros o mejores.',
+  '・挑戦では、熟練・アクセサリー・レリック・黄金ゴブリンはなし。みんな同じ条件で競います。∞では黄金ゴブリンは出ず、アクセサリーも落ちません。':
+    '• En los Desafíos no hay Maestría, accesorios, reliquias ni Goblins Dorados: todos compiten en igualdad. En ∞ no aparecen Goblins Dorados ni caen accesorios.',
+  '下は倉庫。装備を少し押さえてから、\n盤面へドラッグして置こう':
+    'Abajo está tu Almacén. Mantén presionado un objeto un momento y luego arrástralo al tablero.',
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n起点は盤面に1つだけ！':
+    'Desde el Origen (la piedra con número), los objetos conectados atacan por turnos siguiendo las flechas. ¡Solo un Origen por tablero!',
+  '同じ装備は、同じマスに重ねられる。\n上に重ねたものほど強いよ！':
+    'Puedes apilar objetos iguales en una casilla. ¡Cuanto más arriba, más fuerte!',
+  '盤面のふちは、アクセサリーの枠。\n手に入れたら、ここに付けよう':
+    'El borde del tablero guarda los espacios de accesorios. Cuando consigas uno, ponlo aquí.',
+  '地域を抜けると、新しい盤面がもらえる。\nもらった盤面は、ここで切り替えよう':
+    'Supera una región para ganar un tablero nuevo. Cambia de tablero aquí.',
+  '盤面と消耗品枠の {n}個をすべて倉庫に戻します。':
+    'Se devolverá al Almacén todo lo del tablero y los espacios de consumibles (×{n}).',
+  起点石は盤面に1つだけ: 'Solo una Piedra de Origen por tablero',
+  '拾った装備は、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'Pon el equipo que encontraste en tu tablero desde "Equipar" en la Base para hacerte más fuerte.',
+  '装備を拾ったら、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'Cuando encuentres equipo, ponlo en tu tablero desde "Equipar" en la Base para hacerte más fuerte.',
+  'ここは倉庫。盤面に置いていない\n装備と消耗品が入っているよ':
+    'Este es el Almacén. Aquí se guardan el equipo y los consumibles que no están en tu tablero.',
+  '装備は「配置」で盤面に並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
+    'En "Equipar" colocas el equipo en tu tablero. El equipo que recoges también va ahí. ¡Toca "Equipar"!',
+  '盤面の装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
+    'Los objetos de tu tablero atacan en orden desde el Origen (la piedra con número), siguiendo las flechas. ¡Eso es una "cadena"!',
+  起点が盤面にありません: 'No hay Origen en tu tablero',
+  盤面にある限り: 'Mientras esté en tu tablero',
+  '装備中・ロック中・ほかの盤面で使用中・アーティファクトは売りません':
+    'No se venden objetos equipados, bloqueados ni usados en otro tablero, ni Artefactos',
+  '使える数: {n}つ（装備中・ロック中・ほかの盤面で使用中は除く）':
+    'Disponibles: ×{n} (sin contar equipados, bloqueados ni usados en otros tableros)',
+  挑戦用の配置: 'Disposición del Desafío',
+  この配置で挑戦できます: 'Esta disposición está lista para el Desafío',
+  'ふだんの盤面から組みました。並べ方を詰めよう':
+    'Armado a partir de tu tablero habitual. ¡Ahora afina la disposición!',
+  ふだんの盤面から組む: 'Copiar mi tablero',
+  '今の挑戦用の配置を、ふだんの標準の盤面をもとに組み直します。\n制限に合わない装備は、使える装備に入れ替えます。':
+    'Se rearmará tu disposición del Desafío a partir de tu Tablero estándar habitual.\nEl equipo que no cumpla las reglas se cambiará por equipo permitido.',
+  配置する: 'Editar disposición',
+  挑戦用の配置を組んでください: 'Primero arma tu disposición del Desafío',
+  配置が制限に合っていません: 'Tu disposición no cumple las reglas',
 };

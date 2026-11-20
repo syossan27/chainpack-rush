@@ -367,8 +367,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Applies Wet, Oil and Frozen to enemies it hits, all at once. Later Thunder, Fire and Blunt attacks all become combos.',
   不落の城門: 'Aegis Gate',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    "While it's in your backpack, you're never unguarded during chains and never stagger. +40 Defense.",
   号令: 'Rally',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     "Instantly fills the gauge at the hero's feet and fires the next Origin right away. Can't be used during a chain.",
@@ -529,4 +527,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Flat Chain',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'One item per cell. No stacking: take on the Ramparts with the path of your arrows alone.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    "While it's on your board, you're never unguarded during chains and never stagger. +40 Defense.",
 };

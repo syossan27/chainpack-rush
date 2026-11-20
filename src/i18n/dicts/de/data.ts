@@ -372,8 +372,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Belegt getroffene Gegner auf einmal mit Nass, Öl und Gefroren. Spätere Angriffe mit Blitz, Feuer und Wucht werden alle zu Kombos.',
   不落の城門: 'Festungstor',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Solange es im Rucksack ist, bist du in Ketten nie ungeschützt und taumelst nie. +40 Verteidigung.',
   号令: 'Schlachtruf',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Füllt sofort die Leiste unter dem Helden und zündet gleich den nächsten Ursprung. Nicht während einer Kette nutzbar.',
@@ -537,4 +535,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Flache Kette',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Ein Gegenstand pro Feld. Ohne Stapeln: Bezwinge den Burgwall nur mit dem Weg deiner Pfeile.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    'Solange es auf dem Brett ist, bist du in Ketten nie ungeschützt und taumelst nie. +40 Verteidigung.',
 };

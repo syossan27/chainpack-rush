@@ -654,8 +654,8 @@ export class ResultScene extends Phaser.Scene {
         // Not an action step: the player should still be able to inspect the loot here
         text: t(
           added.length > 0
-            ? '拾った装備は、拠点の「配置」で\nバックパックに置くと強くなるよ'
-            : '装備を拾ったら、拠点の「配置」で\nバックパックに置くと強くなるよ',
+            ? '拾った装備は、拠点の「配置」で\n盤面に置くと強くなるよ'
+            : '装備を拾ったら、拠点の「配置」で\n盤面に置くと強くなるよ',
         ),
       },
     ]);

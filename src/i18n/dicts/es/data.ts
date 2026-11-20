@@ -373,8 +373,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Aplica Mojado, Aceite y Congelado a la vez a los enemigos que golpea. Después, todos los ataques de Rayo, Fuego y contundentes hacen combo.',
   不落の城門: 'Portón Invicto',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Mientras esté en tu mochila, nunca eres vulnerable durante las cadenas y no te tambaleas. Defensa +40.',
   号令: 'Grito de Guerra',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Llena al instante la barra a los pies del héroe y activa ya el siguiente Origen. No se puede usar durante una cadena.',
@@ -536,4 +534,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Cadena plana',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Un objeto por casilla. Sin apilar: desafía la Muralla solo con el camino de tus flechas.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    'Mientras esté en tu tablero, nunca eres vulnerable durante las cadenas y no te tambaleas. Defensa +40.',
 };

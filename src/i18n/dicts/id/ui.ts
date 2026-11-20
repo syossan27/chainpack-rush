@@ -72,15 +72,11 @@ export const UI: Dict = {
 
   // src/scenes/BaseScene.ts
   基本: 'Dasar',
-  '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。':
-    'Rantai berjalan dari Asal mengikuti jalurnya (panah) ke item berikutnya. Saat bar di bawah pahlawan (Jeda Serangan) penuh, Asal terpicu bergiliran dan item yang tersambung menyerang satu per satu.',
   '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。':
     'Satu ekspedisi berlangsung 30 detik. Waktu berhenti saat pahlawan berjalan dan hanya berkurang saat bertarung.',
   '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。':
     'Menghabisi satu kawanan sekaligus dengan satu rantai (Sapu Bersih) menambah 1.5 detik, mengalahkan bos menambah 8 detik, dan Pasir Waktu menambah 5 detik. Tak ada batasnya, jadi makin banyak yang kamu kalahkan, makin lama kamu bertarung.',
   ダメージの決まり方: 'Cara Damage Dihitung',
-  '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
-    'Serangan × Kelangkaan × Pengganda rantai × Kombo × Peningkatan × Bonus × Kritikal (variasi ±10%)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Kelangkaan: Biasa ×1, Langka ×1.5, Epik ×2.5, Legendaris ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
@@ -106,8 +102,6 @@ export const UI: Dict = {
   必殺技: 'Jurus Spesial',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'Saat rantai melewati 3 item tertentu secara berurutan, serangan ke-3 menjadi Jurus Spesial (damage ×2.5, dan pahlawan menerjang maju). Di layar Susun, kotak itu menampilkan "Spesial".',
-  '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
-    '• Jurus Spesial yang bisa ditemukan: {n}. Saat pertama kali kamu mengeluarkannya, muncul "Jurus Spesial ditemukan!" dan resepnya masuk ke "Ensiklopedia" di Markas. Untuk jurus yang belum ditemukan, Ensiklopedia hanya menampilkan petunjuk.',
   短い連鎖と長い連鎖: 'Rantai Pendek vs. Panjang',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• Jeda sebelum pemicuan berikutnya sebanding dengan jumlah item yang aktif di rantai sebelumnya (pelindung juga dihitung). Rantai pendek berputar cepat; rantai panjang menghantam keras.',
@@ -130,10 +124,6 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Gudang, Pandai Besi & Fusi',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Slot item sekali pakai mengingat isinya. Saat item itu habis dalam ekspedisi, item yang sama diisi ulang otomatis dari Gudang (kalau tidak punya, slot menampilkan "Auto" samar dan terisi begitu kamu mendapatkannya). Lepas secara manual untuk menghentikannya.',
-  '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（並べ替えは自分で。「場所を見る」で関係するマスが光ります）。':
-    '• Bingung apa yang harus diubah? Ketuk "Saran" di layar Susun. Fitur ini mencoba tukar posisi, penggantian, dan kotak kosong, lalu menunjukkan yang membantu (susun ulangnya kamu sendiri; "Lihat Lokasi" menyalakan kotak terkait).',
-  '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。':
-    '• Ganti Set dengan 1-5 di atas layar Susun (misalnya build Beku dan build Api). Set hanya menyimpan susunan; perlengkapan tetap di Gudang. Ketuk Set yang aktif sekali lagi untuk mengganti namanya. Perlengkapan yang dipakai di Set lain diberi tanda "Set ○" dan tidak ikut terjual lewat Jual Massal dan sejenisnya.',
   '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
     '• Dengan "Jual Otomatis" di Gudang, jarahan dengan kelangkaan pilihanmu ke bawah otomatis terjual setelah tiap ekspedisi (kamu bisa memilih untuk menyimpan item ✦).',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
@@ -190,8 +180,6 @@ export const UI: Dict = {
   '✦付きは残す：オン': 'Simpan Item ✦: Nyala',
   '✦付きは残す：オフ': 'Simpan Item ✦: Mati',
   一括売却: 'Jual Massal',
-  '装備中・ロック中・編成で使用中・アーティファクトは売りません':
-    'Item yang dipakai, terkunci, ada di Set, dan Artefak tidak akan dijual',
   向きの付け直し: 'Tempa Ulang',
   合成: 'Fusi',
   この装備は向きを付け直せません: 'Item ini tak bisa ditempa ulang',
@@ -244,7 +232,6 @@ export const UI: Dict = {
   'アーティファクトは重ねられません（1つで{n}回鳴ります）':
     'Artefak tidak bisa ditumpuk (satu berbunyi {n} kali)',
   '1マスに重ねられるのは{n}つまで': 'Maks. {n} per petak',
-  試作では起点石は1つだけ: 'Hanya satu Batu Asal di prototipe',
   デバッグ機能: 'Mode Debug',
   着せ替えの見た目をすべて試せます: 'Kamu bisa mencoba semua tampilan di Lemari',
   言語: 'Bahasa',
@@ -260,8 +247,6 @@ export const UI: Dict = {
     'Menjual dari jarahanmu setelah tiap ekspedisi. Item sekali pakai dan Artefak tidak akan dijual.',
   'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！':
     'Selamat datang!\nPahlawanmu akan maju dan melawan musuh sendiri. Pertama, coba ketuk "Berangkat!"',
-  '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
-    'Susun perlengkapan di ranselmu lewat "Susun". Perlengkapan yang kamu pungut juga ditaruh di sana. Ketuk "Susun"!',
   '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ':
     'Di Pandai Besi, kamu bisa mengubah arah jalur item, atau memakai "Fusi" pada 3 item yang sama untuk mengincar kelangkaan lebih tinggi.',
   '合成 {gold}G': 'Fusi {gold}G',
@@ -279,8 +264,6 @@ export const UI: Dict = {
   '「○つ」の印は、3つ以上揃っている装備です': 'Tanda "×○" berarti kamu punya 3 atau lebih item itu',
   '{rarity} ×3 → {target}の{to} ×1': '{rarity} ×3 → {target} {to} ×1',
   '{rarity} ×3 → {to} ×1': '{rarity} ×3 → {to} ×1',
-  '使える数: {n}つ（装備中・ロック中・ほかの編成で使用中は除く）':
-    'Bisa dipakai: ×{n} (tidak termasuk yang dipakai, terkunci, atau ada di Set lain)',
   '成功率 {rate}%': 'Peluang berhasil {rate}%',
   '失敗すると{rarity}のランダムな装備が1つ（追加効果・向きは新しく）':
     'Kalau gagal: 1 item {rarity} acak (bonus dan jalur baru)',
@@ -341,20 +324,10 @@ export const UI: Dict = {
   まだ挑戦していません: 'Belum dicoba',
   '装備 {n}個・起点 {origins}個': 'Perlengkapan: {n} · Asal: {origins}',
   まだ組んでいません: 'Belum disusun',
-  挑戦用の編成: 'Set Tantangan',
-  この編成で挑戦できます: 'Set ini siap untuk Tantangan',
-  'ふだんの編成から組みました。並べ方を詰めよう':
-    'Disusun dari Set biasamu. Sekarang sempurnakan susunannya!',
-  ふだんの編成から組む: 'Salin Set Biasa',
-  '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。':
-    'Susun ulang Set Tantangan berdasarkan Set biasamu.\nPerlengkapan yang melanggar aturan diganti dengan perlengkapan sejenis yang diizinkan.',
   組み直す: 'Susun Ulang',
   '出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第':
     'Ini hanya menyusun sampai bisa berangkat. Menyempurnakannya terserah kamu.',
-  編成する: 'Atur Set',
   挑戦する: 'Mulai!',
-  挑戦用の編成を組んでください: 'Susun Set Tantangan dulu',
-  編成が制限に合っていません: 'Set-mu tidak memenuhi aturan',
   '達成 {done} / {total}': 'Selesai {done} / {total}',
   達成: 'Selesai',
   '見つけた必殺技 {found} / {total}': 'Jurus Spesial ditemukan {found} / {total}',
@@ -387,10 +360,6 @@ export const UI: Dict = {
   全部外す: 'Lepas Semua',
   使えない: 'Dilarang',
   挑戦へ: 'Tantangan',
-  '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
-    'Gudangmu ada di bawah. Tahan sebentar sebuah item, lalu seret ke ransel.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
-    'Mulai dari Asal (batu bernomor), item yang tersambung menyerang bergiliran mengikuti panah. Makin belakang mata rantainya, makin besar damage-nya!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'Makin besar angka "~", makin kuat susunannya. Coba macam-macam ide!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
@@ -418,8 +387,6 @@ export const UI: Dict = {
   '消耗品|slots': 'Item Sekali Pakai',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Perubahan terakhir dibatalkan',
-  'バックパックと消耗品枠の {n}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。':
-    'Kembalikan semua isi ransel dan slot sekali pakai ke Gudang (×{n}).\nUrutan pemicuan Asal juga direset.',
   置きたいマスをタップ: 'Ketuk kotak tujuan',
   外す: 'Lepas',
   発火順を前へ: 'Picu Lebih Awal',
@@ -488,16 +455,10 @@ export const UI: Dict = {
     'Dapat perlengkapan dari peti!\nKetuk item setelah peti terbuka untuk melihat statistiknya.',
   '敵を倒すと、宝箱から装備が手に入るよ。\n開いたあとにタップすると、能力が見られる':
     'Kalahkan musuh untuk dapat perlengkapan dari peti. Ketuk item setelah peti terbuka untuk melihat statistiknya.',
-  '拾った装備は、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'Taruh perlengkapan yang kamu temukan di ransel lewat "Susun" di Markas agar makin kuat.',
-  '装備を拾ったら、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'Kalau dapat perlengkapan, taruh di ransel lewat "Susun" di Markas agar makin kuat.',
 
   // src/scenes/RunScene.ts
   '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！':
     'Khusus kali ini, kamu meminjam perlengkapan legendaris! Kumpulkan perlengkapan dan suatu hari kamu akan sekuat ini!',
-  'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
-    'Item di ranselmu menyerang bergiliran, mulai dari Asal (batu bernomor) mengikuti panah. Itulah "rantai"!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Mulai dari Asal (batu bernomor), item menyerang bergiliran mengikuti panah. Itulah "rantai"! Makin panjang rantainya, makin besar damage-nya.',
   '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
@@ -544,7 +505,6 @@ export const UI: Dict = {
   // src/scenes/StageSelectScene.ts
   地域を選ぶ: 'Pilih Wilayah',
   '出撃！': 'Berangkat!',
-  起点がバックパックにありません: 'Tidak ada Asal di ranselmu',
   '出撃する地域を選ぶよ。最初は「草原」。\n奥の地域ほど敵は強いけど、\nいい装備が出やすいよ':
     'Pilih tujuanmu. Mulai dari "Padang Rumput". Makin dalam wilayahnya, makin kuat musuhnya, tapi perlengkapan bagus juga lebih sering jatuh.',
   '準備ができたら「出撃！」': 'Kalau sudah siap, ketuk "Berangkat!"',
@@ -637,7 +597,6 @@ export const UI: Dict = {
   連鎖終了時に加算: 'Ditambahkan saat rantai berakhir',
   守り: 'Perlindungan',
   連鎖中も無防備にならない: 'Tak pernah lengah saat rantai berjalan',
-  バックパックにある限り: 'Selama ada di ranselmu',
   この配置: 'Susunan Ini',
   どの起点からも届きません: 'Tak terjangkau Asal mana pun',
   '起点{origin}の{step}連鎖目 ×{mult}': 'Asal {origin}, mata rantai ke-{step} ×{mult}',
@@ -675,8 +634,6 @@ export const UI: Dict = {
   'タップで次へ（{n}/{total}）': 'Ketuk untuk lanjut ({n}/{total})',
   'スキップ ›': 'Lewati ›',
   // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
-  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
-    'Ini Gudang. Perlengkapan dan item sekali pakai yang tidak ada di ransel disimpan di sini.',
   '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
     'Ubah perlengkapan yang tidak terpakai jadi emas dengan "Pilih & Jual" atau "Jual Massal".',
   '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
@@ -736,4 +693,74 @@ export const UI: Dict = {
     'Dipakai di {boards}.\nKalau dijual, perlengkapan ini keluar dari papan itu.',
   'ほかの盤面で使っている装備です（詳細から売れます）':
     'Dipakai di papan lain (bisa dijual dari detailnya)',
+  '盤面の起点（番号の石）から出口（矢印）をたどって、隣のマスの装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が発火し、つながった装備が順番に攻撃します。起点は盤面に1つだけ。':
+    'Rantai berjalan dari Asal (batu bernomor) di papanmu mengikuti jalurnya (panah) ke item di petak sebelah. Saat bar di bawah pahlawan (Jeda Serangan) penuh, Asal terpicu dan item yang tersambung menyerang satu per satu. Hanya satu Asal per papan.',
+  盤面と重ね: 'Papan dan Tumpukan',
+  '・同じ装備は、同じマスに3つまで重ねられます（深い盤面は4つ）。重ねた装備は下から順に鳴り、上ほど強い（下から×1、×1.5、×2）。矢印の向きは一番上の装備で決まります。':
+    '• Item yang sama bisa ditumpuk sampai 3 di satu petak (4 di Papan Dalam). Tumpukan berbunyi dari bawah ke atas, dan makin atas makin kuat (dari bawah ×1, ×1,5, ×2). Arah panah ditentukan item paling atas.',
+  '・アーティファクトは重ねられませんが、1つで3回鳴ります（深い盤面は4回）。':
+    '• Artefak tidak bisa ditumpuk, tapi satu saja berbunyi 3 kali (4 kali di Papan Dalam).',
+  '・敵を倒しても連鎖は途切れません。連鎖の数もそのまま、次の敵へ続きます。':
+    '• Mengalahkan musuh tidak memutus rantai. Hitungan rantai berlanjut ke musuh berikutnya.',
+  '・地域を抜けると、新しい盤面がもらえます。盤面ごとに形や得意なことがちがいます。並べ方とアクセサリーは盤面ごとに覚えていて、配置画面の上の ◀ ▶ で切り替えます。':
+    '• Tuntaskan wilayah untuk mendapat papan baru. Tiap papan punya bentuk dan keunggulan sendiri. Susunan dan aksesori diingat per papan; ganti papan dengan ◀ ▶ di atas layar Susun.',
+  '・ほかの盤面で使っている装備には、その盤面の名前の印が付きます。まとめて売る・一括売却・合成の材料には入りません。':
+    '• Perlengkapan yang dipakai di papan lain diberi tanda nama papan itu. Perlengkapan itu tidak ikut Pilih & Jual, Jual Massal, atau jadi bahan Fusi.',
+  '攻撃力 × レアリティ × 重ね × 連鎖倍率 × コンボ × アクセサリー × 熟練 × 強化 × 追加効果 × 会心（±10%ゆれる）':
+    'Serangan × Kelangkaan × Tumpukan × Pengganda rantai × Kombo × Aksesori × Penguasaan × Peningkatan × Bonus × Kritikal (variasi ±10%)',
+  '・同じ装備がそろったら重ねる。一番上（×2）には一番強いものを。':
+    '• Kalau punya item yang sama, tumpuk. Taruh yang terkuat di paling atas (×2).',
+  熟練と必殺技: 'Penguasaan dan Jurus Spesial',
+  '・装備が鳴るたびに、その属性の熟練がたまります。Lvが1上がるごとに、その属性の装備のダメージ+3%（Lv30まで）。':
+    '• Setiap kali item berbunyi, Penguasaan elemennya bertambah. Tiap naik 1 level, damage perlengkapan elemen itu +3% (sampai Lv30).',
+  '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
+    '• Jurus Spesial seluruhnya: {n}. Awalnya belum bisa dipakai; kamu mempelajarinya lewat "ilham" saat susunannya terbentuk. Peluang ilham = level Penguasaan elemen jurus × 15%. Jurus yang sudah dipelajari bisa dipakai selamanya dan masuk "Ensiklopedia" di Markas.',
+  アクセサリーとレリック: 'Aksesori dan Relik',
+  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• Bos, elite keemasan, dan Goblin Emas sesekali menjatuhkan aksesori. Pasang di slot tepi papan; kalau syaratnya terpenuhi, pengganda kombo seluruh rantai naik (maks. ×20).',
+  '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
+    '• Setiap kali mengalahkan bos, pilih 1 dari 3 relik dan taruh di petak papan. Relik itu memperkuat item di petak tersebut sampai ekspedisi selesai.',
+  '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':
+    '• Sesekali Goblin Emas muncul di tengah ekspedisi. Kalahkan sebelum kabur, dan ia menjatuhkan 4 perlengkapan Langka ke atas.',
+  '・挑戦では、熟練・アクセサリー・レリック・黄金ゴブリンはなし。みんな同じ条件で競います。∞では黄金ゴブリンは出ず、アクセサリーも落ちません。':
+    '• Di Tantangan tidak ada Penguasaan, aksesori, relik, atau Goblin Emas: semua bersaing dengan syarat sama. Di ∞, Goblin Emas tidak muncul dan aksesori tidak jatuh.',
+  '下は倉庫。装備を少し押さえてから、\n盤面へドラッグして置こう':
+    'Gudangmu ada di bawah. Tahan sebentar sebuah item, lalu seret ke papan.',
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n起点は盤面に1つだけ！':
+    'Mulai dari Asal (batu bernomor), item yang tersambung menyerang bergiliran mengikuti panah. Hanya satu Asal per papan!',
+  '同じ装備は、同じマスに重ねられる。\n上に重ねたものほど強いよ！':
+    'Item yang sama bisa ditumpuk di satu petak. Makin atas, makin kuat!',
+  '盤面のふちは、アクセサリーの枠。\n手に入れたら、ここに付けよう':
+    'Tepi papan adalah slot aksesori. Kalau sudah dapat, pasang di sini.',
+  '地域を抜けると、新しい盤面がもらえる。\nもらった盤面は、ここで切り替えよう':
+    'Tuntaskan wilayah untuk mendapat papan baru. Ganti papan di sini.',
+  '盤面と消耗品枠の {n}個をすべて倉庫に戻します。':
+    'Kembalikan semua isi papan dan slot sekali pakai ke Gudang (×{n}).',
+  起点石は盤面に1つだけ: 'Hanya satu Batu Asal per papan',
+  '拾った装備は、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'Taruh perlengkapan yang kamu temukan di papan lewat "Susun" di Markas agar makin kuat.',
+  '装備を拾ったら、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'Kalau dapat perlengkapan, taruh di papan lewat "Susun" di Markas agar makin kuat.',
+  'ここは倉庫。盤面に置いていない\n装備と消耗品が入っているよ':
+    'Ini Gudang. Perlengkapan dan item sekali pakai yang tidak ada di papan disimpan di sini.',
+  '装備は「配置」で盤面に並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
+    'Susun perlengkapan di papanmu lewat "Susun". Perlengkapan yang kamu pungut juga ditaruh di sana. Ketuk "Susun"!',
+  '盤面の装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
+    'Item di papanmu menyerang bergiliran, mulai dari Asal (batu bernomor) mengikuti panah. Itulah "rantai"!',
+  起点が盤面にありません: 'Tidak ada Asal di papanmu',
+  盤面にある限り: 'Selama ada di papanmu',
+  '装備中・ロック中・ほかの盤面で使用中・アーティファクトは売りません':
+    'Item yang dipakai, terkunci, ada di papan lain, dan Artefak tidak akan dijual',
+  '使える数: {n}つ（装備中・ロック中・ほかの盤面で使用中は除く）':
+    'Bisa dipakai: ×{n} (tidak termasuk yang dipakai, terkunci, atau ada di papan lain)',
+  挑戦用の配置: 'Susunan Tantangan',
+  この配置で挑戦できます: 'Susunan ini siap untuk Tantangan',
+  'ふだんの盤面から組みました。並べ方を詰めよう':
+    'Disusun dari papan biasamu. Sekarang sempurnakan susunannya!',
+  ふだんの盤面から組む: 'Salin Papan Biasa',
+  '今の挑戦用の配置を、ふだんの標準の盤面をもとに組み直します。\n制限に合わない装備は、使える装備に入れ替えます。':
+    'Susun ulang susunan Tantangan berdasarkan Papan Standar biasamu.\nPerlengkapan yang melanggar aturan diganti dengan perlengkapan yang diizinkan.',
+  配置する: 'Atur Susunan',
+  挑戦用の配置を組んでください: 'Susun susunan Tantangan dulu',
+  配置が制限に合っていません: 'Susunanmu tidak memenuhi aturan',
 };

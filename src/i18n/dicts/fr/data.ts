@@ -372,8 +372,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     "Applique Mouillé, Huile et Gelé d'un coup aux ennemis touchés. Les attaques de Foudre, de Feu et contondantes qui suivent deviennent toutes des combos.",
   不落の城門: 'Porte imprenable',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    "Tant qu'elle est dans ton sac à dos, tu n'es jamais à découvert pendant les chaînes et jamais sonné. +40 de Défense.",
   号令: 'Ralliement',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Remplit aussitôt la jauge sous le héros et déclenche tout de suite la prochaine Origine. Inutilisable pendant une chaîne.',
@@ -537,4 +535,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Chaîne à plat',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Un objet par case. Sans empiler : affronte les Remparts avec le seul chemin de tes flèches.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    "Tant qu'elle est sur ton plateau, tu n'es jamais à découvert pendant les chaînes et jamais sonné. +40 de Défense.",
 };

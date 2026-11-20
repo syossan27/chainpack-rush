@@ -71,15 +71,11 @@ export const UI: Dict = {
 
   // src/scenes/BaseScene.ts
   基本: 'Basics',
-  '起点から出口（矢印）をたどって、隣の装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が順に発火し、つながった装備が順番に攻撃します。':
-    'A chain runs from an Origin along its exits (arrows) into the next items. When the gauge under the hero (Attack Interval) fills, the Origins fire in turn and the linked items attack one after another.',
   '1回のランは30秒。走っている間は時間が止まり、敵と戦っている間だけ減ります。':
     'A run lasts 30 seconds. The timer stops while the hero walks and only runs down during fights.',
   '時間は、群れを1回の連鎖でまとめて倒す（一網打尽）と+1.5秒、ボスを倒すと+8秒、時の砂で+5秒のびます。上限はないので、倒し続けるほど長く戦えます。':
     "Wiping out a whole pack with one chain (a Wipeout) adds 1.5s, defeating a boss adds 8s, and Sands of Time adds 5s. There's no cap, so the more you defeat, the longer you fight.",
   ダメージの決まり方: 'How Damage Works',
-  '攻撃力 × レアリティ × 連鎖倍率 × コンボ × 強化 × 追加効果 × 会心（±10%ゆれる）':
-    'Attack × Rarity × Chain multiplier × Combo × Upgrades × Bonuses × Critical (±10% variance)',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rarity: Common ×1, Rare ×1.5, Epic ×2.5, Legendary ×4',
   '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
@@ -105,8 +101,6 @@ export const UI: Dict = {
   必殺技: 'Special Moves',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'When a chain passes through 3 specific items in order, the 3rd hit becomes a Special Move (×2.5 damage, and the hero lunges in). On the Loadout screen, that cell shows "Special".',
-  '・必殺技は全部で{n}つ。初めて出すと「発見」と出て、拠点の「図鑑」に発動条件が載ります。まだ見つけていない技は、図鑑でヒントだけ見られます。':
-    '• Special Moves to find: {n}. The first time you pull one off, you\'ll see "Special Move found!" and its recipe goes into the "Codex" at Base. For moves you haven\'t found yet, the Codex shows only a hint.',
   短い連鎖と長い連鎖: 'Short vs. Long Chains',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• The wait before the next firing grows with how many items went off in the last chain (armor counts too). Short chains cycle fast; long chains hit big.',
@@ -129,10 +123,6 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Storage, Smith & Fusing',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Consumable slots remember what you put in them. When you use one up in a run, the same item is refilled from Storage automatically (if you have none, the slot shows a faint "Auto" and fills once you get one). Remove it by hand to stop this.',
-  '・どこを変えれば強くなるか迷ったら、配置画面の「診断」。入れ替え・置きかえ・空きマスを実際に試して、伸びる手を教えてくれます（並べ替えは自分で。「場所を見る」で関係するマスが光ります）。':
-    '• Not sure what to change? Tap "Advice" on the Loadout screen. It tries swaps, replacements and empty cells, and shows what helps (you rearrange yourself; "Show Where" lights up the cells).',
-  '・配置画面の上の1〜5で編成を切り替えられます（凍結型・炎上型などを作り分け）。編成は並べ方の記録だけで、装備は倉庫に置いたまま。今の編成をもう一度押すと名前を変えられます。ほかの編成で使っている装備には「編成○」の印が付き、一括売却などでは売られません。':
-    '• Switch Sets with 1-5 at the top of the Loadout screen (e.g. a Frozen build and a Fire build). A Set only saves the layout; the gear stays in Storage. Tap the current Set again to rename it. Gear used in another Set is marked "Set ○" and won\'t be sold by Bulk Sell and the like.',
   '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
     '• With "Auto-Sell" in Storage, loot at or below a chosen rarity is sold automatically after each run (you can choose to keep ✦ items).',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
@@ -189,8 +179,6 @@ export const UI: Dict = {
   '✦付きは残す：オン': 'Keep ✦ Gear: On',
   '✦付きは残す：オフ': 'Keep ✦ Gear: Off',
   一括売却: 'Bulk Sell',
-  '装備中・ロック中・編成で使用中・アーティファクトは売りません':
-    'Equipped, locked and Set gear and Artifacts are never sold',
   向きの付け直し: 'Reforge',
   合成: 'Fuse',
   この装備は向きを付け直せません: "This item can't be reforged",
@@ -242,7 +230,6 @@ export const UI: Dict = {
   'アーティファクトは重ねられません（1つで{n}回鳴ります）':
     'Artifacts can’t stack (one rings {n} times)',
   '1マスに重ねられるのは{n}つまで': 'Up to {n} per cell',
-  試作では起点石は1つだけ: 'Only one Origin Stone in the prototype',
   デバッグ機能: 'Debug Mode',
   着せ替えの見た目をすべて試せます: 'You can try on every look in the Wardrobe',
   言語: 'Language',
@@ -258,8 +245,6 @@ export const UI: Dict = {
     'Sells from your loot after each run. Consumables and Artifacts are never sold.',
   'ようこそ！\n勇者が自動で進んで、敵と戦うゲームだよ。\nまずは「出撃」を押してみよう！':
     'Welcome!\nYour hero marches on and fights enemies all on their own. First, try tapping "Go!"',
-  '装備は「配置」でバックパックに並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
-    'You arrange gear in your backpack under "Loadout". Gear you pick up goes there too. Tap "Loadout"!',
   '鍛冶屋では、装備の出口の向きを変えたり、\n同じ装備を3つ集めて「合成」して\n上のレアリティを狙えるよ':
     'At the Smith, you can change the directions of an item\'s exits, or "Fuse" 3 of the same item to aim for a higher rarity.',
   '合成 {gold}G': 'Fuse {gold}G',
@@ -277,8 +262,6 @@ export const UI: Dict = {
   '「○つ」の印は、3つ以上揃っている装備です': 'A "×○" mark means you have 3 or more of that item',
   '{rarity} ×3 → {target}の{to} ×1': '{rarity} ×3 → {to} {target} ×1',
   '{rarity} ×3 → {to} ×1': '{rarity} ×3 → {to} ×1',
-  '使える数: {n}つ（装備中・ロック中・ほかの編成で使用中は除く）':
-    'Usable: ×{n} (not counting equipped, locked, or used in other Sets)',
   '成功率 {rate}%': 'Success rate {rate}%',
   '失敗すると{rarity}のランダムな装備が1つ（追加効果・向きは新しく）':
     'If it fails: 1 random {rarity} item (new bonuses and exits)',
@@ -339,20 +322,10 @@ export const UI: Dict = {
   まだ挑戦していません: 'Not tried yet',
   '装備 {n}個・起点 {origins}個': 'Gear: {n} · Origins: {origins}',
   まだ組んでいません: 'Not built yet',
-  挑戦用の編成: 'Challenge Set',
-  この編成で挑戦できます: 'This Set is ready for the Challenge',
-  'ふだんの編成から組みました。並べ方を詰めよう':
-    'Built from your Loadout. Now fine-tune the layout!',
-  ふだんの編成から組む: 'Build from Loadout',
-  '今の挑戦用の編成を、ふだんの編成をもとに組み直します。\n制限に合わない装備は、同じ種類の使える装備に入れ替えます。':
-    'Rebuild your Challenge Set from your Loadout.\nGear that breaks the rules is swapped for allowed gear of the same kind.',
   組み直す: 'Rebuild',
   '出撃できる形まで組むだけ。並べ方を詰めるのはあなた次第':
     'It only builds a setup you can run. Fine-tuning is up to you.',
-  編成する: 'Edit Set',
   挑戦する: 'Start!',
-  挑戦用の編成を組んでください: 'Build your Challenge Set first',
-  編成が制限に合っていません: "Your Set doesn't meet the rules",
   '達成 {done} / {total}': 'Completed {done} / {total}',
   達成: 'Done',
   '見つけた必殺技 {found} / {total}': 'Special Moves found {found} / {total}',
@@ -385,10 +358,6 @@ export const UI: Dict = {
   全部外す: 'Clear All',
   使えない: 'Not allowed',
   挑戦へ: 'Challenge',
-  '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
-    'Your Storage is below. Press and hold an item for a moment, then drag it into the backpack.',
-  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n後ろの装備ほどダメージが大きい！':
-    'Starting from an Origin (the numbered stone), linked items attack in turn along the arrows. Later links hit harder!',
   '「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！':
     'The bigger the "~" number, the stronger the layout. Try out different ideas!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
@@ -414,8 +383,6 @@ export const UI: Dict = {
   '消耗品|slots': 'Consumables',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Undid the last change',
-  'バックパックと消耗品枠の {n}個をすべて倉庫に戻します。\n起点の発火順もリセットされます。':
-    'Return everything in the backpack and consumable slots to Storage (×{n}).\nThe Origin firing order resets too.',
   置きたいマスをタップ: 'Tap a cell to place it',
   外す: 'Remove',
   発火順を前へ: 'Fire Earlier',
@@ -483,16 +450,10 @@ export const UI: Dict = {
     'You got gear from chests!\nTap an item after it opens to see its stats.',
   '敵を倒すと、宝箱から装備が手に入るよ。\n開いたあとにタップすると、能力が見られる':
     'Defeat enemies to get gear from chests. Tap an item after it opens to see its stats.',
-  '拾った装備は、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'Put the gear you found in your backpack under "Loadout" at Base to get stronger.',
-  '装備を拾ったら、拠点の「配置」で\nバックパックに置くと強くなるよ':
-    'When you find gear, put it in your backpack under "Loadout" at Base to get stronger.',
 
   // src/scenes/RunScene.ts
   '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！':
     "Just this once, you've borrowed legendary gear! Collect gear and someday you'll be this strong!",
-  'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
-    'Items in your backpack attack in order, starting from an Origin (the numbered stone) and following the arrows. That\'s a "chain"!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Starting from an Origin (the numbered stone), items attack in order along the arrows. That\'s a "chain"! The longer the chain, the bigger the damage.',
   '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
@@ -539,7 +500,6 @@ export const UI: Dict = {
   // src/scenes/StageSelectScene.ts
   地域を選ぶ: 'Choose a Region',
   '出撃！': 'Go!',
-  起点がバックパックにありません: 'No Origin in your backpack',
   '出撃する地域を選ぶよ。最初は「草原」。\n奥の地域ほど敵は強いけど、\nいい装備が出やすいよ':
     'Choose where to go. Start with "Grassland". Deeper regions have tougher enemies, but better gear drops more often.',
   '準備ができたら「出撃！」': 'When you\'re ready, tap "Go!"',
@@ -631,7 +591,6 @@ export const UI: Dict = {
   連鎖終了時に加算: 'Added when the chain ends',
   守り: 'Guard',
   連鎖中も無防備にならない: 'Never unguarded in chains',
-  バックパックにある限り: 'While in your backpack',
   この配置: 'This Layout',
   どの起点からも届きません: 'No Origin reaches it',
   '起点{origin}の{step}連鎖目 ×{mult}': 'Origin {origin}, link {step} ×{mult}',
@@ -669,8 +628,6 @@ export const UI: Dict = {
   'タップで次へ（{n}/{total}）': 'Tap to continue ({n}/{total})',
   'スキップ ›': 'Skip ›',
   // src/scenes/BaseScene.ts (guides for the storage / smith / upgrade tabs)
-  'ここは倉庫。バックパックに置いていない\n装備と消耗品が入っているよ':
-    "This is your Storage. Gear and consumables that aren't in your backpack are kept here.",
   '使わない装備は「まとめて売る」や\n「一括売却」で、ゴールドにできるよ':
     'Turn unused gear into gold with "Select & Sell" or "Bulk Sell".',
   '装備をタップすると、能力と\n「売る」などのボタンが出るよ。\n押してみよう':
@@ -730,4 +687,74 @@ export const UI: Dict = {
     'Used on {boards}.\nIf you sell it, it leaves that board.',
   'ほかの盤面で使っている装備です（詳細から売れます）':
     'Used on another board (you can sell it from its details)',
+  '盤面の起点（番号の石）から出口（矢印）をたどって、隣のマスの装備へ連鎖がつながります。勇者の足元のゲージ（攻撃間隔）がたまると起点が発火し、つながった装備が順番に攻撃します。起点は盤面に1つだけ。':
+    'A chain runs from the Origin (the numbered stone) on your board along its exits (arrows) into the items on the next cells. When the gauge under the hero (Attack Interval) fills, the Origin fires and the linked items attack one after another. Only one Origin per board.',
+  盤面と重ね: 'Boards and Stacks',
+  '・同じ装備は、同じマスに3つまで重ねられます（深い盤面は4つ）。重ねた装備は下から順に鳴り、上ほど強い（下から×1、×1.5、×2）。矢印の向きは一番上の装備で決まります。':
+    '• You can stack up to 3 of the same item on one cell (4 on the Deep Board). A stack rings from the bottom up, and higher items hit harder (×1, ×1.5, ×2 from the bottom). The top item decides the arrow.',
+  '・アーティファクトは重ねられませんが、1つで3回鳴ります（深い盤面は4回）。':
+    "• Artifacts can't be stacked, but one rings 3 times (4 on the Deep Board).",
+  '・敵を倒しても連鎖は途切れません。連鎖の数もそのまま、次の敵へ続きます。':
+    "• Defeating an enemy doesn't break the chain. The chain count carries on to the next enemy.",
+  '・地域を抜けると、新しい盤面がもらえます。盤面ごとに形や得意なことがちがいます。並べ方とアクセサリーは盤面ごとに覚えていて、配置画面の上の ◀ ▶ で切り替えます。':
+    '• Clear a region to earn a new board. Each board has its own shape and strengths. Each board remembers its own layout and accessories; switch with ◀ ▶ at the top of the Loadout screen.',
+  '・ほかの盤面で使っている装備には、その盤面の名前の印が付きます。まとめて売る・一括売却・合成の材料には入りません。':
+    "• Gear used on another board is marked with that board's name. It's never included in Select & Sell, Bulk Sell, or fusion materials.",
+  '攻撃力 × レアリティ × 重ね × 連鎖倍率 × コンボ × アクセサリー × 熟練 × 強化 × 追加効果 × 会心（±10%ゆれる）':
+    'Attack × Rarity × Stack × Chain multiplier × Combo × Accessories × Mastery × Upgrades × Bonuses × Critical (±10% variance)',
+  '・同じ装備がそろったら重ねる。一番上（×2）には一番強いものを。':
+    '• When you have matching items, stack them. Put the strongest on top (×2).',
+  熟練と必殺技: 'Mastery and Special Moves',
+  '・装備が鳴るたびに、その属性の熟練がたまります。Lvが1上がるごとに、その属性の装備のダメージ+3%（Lv30まで）。':
+    "• Every time an item rings, its element's Mastery grows. Each level adds +3% damage to that element's gear (up to Lv 30).",
+  '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
+    '• Special Moves in total: {n}. You start without them and learn one with a "spark" when its line-up comes together. The spark chance is the Mastery level of the move\'s element × 15%. Once learned, a move is yours for good and goes into the "Codex" at Base.',
+  アクセサリーとレリック: 'Accessories and Relics',
+  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    "• Bosses, Golden elites and Golden Goblins rarely drop accessories. In the slots around the board's edge, they raise the whole chain's combo multiplier when their condition is met (up to ×20).",
+  '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
+    '• Each time you defeat a boss, pick 1 of 3 relics and place it on a board cell. It powers up the item on that cell for the rest of the run.',
+  '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':
+    '• Now and then a Golden Goblin shows up during a run. Defeat it before it runs away and it drops 4 items of Rare or better.',
+  '・挑戦では、熟練・アクセサリー・レリック・黄金ゴブリンはなし。みんな同じ条件で競います。∞では黄金ゴブリンは出ず、アクセサリーも落ちません。':
+    '• Challenges have no Mastery, accessories, relics or Golden Goblins, so everyone competes on equal terms. In ∞, no Golden Goblins appear and no accessories drop.',
+  '下は倉庫。装備を少し押さえてから、\n盤面へドラッグして置こう':
+    'Your Storage is below. Press and hold an item for a moment, then drag it onto the board.',
+  '起点（番号の石）から、矢印の向きに\nつながった装備が順番に攻撃するよ。\n起点は盤面に1つだけ！':
+    'Starting from the Origin (the numbered stone), linked items attack in turn along the arrows. Only one Origin per board!',
+  '同じ装備は、同じマスに重ねられる。\n上に重ねたものほど強いよ！':
+    'You can stack the same item on one cell. The higher in the stack, the harder it hits!',
+  '盤面のふちは、アクセサリーの枠。\n手に入れたら、ここに付けよう':
+    "The board's edge holds accessory slots. When you get an accessory, put it here.",
+  '地域を抜けると、新しい盤面がもらえる。\nもらった盤面は、ここで切り替えよう':
+    'Clear a region to earn a new board. Switch boards here.',
+  '盤面と消耗品枠の {n}個をすべて倉庫に戻します。':
+    'Return everything on the board and in the consumable slots to Storage (×{n}).',
+  起点石は盤面に1つだけ: 'Only one Origin Stone per board',
+  '拾った装備は、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'Put the gear you found on your board under "Loadout" at Base to get stronger.',
+  '装備を拾ったら、拠点の「配置」で\n盤面に置くと強くなるよ':
+    'When you find gear, put it on your board under "Loadout" at Base to get stronger.',
+  'ここは倉庫。盤面に置いていない\n装備と消耗品が入っているよ':
+    "This is your Storage. Gear and consumables that aren't on your board are kept here.",
+  '装備は「配置」で盤面に並べるよ。\n拾った装備もここで置ける。\n「配置」を押してね':
+    'You arrange gear on your board under "Loadout". Gear you pick up goes there too. Tap "Loadout"!',
+  '盤面の装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！':
+    'Items on your board attack in order, starting from the Origin (the numbered stone) and following the arrows. That\'s a "chain"!',
+  起点が盤面にありません: 'No Origin on your board',
+  盤面にある限り: 'While on your board',
+  '装備中・ロック中・ほかの盤面で使用中・アーティファクトは売りません':
+    'Equipped, locked and other-board gear and Artifacts are never sold',
+  '使える数: {n}つ（装備中・ロック中・ほかの盤面で使用中は除く）':
+    'Usable: ×{n} (not counting equipped, locked, or used on other boards)',
+  挑戦用の配置: 'Challenge Layout',
+  この配置で挑戦できます: 'This layout is ready for the Challenge',
+  'ふだんの盤面から組みました。並べ方を詰めよう':
+    'Built from your usual board. Now fine-tune the layout!',
+  ふだんの盤面から組む: 'Build from Usual Board',
+  '今の挑戦用の配置を、ふだんの標準の盤面をもとに組み直します。\n制限に合わない装備は、使える装備に入れ替えます。':
+    'Rebuild your Challenge layout from your usual Standard Board.\nGear that breaks the rules is swapped for allowed gear.',
+  配置する: 'Edit Layout',
+  挑戦用の配置を組んでください: 'Build your Challenge layout first',
+  配置が制限に合っていません: "Your layout doesn't meet the rules",
 };

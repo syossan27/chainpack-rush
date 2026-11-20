@@ -374,8 +374,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Memberi efek Basah, Minyak, dan Beku sekaligus ke musuh yang terkena. Serangan Petir, Api, dan Hantam setelahnya semua jadi kombo.',
   不落の城門: 'Gerbang Kebal',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Selama ada di ranselmu, kamu tak pernah lengah saat rantai berjalan dan tak pernah terhuyung. Pertahanan +40.',
   号令: 'Seruan Perang',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Langsung mengisi penuh bar di kaki pahlawan dan memicu Asal berikutnya saat itu juga. Tak bisa dipakai saat rantai berjalan.',
@@ -536,4 +534,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Rantai Datar',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Satu per petak. Tanpa tumpuk: taklukkan Benteng hanya dengan jalur panahmu.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    'Selama ada di papanmu, kamu tak pernah lengah saat rantai berjalan dan tak pernah terhuyung. Pertahanan +40.',
 };

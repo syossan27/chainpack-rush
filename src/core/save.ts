@@ -72,7 +72,7 @@ export interface SaveData {
   endless: { bestLoop: number; bestDamage: number };
   /** 2週替わりの挑戦の自己ベスト（期間の番号ごと。今の期間だけ残す） */
   challenge: { period: number; best: number; bestLoop: number };
-  /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
+  /** 挑戦用の配置（並べ方の記録。ふだんの盤面とは別。いつも標準の盤面） */
   challengeLoadout: Loadout | null;
   /**
    * The stacked boards: the chosen one (its layout is `loadout`), the other boards' layouts, and each
@@ -98,7 +98,7 @@ export interface SaveData {
   look: Look;
   /** Owned looks not seen in the wardrobe yet (the NEW marks) */
   newCosmetics: string[];
-  /** 配置画面で挑戦用の編成を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
+  /** 配置画面で挑戦用の配置を編集中（loadout に挑戦用が入っている）。途中で閉じたら読み込み時に戻す */
   editingChallenge?: boolean;
   /** 報酬つき広告の、今日の受け取り回数（日付が変わったら 0 から） */
   adLog: { date: string; counts: Record<string, number> };

@@ -8,7 +8,7 @@ export const TUTORIAL_KEYS = [
   'demoEnd',
   'result',
   'loadoutGo',
-  'loadout',
+  'board',
   'smith',
   // "Try it" guides for the base tabs, shown once each when the player can use them
   'storageGo',

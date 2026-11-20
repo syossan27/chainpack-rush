@@ -150,7 +150,7 @@ export class RunScene extends Phaser.Scene {
     session.challenge = null;
     this.demo = !this.challenge && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
-    // 挑戦は挑戦用の編成で（消耗品の入れ直しも挑戦用の編成に）
+    // 挑戦は挑戦用の配置で（消耗品の入れ直しも挑戦用の配置に）
     const challengeRules = this.challenge
       ? challengeOfPeriod(this.challenge.period).rules
       : undefined;
@@ -278,7 +278,7 @@ export class RunScene extends Phaser.Scene {
           text: t(
             this.demo
               ? '今回だけ、伝説の装備を借りてきたよ！\n装備を集めると、いつかこうなる！'
-              : 'バックパックの装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
+              : '盤面の装備は、起点（番号の石）から\n矢印の向きに順番に攻撃するよ。\nこれが「連鎖」！',
           ),
         },
         ...(this.demo

@@ -13,6 +13,17 @@ describe('初心者向けの案内', () => {
     expect(deserializeSave(serializeSave(s)).tutorialSeen).toEqual(['home', 'run']);
   });
 
+  it('配置画面の案内は board。前の版で loadout を見た人にも board は出る', () => {
+    const keys: readonly string[] = TUTORIAL_KEYS;
+    expect(keys).toContain('board');
+    expect(keys).not.toContain('loadout');
+    expect(keys).not.toContain('merge');
+    const s = createInitialSave();
+    s.tutorialSeen = ['home', 'loadout'];
+    const again = deserializeSave(serializeSave(s));
+    expect(again.tutorialSeen).not.toContain('board');
+  });
+
   it('案内を入れる前のセーブ: もう遊んだ人には出さず、まだの人には出す', () => {
     const played = JSON.parse(serializeSave(createInitialSave()));
     delete played.tutorialSeen;

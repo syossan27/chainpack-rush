@@ -558,7 +558,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     defense: 40,
     guardAll: true,
     artifact: { exits: ['up', 'down'] },
-    description: 'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。',
+    description: '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。',
   },
 
   {

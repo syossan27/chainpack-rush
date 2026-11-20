@@ -370,8 +370,6 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Aplica Molhado, Óleo e Congelado de uma vez nos inimigos atingidos. Ataques de Raio, Fogo e Impacto que vêm depois viram combos.',
   不落の城門: 'Portão Inabalável',
-  'バックパックにある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Enquanto estiver na mochila, você nunca fica desprotegido durante correntes e nunca cambaleia. +40 de Defesa.',
   号令: 'Grito de Guerra',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Enche na hora a barra aos pés do herói e dispara a próxima Origem. Não pode ser usado durante uma corrente.',
@@ -534,4 +532,6 @@ export const DATA: Dict = {
   重ねない連鎖: 'Corrente Plana',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Um item por casa. Sem empilhar: encare as Muralhas só com o caminho das suas setas.',
+  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
+    'Enquanto estiver no tabuleiro, você nunca fica desprotegido durante correntes e nunca cambaleia. +40 de Defesa.',
 };
