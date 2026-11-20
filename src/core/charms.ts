@@ -5,7 +5,7 @@
 // events in the cells of its line. When one event reaches two charms (the cell where a column and a
 // row cross), the column's goes first. The multiplier starts at ×1 every chain and never goes
 // above CHARM.cap.
-import { CHARM } from '../config/balance';
+import { CHARM, COMBOS, POISON } from '../config/balance';
 import { getBoard, type BoardDef } from '../data/boards';
 import { CHARMS, getCharm, type CharmId, type CharmTrigger } from '../data/charms';
 import { getItemDef } from '../data/items';
@@ -39,6 +39,7 @@ export interface CharmContext {
 export interface CharmFire {
   slot: number;
   op: '+' | '×';
+  /** What it added this time (a weaker combo adds less than the charm's value) */
   value: number;
   /** The multiplier after this charm */
   m: number;
@@ -106,12 +107,29 @@ export function stackTop(step: ChainStep, ctx: CharmContext): boolean {
   return ctx.full.has(step.cell) && step.ring === ctx.depth - 1;
 }
 
-/** One event in a cell: the charms of its column and row that react, in that order */
+const STRONGEST_COMBO = Math.max(...COMBOS.map((r) => r.mult));
+
+/**
+ * How much of a combo charm's value a combo is worth (0..1): the strongest status combo (感電) and
+ * 毒爆 (it takes five wind hits to build) count in full, weaker ones by how much they multiply —
+ * so light ↔ dark, a combo on every link, cannot pin the cap every chain
+ */
+export function comboWeight(name: string): number {
+  if (name === POISON.burstName) return 1;
+  const rule = COMBOS.find((r) => r.name === name);
+  return rule ? (rule.mult - 1) / (STRONGEST_COMBO - 1) : 1;
+}
+
+/**
+ * One event in a cell: the charms of its column and row that react, in that order. `weight` scales
+ * what each charm adds (a combo's comboWeight; 1 for every other event)
+ */
 export function applyCharmEvent(
   m: number,
   trigger: CharmTrigger,
   cell: number,
   ctx: CharmContext,
+  weight = 1,
 ): { m: number; fired: CharmFire[] } {
   const fired: CharmFire[] = [];
   for (const slot of slotsOfCell(cell, ctx.width)) {
@@ -119,7 +137,8 @@ export function applyCharmEvent(
     const def = c ? getCharm(c.defId) : undefined;
     if (!c || !def || def.trigger !== trigger) continue;
     if (def.id === 'match_ring' && !ctx.matched.has(slot)) continue;
-    const value = charmValue(c);
+    const full = charmValue(c);
+    const value = def.op === '+' ? full * weight : 1 + (full - 1) * weight;
     m = Math.min(CHARM.cap, def.op === '+' ? m + value : m * value);
     fired.push({ slot, op: def.op, value, m });
   }

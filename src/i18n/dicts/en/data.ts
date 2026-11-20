@@ -512,8 +512,8 @@ export const DATA: Dict = {
     'If all attack gear in its row/column shares one element: Combo +{v} each time a cell fires',
   連鎖の首飾り: 'Combo Necklace',
   鎖: 'Co',
-  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
-    'Combo ×{v} on every status combo in its row/column',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）':
+    'Combo ×{v} on every status combo in its row/column (less for weak combos)',
   技の腕輪: 'Special Bangle',
   技: 'Sp',
   '付けた行・列で必殺技が出るたびにコンボ +{v}':

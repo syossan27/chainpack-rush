@@ -520,8 +520,8 @@ export const DATA: Dict = {
     'Jika semua perlengkapan serang di baris/kolomnya berelemen sama: Kombo +{v} tiap petak menyerang',
   連鎖の首飾り: 'Kalung Kombo',
   鎖: 'Ko',
-  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
-    'Kombo ×{v} tiap kombo status di baris/kolomnya',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）':
+    'Kombo ×{v} tiap kombo status di baris/kolomnya (kombo lemah lebih kecil)',
   技の腕輪: 'Gelang Jurus',
   技: 'Ju',
   '付けた行・列で必殺技が出るたびにコンボ +{v}': 'Kombo +{v} tiap Jurus Spesial di baris/kolomnya',

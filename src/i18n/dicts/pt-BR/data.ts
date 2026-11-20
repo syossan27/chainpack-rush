@@ -517,8 +517,8 @@ export const DATA: Dict = {
     'Se todo o equipamento de ataque da sua linha/coluna tiver o mesmo elemento: Combo +{v} a cada casa que dispara',
   連鎖の首飾り: 'Colar de Combo',
   鎖: 'Co',
-  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
-    'Combo ×{v} a cada combo de status na sua linha/coluna',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）':
+    'Combo ×{v} a cada combo de status na sua linha/coluna (combos fracos, menos)',
   技の腕輪: 'Bracelete Especial',
   技: 'Es',
   '付けた行・列で必殺技が出るたびにコンボ +{v}':

@@ -39,6 +39,7 @@ import {
   applyCharmEvent,
   cellTop,
   charmContext,
+  comboWeight,
   rollCharmDrop,
   stackTop,
   type CharmContext,
@@ -1306,9 +1307,9 @@ export class Combat {
   }
 
   /** Trial (charms): an event in a cell raises the chain's combo multiplier (no charms: nothing) */
-  private charmEvent(c: ActiveChain, trigger: CharmTrigger, cell: number): void {
+  private charmEvent(c: ActiveChain, trigger: CharmTrigger, cell: number, weight = 1): void {
     if (!this.charms) return;
-    const r = applyCharmEvent(c.charmM, trigger, cell, this.charms);
+    const r = applyCharmEvent(c.charmM, trigger, cell, this.charms, weight);
     c.charmM = r.m;
     for (const f of r.fired) this.emit({ type: 'charm', tick: this.tick, ...f });
   }
@@ -1368,12 +1369,13 @@ export class Combat {
     // Trial (charms): the whole attack uses the multiplier as it was when the attack began
     const charmM = c.charmM;
     let landed = false;
-    let comboed = false;
+    // Trial (charms): the strongest combo this attack made (0: none)
+    let comboW = 0;
     for (const t of targets) {
       const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
       if (combo) {
-        comboed = true;
+        comboW = Math.max(comboW, comboWeight(combo.name));
         t.statuses.delete(combo.status);
         this.emit({
           type: 'combo',
@@ -1450,7 +1452,8 @@ export class Combat {
       if (def.appliesAll && t.hp > 0)
         for (const st of ['wet', 'oil', 'frozen'] as const) this.applyStatus(t, st);
       // 風: 毒の敵に毒を重ねる。重ね切った敵なら毒爆
-      if (def.element === 'wind' && t.hp > 0) this.windOnPoison(c, t, uid, eff);
+      if (def.element === 'wind' && t.hp > 0 && this.windOnPoison(c, t, uid, eff))
+        comboW = Math.max(comboW, comboWeight(POISON.burstName));
       if (t.hp <= 0 && t.alive) {
         this.killEnemy(t, mods.relic === 'claw');
         // Trial (charms): とどめ counts every enemy this attack beats
@@ -1459,7 +1462,7 @@ export class Combat {
     }
     // Trial (charms): once per attack, however many enemies it reached
     if (landed && crit) this.charmEvent(c, 'crit', mods.cell);
-    if (comboed) this.charmEvent(c, 'combo', mods.cell);
+    if (comboW > 0) this.charmEvent(c, 'combo', mods.cell, comboW);
   }
 
   /** The region's resistance to this element (not on the scarecrow, which only shows numbers) */
@@ -1562,14 +1565,17 @@ export class Combat {
       t.guardBrokenUntil = this.tick + secToTicks(BOSS.guardBreakSeconds);
   }
 
-  /** 風が毒の敵に当たった: 毒を1重ふやして時間を延ばす。重ね切っていたら、残りの毒をまとめて与える */
-  private windOnPoison(c: ActiveChain, t: EnemyState, uid: string, eff: number): void {
+  /**
+   * 風が毒の敵に当たった: 毒を1重ふやして時間を延ばす。重ね切っていたら、残りの毒をまとめて与える。
+   * Returns true when it burst (毒爆)
+   */
+  private windOnPoison(c: ActiveChain, t: EnemyState, uid: string, eff: number): boolean {
     const until = t.statuses.get('poison');
-    if (until === undefined || t.poisonDps <= 0) return;
+    if (until === undefined || t.poisonDps <= 0) return false;
     if (t.poisonLayers < POISON.maxLayers) {
       t.poisonLayers++;
       this.applyStatus(t, 'poison');
-      return;
+      return false;
     }
     const left = Math.max(0, until - this.tick) / SIM.ticksPerSecond;
     const dmg = Math.round(t.poisonDps * t.poisonLayers * left * POISON.burstMult * 100) / 100;
@@ -1583,7 +1589,7 @@ export class Combat {
       name: POISON.burstName,
       label: POISON.burstLabel,
     });
-    if (dmg <= 0) return;
+    if (dmg <= 0) return true;
     this.emit({
       type: 'hit',
       tick: this.tick,
@@ -1599,6 +1605,7 @@ export class Combat {
     c.totalDamage += dmg;
     this.stats.totalDamage += dmg;
     if (dmg > this.stats.maxDamage) this.stats.maxDamage = dmg;
+    return true;
   }
 
   private applyStatus(e: EnemyState, status: Status): void {

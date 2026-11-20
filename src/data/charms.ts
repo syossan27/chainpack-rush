@@ -9,8 +9,8 @@ export type CharmId =
 
 /**
  * What a charm watches in its line:
- * cell: an attack cell has rung (once per cell; a stack at its top) / combo: a status combo (once
- * per attack) /
+ * cell: an attack cell has rung (once per cell; a stack at its top) / combo: a status combo or
+ * 毒爆 (once per attack; a weaker combo adds less, see comboWeight in core/charms.ts) /
  * tech: a technique fires / crit: an attack crits (once per attack) / kill: an enemy falls (each) /
  * stackTop: the top of a full stack rings
  */
@@ -44,7 +44,7 @@ export const CHARMS: readonly CharmDef[] = [
     op: '×',
     trigger: 'combo',
     values: { common: 1.2, rare: 1.25, epic: 1.35, legendary: 1.45 },
-    text: '付けた行・列で状態コンボが起きるたびにコンボ ×{v}',
+    text: '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）',
   },
   {
     id: 'tech_bangle',

@@ -4,6 +4,7 @@ import {
   applyCharmEvent,
   charmContext,
   charmLit,
+  comboWeight,
   slotCells,
   slotOpen,
   slotsOfCell,
@@ -116,6 +117,28 @@ describe('試作アクセサリー: スロットと判定', () => {
     const r = applyCharmEvent(2, 'combo', 0, ctx({ 0: charm('combo_necklace', 'epic') }));
     expect(r.m).toBeCloseTo(2 * b, 10);
     expect(r.fired).toEqual([{ slot: 0, op: '×', value: b, m: r.m }]);
+  });
+
+  it('連鎖の首飾りの伸び幅はコンボの強さしだい（感電・毒爆で満額、浄化・封印は1/4）', () => {
+    expect(comboWeight('shock')).toBe(1);
+    expect(comboWeight('venom')).toBe(1);
+    expect(comboWeight('shatter')).toBeCloseTo(0.75, 10);
+    expect(comboWeight('explode')).toBeCloseTo(0.5, 10);
+    expect(comboWeight('purify')).toBeCloseTo(0.25, 10);
+    expect(comboWeight('seal')).toBeCloseTo(0.25, 10);
+    const b = getCharm('combo_necklace')!.values.epic;
+    const step = 1 + (b - 1) * 0.25;
+    const r = applyCharmEvent(
+      2,
+      'combo',
+      0,
+      ctx({ 0: charm('combo_necklace', 'epic') }),
+      comboWeight('seal'),
+    );
+    expect(r.m).toBeCloseTo(2 * step, 10);
+    expect(r.fired).toHaveLength(1);
+    expect(r.fired[0]!.value).toBeCloseTo(step, 10);
+    expect(r.fired[0]!.m).toBeCloseTo(r.m, 10);
   });
 
   it('上限がある', () => {

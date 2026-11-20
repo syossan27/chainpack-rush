@@ -206,6 +206,42 @@ describe('試作アクセサリー: 戦闘のコンボ倍率', () => {
   });
 });
 
+describe('試作アクセサリー: 連鎖の首飾りはコンボの強さで伸びる', () => {
+  const necklace = getCharm('combo_necklace')!.values.rare;
+  // poison, then wind until the poison is 5 layers deep, then one more wind: 毒爆
+  const venomRow = ['poison_dagger', ...new Array(5).fill('wind_sword')];
+
+  it('光↔闇（封印・浄化）は満額の1/4', () => {
+    const evs = dummyEvents(rowCfg(['light_sword', 'dark_sword', 'light_sword'], 'combo_necklace'));
+    const step = 1 + (necklace - 1) * 0.25;
+    const fired = charmEvs(evs);
+    expect(fired).toHaveLength(2);
+    expect(fired[0]!.value).toBeCloseTo(step, 10);
+    expect(fired[1]!.m).toBeCloseTo(step * step, 10);
+  });
+
+  it('毒爆でも反応する（満額）', () => {
+    const evs = dummyEvents(rowCfg(venomRow, 'combo_necklace'));
+    const venom = evs.find((e) => e.type === 'combo' && e.name === 'venom');
+    expect(venom).toBeDefined();
+    const fired = charmEvs(evs);
+    expect(fired).toHaveLength(1);
+    expect(fired[0]!.tick).toBe(venom!.tick);
+    expect(fired[0]!.value).toBeCloseTo(necklace, 10);
+  });
+
+  it('予想の最後の倍率も戦闘と同じ（光↔闇・毒爆）', () => {
+    for (const row of [['light_sword', 'dark_sword', 'light_sword', 'dark_sword'], venomRow]) {
+      const cfg = rowCfg(row, 'combo_necklace');
+      const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
+      const ctx = charmContext(cfg.charms!, cfg.loadout, cfg.items);
+      const est = estimateRoute(plan, cfg.items, 1, undefined, ctx);
+      expect(est.charmPeak).toBeGreaterThan(1);
+      expect(est.charmPeak).toBeCloseTo(charmEvs(dummyEvents(cfg)).at(-1)!.m, 10);
+    }
+  });
+});
+
 describe('試作アクセサリー: 予想と戦闘が同じ計算をする', () => {
   it('同じマスで + と × が反応しても、予想の最後の倍率は戦闘と同じ', () => {
     // 3x2: origin (0,0) → canteen (1,0) down → thunder (1,1) right → thunder (2,1)

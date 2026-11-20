@@ -520,8 +520,8 @@ export const DATA: Dict = {
     'Haben alle Angriffsteile seiner Zeile/Spalte dasselbe Element: Kombo +{v} für jedes Feld, das auslöst',
   連鎖の首飾り: 'Kombo-Kette',
   鎖: 'Ko',
-  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
-    'Kombo ×{v} bei jeder Zustandskombo in seiner Zeile/Spalte',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）':
+    'Kombo ×{v} bei jeder Zustandskombo in seiner Zeile/Spalte (schwache Kombos weniger)',
   技の腕輪: 'Spezial-Armreif',
   技: 'Sp',
   '付けた行・列で必殺技が出るたびにコンボ +{v}':

@@ -9,7 +9,7 @@ import type { CharmTrigger } from '../data/charms';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
-import { applyCharmEvent, cellTop, stackTop, type CharmContext } from './charms';
+import { applyCharmEvent, cellTop, comboWeight, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
 import { lineOrigin } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
@@ -49,8 +49,8 @@ export function estimateRoute(
   let combos = 0;
   const techs: string[] = [];
   let charmM = 1;
-  const charmEvent = (trigger: CharmTrigger, cell: number) => {
-    if (charms) charmM = applyCharmEvent(charmM, trigger, cell, charms).m;
+  const charmEvent = (trigger: CharmTrigger, cell: number, weight = 1) => {
+    if (charms) charmM = applyCharmEvent(charmM, trigger, cell, charms, weight).m;
   };
   for (const [index, s] of plan.steps.entries()) {
     if (s.step === null) continue;
@@ -59,9 +59,12 @@ export function estimateRoute(
     const def = getItemDef(inst.defId);
     const statused = statuses.size > 0;
     const combo = findCombo(def.element, statuses);
+    // Trial (charms): the strongest combo of this step (0: none)
+    let comboW = 0;
     if (combo) {
       statuses.delete(combo.status);
       combos++;
+      comboW = comboWeight(combo.name);
     }
     const base = computeDamage({
       atk: def.atk ?? 0,
@@ -105,6 +108,7 @@ export function estimateRoute(
         total += poisonDps * STATUS.duration * 0.5;
       } else {
         total += poisonDps * layers * STATUS.duration * 0.5 * (POISON.burstMult - 1);
+        comboW = Math.max(comboW, comboWeight(POISON.burstName));
         statuses.delete('poison');
         layers = 0;
         poisonDps = 0;
@@ -115,7 +119,7 @@ export function estimateRoute(
     // Trial (charms): after the step (both strikes of twin blades use the multiplier before it)
     if (charms) {
       // The battle's order: a combo during the attack, then the cell, technique and stack
-      if (combo) charmEvent('combo', s.cell);
+      if (comboW > 0) charmEvent('combo', s.cell, comboW);
       if (cellTop(s, charms)) charmEvent('cell', s.cell);
       if (s.tech) charmEvent('tech', s.cell);
       if (stackTop(s, charms)) charmEvent('stackTop', s.cell);

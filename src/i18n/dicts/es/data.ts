@@ -519,8 +519,8 @@ export const DATA: Dict = {
     'Si todo el equipo de ataque de su fila/columna comparte elemento: Combo +{v} por cada casilla que se activa',
   連鎖の首飾り: 'Collar de Combo',
   鎖: 'Co',
-  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}':
-    'Combo ×{v} con cada combo de estado en su fila/columna',
+  '付けた行・列で状態コンボが起きるたびにコンボ ×{v}（弱いコンボは小さめ）':
+    'Combo ×{v} con cada combo de estado en su fila/columna (menos con combos débiles)',
   技の腕輪: 'Brazalete Especial',
   技: 'Es',
   '付けた行・列で必殺技が出るたびにコンボ +{v}':
