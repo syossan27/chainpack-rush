@@ -35,21 +35,26 @@ const RARITY_RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
 
 /**
  * 盤面を組み直す: 持っている盤面ごとに autoBoard を決まった形で1回と、ゆらして tries 回組み、今の配置も
- * 合わせて、見積もり（boardScore: 1秒あたり）が一番高いものに切り替える。消耗品は枠に詰める
+ * 合わせて比べる。線に乗る装備が一番多いものの中から、見積もり（boardScore: 1秒あたり）が一番高いものに
+ * 切り替える（1秒あたりだけだと、見積もりに入らない防具を外して待ちを縮め、序盤に倒れる）。消耗品は枠に詰める
  */
 export function optimizeBoard(save: SaveData, rng: Rng, tries = 24): void {
   const items = itemMap(save);
   const hero = heroStats(save);
   const mult = hero.attackMult;
+  const rank = (l: Loadout): [number, number] => [
+    onLine(l, items),
+    boardScore(l, items, mult, hero.atbTime),
+  ];
   let bestId: BoardId = activeBoardId(save);
   let best: Loadout = save.loadout;
-  let bestScore = boardScore(save.loadout, items, mult, hero.atbTime);
+  let bestRank = rank(save.loadout);
   const consider = (id: BoardId, l: Loadout) => {
-    const sc = boardScore(l, items, mult, hero.atbTime);
-    if (sc > bestScore) {
+    const r = rank(l);
+    if (r[0] > bestRank[0] || (r[0] === bestRank[0] && r[1] > bestRank[1])) {
       bestId = id;
       best = l;
-      bestScore = sc;
+      bestRank = r;
     }
   };
   for (const b of ownedBoards(save)) {
@@ -62,6 +67,14 @@ export function optimizeBoard(save: SaveData, rng: Rng, tries = 24): void {
     .filter((i) => getItemDef(i.defId).kind === 'consumable')
     .sort((a, b) => CONSUMABLE_PRIORITY.indexOf(a.defId) - CONSUMABLE_PRIORITY.indexOf(b.defId));
   save.loadout = { ...best, consumables: cons.slice(0, slots).map((i) => i.uid) };
+}
+
+/** How many items the first origin's line rings (each item once; origin stones left out) */
+function onLine(l: Loadout, items: ReadonlyMap<string, ItemInstance>): number {
+  const plan = simulateChain(l, items).plans[0];
+  if (!plan) return 0;
+  const uids = new Set(plan.steps.map((s) => s.uid));
+  return [...uids].filter((u) => getItemDef(items.get(u)!.defId).kind !== 'origin').length;
 }
 
 /** アクセサリー: 今の盤面の枠に、強い（charmValue の高い）順に付け直す */
