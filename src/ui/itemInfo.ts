@@ -121,8 +121,6 @@ export interface ChainContext {
   origin: string;
   step: number | null; // 攻撃装備の段数。防御・起点は null
   mult: number;
-  /** 合流ボーナス（%）。合流していなければ 0 */
-  mergeBonus: number;
   /** 起点石の種類によるダメージ倍率（1 は効果なし） */
   lineDamage: number;
 }
@@ -144,7 +142,6 @@ export function chainContext(
       origin,
       step: s.step,
       mult: s.mult,
-      mergeBonus: s.mergeBonus ?? 0,
       lineDamage: s.line?.damage ?? 1,
     };
   }
@@ -319,10 +316,7 @@ export function showItemDetail(
           step: ctx.step,
           upgradeMult: u,
           area: def.area === 'all' ? 'all' : undefined,
-        }) *
-        (1 + ctx.mergeBonus / 100) *
-        ctx.lineDamage;
-      const bonus = Math.round(ctx.mergeBonus);
+        }) * ctx.lineDamage;
       rows.push([
         t('この配置'),
         t('起点{origin}の{step}連鎖目 ×{mult}', {
@@ -330,9 +324,7 @@ export function showItemDetail(
           step: ctx.step,
           mult: ctx.mult.toFixed(2),
         }),
-        bonus > 0
-          ? t('1ヒット 約{n}・シンクロ+{bonus}%', { n: fmt(hit), bonus })
-          : t('1ヒット 約{n}', { n: fmt(hit) }),
+        t('1ヒット 約{n}', { n: fmt(hit) }),
       ]);
     } else
       rows.push([

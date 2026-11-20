@@ -46,20 +46,6 @@ export const CHAIN = {
 } as const;
 
 /**
- * Merge (sync): origins still fire one at a time. At a cell where routes from 2+ origins meet,
- * every route goes on from the longer route's step, and the merge bonus applies from there on.
- * Each route's steps: which step the merge cell is on that route (3+4; equal = exact sync).
- * Points = sum of the routes' steps × (shortest ÷ longest).
- * Bonus = (points − offset) × perPoint % (up to cap %). The offset keeps a tiny sync (2+2) from
- * paying almost as much as a real one.
- */
-export const MERGE = {
-  perPoint: 6,
-  offset: 3,
-  cap: 40,
-} as const;
-
-/**
  * 短い連鎖と長い連鎖の性格づけ（試作。RunConfig.rules で切り替えられる）
  * B: 次の発火までの待ちは、直前の連鎖の段数に比例（短い連鎖は回転が速い）
  * A: 連鎖中に一定以上のダメージを受けると、よろめいて残りの段が途切れる（長い連鎖はリスクが大きい）

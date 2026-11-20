@@ -2,7 +2,7 @@
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
-import { CHAIN, MERGE, RARITY, STACK } from '../config/balance';
+import { CHAIN, RARITY, STACK } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type {
   ChainPlan,
@@ -116,8 +116,7 @@ export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number |
  * - 1回の連鎖で各アイテムは1回だけ発動。先に届いた枝が優先、同時なら上→右→下→左
  * - 攻撃装備で段数+1、防御装備は通すが数えない
  * - 起点同士がつながっている場合、後ろの起点は「通すだけ」のマスとして扱う
- * - Origins fire one at a time. At a sync point (where routes from other origins meet) the count
- *   goes on from the longer route, and the sync bonus applies from there on
+ * - Origins fire one at a time; each route counts its own steps
  */
 export function planChain(
   loadout: Loadout,
@@ -134,7 +133,7 @@ export function planChain(
       maxStep: 0,
       multCap: CHAIN.multCap,
     };
-  return spread(loadout, items, originUid, syncPoints(loadout, items)).plan;
+  return spread(loadout, items, originUid);
 }
 
 /** その段がどの起点の線か（発火した起点） */
@@ -142,51 +141,6 @@ export function lineOrigin(plan: ChainPlan, index: number): string {
   let i = index;
   while (plan.steps[i]!.parentIndex >= 0) i = plan.steps[i]!.parentIndex;
   return plan.steps[i]!.uid;
-}
-
-/**
- * Which step a merge cell is on each route, as shown on the cell (e.g. 3+4; equal = exact sync).
- * `feeders` are the steps of the cells that lead into it. A cell without a step of its own
- * (a shield) keeps the routes' steps as they are. A route with nothing before the cell
- * (its origin stone right next to it) shows 0, so it gives no bonus.
- */
-export function mergeArrivals(feeders: readonly number[], isStep: boolean): number[] {
-  return feeders.map((n) => (isStep && n > 0 ? n + 1 : n));
-}
-
-/** 合流ボーナス（%）: 段数の合計 ×（短い線 ÷ 長い線）から MERGE.offset を引いた分。線の一本が段数0なら出ない */
-export function mergeBonusOf(arrived: readonly number[]): number {
-  if (arrived.length < 2) return 0;
-  const longest = Math.max(...arrived);
-  if (longest <= 0) return 0;
-  const sum = arrived.reduce((a, b) => a + b, 0);
-  const points = sum * (Math.min(...arrived) / longest);
-  return Math.min(MERGE.cap, Math.max(0, points - MERGE.offset) * MERGE.perPoint);
-}
-
-/** The largest merge bonus (%) anywhere in this firing (0 when no lines merge) */
-export function maxMergeBonus(plan: ChainPlan): number {
-  return plan.steps.reduce((m, s) => Math.max(m, s.mergeBonus ?? 0), 0);
-}
-
-/** A sync point: a cell where routes from different origins meet (never an origin stone) */
-export interface SyncPoint {
-  /** Which step the cell is on each route, in firing order (e.g. [3, 4]; equal = exact sync) */
-  arrived: number[];
-  /** Every route goes on from the larger count here (the step, for an attack) */
-  count: number;
-  /** The cells the routes come in from */
-  from: number[];
-  /** Sync bonus (%) from here on */
-  bonus: number;
-}
-
-/** How one route reaches a cell, before a sync point lifts its count */
-interface Reach {
-  own: number;
-  feeder: number;
-  parentCell: number;
-  isStep: boolean;
 }
 
 interface Pending {
@@ -197,18 +151,16 @@ interface Pending {
   branch: number;
 }
 
-/** One origin's chain, with the sync points of the whole layout */
+/** One origin's chain */
 function spread(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
   originUid: string,
-  sync: ReadonlyMap<number, SyncPoint>,
-): { plan: ChainPlan; reach: Map<number, Reach> } {
+): ChainPlan {
   const steps: ChainStep[] = [];
   const lines: string[][] = []; // origin stones on the line up to each step
   const counts: number[] = []; // 各ステップ時点の段数（子へ渡す数）
   const visited = new Set<number>();
-  const reach = new Map<number, Reach>();
   const queue: Pending[] = [];
   let seq = 0;
   let nextBranch = 0;
@@ -302,11 +254,7 @@ function spread(
     const feeder = counts[parent]!;
     const isStep = def.kind === 'attack';
     const own = feeder + (isStep ? 1 : 0);
-    const first = (pos ?? 0) === 0;
-    if (first) reach.set(cell, { own, feeder, parentCell: steps[parent]!.cell, isStep });
-    // Sync point: every route goes on from the longer one
-    const sp = first ? sync.get(cell) : undefined;
-    const count = sp ? Math.max(own, sp.count) : own;
+    const count = own;
     const stackMult = pos === undefined ? undefined : posMult[pos]!;
     // A line that passes through another origin stone also takes that stone's effect
     const myLines =
@@ -321,8 +269,6 @@ function spread(
     } else if (def.kind === 'defense') {
       defenseGain += defenseValue(inst, boost) * (stackMult ?? 1);
     }
-    // 合流ボーナスはここで決まり、この先へ引き継ぐ（いちばん大きいもの）
-    const mergeBonus = Math.max(steps[parent]!.mergeBonus ?? 0, sp?.bonus ?? 0);
     steps.push({
       t: tMs / MS,
       uid,
@@ -332,8 +278,6 @@ function spread(
       from: steps[parent]!.uid,
       parentIndex: parent,
       cell,
-      ...(sp ? { mergeArrived: sp.arrived, mergeCount: sp.count, mergeFrom: sp.from } : {}),
-      ...(mergeBonus > 0 ? { mergeBonus } : {}),
       origins: myLines.slice(),
       ...(boost ? { line: boost } : {}),
       ...(pos !== undefined ? { ring: pos, stackMult } : {}),
@@ -377,108 +321,14 @@ function spread(
   if (multCap !== CHAIN.multCap)
     for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, multCap);
   return {
-    plan: {
-      originUid,
-      originUids: [originUid],
-      steps,
-      duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
-      defenseGain,
-      maxStep,
-      multCap,
-    },
-    reach,
+    originUid,
+    originUids: [originUid],
+    steps,
+    duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
+    defenseGain,
+    maxStep,
+    multCap,
   };
-}
-
-/**
- * Sync points of a layout: cells (not origin stones) that routes from 2+ origins reach from
- * different cells, each with at least one step before it. A sync point lifts the count of every route that passes it, so it also
- * changes the counts arriving at the sync points further along. Sync points that lift each
- * other in a loop (a route that comes back around into the other route) would grow without end,
- * so they are not sync points. The rest settle in one pass per sync point.
- */
-export function syncPoints(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-): Map<number, SyncPoint> {
-  const origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
-  let sync = new Map<number, SyncPoint>();
-  if (origins.length < 2) return sync;
-  const originCells = new Set(origins.map((o) => loadout.cells.indexOf(o)));
-  // Where each route goes does not depend on sync points (only its counts do)
-  const native = origins.map((o) => spread(loadout, items, o, sync).reach);
-  // The cells each candidate is reached from. A route with nothing before the cell (its
-  // origin stone's exit runs straight into it, like 2+0) is not a way in
-  const wayIn = new Map<number, Set<number>>();
-  for (const cell of new Set(native.flatMap((r) => [...r.keys()]))) {
-    if (originCells.has(cell)) continue;
-    const from = new Set(
-      native.flatMap((r) => {
-        const x = r.get(cell);
-        return x && x.feeder > 0 ? [x.parentCell] : [];
-      }),
-    );
-    if (from.size >= 2) wayIn.set(cell, from);
-  }
-  const candidates = new Set(wayIn.keys());
-  // The candidates on the way into each candidate, along every route that reaches it
-  const upstream = new Map<number, Set<number>>();
-  for (const cell of candidates) {
-    const up = new Set<number>();
-    for (const r of native) {
-      for (let x = r.get(cell); x; x = r.get(x.parentCell)) {
-        if (candidates.has(x.parentCell)) up.add(x.parentCell);
-      }
-    }
-    upstream.set(cell, up);
-  }
-  const onLoop = (start: number): boolean => {
-    const seen = new Set<number>();
-    const stack = [...upstream.get(start)!];
-    while (stack.length > 0) {
-      const c = stack.pop()!;
-      if (c === start) return true;
-      if (seen.has(c)) continue;
-      seen.add(c);
-      stack.push(...upstream.get(c)!);
-    }
-    return false;
-  };
-  const points = [...candidates].filter((c) => !onLoop(c));
-  const key = (m: ReadonlyMap<number, SyncPoint>) =>
-    JSON.stringify([...m.entries()].sort((a, b) => a[0] - b[0]));
-  for (let round = 0; round <= points.length; round++) {
-    const reaches =
-      round === 0 ? native : origins.map((o) => spread(loadout, items, o, sync).reach);
-    const next = new Map<number, SyncPoint>();
-    for (const cell of points) {
-      const okFrom = wayIn.get(cell)!;
-      const here = reaches
-        .map((r) => r.get(cell))
-        .filter((x): x is Reach => x !== undefined && okFrom.has(x.parentCell));
-      // One way in per cell it comes from: routes that already share it (the trunk after a
-      // sync point) count once, with the longest of them, in firing order
-      const ways = new Map<number, Reach>();
-      for (const x of here) {
-        const w = ways.get(x.parentCell);
-        if (!w || x.feeder > w.feeder) ways.set(x.parentCell, x);
-      }
-      if (ways.size < 2) continue;
-      const arrived = mergeArrivals(
-        [...ways.values()].map((x) => x.feeder),
-        here[0]!.isStep,
-      );
-      next.set(cell, {
-        arrived,
-        count: Math.max(...here.map((x) => x.own)),
-        from: [...ways.keys()],
-        bonus: mergeBonusOf(arrived),
-      });
-    }
-    if (key(next) === key(sync)) return next;
-    sync = next;
-  }
-  return sync;
 }
 
 /** 配置画面用: 起点ごとに連鎖を計算し、どの起点からも届かないマスを返す */
@@ -494,8 +344,7 @@ export function simulateChain(
   items: ReadonlyMap<string, ItemInstance>,
 ): ChainPreview {
   const origins = loadout.originOrder.filter((uid) => loadout.cells.includes(uid));
-  const sync = syncPoints(loadout, items);
-  const plans = origins.map((o) => spread(loadout, items, o, sync).plan);
+  const plans = origins.map((o) => spread(loadout, items, o));
   const reachable = new Set<number>();
   for (const p of plans) for (const s of p.steps) reachable.add(s.cell);
   const unreachable = new Set<number>();

@@ -1,7 +1,7 @@
 // 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
-import { runTutorial, tutorialSeen } from '../ui/tutorial';
+import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { maxMergeBonus, simulateChain, type ChainPreview } from '../core/chain';
+import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
 import { diagnose } from '../core/diagnose';
 import { autoLayout } from '../core/autoLayout';
@@ -295,8 +295,6 @@ export class LoadoutScene extends Phaser.Scene {
 
     this.setupGridInput();
     this.refresh();
-    // The merge guide waits for a later visit, so it never follows the first loadout guide
-    if (tutorialSeen('loadout')) this.maybeMergeGuide();
     runTutorial(this, 'loadout', [
       {
         rect: {
@@ -321,31 +319,6 @@ export class LoadoutScene extends Phaser.Scene {
       {
         rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
         text: t('「約」の数字が大きいほど強い並べ方。\nいろいろ試してみよう！'),
-      },
-    ]);
-  }
-
-  /** 起点石を2つ置いている人に、合流を一度だけ教える（出撃2回目以降） */
-  private maybeMergeGuide(): void {
-    const save = getSave();
-    if (this.challenge || save.stats.runs < 2) return;
-    const placed = save.loadout.originOrder.filter((u) => save.loadout.cells.includes(u));
-    if (placed.length < 2) return;
-    runTutorial(this, 'merge', [
-      {
-        rect: {
-          x: W / 2,
-          y: LOADOUT_LAYOUT.backpackTop + this.view.gridHeight / 2,
-          w: W - 120,
-          h: this.view.gridHeight + 16,
-        },
-        text: t('2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ'),
-      },
-      {
-        rect: { x: W / 2, y: this.routeBar.y, w: W - 30, h: 66 },
-        text: t(
-          '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る',
-        ),
       },
     ]);
   }
@@ -539,18 +512,15 @@ export class LoadoutScene extends Phaser.Scene {
       const knownTech = e.techs.find((id) => this.knownTechs().includes(id));
       const tech = knownTech ? getTechnique(knownTech) : undefined;
       const params = { n: num(e.total), step: p.maxStep };
-      const bonus = Math.round(maxMergeBonus(p));
       return {
         text: knownTech
           ? t('約{n}・{step}連鎖・{tech}', {
               ...params,
               tech: tech ? t(tech.name) : t('必殺技|fallback'),
             })
-          : bonus > 0
-            ? t('約{n}・{step}連鎖・シンクロ+{bonus}%', { ...params, bonus })
-            : e.combos > 0
-              ? t('約{n}・{step}連鎖・コンボ{combo}', { ...params, combo: e.combos })
-              : t('約{n}・{step}連鎖', params),
+          : e.combos > 0
+            ? t('約{n}・{step}連鎖・コンボ{combo}', { ...params, combo: e.combos })
+            : t('約{n}・{step}連鎖', params),
         color: routeCss(this.focus),
       };
     })();

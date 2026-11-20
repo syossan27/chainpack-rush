@@ -119,8 +119,6 @@ export const UI: Dict = {
     "• Crée des combos. Relie l'élément associé (Foudre, Feu, Contondant) après un objet qui inflige une altération (Fiole du Dragon d’eau, Bâton de pluie, Fiole d'huile, Épée de glace, Bâton de givre). Les altérations disparaissent au bout de 5 secondes.",
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Alterne Lumière et Ténèbres pour enchaîner les combos : Purification (soigne le héros) et Scellé (ralentit les attaques ennemies). Le Vent ajoute des couches de Poison aux ennemis empoisonnés ; à 5 couches, Venin explosif.',
-  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
-    "• Synchronise les lignes de 2 Origines au même nombre de maillons pour obtenir un bonus à partir de là. Le type d'une Pierre d'origine n'agit que sur les lignes qui en partent.",
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Place tes objets les plus forts en fin de chaîne (6e maillon et au-delà). Garde les premiers maillons pour les objets légers et ceux qui infligent des altérations.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -417,7 +415,6 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Durée à découvert : {sec} s',
   '防御値 +{n}': 'Défense +{n}',
   'コンボ {list}': 'Combos {list}',
-  'シンクロボーナス +{n}%': 'Bonus de synchro +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Annuler',
@@ -434,10 +431,6 @@ export const UI: Dict = {
     "Plus le nombre « ~ » est grand, plus la disposition est forte. Essaie plein d'idées !",
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Les nombres « ~ » sont les dégâts estimés sur un seul ennemi (combos et critiques inclus)',
-  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
-    'Synchronise 2 lignes au même nombre de maillons ! Plus elles sont longues, plus le bonus est grand.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
-    'Les Origines se déclenchent une par une, à tour de rôle. La case de synchro affiche les maillons et le bonus, comme « 4+4 +30% ».',
   '起点が0個です。出撃できません': 'Aucune Origine placée. Impossible de partir.',
   '倉庫があふれています（タップで売却）': 'La Réserve est pleine (touche pour vendre)',
   全部: 'Tout',
@@ -449,7 +442,6 @@ export const UI: Dict = {
   '約{n}・{step}連鎖・{tech}': '~{n} · Chaîne {step} · {tech}',
   '必殺技|fallback': 'Coup spécial',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Chaîne {step} · Combos {combo}',
-  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Chaîne {step} · Synchro +{bonus}%',
   '約{n}・{step}連鎖': '~{n} · Chaîne {step}',
   診断: 'Conseils',
   配置の診断: 'Conseils de disposition',
@@ -577,7 +569,6 @@ export const UI: Dict = {
   '防御 {n}': 'Défense {n}',
   '連鎖中！': 'Enchaînement !',
   '{step}連鎖・{sec}秒': 'Chaîne {step} · {sec} s',
-  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Chaîne {step} · {sec} s · Synchro +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  ennemis {enemies}  particules {particles}  nombres {numbers}  seed {seed}',
   '時間 +{sec}': 'Temps +{sec}',
@@ -591,9 +582,6 @@ export const UI: Dict = {
   'よろめき！': 'Sonné !',
   '一網打尽！': 'Coup de filet !',
   'ボス撃破！': 'Boss vaincu !',
-  'ぴったりシンクロ！ +{bonus}%': 'Synchro parfaite ! +{bonus}%',
-  'シンクロ！ +{bonus}%': 'Synchro ! +{bonus}%',
-  'シンクロ！': 'Synchro !',
   '復活！': 'Ressuscité !',
   '再開する（HP全回復・+{sec}秒）': 'Ressusciter (HP max, +{sec} s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Pub : ressusciter (HP max, +{sec} s)',
@@ -704,7 +692,6 @@ export const UI: Dict = {
   どの起点からも届きません: "Aucune Origine ne l'atteint",
   '起点{origin}の{step}連鎖目 ×{mult}': 'Origine {origin}, maillon {step} ×{mult}',
   '1ヒット 約{n}': '~{n} par coup',
-  '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} par coup · Synchro +{bonus}%',
   '起点{origin}の連鎖': "Chaîne de l'Origine {origin}",
   連鎖数に数えない: 'Ne compte pas comme maillon',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

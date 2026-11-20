@@ -84,8 +84,8 @@ export function estimateRoute(
       const origin = items.get(lineOrigin(plan, index));
       if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
     }
-    // 合流ボーナス（合流したマスから先の本流）と、起点石の種類
-    m *= (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1);
+    // 起点石の種類と、重ねの位置
+    m *= (s.line?.damage ?? 1) * (s.stackMult ?? 1);
     m *= boardDamageMult(boardDef, def.element);
     const critChance = Math.min(
       1,

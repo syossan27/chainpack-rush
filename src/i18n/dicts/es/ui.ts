@@ -118,8 +118,6 @@ export const UI: Dict = {
     '• Haz combos. Conecta el elemento que combina (Rayo, Fuego, Contundente) después de un objeto de estado (Frasco del Dragón de Agua, Bastón de Lluvia, Frasco de Aceite, Espada de Hielo, Bastón de Hielo). Los estados desaparecen a los 5 segundos.',
   '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
     '• Alterna Luz y Oscuridad para mantener los combos: Purificación (cura al héroe) y Sello (ralentiza los ataques enemigos). El Viento acumula Veneno en los enemigos envenenados; con 5 capas, Estallido tóxico.',
-  '・2つの起点の線を同じ連鎖数でシンクロさせると、その先にボーナス。起点石の種類は、その起点から伸びる線にだけ効きます。':
-    '• Sincroniza las líneas de 2 Orígenes con el mismo número de eslabones para ganar un bono a partir de ahí. El tipo de una Piedra de Origen solo afecta a las líneas que salen de ella.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Pon tu mejor equipo al final de la cadena (del eslabón 6 en adelante). Usa los primeros eslabones para equipo ligero y objetos de estado.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
@@ -413,7 +411,6 @@ export const UI: Dict = {
   '持続（無防備） {sec}秒': 'Duración (vulnerable) {sec} s',
   '防御値 +{n}': 'Defensa +{n}',
   'コンボ {list}': 'Combos {list}',
-  'シンクロボーナス +{n}%': 'Bono de sincronía +{n}%',
 
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Deshacer',
@@ -430,10 +427,6 @@ export const UI: Dict = {
     'Cuanto mayor el número "~", más fuerte la disposición. ¡Prueba distintas ideas!',
   '「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）':
     'Los números "~" son el daño estimado contra un enemigo (con combos y críticos)',
-  '2本の線を、同じ連鎖数でシンクロさせよう！\n長いほどボーナスアップ':
-    '¡Sincroniza 2 líneas con el mismo número de eslabones! Cuanto más largas, mayor el bono.',
-  '起点は1つずつ、順番に発火するよ。\nシンクロしたマスには「4+4 +30%」のように\n連鎖数とボーナスが出る':
-    'Los Orígenes se activan de uno en uno, por turnos. La casilla de sincronía muestra los eslabones y el bono, como "4+4 +30%".',
   '起点が0個です。出撃できません': 'No hay ningún Origen. No puedes salir.',
   '倉庫があふれています（タップで売却）': 'El Almacén está lleno (toca para vender)',
   全部: 'Todo',
@@ -445,7 +438,6 @@ export const UI: Dict = {
   '約{n}・{step}連鎖・{tech}': '~{n} · Cadena {step} · {tech}',
   '必殺技|fallback': 'Golpe Especial',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Cadena {step} · Combos {combo}',
-  '約{n}・{step}連鎖・シンクロ+{bonus}%': '~{n} · Cadena {step} · Sincronía +{bonus}%',
   '約{n}・{step}連鎖': '~{n} · Cadena {step}',
   診断: 'Consejo',
   配置の診断: 'Consejos para tu mochila',
@@ -570,7 +562,6 @@ export const UI: Dict = {
   '防御 {n}': 'Defensa {n}',
   '連鎖中！': '¡Encadenando!',
   '{step}連鎖・{sec}秒': 'Cadena {step} · {sec} s',
-  '{step}連鎖・{sec}秒・シンクロ+{bonus}%': 'Cadena {step} · {sec} s · Sincronía +{bonus}%',
   'FPS {fps}  敵 {enemies}  粒 {particles}  数字 {numbers}  seed {seed}':
     'FPS {fps}  enemigos {enemies}  partículas {particles}  números {numbers}  seed {seed}',
   '時間 +{sec}': 'Tiempo +{sec}',
@@ -584,9 +575,6 @@ export const UI: Dict = {
   'よろめき！': '¡Tambaleo!',
   '一網打尽！': '¡KO total!',
   'ボス撃破！': '¡Jefe derrotado!',
-  'ぴったりシンクロ！ +{bonus}%': '¡Sincronía perfecta! +{bonus}%',
-  'シンクロ！ +{bonus}%': '¡Sincronía! +{bonus}%',
-  'シンクロ！': '¡Sincronía!',
   '復活！': '¡Revivido!',
   '再開する（HP全回復・+{sec}秒）': 'Revivir (HP completo, +{sec} s)',
   '▶ 広告を見て再開（HP全回復・+{sec}秒）': '▶ Ver anuncio y revivir (HP completo, +{sec} s)',
@@ -696,7 +684,6 @@ export const UI: Dict = {
   どの起点からも届きません: 'Ningún Origen llega aquí',
   '起点{origin}の{step}連鎖目 ×{mult}': 'Origen {origin}, eslabón {step} ×{mult}',
   '1ヒット 約{n}': '~{n} por golpe',
-  '1ヒット 約{n}・シンクロ+{bonus}%': '~{n} por golpe · Sincronía +{bonus}%',
   '起点{origin}の連鎖': 'Cadena del Origen {origin}',
   連鎖数に数えない: 'No cuenta como eslabón',
   '{status}を付ける → {element}の攻撃で{combo}（×{x}）':

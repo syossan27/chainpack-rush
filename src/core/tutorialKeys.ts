@@ -18,8 +18,6 @@ export const TUTORIAL_KEYS = [
   'smithHow',
   'upgradeGo',
   'upgrade',
-  // Merging lines from two origin stones (loadout screen, from the 2nd run on)
-  'merge',
 ] as const;
 
 export type TutorialKey = (typeof TUTORIAL_KEYS)[number];

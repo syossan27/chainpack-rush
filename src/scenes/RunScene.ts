@@ -2,7 +2,6 @@
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { MONETIZE, RARITY, RELIC, SIM, TREASURE } from '../config/balance';
-import { maxMergeBonus } from '../core/chain';
 import { addPet } from '../ui/cosmeticsView';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
@@ -90,9 +89,6 @@ const COMBO_TINT: Record<string, number> = {
   venom: 0x8ae04a,
 };
 
-/** 合流の光の色（ぴったりのときは金） */
-const MERGE_TINT = 0xa8f0ff;
-
 /** 時間延長の表示位置（周回ゲージ y=140 の下、帯 y=250 の上） */
 const TIME_BONUS_Y = 188;
 
@@ -140,7 +136,6 @@ export class RunScene extends Phaser.Scene {
   private slowUntil = 0;
   private chainText!: Phaser.GameObjects.Text;
   /** 合流の知らせ（連鎖カウンターの下。コンボの帯に消されない） */
-  private mergeText!: Phaser.GameObjects.Text;
   private totalText!: Phaser.GameObjects.Text;
   private ending = false;
   private seed = 0;
@@ -302,11 +297,6 @@ export class RunScene extends Phaser.Scene {
     // 連鎖カウンター（勇者の上）と連鎖の合計ダメージ
     this.chainText = this.add
       .text(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY - 210, '', textStyle(44))
-      .setOrigin(0.5)
-      .setDepth(65)
-      .setAlpha(0);
-    this.mergeText = this.add
-      .text(RUN_LAYOUT.heroScreenX, RUN_LAYOUT.groundY - 160, '', textStyle(30))
       .setOrigin(0.5)
       .setDepth(65)
       .setAlpha(0);
@@ -704,18 +694,11 @@ export class RunScene extends Phaser.Scene {
     if (unit && plan) {
       this.hud.nextBadge.setText(unit.map((u) => originLabel(c.originOrder.indexOf(u))).join(''));
       // Inside the "next chain" panel (right edge x=630)
-      const bonus = Math.round(maxMergeBonus(plan));
       const params = { step: plan.maxStep, sec: plan.duration.toFixed(1) };
       fitText(
         this.hud.next
           .setScale(1)
-          .setText(
-            c.chain
-              ? t('連鎖中！')
-              : bonus > 0
-                ? t('{step}連鎖・{sec}秒・シンクロ+{bonus}%', { ...params, bonus })
-                : t('{step}連鎖・{sec}秒', params),
-          ),
+          .setText(c.chain ? t('連鎖中！') : t('{step}連鎖・{sec}秒', params)),
         164,
       );
     }
@@ -756,16 +739,6 @@ export class RunScene extends Phaser.Scene {
       .setScale(1.5)
       .setAngle(-4 + Math.random() * 8);
     this.tweens.add({ targets: txt, scale: 1, angle: 0, duration: 160, ease: 'Back.easeOut' });
-  }
-
-  private showMerge(text: string, color: string): void {
-    const txt = this.mergeText;
-    this.tweens.killTweensOf(txt);
-    txt.setText(text).setColor(color).setAlpha(1).setScale(1.4);
-    // Keep a long translation on screen
-    const fit = Math.min(1, (W - 40) / (txt.width || 1));
-    this.tweens.add({ targets: txt, scale: fit, duration: 180, ease: 'Back.easeOut' });
-    this.tweens.add({ targets: txt, alpha: 0, delay: 900, duration: 300 });
   }
 
   /** 連鎖の終わり: カウンターを消し、合計ダメージを大きく出す */
@@ -1054,26 +1027,6 @@ export class RunScene extends Phaser.Scene {
         }
         case 'technique': {
           this.showTechnique(getTechnique(ev.id), ev.enemyId);
-          break;
-        }
-        case 'merge': {
-          // Lines meeting with the same steps get a gold "exact" call-out
-          const bonus = Math.round(ev.bonus);
-          const exact = bonus > 0 && ev.arrived.every((n) => n === ev.arrived[0]);
-          this.showMerge(
-            exact
-              ? t('ぴったりシンクロ！ +{bonus}%', { bonus })
-              : bonus > 0
-                ? t('シンクロ！ +{bonus}%', { bonus })
-                : t('シンクロ！'),
-            exact ? '#ffe27a' : '#a8f0ff',
-          );
-          for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, MERGE_TINT);
-          this.view.glow(ev.cell, exact ? 0xffe27a : MERGE_TINT, now, 700);
-          const p = ev.enemyId !== null ? this.enemyPos(ev.enemyId) : null;
-          if (p) this.effects.burst(p.x, p.y - 30, exact ? 0xffe27a : MERGE_TINT, 18, 260);
-          sfx('merge');
-          if (exact) hapticMedium();
           break;
         }
         case 'enrage':

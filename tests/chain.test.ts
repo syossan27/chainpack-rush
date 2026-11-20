@@ -140,3 +140,37 @@ describe('simulateChain', () => {
     expect((performance.now() - t0) / 10).toBeLessThan(100);
   });
 });
+
+describe('シンクロはない（起点が1つの本編では起きないため、なくした）', () => {
+  /**
+   * Two routes meet at J: J is the first route's 3rd step and the second route's 4th.
+   *   o1 a b J e
+   *   o2 c d g
+   */
+  function tJoin() {
+    return build(5, 2, [
+      { uid: 'o1', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'b', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+      { uid: 'J', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 'e', defId: 'sword', x: 4, y: 0, exits: [] },
+      { uid: 'o2', defId: 'origin_stone', x: 0, y: 1, exits: ['right'] },
+      { uid: 'c', defId: 'sword', x: 1, y: 1, exits: ['right'] },
+      { uid: 'd', defId: 'sword', x: 2, y: 1, exits: ['right'] },
+      { uid: 'g', defId: 'sword', x: 3, y: 1, exits: ['up'] },
+    ]);
+  }
+
+  it('2本の線が同じマスで出会っても、ボーナスは付かず、段数は自分の線のまま', () => {
+    const { loadout, items } = tJoin();
+    const [p1] = simulateChain(loadout, items).plans;
+    for (const s of p1!.steps) {
+      expect((s as unknown as Record<string, unknown>).mergeBonus).toBeUndefined();
+      expect((s as unknown as Record<string, unknown>).mergeArrived).toBeUndefined();
+    }
+    // Route ① reaches J as its 3rd step and goes on from there (no lift to the longer route)
+    const j = p1!.steps.find((s) => s.uid === 'J')!;
+    expect(j.step).toBe(3);
+    expect(p1!.steps.find((s) => s.uid === 'e')!.step).toBe(4);
+  });
+});

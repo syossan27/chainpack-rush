@@ -40,7 +40,6 @@ export class DummyScene extends Phaser.Scene {
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
-  private mergeBonus = 0;
   /** The board to try: the stacked board while that trial switch is on */
   private board!: Loadout;
   /** Trial (charms): the edge slots and the combo meter (null: the switch is off) */
@@ -179,16 +178,10 @@ export class DummyScene extends Phaser.Scene {
     for (const ev of events) {
       if (ev.type === 'chainStart') {
         this.comboLabel = [];
-        this.mergeBonus = 0;
         sfx('fire');
         this.stats.setText(
           t('起点{origin} 発火中…', { origin: unitLabel(this.board, ev.plan.originUids) }),
         );
-      } else if (ev.type === 'merge') {
-        this.mergeBonus = Math.max(this.mergeBonus, ev.bonus);
-        for (const from of ev.fromCells) this.view.flashLine(from, ev.cell, 0xa8f0ff);
-        this.view.glow(ev.cell, 0xa8f0ff, now, 700);
-        sfx('merge');
       } else if (ev.type === 'step') {
         this.view.glow(ev.cell, ev.step === null ? COLORS.accent : COLORS.chainLine, now, 450);
         if (ev.fromCell !== null) this.view.flashLine(ev.fromCell, ev.cell, COLORS.chainLine);
@@ -228,9 +221,6 @@ export class DummyScene extends Phaser.Scene {
             t('持続（無防備） {sec}秒', { sec: ev.duration.toFixed(1) }),
             t('防御値 +{n}', { n: Math.round(ev.defenseGain) }),
             this.comboLabel.length ? t('コンボ {list}', { list: this.comboLabel.join(' ') }) : '',
-            this.mergeBonus > 0
-              ? t('シンクロボーナス +{n}%', { n: Math.round(this.mergeBonus) })
-              : '',
           ]
             .filter(Boolean)
             .join('\n'),

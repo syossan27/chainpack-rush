@@ -178,17 +178,6 @@ export type CombatEvent =
   | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
   /** Trial (mastery): a technique sparked and is learned (its technique event follows) */
   | { type: 'spark'; tick: number; id: string; enemyId: number; uid: string }
-  /** 合流: 2本以上の線が出会った（arrived は届いた線の段数（予定）、bonus はこの先の本流にかかる%） */
-  | {
-      type: 'merge';
-      tick: number;
-      cell: number;
-      /** マス番号: 合流した線それぞれの、ひとつ前のマス */
-      fromCells: number[];
-      enemyId: number | null;
-      arrived: number[];
-      bonus: number;
-    }
   | {
       type: 'chainStart';
       tick: number;
@@ -1210,16 +1199,12 @@ export class Combat {
     // Trial (relics): the relic on this cell works on the gear in it
     const relic = this.relics.size > 0 ? this.relics.get(s.cell) : undefined;
 
-    // Sync point: the count goes on from the longer route, unless a kill already restarted it
-    const sync = s.mergeArrived !== undefined;
-    const lift = parent?.reset ? 0 : (s.mergeCount ?? 0);
     if (def.kind !== 'attack') {
       // 起点・防御装備: 段数を数えず、親の段数と狙いを引き継ぐ
       const aim = parent ? parent.aim : (this.targetOrder()[0]?.id ?? null);
-      const eff = Math.max(parent ? parent.eff : 0, lift);
+      const eff = parent ? parent.eff : 0;
       c.exec[index] = { eff, aim, reset: parent?.reset ?? false };
       this.relicRing(c, relic);
-      if (sync) this.emitMerge(s, aim);
       this.emit({
         type: 'step',
         tick: this.tick,
@@ -1246,8 +1231,7 @@ export class Combat {
     const aimId = aim.id;
     // The branch keeps counting while it aims at the same enemy (with the trial rule, across kills too)
     const counts = parent && (parent.aim === aimId || this.rules.keepCountOnKill);
-    const eff = counts ? Math.max(parent.eff + 1, lift) : 1;
-    if (sync) this.emitMerge(s, aimId);
+    const eff = counts ? parent.eff + 1 : 1;
     this.relicRing(c, relic);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
     // Trial (relics): 加速の羽 does the same, once per cell (from the top of a stack)
@@ -1291,8 +1275,8 @@ export class Combat {
       this.emit({ type: 'technique', tick: this.tick, id: tech, enemyId: aim.id, uid: s.uid });
     const mods: StrikeMods = {
       tech: techMult,
-      // 合流ボーナス（合流したマスから先の本流）と、起点石の種類のダメージ、重ねの位置（試作）
-      bonus: (1 + (s.mergeBonus ?? 0) / 100) * (s.line?.damage ?? 1) * (s.stackMult ?? 1),
+      // 起点石の種類のダメージと、重ねの位置
+      bonus: (s.line?.damage ?? 1) * (s.stackMult ?? 1),
       origin: lineOrigin(c.plan, index),
       line: s.line,
       ...(relic ? { relic } : {}),
@@ -1329,20 +1313,6 @@ export class Combat {
     this.stats.sparks?.push(id);
     this.emit({ type: 'spark', tick: this.tick, id, enemyId, uid });
     return id;
-  }
-
-  /** 合流の演出用イベント（届いた線の段数とボーナス） */
-  private emitMerge(s: ChainStep, aimId: number | null): void {
-    this.emit({
-      type: 'merge',
-      tick: this.tick,
-      cell: s.cell,
-      fromCells: s.mergeFrom ?? [],
-      enemyId: aimId,
-      // The planned steps, so the call-out matches the tag on the cell
-      arrived: s.mergeArrived ?? [],
-      bonus: s.mergeBonus ?? 0,
-    });
   }
 
   /** 1回の攻撃（双剣は1段で2回呼ぶ）。1回目で狙いが倒れたら手前の敵へ */

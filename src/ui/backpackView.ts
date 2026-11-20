@@ -226,9 +226,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
       icon.setDimmed(p.unreachable.has(cell));
       if (focused && !onRoute.has(cell)) icon.setAlpha(0.35);
     }
-    // Routes share the cells after a sync point (with the same numbers): label each cell once
+    // Label each cell once
     const labeled = new Set<number>();
-    const tagged = new Set<number>();
     p.plans.forEach((plan, pi) => {
       if (focused && plan !== focused) return;
       const color = routeColor(pi);
@@ -284,27 +283,6 @@ export class BackpackView extends Phaser.GameObjects.Container {
         // About one cell wide (a longer translation shrinks instead of covering the next cell)
         fitText(label, this.cell + 6);
         this.labelLayer.add(label);
-      }
-      // Sync points: which step the cell is on each route, and the bonus from here on (4+4 +30%)
-      for (const s of plan.steps) {
-        if (!s.mergeArrived || tagged.has(s.cell)) continue;
-        tagged.add(s.cell);
-        const c = this.cellCenter(s.cell);
-        const bonus = Math.round(s.mergeBonus ?? 0);
-        const text = `${s.mergeArrived.join('+')}${bonus > 0 ? ` +${bonus}%` : ''}`;
-        const tag = this.scene.add
-          .text(
-            c.x,
-            c.y - this.cell / 2 + 3,
-            text,
-            textStyle(14, bonus > 0 ? '#ffe27a' : '#c8c0d8'),
-          )
-          .setOrigin(0.5, 0);
-        fitText(tag, this.cell - 6);
-        const bg = this.scene.add
-          .rectangle(c.x, tag.y - 1, tag.displayWidth + 8, tag.displayHeight + 2, 0x0c0a12, 0.75)
-          .setOrigin(0.5, 0);
-        this.labelLayer.add([bg, tag]);
       }
       if (focused) {
         this.flowSpan = plan.duration;
