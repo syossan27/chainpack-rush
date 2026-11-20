@@ -169,7 +169,9 @@ export function rollCharmDrop(
   region: RegionLoot,
   sure: boolean,
 ): CharmInstance | null {
-  const chance = (rareOrBetter ? CHARM.dropChanceRare : CHARM.dropChance) * region.artifactMult;
+  // Not the region's artifact multiplier (×10 at the castle made charms pour out): the same
+  // chance everywhere, the region only shifts the rarity
+  const chance = rareOrBetter ? CHARM.dropChanceRare : CHARM.dropChance;
   // Always drawn, so a sure drop does not shift what comes after it
   const roll = rng.next();
   if (!sure && roll >= chance) return null;

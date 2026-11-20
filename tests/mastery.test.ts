@@ -24,7 +24,12 @@ describe('試作「熟練と閃き」: 熟練のレベル', () => {
     expect(masteryLevel(pointsForLevel(3) + 1)).toBe(3);
   });
 
-  it('レベルの境目は数え上げと同じ。上限は Lv99 で、どんなに大きな値でもそこで止まる', () => {
+  it('上限は Lv30（ダメージ +90%）: 際限なく強くならない', () => {
+    expect(MASTERY.maxLevel).toBe(30);
+    expect(MASTERY.maxLevel * MASTERY.dmgPerLevel).toBeCloseTo(0.9, 10);
+  });
+
+  it('レベルの境目は数え上げと同じ。どんなに大きな値でも上限で止まる', () => {
     for (let p = 0; p <= pointsForLevel(12) + 1; p++) {
       let slow = 0;
       while (p >= pointsForLevel(slow + 1)) slow++;

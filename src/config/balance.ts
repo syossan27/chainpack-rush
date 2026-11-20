@@ -168,8 +168,11 @@ export const MASTERY = {
   sparkPerLevel: 0.15,
   /** Damage of the element's gear per level */
   dmgPerLevel: 0.03,
-  /** The highest level (more points do nothing) */
-  maxLevel: 99,
+  /**
+   * The highest level (more points do nothing). 30 = +90%, reached in about 90–155 runs; 99 kept
+   * growing for ever (+297%, balance check 2026-11-20)
+   */
+  maxLevel: 30,
 } as const;
 
 export const CHAIN_RULES_OFF: ChainRules = {
@@ -436,9 +439,13 @@ export const CHARM = {
   capacity: 30,
   /** そろいの指輪: attack items a line needs (all of one element) */
   minMatch: 2,
-  /** Chance per dropped item that a charm drops too (bosses, golden elites, treasure goblins: Rare) */
-  dropChance: 0.05,
-  dropChanceRare: 0.25,
+  /**
+   * Chance per dropped item that a charm drops too (bosses, golden elites, treasure goblins: Rare).
+   * The same in every region: about 0.3–0.75 per run on a board that clears its region (bots,
+   * 2026-11-20; the user wanted 0–1)
+   */
+  dropChance: 0.01,
+  dropChanceRare: 0.06,
   /** Charm drops draw from their own random stream (seed ^ salt), so other drops never change */
   rngSalt: 0x5bd1e995,
   sell: { common: 10, rare: 40, epic: 120, legendary: 400 } as Record<Rarity, number>,

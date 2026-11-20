@@ -31,7 +31,7 @@ export const BOARDS: readonly BoardDef[] = [
     text: '次の連鎖までの待ち ×{v}', mask: ['XXXXX', 'XXXXX'],
   },
   {
-    id: 'small', name: '小さな盤面', reward: 'cave', damage: 1.5,
+    id: 'small', name: '小さな盤面', reward: 'cave', damage: 1.25,
     text: 'ダメージ ×{v}', mask: ['XXX', 'XXX'],
   },
   {

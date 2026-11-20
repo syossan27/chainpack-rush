@@ -35,15 +35,19 @@ function runCfg(extra: Partial<RunConfig> = {}): RunConfig {
 }
 
 describe('試作アクセサリー: ドロップ', () => {
-  it('確率で出る。ボスなどは出やすく、地域の倍率もかかる', () => {
-    expect(rollCharmDrop(fixed(CHARM.dropChance - 0.01), 1, false, region, false)).not.toBeNull();
-    expect(rollCharmDrop(fixed(CHARM.dropChance + 0.01), 1, false, region, false)).toBeNull();
+  it('確率で出る。ボスなどは出やすい', () => {
+    expect(rollCharmDrop(fixed(CHARM.dropChance - 0.001), 1, false, region, false)).not.toBeNull();
+    expect(rollCharmDrop(fixed(CHARM.dropChance + 0.001), 1, false, region, false)).toBeNull();
     expect(
-      rollCharmDrop(fixed(CHARM.dropChanceRare - 0.01), 1, true, region, false),
+      rollCharmDrop(fixed(CHARM.dropChanceRare - 0.001), 1, true, region, false),
     ).not.toBeNull();
     expect(rollCharmDrop(fixed(0.99), 1, false, region, true)).not.toBeNull();
-    const deep = { rarityShift: 0, artifactMult: 2 };
-    expect(rollCharmDrop(fixed(CHARM.dropChance * 1.5), 1, false, deep, false)).not.toBeNull();
+  });
+
+  it('奥の地域でも確率は同じ（アーティファクトの倍率はかからない）', () => {
+    const deep = { rarityShift: 0.75, artifactMult: 10 };
+    expect(rollCharmDrop(fixed(CHARM.dropChance + 0.001), 1, false, deep, false)).toBeNull();
+    expect(rollCharmDrop(fixed(CHARM.dropChanceRare + 0.001), 1, true, deep, false)).toBeNull();
   });
 
   it('アクセサリーの抽選は別の乱数: ふつうのドロップは変わらない', () => {
