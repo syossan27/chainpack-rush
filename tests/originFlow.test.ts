@@ -106,6 +106,13 @@ describe('起点石の説明文', () => {
     expect(itemDescVars(getItemDef('origin_far'))).toEqual({
       v: getItemDef('origin_far').line!.far,
     });
+    for (const id of ['origin_swift', 'origin_heavy']) {
+      const line = getItemDef(id).line!;
+      expect(itemDescVars(getItemDef(id)), id).toEqual({
+        relay: Math.abs(line.relay!),
+        v: line.damage ?? 0,
+      });
+    }
     expect(itemDescVars(getItemDef('sword'))).toEqual({});
   });
 });
@@ -272,16 +279,19 @@ describe('残響の起点石', () => {
 });
 
 describe('盾の起点石', () => {
-  /** o → 8 swords on a stacked 9×1 row (the scarecrow unless `run`) */
+  const extra = getItemDef('origin_shield').line!.guardCells!;
+  const ratio = getItemDef('origin_shield').line!.staggerRatio!;
+  /** o → swords two cells past the shield's guard, on a stacked row (the scarecrow unless `run`) */
+  const swords = CHAIN_RULES.guardSteps + extra + 2;
   const longRow = (origin: string, run = false): RunConfig => {
-    const b = stacked(9, 1, [
+    const b = stacked(swords + 1, 1, [
       { uid: 'o', defId: origin, x: 0, y: 0, exits: ['right'] },
-      ...Array.from({ length: 8 }, (_, i) => ({
+      ...Array.from({ length: swords }, (_, i) => ({
         uid: `s${i}`,
         defId: 'sword',
         x: i + 1,
         y: 0,
-        exits: (i < 7 ? ['right'] : []) as Placed['exits'],
+        exits: (i < swords - 1 ? ['right'] : []) as Placed['exits'],
       })),
     ]);
     return {
@@ -294,10 +304,8 @@ describe('盾の起点石', () => {
       ...(run ? {} : { mode: 'dummy' as const }),
     };
   };
-  const extra = getItemDef('origin_shield').line!.guardCells!;
-  const ratio = getItemDef('origin_shield').line!.staggerRatio!;
 
-  it('守りが 3+3 マス目まで残り、次のマスで無防備になる（重ねる盤面、マスで数える）', () => {
+  it('守りが盾の石の分だけ長く残り、その次のマスで無防備になる（重ねる盤面、マスで数える）', () => {
     for (const [origin, guard] of [
       ['origin_shield', CHAIN_RULES.guardSteps + extra],
       ['origin_stone', CHAIN_RULES.guardSteps],
@@ -316,7 +324,7 @@ describe('盾の起点石', () => {
     }
   });
 
-  it('よろめくのは、1回の連鎖で最大HPの25%を受けたとき（15%+1 ではよろめかない）', () => {
+  it('よろめくのは、1回の連鎖で盾の石の割合を受けたとき（ふつうの割合+1 ではよろめかない）', () => {
     const c = new Combat(longRow('origin_shield'));
     c.fireNext();
     while (c.chain && !c.unguarded) c.step();

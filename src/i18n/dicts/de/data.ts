@@ -225,11 +225,11 @@ export const DATA: Dict = {
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Hier beginnt eine Kette. Kein Angriff. Die Seltenheit bestimmt die Zahl der Ausgänge (Gewöhnlich 1, Selten 2, Episch 3, Legendär 4).',
   速の起点石: 'Flinker Ursprungsstein',
-  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
-    'Linien ab diesem Ursprung geben die Kette 0.05 s schneller weiter, dafür machen ihre Angriffe -10% Schaden.',
+  '連鎖が次のマスへ伝わるのが{relay}秒速い。':
+    'Die Kette wird {relay} s schneller zum nächsten Feld weitergegeben.',
   重い起点石: 'Schwerer Ursprungsstein',
-  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
-    'Angriffe auf Linien ab diesem Ursprung machen +20% Schaden, dafür wird die Kette 0.05 s langsamer weitergegeben.',
+  '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
+    'Angriffe machen +{v}% Schaden, dafür wird die Kette {relay} s langsamer zum nächsten Feld weitergegeben.',
   盾の起点石: 'Schild-Ursprungsstein',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Dein Schutz hält bis Feld {to} einer Kette (normalerweise {from}). Du taumelst erst, wenn du in einer Kette {v}% deiner Max. HP erleidest (normalerweise {base}%).',

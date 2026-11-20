@@ -226,11 +226,11 @@ export const DATA: Dict = {
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Awal sebuah rantai. Tanpa Serangan. Kelangkaannya menentukan jumlah jalur (Biasa 1, Langka 2, Epik 3, Legendaris 4).',
   速の起点石: 'Batu Asal Gesit',
-  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
-    'Garis dari Asal ini meneruskan rantai 0.05 detik lebih cepat, tapi serangannya memberi damage -10%.',
+  '連鎖が次のマスへ伝わるのが{relay}秒速い。':
+    'Rantai diteruskan ke petak berikutnya {relay} detik lebih cepat.',
   重い起点石: 'Batu Asal Berat',
-  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
-    'Serangan di garis dari Asal ini memberi damage +20%, tapi rantai diteruskan 0.05 detik lebih lambat.',
+  '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
+    'Serangan memberi damage +{v}%, tapi rantai diteruskan ke petak berikutnya {relay} detik lebih lambat.',
   盾の起点石: 'Batu Asal Perisai',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Perlindunganmu bertahan sampai petak ke-{to} dalam rantai (biasanya {from}). Kamu baru terhuyung setelah menerima {v}% HP Maks dalam satu rantai (biasanya {base}%).',

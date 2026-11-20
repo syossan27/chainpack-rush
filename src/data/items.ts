@@ -15,23 +15,22 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     id: 'origin_swift',
     name: '速の起点石',
     kind: 'origin',
-    line: { relay: -0.05, damage: -10 },
-    description:
-      'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。',
+    line: { relay: -0.05 },
+    description: '連鎖が次のマスへ伝わるのが{relay}秒速い。',
   },
   {
     id: 'origin_heavy',
     name: '重い起点石',
     kind: 'origin',
-    line: { relay: 0.05, damage: 20 },
-    description: 'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。',
+    line: { relay: 0.05, damage: 12 },
+    description: '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。',
   },
   {
     id: 'origin_shield',
     name: '盾の起点石',
     kind: 'origin',
     // A flow stone since 2026-11-21: the guard lasts longer and the chain staggers less
-    line: { guardCells: 3, staggerRatio: 0.25 },
+    line: { guardCells: 6, staggerRatio: 0.35 },
     description:
       '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。',
   },
@@ -56,7 +55,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     id: 'origin_far',
     name: '彼方の起点石',
     kind: 'origin',
-    line: { far: 2 },
+    line: { far: 1.5 },
     description:
       '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。',
   },
@@ -605,6 +604,7 @@ export function itemDescVars(def: ItemDef): Record<string, number> {
       v: Math.round((line.staggerRatio ?? CHAIN_RULES.staggerRatio) * 100),
       base: Math.round(CHAIN_RULES.staggerRatio * 100),
     };
+  if (line?.relay !== undefined) return { relay: Math.abs(line.relay), v: line.damage ?? 0 };
   return {};
 }
 

@@ -223,11 +223,11 @@ export const DATA: Dict = {
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Where a chain begins. No Attack. Its rarity sets the number of exits (Common 1, Rare 2, Epic 3, Legendary 4).',
   速の起点石: 'Swift Origin Stone',
-  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
-    'Lines from this Origin pass the chain on 0.05s faster, but their attacks deal -10% damage.',
+  '連鎖が次のマスへ伝わるのが{relay}秒速い。':
+    'The chain passes on to the next cell {relay}s faster.',
   重い起点石: 'Heavy Origin Stone',
-  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
-    'Attacks on lines from this Origin deal +20% damage, but the chain passes on 0.05s slower.',
+  '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
+    'Attacks deal +{v}% damage, but the chain passes on to the next cell {relay}s slower.',
   盾の起点石: 'Shield Origin Stone',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Your guard lasts until cell {to} of a chain (normally {from}). You get Staggered only after taking {v}% of your Max HP in one chain (normally {base}%).',

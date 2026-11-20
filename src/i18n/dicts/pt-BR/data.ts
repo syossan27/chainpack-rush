@@ -226,11 +226,11 @@ export const DATA: Dict = {
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     'Onde a corrente começa. Sem Ataque. A raridade define o número de saídas (Comum 1, Raro 2, Épico 3, Lendário 4).',
   速の起点石: 'Pedra de Origem Veloz',
-  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
-    'As linhas desta Origem passam a corrente 0.05s mais rápido, mas seus ataques causam -10% de dano.',
+  '連鎖が次のマスへ伝わるのが{relay}秒速い。':
+    'A corrente passa para a próxima casa {relay}s mais rápido.',
   重い起点石: 'Pedra de Origem Pesada',
-  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
-    'Os ataques nas linhas desta Origem causam +20% de dano, mas a corrente passa 0.05s mais devagar.',
+  '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
+    'Os ataques causam +{v}% de dano, mas a corrente passa para a próxima casa {relay}s mais devagar.',
   盾の起点石: 'Pedra de Origem de Escudo',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Sua proteção dura até a casa {to} da corrente (normalmente {from}). Você só cambaleia depois de sofrer {v}% do HP Máximo numa corrente (normalmente {base}%).',

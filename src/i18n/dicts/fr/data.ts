@@ -225,11 +225,11 @@ export const DATA: Dict = {
   '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。':
     "Le début d'une chaîne. Pas d'Attaque. Sa rareté fixe le nombre de sorties (Commun 1, Rare 2, Épique 3, Légendaire 4).",
   速の起点石: "Pierre d'origine rapide",
-  'この起点から伸びる線は、伝わるのが0.05秒速い。そのかわり線の攻撃はダメージ -10%。':
-    'Les lignes de cette Origine passent la chaîne 0.05 s plus vite, mais leurs attaques infligent -10% de dégâts.',
+  '連鎖が次のマスへ伝わるのが{relay}秒速い。':
+    'La chaîne passe à la case suivante {relay} s plus vite.',
   重い起点石: "Pierre d'origine lourde",
-  'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
-    'Les attaques sur les lignes de cette Origine infligent +20% de dégâts, mais la chaîne passe 0.05 s plus lentement.',
+  '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
+    'Les attaques infligent +{v}% de dégâts, mais la chaîne passe à la case suivante {relay} s plus lentement.',
   盾の起点石: "Pierre d'origine de bouclier",
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     "Ta protection dure jusqu'à la case {to} d'une chaîne (normalement {from}). Tu n'es sonné qu'après avoir subi {v}% de tes HP max en une chaîne (normalement {base}%).",
