@@ -5,7 +5,7 @@ import { Combat } from '../src/core/combat';
 import { REGIONS, bossPoolForLoop } from '../src/data/regions';
 import { groupSpan, rollLoop } from '../src/core/layout';
 import { Rng } from '../src/core/rng';
-import { REFERENCE_LOADOUTS, buildReference } from '../src/data/referenceLoadouts';
+import { ARCHETYPES, buildReference } from '../tools/referenceBoards';
 import { referenceHeroStats } from '../tools/simLib';
 
 describe('regions（周回ごとの抽選）', () => {
@@ -46,11 +46,18 @@ describe('regions（周回ごとの抽選）', () => {
 
   it('参考配置のランで、画面内の敵は同時に8体以内（ボスと取り巻きを含む）', () => {
     const hero = referenceHeroStats();
-    for (const ref of REFERENCE_LOADOUTS) {
+    for (const ref of ARCHETYPES) {
       const { loadout, items } = buildReference(ref);
       for (const r of REGIONS) {
         for (const seed of [1, 2, 3, 4, 5]) {
-          const c = new Combat({ seed, regionId: r.id, loadout, items, hero });
+          const c = new Combat({
+            seed,
+            regionId: r.id,
+            loadout,
+            items,
+            hero,
+            rules: { keepCountOnKill: true },
+          });
           let max = 0;
           while (!c.ended) {
             c.step();
@@ -80,7 +87,7 @@ describe('地域の強さと戦利品', () => {
   });
 
   it('同じ雑魚でも地域の倍率がかかる', () => {
-    const { loadout, items } = buildReference(REFERENCE_LOADOUTS[0]!);
+    const { loadout, items } = buildReference(ARCHETYPES[0]!);
     const hpOf = (regionId: string) => {
       const c = new Combat({
         seed: 1,

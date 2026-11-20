@@ -1,5 +1,6 @@
 // npm run playtest: ボットが初期状態から遊び続け、成長の流れ・詰まる場所・使われない要素を集計する
 // 使い方: PLAYERS=30 RUNS=80 npm run playtest  → reports/playtest.md
+//   ENDLESS_RUNS=3: 最後に∞を何回走るか（∞が開いたボットだけ。記録には残さない）
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { MONETIZE, SIM, UPGRADES, type UpgradeId } from '../src/config/balance';
 import { Combat, type EndReason } from '../src/core/combat';
@@ -7,21 +8,26 @@ import {
   acceptLoot,
   doubleLoot,
   consumeItems,
-  consumableSlots,
-  heroStats,
-  itemMap,
+  endlessUnlocked,
   recordRun,
   sortieBlock,
 } from '../src/core/economy';
+import { acceptCharms } from '../src/core/charmSave';
+import { masteryLevel, recordMastery } from '../src/core/mastery';
+import { runConfig } from '../src/core/runConfig';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, serializeSave } from '../src/core/save';
+import { boardUids } from '../src/core/stack';
+import { getBoard, type BoardId } from '../src/data/boards';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
-import { REGIONS, getRegion, bossPoolForLoop } from '../src/data/regions';
+import { ENDLESS, REGIONS, getRegion, bossPoolForLoop } from '../src/data/regions';
 import { getEnemyDef } from '../src/data/enemies';
 import {
   buyUpgrades,
   chainSummary,
-  optimizeLoadout,
+  equipBestCharms,
+  optimizeBoard,
+  pickRelic,
   sellJunk,
   synthAll,
   useConsumables,
@@ -29,6 +35,7 @@ import {
 
 const PLAYERS = Number(process.env.PLAYERS ?? 30);
 const RUNS = Number(process.env.RUNS ?? 80);
+const ENDLESS_RUNS = Number(process.env.ENDLESS_RUNS ?? 3);
 
 interface RunLog {
   player: number;
@@ -46,7 +53,10 @@ interface RunLog {
   sweeps: number;
   drops: number;
   usedConsumables: string[];
-  origins: number;
+  board: BoardId;
+  charmDrops: number;
+  relics: number;
+  goblin: 'none' | 'caught' | 'fled';
   longest: number;
   placed: number;
   bought: UpgradeId[];
@@ -58,6 +68,14 @@ const placedCount = new Map<string, number>(); // defId → 配置に入った�
 const ownedCount = new Map<string, number>(); // defId → 持っていた回数
 const dropCount = new Map<string, number>();
 const blocked: string[] = [];
+// Achievement thresholds (the same tally as the 2026-11-20 baseline): the run each bot first got there
+const ACH_STEP = [6, 10, 14, 18];
+const ACH_DMG = [200, 1000, 5000, 20000];
+const achRun: Record<string, number[]> = {};
+// At the end of each bot: mastery levels and techniques learned, then ∞ loops
+const masteryEnd: { top: number; sum: number; learned: number }[] = [];
+const endlessLoops: number[] = [];
+let endlessBots = 0;
 /** ADS=1: 広告のご褒美を使う（戦利品2倍は1日3回、再開は毎ラン1回） */
 const ADS = process.env.ADS === '1';
 const RUNS_PER_DAY = Number(process.env.RUNS_PER_DAY ?? 10);
@@ -72,14 +90,16 @@ const t0 = Date.now();
 for (let p = 0; p < PLAYERS; p++) {
   const save = createInitialSave();
   const rng = new Rng(9000 + p);
+  const got = new Set<string>();
   for (let run = 1; run <= RUNS; run++) {
-    // 準備: 売る → 強化 → 配置を組み直す
+    // 準備: 売る → 合成 → 強化 → 盤面を組み直す → アクセサリーを付ける
     let goldEarned = sellJunk(save);
     const synth = synthAll(save, rng);
     synthTries += synth.tries;
     synthOk += synth.success;
     const bought = buyUpgrades(save);
-    optimizeLoadout(save, rng);
+    optimizeBoard(save, rng);
+    equipBestCharms(save);
     goldEarned += sellJunk(save); // 組み直しで外れた装備が倉庫に戻るので、あふれたらもう一度売る
     const block = sortieBlock(save);
     if (block) {
@@ -88,7 +108,7 @@ for (let p = 0; p < PLAYERS; p++) {
       );
       break;
     }
-    const eqIds = new Set(save.loadout.cells.filter((c): c is string => !!c));
+    const eqIds = new Set(boardUids(save.loadout));
     for (const it of save.inventory) {
       if (getItemDef(it.defId).kind === 'consumable') continue;
       ownedCount.set(it.defId, (ownedCount.get(it.defId) ?? 0) + 1);
@@ -104,21 +124,21 @@ for (let p = 0; p < PLAYERS; p++) {
       const mean = recent.reduce((a, l) => a + l.loop, 0) / Math.max(1, recent.length);
       if (recent.length >= 5 && mean < 1.5) region = opened[opened.length - 2]!;
     }
-    const items = itemMap(save);
-    const c = new Combat({
-      seed: p * 10000 + run,
-      regionId: region,
-      loadout: save.loadout,
-      items,
-      hero: heroStats(save),
-      consumableSlots: consumableSlots(save),
-    });
+    const cfg = runConfig(save, 'normal', region, p * 10000 + run);
+    const items = cfg.items;
+    const c = new Combat(cfg);
     let techs = 0;
+    let relics = 0;
+    let goblin: RunLog['goblin'] = 'none';
     for (;;) {
       while (!c.ended) {
         c.step();
         if (c.tick % 6 === 0) useConsumables(c, items);
-        for (const e of c.drainEvents()) if (e.type === 'technique') techs++;
+        for (const e of c.drainEvents()) {
+          if (e.type === 'technique') techs++;
+          else if (e.type === 'relicOffer' && pickRelic(c, cfg.loadout, items)) relics++;
+          else if (e.type === 'treasure' && e.phase !== 'appear') goblin = e.phase;
+        }
       }
       // 広告のご褒美: 力尽きたら1回だけ再開
       if (ADS && c.ended === 'dead' && !c.revived && c.revive(MONETIZE.reviveSeconds)) {
@@ -140,6 +160,7 @@ for (let p = 0; p < PLAYERS; p++) {
     consumeItems(save, r.usedConsumables);
     for (const d of r.drops) dropCount.set(d.defId, (dropCount.get(d.defId) ?? 0) + 1);
     acceptLoot(save, r.drops);
+    if (r.charms?.length) acceptCharms(save, r.charms);
     // 広告のご褒美: 戦利品2倍（1日 RUNS_PER_DAY 回出撃する想定で、1日の回数まで）
     if (ADS && r.drops.length > 0) {
       if ((run - 1) % RUNS_PER_DAY === 0) doublesToday = 0;
@@ -151,6 +172,14 @@ for (let p = 0; p < PLAYERS; p++) {
     }
     const { unlocked } = recordRun(save, region, r);
     if (unlocked) unlockRun[unlocked]!.push(run);
+    if (r.stats.rings) recordMastery(save, r.stats.rings, r.stats.sparks ?? []);
+    const mark = (key: string) => {
+      if (got.has(key)) return;
+      got.add(key);
+      (achRun[key] ??= []).push(run);
+    };
+    for (const n of ACH_STEP) if (save.stats.maxStep >= n) mark(`step${n}`);
+    for (const n of ACH_DMG) if (save.stats.maxDamage >= n) mark(`dmg${n}`);
     logs.push({
       player: p,
       run,
@@ -167,11 +196,37 @@ for (let p = 0; p < PLAYERS; p++) {
       sweeps: r.stats.sweeps,
       drops: r.drops.length,
       usedConsumables: r.usedConsumables.map((u) => items.get(u)!.defId),
-      origins: chain.origins,
+      board: chain.board,
+      charmDrops: r.charms?.length ?? 0,
+      relics,
+      goblin,
       longest: chain.longest,
       placed: chain.placed,
       bought,
     });
+  }
+  // 熟練: 一番高い属性の Lv と、全属性の Lv の合計、覚えた技の数
+  const levels = Object.values(save.mastery.points).map((pt) => masteryLevel(pt ?? 0));
+  masteryEnd.push({
+    top: Math.max(0, ...levels),
+    sum: levels.reduce((a, b) => a + b, 0),
+    learned: save.mastery.learned.length,
+  });
+  // ∞: 開いていれば、最後の盤面で何回か走る（記録には残さない）
+  if (endlessUnlocked(save)) {
+    endlessBots++;
+    optimizeBoard(save, rng);
+    equipBestCharms(save);
+    for (let k = 0; k < ENDLESS_RUNS; k++) {
+      const cfg = runConfig(save, 'endless', ENDLESS.id, 777000 + p * 100 + k);
+      const c = new Combat(cfg);
+      while (!c.ended) {
+        c.step();
+        for (const e of c.drainEvents())
+          if (e.type === 'relicOffer') pickRelic(c, cfg.loadout, cfg.items);
+      }
+      endlessLoops.push(c.result().reachedLoop);
+    }
   }
   // SAVE_OUT=path: 1体目のボットのセーブを書き出す（画面の点検用）
   if (p === 0 && process.env.SAVE_OUT) writeFileSync(process.env.SAVE_OUT, serializeSave(save));
@@ -192,10 +247,10 @@ const out = (s = '') => lines.push(s);
 out('# 自動プレイ レポート');
 out();
 out(
-  `ボット ${PLAYERS}人 × 最大 ${RUNS}出撃（${((Date.now() - t0) / 1000).toFixed(1)}秒で計算）。初期セーブから「売却 → 強化 → 配置の組み直し → 出撃」をくり返す。出撃先は開放済みの一番奥の地域だが、そこで直近5回の平均が1.5周未満ならひとつ手前で稼ぐ（10回に1回は奥へ）。`,
+  `ボット ${PLAYERS}人 × 最大 ${RUNS}出撃（${((Date.now() - t0) / 1000).toFixed(1)}秒で計算）。初期セーブから「売却 → 合成 → 強化 → 盤面の組み直し → アクセサリー → 出撃」をくり返す。ランは本編のルール（倒しても連鎖が続く・熟練と閃き・遺物・黄金ゴブリン・アクセサリー）。出撃先は開放済みの一番奥の地域だが、そこで直近5回の平均が1.5周未満ならひとつ手前で稼ぐ（10回に1回は奥へ）。`,
 );
 out(
-  'ボットの配置は「出口をたどってルートを組む」を24回試して、1秒あたりのダメージ見積もりが最大のものを選ぶ。人間の遊び方とは違うので、数字は目安。',
+  'ボットの盤面は、持っている盤面ごとに自動で組む（決まった形1回＋ゆらして24回）を試して、推定ダメージが最大のものを選ぶ。アクセサリーは強い順に付け、遺物は強さの順に一番高く重なったマスへ貼る。人間の遊び方とは違うので、数字は目安。',
 );
 out();
 out('## 地域の開放');
@@ -212,16 +267,22 @@ out();
 out('## 出撃回数ごとの推移（全ボットの平均）');
 out();
 out(
-  '| 出撃 | 地域 | 到達周回 | 力尽きた率 | 連鎖の発火 | 最長連鎖（配置） | 起点の数 | 置いた装備 | 延長(秒) | 一網打尽 | 戦利品 | 売却G | 所持G | 実時間(秒) |',
+  '| 出撃 | 地域 | 到達周回 | 力尽きた率 | 連鎖の発火 | 最長連鎖（配置） | 盤面 | 置いた装備 | 延長(秒) | 一網打尽 | 戦利品 | アクセサリー | 売却G | 所持G | 実時間(秒) |',
 );
-out('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+out('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+const topBoard = (rs: RunLog[]) => {
+  const n = new Map<BoardId, number>();
+  for (const l of rs) n.set(l.board, (n.get(l.board) ?? 0) + 1);
+  const [id] = [...n.entries()].sort((a, b) => b[1] - a[1])[0]!;
+  return getBoard(id).name;
+};
 const buckets = [1, 2, 3, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80].filter((b) => b <= RUNS);
 for (const b of buckets) {
   const rs = logs.filter((l) => l.run === b);
   if (!rs.length) continue;
   const regions = [...new Set(rs.map((l) => getRegion(l.region).name))].join('/');
   out(
-    `| ${b} | ${regions} | ${f1(avg(rs.map((l) => l.loop)))} | ${pct(avg(rs.map((l) => (l.reason === 'dead' ? 1 : 0))))} | ${f1(avg(rs.map((l) => l.fires)))} | ${f1(avg(rs.map((l) => l.longest)))} | ${f1(avg(rs.map((l) => l.origins)))} | ${f1(avg(rs.map((l) => l.placed)))} | ${f1(avg(rs.map((l) => l.timeGained)))} | ${f1(avg(rs.map((l) => l.sweeps)))} | ${f1(avg(rs.map((l) => l.drops)))} | ${Math.round(avg(rs.map((l) => l.goldEarned)))} | ${Math.round(avg(rs.map((l) => l.gold)))} | ${f1(avg(rs.map((l) => l.realSeconds)))} |`,
+    `| ${b} | ${regions} | ${f1(avg(rs.map((l) => l.loop)))} | ${pct(avg(rs.map((l) => (l.reason === 'dead' ? 1 : 0))))} | ${f1(avg(rs.map((l) => l.fires)))} | ${f1(avg(rs.map((l) => l.longest)))} | ${topBoard(rs)} | ${f1(avg(rs.map((l) => l.placed)))} | ${f1(avg(rs.map((l) => l.timeGained)))} | ${f1(avg(rs.map((l) => l.sweeps)))} | ${f1(avg(rs.map((l) => l.drops)))} | ${avg(rs.map((l) => l.charmDrops)).toFixed(2)} | ${Math.round(avg(rs.map((l) => l.goldEarned)))} | ${Math.round(avg(rs.map((l) => l.gold)))} | ${f1(avg(rs.map((l) => l.realSeconds)))} |`,
   );
 }
 out();
@@ -263,6 +324,42 @@ out();
   out(`序盤（1〜5回目）の死因: ${top || '-'}`);
   out();
 }
+out('## 実績の基準（初めて届いた出撃回数）');
+out();
+out('| 基準 | 届いた人 | 出撃回数（中央値） |');
+out('| --- | --- | --- |');
+for (const key of [...ACH_STEP.map((n) => `step${n}`), ...ACH_DMG.map((n) => `dmg${n}`)]) {
+  const xs = achRun[key] ?? [];
+  const label = key.startsWith('step') ? `${key.slice(4)}連鎖` : `${key.slice(3)}ダメージ`;
+  out(`| ${label} | ${xs.length}/${PLAYERS} | ${xs.length ? median(xs) : '-'} |`);
+}
+out();
+out('## 本編の仕組み');
+out();
+{
+  const early = [1, 2, 3, 4, 5]
+    .filter((k) => k <= RUNS)
+    .map((k) => f1(avg(logs.filter((l) => l.run === k).map((l) => l.loop))));
+  const goblins = logs.filter((l) => l.goblin !== 'none');
+  out(`- 1〜5出撃目の到達周回（平均）: ${early.join(' / ')}`);
+  out(
+    `- ランの長さ（実時間）: 中央値 ${f1(median(logs.map((l) => l.realSeconds)))}秒・平均 ${f1(avg(logs.map((l) => l.realSeconds)))}秒`,
+  );
+  out(
+    `- アクセサリーのドロップ: 1出撃あたり ${avg(logs.map((l) => l.charmDrops)).toFixed(2)}個（0個 ${pct(avg(logs.map((l) => (l.charmDrops === 0 ? 1 : 0))))}）`,
+  );
+  out(`- 遺物: 1出撃あたり ${avg(logs.map((l) => l.relics)).toFixed(2)}個貼った`);
+  out(
+    `- 黄金ゴブリン: ${pct(goblins.length / Math.max(1, logs.length))}の出撃で現れ、そのうち ${pct(goblins.filter((l) => l.goblin === 'caught').length / Math.max(1, goblins.length))}を倒した`,
+  );
+  out(
+    `- 熟練（最後）: 一番高い属性 Lv ${f1(avg(masteryEnd.map((m) => m.top)))}・全属性の Lv 合計 ${f1(avg(masteryEnd.map((m) => m.sum)))}・覚えた技 ${f1(avg(masteryEnd.map((m) => m.learned)))}つ`,
+  );
+  out(
+    `- ∞（${ENDLESS_RUNS}回ずつ、記録なし）: 開いたボット ${endlessBots}/${PLAYERS}、到達周回 中央値 ${endlessLoops.length ? median(endlessLoops) : '-'}・平均 ${endlessLoops.length ? f1(avg(endlessLoops)) : '-'}・最高 ${endlessLoops.length ? Math.max(...endlessLoops) : '-'}`,
+  );
+}
+out();
 out('## 強化の購入（最初に買った出撃回数の中央値・最後まで何段階まで上げたか）');
 out();
 out('| 強化 | 1段目（出撃） | 最終の段階（平均） | 上限 |');
@@ -333,3 +430,27 @@ out(`（参考）ボスの出現順 ${bossRows.join(' ／ ')}`);
 mkdirSync('reports', { recursive: true });
 writeFileSync('reports/playtest.md', lines.join('\n') + '\n');
 console.log(lines.join('\n'));
+
+// The same numbers as the 2026-11-20 baseline (one line, for comparing)
+{
+  const summary = {
+    unlock: Object.fromEntries(
+      REGIONS.map((r) => [
+        r.id,
+        {
+          n: unlockRun[r.id]!.length,
+          median: unlockRun[r.id]!.length ? median(unlockRun[r.id]!) : null,
+        },
+      ]),
+    ),
+    ach: Object.fromEntries(
+      Object.entries(achRun).map(([k, v]) => [k, { n: v.length, median: median(v) }]),
+    ),
+    earlyLoops: [1, 2, 3, 4, 5].map((k) => avg(logs.filter((l) => l.run === k).map((l) => l.loop))),
+    runSecondsMedian: median(logs.map((l) => l.realSeconds)),
+    charmDropsPerRun: avg(logs.map((l) => l.charmDrops)),
+    masteryTop: avg(masteryEnd.map((m) => m.top)),
+    endless: { bots: endlessBots, median: endlessLoops.length ? median(endlessLoops) : null },
+  };
+  console.log('PLAYTEST_JSON ' + JSON.stringify(summary));
+}

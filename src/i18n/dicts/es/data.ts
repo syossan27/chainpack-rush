@@ -415,11 +415,6 @@ export const DATA: Dict = {
   エピック: 'Épico',
   レジェンド: 'Legendario',
 
-  // src/data/referenceLoadouts.ts
-  一本型: 'Cadena Única',
-  複数型: 'Multicadena',
-  混合型: 'Mixto',
-
   // src/data/regions.ts
   草原: 'Pradera',
   'スライム、ゴブリン、狼': 'Slimes, Goblins, Lobos',

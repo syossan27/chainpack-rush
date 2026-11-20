@@ -396,11 +396,6 @@ export const DATA: Dict = {
   エピック: '史詩',
   レジェンド: '傳說',
 
-  // src/data/referenceLoadouts.ts
-  一本型: '單線型',
-  複数型: '多線型',
-  混合型: '混合型',
-
   // src/data/regions.ts
   草原: '草原',
   'スライム、ゴブリン、狼': '史萊姆、哥布林、狼',

@@ -416,11 +416,6 @@ export const DATA: Dict = {
   エピック: 'Epik',
   レジェンド: 'Legendaris',
 
-  // src/data/referenceLoadouts.ts
-  一本型: 'Rantai Tunggal',
-  複数型: 'Multi Rantai',
-  混合型: 'Campuran',
-
   // src/data/regions.ts
   草原: 'Padang Rumput',
   'スライム、ゴブリン、狼': 'Slime, Goblin, Serigala',

@@ -409,11 +409,6 @@ export const DATA: Dict = {
   エピック: 'Epic',
   レジェンド: 'Legendary',
 
-  // src/data/referenceLoadouts.ts
-  一本型: 'Single Chain',
-  複数型: 'Multi Chain',
-  混合型: 'Mixed',
-
   // src/data/regions.ts
   草原: 'Grassland',
   'スライム、ゴブリン、狼': 'Slimes, Goblins, Wolves',

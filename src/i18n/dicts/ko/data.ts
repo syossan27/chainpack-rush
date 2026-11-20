@@ -405,11 +405,6 @@ export const DATA: Dict = {
   エピック: '에픽',
   レジェンド: '레전드',
 
-  // src/data/referenceLoadouts.ts
-  一本型: '일직선형',
-  複数型: '다중형',
-  混合型: '혼합형',
-
   // src/data/regions.ts
   草原: '초원',
   'スライム、ゴブリン、狼': '슬라임, 고블린, 늑대',

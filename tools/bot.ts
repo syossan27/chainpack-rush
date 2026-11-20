@@ -1,9 +1,13 @@
-// 自動プレイ用のボット（プレイヤーの代わりに、配置・消耗品・売却・強化を決める）
+// 自動プレイ用のボット（プレイヤーの代わりに、盤面・アクセサリー・遺物・消耗品・売却・強化を決める）
 // 人間の遊び方とは違うので、結果は「目安」として読む。
-import { AREA, RARITY, STATUS, type UpgradeId } from '../src/config/balance';
+import type { UpgradeId } from '../src/config/balance';
+import { autoBoard, boardScore } from '../src/core/autoBoard';
+import { activeBoardId, switchBoard } from '../src/core/boardSave';
+import { ownedBoards } from '../src/core/boards';
 import { simulateChain } from '../src/core/chain';
+import { boardCharmSlots, equipCharm } from '../src/core/charmSave';
+import { charmValue, slotOpen } from '../src/core/charms';
 import type { Combat } from '../src/core/combat';
-import { computeDamage, findCombo } from '../src/core/damage';
 import {
   consumableSlots,
   equippedUids,
@@ -18,166 +22,104 @@ import {
   synthPlan,
   synthesize,
 } from '../src/core/economy';
-import { neighborCell } from '../src/core/chain';
+import { canStickRelic } from '../src/core/relics';
 import { Rng } from '../src/core/rng';
 import type { SaveData } from '../src/core/save';
-import type { Dir, ItemInstance, Loadout, Status } from '../src/core/types';
-import { DIRS } from '../src/core/types';
+import { boardUids, stackAt } from '../src/core/stack';
+import type { ItemInstance, Loadout } from '../src/core/types';
+import { getBoard, type BoardId } from '../src/data/boards';
 import { getItemDef } from '../src/data/items';
-import { TECHNIQUE_MULT } from '../src/data/techniques';
+import type { RelicId } from '../src/data/relics';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
 
-/** 群れ相手を想定した範囲攻撃の重み（単体=1） */
-const AREA_WEIGHT = { single: 1, sweep: 2.5, splash: 1.8, all: 3 * AREA.allMult } as const;
-const DEFENSE_WEIGHT = 0.6; // 防御値1あたりをダメージ何点ぶんとみなすか
-
-/** 追加効果のおおまかな上乗せ（条件つきのものは半分に見積もる） */
-function affixBoost(it: ItemInstance): number {
-  let b = 0;
-  for (const a of it.affixes ?? []) {
-    if (a.id === 'sharp' || a.id === 'sturdy') b += a.value / 100;
-    else if (a.id === 'keen') b += a.value / 100;
-    else b += a.value / 200;
-  }
-  return 1 + b;
-}
-
-function power(it: ItemInstance): number {
-  const def = getItemDef(it.defId);
-  const r = RARITY[it.rarity].mult * affixBoost(it);
-  if (def.kind === 'attack')
-    return (
-      (def.atk ?? 0) *
-        r *
-        AREA_WEIGHT[def.area ?? 'single'] *
-        (def.hits ?? 1) *
-        (1 + (def.critBonus ?? 0)) +
-      (def.applies ? 8 : 0)
-    );
-  if (def.kind === 'defense') return (def.defense ?? 0) * r * DEFENSE_WEIGHT;
-  return 0;
-}
-
 /**
- * 配置の評価: 起点ごとに、1体の強い相手へ連鎖を撃ったときのダメージを見積もり（状態コンボを順に数える）、
- * 1秒あたりにならす。防御値も少し加点する。
+ * 盤面を組み直す: 持っている盤面ごとに autoBoard を決まった形で1回と、ゆらして tries 回組み、今の配置も
+ * 合わせて、見積もり（boardScore）が一番高いものに切り替える。消耗品は枠に詰める
  */
-export function scoreLoadout(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  atbTime: number,
-  attackMult: number,
-): number {
-  const plans = simulateChain(loadout, items).plans;
-  if (plans.length === 0) return 0;
-  let damage = 0;
-  let time = 0;
-  let defense = 0;
-  const statuses = new Set<Status>(); // 連鎖をまたいで残る状態（5秒以内に次が撃たれる想定）
-  for (const plan of plans) {
-    for (const s of plan.steps) {
-      if (s.step === null) continue;
-      const it = items.get(s.uid)!;
-      const def = getItemDef(it.defId);
-      const combo = findCombo(def.element, statuses);
-      if (combo) statuses.delete(combo.status);
-      const d =
-        computeDamage({
-          atk: def.atk ?? 0,
-          rarity: it.rarity,
-          step: s.step,
-          comboMult: combo?.mult ?? (statuses.size > 0 ? STATUS.exposedMult : 1),
-          upgradeMult: attackMult,
-          area: def.area === 'all' ? 'all' : undefined,
-          multCap: plan.multCap,
-        }) * (s.tech ? TECHNIQUE_MULT : 1);
-      damage +=
-        d * AREA_WEIGHT[def.area ?? 'single'] * (def.hits ?? 1) * (1 + (def.critBonus ?? 0));
-      if (def.applies) statuses.add(def.applies);
-    }
-    time += atbTime + plan.duration;
-    defense += plan.defenseGain;
-  }
-  return (damage + defense * DEFENSE_WEIGHT) / time;
-}
-
-/** 出口の向きをたどって、空いているマスへ装備をつないでいく（1回分の試行） */
-function buildOnce(save: SaveData, rng: Rng): Loadout {
-  const { width, height } = save.loadout;
-  const loadout: Loadout = {
-    width,
-    height,
-    cells: new Array(width * height).fill(null),
-    originOrder: [],
-    consumables: [],
-  };
-  const all = save.inventory.filter((i) => getItemDef(i.defId).kind !== 'consumable');
-  const origins = all
-    .filter((i) => getItemDef(i.defId).kind === 'origin' && i.exits.length > 0)
-    .sort((a, b) => b.exits.length - a.exits.length || rng.next() - 0.5);
-  // 強い順（少しランダム）に並べた装備の山
-  const pool = all
-    .filter((i) => getItemDef(i.defId).kind !== 'origin')
-    .map((i) => ({ i, k: power(i) * (0.7 + rng.next() * 0.6) }))
-    .sort((a, b) => b.k - a.k)
-    .map((x) => x.i);
-  const useOrigins = Math.min(origins.length, 1 + rng.int(3));
-  const free = (c: number | null): c is number => c !== null && loadout.cells[c] === null;
-  for (const o of origins.slice(0, useOrigins)) {
-    const starts = loadout.cells
-      .map((_, c) => c)
-      .filter(
-        (c) => loadout.cells[c] === null && o.exits.some((d) => free(neighborCell(loadout, c, d))),
-      );
-    if (starts.length === 0) break;
-    const start = rng.pick(starts);
-    loadout.cells[start] = o.uid;
-    loadout.originOrder.push(o.uid);
-    const maxLen = 3 + rng.int(9);
-    let placed = 0;
-    const queue: number[] = o.exits.map((d) => neighborCell(loadout, start, d)).filter(free);
-    while (queue.length > 0 && pool.length > 0 && placed < maxLen) {
-      const cell = queue.shift()!;
-      if (loadout.cells[cell] !== null) continue;
-      const leads = (it: ItemInstance) =>
-        it.exits.filter((d: Dir) => free(neighborCell(loadout, cell, d))).length;
-      // 続けられる向きの装備を優先。長さの上限が近いか、続けられる装備がなければ末端でもよい
-      const wantEnd = placed >= maxLen - 1;
-      let idx = pool.findIndex((it) => (wantEnd ? true : leads(it) > 0));
-      if (idx < 0) idx = 0;
-      const it = pool.splice(idx, 1)[0]!;
-      loadout.cells[cell] = it.uid;
-      placed++;
-      for (const d of DIRS) {
-        if (!it.exits.includes(d)) continue;
-        const n = neighborCell(loadout, cell, d);
-        if (free(n)) queue.push(n);
-      }
-    }
-  }
-  return loadout;
-}
-
-/** 配置を組み直す: 何度か試して評価が一番高いものを使う。消耗品は枠に詰める */
-export function optimizeLoadout(save: SaveData, rng: Rng, tries = 24): void {
+export function optimizeBoard(save: SaveData, rng: Rng, tries = 24): void {
   const items = itemMap(save);
-  const hs = heroStats(save);
-  let best = save.loadout;
-  let bestScore = scoreLoadout(save.loadout, items, hs.atbTime, hs.attackMult);
-  for (let t = 0; t < tries; t++) {
-    const l = buildOnce(save, rng);
-    const sc = scoreLoadout(l, items, hs.atbTime, hs.attackMult);
+  const mult = heroStats(save).attackMult;
+  let bestId: BoardId = activeBoardId(save);
+  let best: Loadout = save.loadout;
+  let bestScore = boardScore(save.loadout, items, mult);
+  const consider = (id: BoardId, l: Loadout) => {
+    const sc = boardScore(l, items, mult);
     if (sc > bestScore) {
+      bestId = id;
       best = l;
       bestScore = sc;
     }
+  };
+  for (const b of ownedBoards(save)) {
+    consider(b.id, autoBoard(save.inventory, b.id));
+    for (let t = 0; t < tries; t++) consider(b.id, autoBoard(save.inventory, b.id, rng));
   }
+  if (bestId !== activeBoardId(save)) switchBoard(save, bestId);
   const slots = consumableSlots(save);
   const cons = save.inventory
     .filter((i) => getItemDef(i.defId).kind === 'consumable')
     .sort((a, b) => CONSUMABLE_PRIORITY.indexOf(a.defId) - CONSUMABLE_PRIORITY.indexOf(b.defId));
   save.loadout = { ...best, consumables: cons.slice(0, slots).map((i) => i.uid) };
+}
+
+/** アクセサリー: 今の盤面の枠に、強い（charmValue の高い）順に付け直す */
+export function equipBestCharms(save: SaveData): void {
+  const id = activeBoardId(save);
+  const board = getBoard(id);
+  const open = boardCharmSlots(save, id)
+    .map((_, slot) => slot)
+    .filter((slot) => slotOpen(slot, board));
+  const ranked = [...save.charms].sort((a, b) => charmValue(b) - charmValue(a));
+  open.forEach((slot, k) => equipCharm(save, id, slot, ranked[k]?.uid ?? null));
+}
+
+/** 遺物の強さの順（盤面に最初から貼って測った順。見積もりには遺物の効き目が入らないため） */
+const RELIC_ORDER: readonly RelicId[] = [
+  'fist',
+  'bell',
+  'whistle',
+  'fang',
+  'ward',
+  'eye',
+  'pierce',
+  'feather',
+  'sweep',
+  'claw',
+];
+
+/**
+ * 遺物を選んで貼る: 出た候補を強さの順に見て、貼れるマスのうち一番高く重なったマス（同じなら道の後ろ）へ。
+ * どれも貼れなければ見送る。貼れたら true
+ */
+export function pickRelic(
+  c: Combat,
+  loadout: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+): boolean {
+  const offer = c.relicOffer;
+  if (!offer) return false;
+  const plan = simulateChain(loadout, items).plans[0];
+  const route = plan ? [...new Set(plan.steps.map((s) => s.cell))] : [];
+  const ids = [
+    ...RELIC_ORDER.filter((r) => offer.ids.includes(r)),
+    ...offer.ids.filter((r) => !RELIC_ORDER.includes(r)),
+  ];
+  for (const id of ids) {
+    let best = -1;
+    let size = -1;
+    for (const cell of route) {
+      if (!canStickRelic(loadout, items, c.relics, id, cell)) continue;
+      const n = stackAt(loadout, cell).length;
+      if (n >= size) {
+        best = cell;
+        size = n;
+      }
+    }
+    if (best >= 0 && c.placeRelic(id, best)) return true;
+  }
+  c.skipRelic();
+  return false;
 }
 
 const CONSUMABLE_PRIORITY = [
@@ -273,13 +215,13 @@ export function buyUpgrades(save: SaveData): UpgradeId[] {
   return bought;
 }
 
-export function chainSummary(save: SaveData): { origins: number; longest: number; placed: number } {
+export function chainSummary(save: SaveData): { board: BoardId; longest: number; placed: number } {
   const items = itemMap(save);
   const plans = simulateChain(save.loadout, items).plans;
   return {
-    origins: save.loadout.originOrder.filter((u) => save.loadout.cells.includes(u)).length,
+    board: activeBoardId(save),
     longest: Math.max(0, ...plans.map((p) => p.maxStep)),
-    placed: save.loadout.cells.filter(Boolean).length,
+    placed: boardUids(save.loadout).length,
   };
 }
 

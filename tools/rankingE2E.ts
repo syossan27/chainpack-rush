@@ -4,10 +4,11 @@
 import { initializeApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth, signInAnonymously } from 'firebase/auth';
 import { connectFunctionsEmulator, getFunctions, httpsCallable } from 'firebase/functions';
-import { Combat, type RunConfig } from '../src/core/combat';
+import { Combat } from '../src/core/combat';
 import { createInitialSave } from '../src/core/save';
-import { heroStats, itemMap, totalStars } from '../src/core/economy';
+import { totalStars } from '../src/core/economy';
 import { buildSubmission, endlessSeason } from '../src/core/ranking';
+import { runConfig } from '../src/core/runConfig';
 
 const app = initializeApp({ apiKey: 'demo', projectId: 'demo-chainpack-rush', appId: 'demo' });
 const auth = getAuth(app);
@@ -27,18 +28,13 @@ const check = (label: string, ok: boolean, detail?: unknown) => {
 
 await signInAnonymously(auth);
 const s = createInitialSave();
-const cfg: RunConfig = {
-  seed: 1234,
-  regionId: 'endless',
-  loadout: s.loadout,
-  items: itemMap(s),
-  hero: heroStats(s),
-  consumableSlots: 3,
-};
+// An endless run by the main game's rules (the server replays it with the same features)
+const cfg = runConfig(s, 'endless', 'endless', 1234);
 const c = new Combat(cfg);
 while (!c.ended) {
   if (c.tick === 120) c.useConsumable(0);
   c.step();
+  for (const e of c.drainEvents()) if (e.type === 'relicOffer') c.skipRelic();
 }
 const season = endlessSeason(Date.now());
 const sub = buildSubmission('endless', season, cfg, c.result(), s, totalStars(s));
