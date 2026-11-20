@@ -39,7 +39,9 @@ import {
   flowRules,
   lineEffects,
   lineOrigin,
+  originQuick,
   simulateChain,
+  waitFactor,
 } from './chain';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
@@ -1182,16 +1184,7 @@ export class Combat {
       const fired = c.plan.steps.slice(0, c.cut ? c.next : c.plan.steps.length);
       const steps = firedPieces(fired, (u) => this.isOrigin(u));
       // 速攻: この発火の起点の値
-      const quick =
-        Math.max(
-          0,
-          ...c.plan.originUids.map((u) => {
-            const o = this.cfg.items.get(u);
-            return o ? affixValue(o, 'quick') : 0;
-          }),
-        ) / 100;
-      const factor =
-        Math.min(r.atbMaxFactor, Math.max(r.atbMinFactor, steps / r.atbRefSteps)) * (1 - quick);
+      const factor = waitFactor(steps, originQuick(c.plan.originUids, this.cfg.items), r);
       this.atb = this.atbFull * (1 - factor);
     } else {
       this.atb = 0;

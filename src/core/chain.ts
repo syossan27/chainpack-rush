@@ -2,7 +2,7 @@
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
-import { CHAIN, RARITY, STACK, type ChainRules } from '../config/balance';
+import { CHAIN, CHAIN_RULES, RARITY, STACK, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type {
   ChainPlan,
@@ -51,6 +51,33 @@ export function firedPieces(
     else cells.add(s.cell);
   }
   return pieces + cells.size;
+}
+
+/**
+ * The wait before the next chain as a share of a full gauge: the pieces that rang ÷ atbRefSteps,
+ * kept within the rules' bounds, shortened by the origin's 速攻 (%). Battle and estimates share it
+ */
+export function waitFactor(
+  pieces: number,
+  quickPct: number,
+  rules: ChainRules = CHAIN_RULES,
+): number {
+  const f = Math.min(rules.atbMaxFactor, Math.max(rules.atbMinFactor, pieces / rules.atbRefSteps));
+  return f * (1 - quickPct / 100);
+}
+
+/** 速攻 of a firing: the largest value among its origins (%) */
+export function originQuick(
+  originUids: readonly string[],
+  items: ReadonlyMap<string, ItemInstance>,
+): number {
+  return Math.max(
+    0,
+    ...originUids.map((u) => {
+      const o = items.get(u);
+      return o ? affixValue(o, 'quick') : 0;
+    }),
+  );
 }
 
 /** 起点石の種類: 線に乗った起点の効果（同じ種類の起点石は1回だけ） */
