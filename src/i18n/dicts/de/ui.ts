@@ -460,8 +460,6 @@ export const UI: Dict = {
     'Nur dieses eine Mal hast du legendäre Ausrüstung geliehen! Sammle Ausrüstung, dann wirst du eines Tages auch so stark!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Ab einem Ursprung (dem nummerierten Stein) greifen Gegenstände der Reihe nach entlang der Pfeile an. Das ist eine „Kette“! Je länger die Kette, desto größer der Schaden.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zünden die Ursprünge der Reihe nach: ①→②→①… Welcher als Nächstes zündet, steht unter „Nächste Kette“.',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Dein Held läuft und kämpft automatisch. Besiege eine ganze Gruppe auf einmal oder einen Boss, um mehr Zeit zu bekommen!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -763,4 +761,6 @@ export const UI: Dict = {
   配置する: 'Bearbeiten',
   挑戦用の配置を組んでください: 'Pack zuerst deine Prüfungs-Aufstellung',
   配置が制限に合っていません: 'Deine Aufstellung erfüllt die Regeln nicht',
+  '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
+    'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zündet der Ursprung und eine Kette beginnt.',
 };

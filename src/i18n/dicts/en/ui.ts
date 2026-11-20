@@ -456,8 +456,6 @@ export const UI: Dict = {
     "Just this once, you've borrowed legendary gear! Collect gear and someday you'll be this strong!",
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Starting from an Origin (the numbered stone), items attack in order along the arrows. That\'s a "chain"! The longer the chain, the bigger the damage.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Each time the gauge under the hero fills, the Origins fire in order: ①→②→①… The next one to fire is shown under "Next Chain".',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Your hero moves and fights automatically. Wipe out a whole pack or defeat a boss to get more time!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -757,4 +755,6 @@ export const UI: Dict = {
   配置する: 'Edit Layout',
   挑戦用の配置を組んでください: 'Build your Challenge layout first',
   配置が制限に合っていません: "Your layout doesn't meet the rules",
+  '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
+    'Each time the gauge under the hero fills, the Origin fires and a chain begins.',
 };

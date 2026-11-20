@@ -461,8 +461,6 @@ export const UI: Dict = {
     'Khusus kali ini, kamu meminjam perlengkapan legendaris! Kumpulkan perlengkapan dan suatu hari kamu akan sekuat ini!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'Mulai dari Asal (batu bernomor), item menyerang bergiliran mengikuti panah. Itulah "rantai"! Makin panjang rantainya, makin besar damage-nya.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Setiap kali bar di bawah pahlawan penuh, Asal terpicu bergiliran: ①→②→①… Asal yang terpicu berikutnya ditampilkan di "Rantai Berikutnya".',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Pahlawanmu maju dan bertarung otomatis. Habisi satu kawanan sekaligus atau kalahkan bos untuk menambah waktu!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -763,4 +761,6 @@ export const UI: Dict = {
   配置する: 'Atur Susunan',
   挑戦用の配置を組んでください: 'Susun susunan Tantangan dulu',
   配置が制限に合っていません: 'Susunanmu tidak memenuhi aturan',
+  '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
+    'Setiap kali bar di bawah pahlawan penuh, Asal terpicu dan rantai pun dimulai.',
 };

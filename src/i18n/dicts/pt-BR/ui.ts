@@ -460,8 +460,6 @@ export const UI: Dict = {
     'Só desta vez, você pegou equipamento lendário emprestado! Junte itens e um dia você vai ficar forte assim!',
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     'A partir de uma Origem (a pedra numerada), os itens atacam em ordem seguindo as setas. Isso é uma "corrente"! Quanto mais longa a corrente, maior o dano.',
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    'Cada vez que a barra aos pés do herói enche, as Origens disparam em ordem: ①→②→①… A próxima a disparar aparece em "Próxima Corrente".',
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Seu herói avança e luta sozinho. Derrote um grupo inteiro de uma vez ou um chefe para ganhar mais tempo!',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -763,4 +761,6 @@ export const UI: Dict = {
   配置する: 'Editar Organização',
   挑戦用の配置を組んでください: 'Monte primeiro a organização do Desafio',
   配置が制限に合っていません: 'Sua organização não segue as regras',
+  '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
+    'Cada vez que a barra aos pés do herói enche, a Origem dispara e começa uma corrente.',
 };

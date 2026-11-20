@@ -465,8 +465,6 @@ export const UI: Dict = {
     "Juste pour cette fois, tu as emprunté de l'équipement légendaire ! Collectionne des objets et un jour tu seras aussi fort !",
   '起点（番号の石）から矢印の向きに、\n装備が順番に攻撃するよ。これが「連鎖」！\n長くつながるほど、ダメージが大きくなる':
     "Depuis une Origine (la pierre numérotée), les objets attaquent tour à tour en suivant les flèches. C'est une « chaîne » ! Plus la chaîne est longue, plus les dégâts sont gros.",
-  '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る':
-    "Chaque fois que la jauge sous le héros se remplit, les Origines se déclenchent dans l'ordre : ①→②→①… La prochaine est indiquée sous « Chaîne suivante ».",
   '勇者は自動で進んで戦うよ。\n群れをまとめて倒したり、ボスを倒すと\n時間がのびる！':
     'Ton héros avance et combat tout seul. Élimine tout un groupe ou vaincs un boss pour gagner du temps !',
   '残り時間。ふだんは0になるか、\nHPがなくなると終わり':
@@ -769,4 +767,6 @@ export const UI: Dict = {
   配置する: 'Modifier',
   挑戦用の配置を組んでください: "Crée d'abord ta disposition de Défi",
   配置が制限に合っていません: 'Ta disposition ne respecte pas les règles',
+  '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
+    "Chaque fois que la jauge sous le héros se remplit, l'Origine se déclenche et une chaîne commence.",
 };

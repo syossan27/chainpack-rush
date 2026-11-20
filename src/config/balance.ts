@@ -503,13 +503,6 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
   storage: { id: 'storage', name: '倉庫容量', effect: 10, baseCost: 100, growth: 1.5, maxLevel: 6 }, // 40→100
 };
 
-export const BACKPACK = {
-  baseWidth: 5,
-  baseHeight: 4,
-  maxWidth: 7,
-  maxHeight: 5,
-} as const;
-
 export const STORAGE = {
   baseCapacity: 40,
 } as const;

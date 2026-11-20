@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { Combat } from '../src/core/combat';
 import { DEMO_HERO, DEMO_REGION, demoLoadout } from '../src/data/demoLoadout';
-import { TECHNIQUES } from '../src/data/techniques';
-import { planChain } from '../src/core/chain';
-import { BACKPACK } from '../src/config/balance';
+import { simulateChain } from '../src/core/chain';
+import { featureRules, runFeatures } from '../src/core/runRules';
 
 describe('体験ラン（最初の出撃で伝説の装備を借りる）', () => {
-  it('力尽きずに時間いっぱい戦い、必殺技がいくつも出る。戦利品と時間の延長はない', () => {
+  it('盤面は標準、起点は1つ。重ねた山があり、線は全部のマスを通る', () => {
     const { loadout, items } = demoLoadout();
+    expect(loadout.board).toBe('standard');
+    expect(loadout.originOrder).toHaveLength(1);
+    expect(loadout.under!.some((u) => u.length > 0)).toBe(true);
+    const plan = simulateChain(loadout, items).plans[0]!;
+    expect(new Set(plan.steps.map((s) => s.cell)).size).toBe(loadout.cells.filter(Boolean).length);
+  });
+
+  it('力尽きずに時間いっぱい戦い、必殺技が3種類以上出る。戦利品と時間の延長はない', () => {
+    const { loadout, items } = demoLoadout();
+    const rules = featureRules(runFeatures('demo'));
     for (const seed of [1, 2, 3]) {
       const c = new Combat({
         seed,
@@ -16,6 +25,7 @@ describe('体験ラン（最初の出撃で伝説の装備を借りる）', () =
         items,
         hero: DEMO_HERO,
         demo: true,
+        ...(rules ? { rules } : {}),
       });
       const techs = new Set<string>();
       while (!c.ended) {
@@ -26,28 +36,7 @@ describe('体験ラン（最初の出撃で伝説の装備を借りる）', () =
       expect(r.reason).toBe('timeout');
       expect(r.drops).toHaveLength(0);
       expect(r.stats.timeGained).toBe(0);
-      expect(r.stats.maxStep).toBeGreaterThanOrEqual(12);
-      // Enemies can run out mid-chain, so the last technique of a chain may be skipped
-      expect(techs.size).toBeGreaterThanOrEqual(5);
+      expect(techs.size).toBeGreaterThanOrEqual(3);
     }
-  });
-
-  it('バックパックは最大、起点は2つ。2本の連鎖は重ならず、全部のマスを通り、必殺技がすべて入る', () => {
-    const { loadout, items } = demoLoadout();
-    expect(loadout.width).toBe(BACKPACK.maxWidth);
-    expect(loadout.height).toBe(BACKPACK.maxHeight);
-    expect(loadout.originOrder).toHaveLength(2);
-    const plans = loadout.originOrder.map((o) => planChain(loadout, items, o));
-    const cells = plans.map((p) => new Set(p.steps.map((s) => s.cell)));
-    // 2本は重ならず、合わせて全部のマスを通る
-    for (const c of cells[0]!) expect(cells[1]!.has(c)).toBe(false);
-    expect(cells[0]!.size + cells[1]!.size).toBe(loadout.width * loadout.height);
-    // どちらも循環の環を通り、長くつながる
-    for (const p of plans) {
-      expect(p.multCap).toBe(4);
-      expect(p.maxStep).toBeGreaterThanOrEqual(14);
-    }
-    const techs = new Set(plans.flatMap((p) => p.steps.map((s) => s.tech).filter(Boolean)));
-    expect([...techs].sort()).toEqual(TECHNIQUES.map((t) => t.id).sort());
   });
 });

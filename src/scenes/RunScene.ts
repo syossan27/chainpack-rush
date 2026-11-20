@@ -299,9 +299,7 @@ export class RunScene extends Phaser.Scene {
         // Hero's attack gauge (under the hero) and the "next chain" panel
         {
           rect: { x: RUN_LAYOUT.heroScreenX, y: RUN_LAYOUT.footY - 20, w: 200, h: 110 },
-          text: t(
-            '勇者の足元のゲージがたまるたびに、\n起点が①→②→①…の順に発火するよ。\n次に動く起点は「次の連鎖」に出る',
-          ),
+          text: t('勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ'),
         },
         {
           rect: {
