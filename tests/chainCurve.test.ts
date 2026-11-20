@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { chainMultiplier, simulateChain } from '../src/core/chain';
 import { build } from './helpers';
 
@@ -50,5 +50,15 @@ describe('連鎖倍率（上限なし）', () => {
     const plan = simulateChain(loadout, items).plans[0]!;
     for (const s of plan.steps)
       if (s.step !== null) expect(s.mult).toBeCloseTo(chainMultiplier(s.step, 4));
+  });
+
+  it('Math.pow を使わない（端末ごとに最後の桁がずれると、記録の再生が合わない）', () => {
+    const pow = vi.spyOn(Math, 'pow');
+    for (let n = 1; n <= 40; n++) {
+      chainMultiplier(n);
+      chainMultiplier(n, 4);
+    }
+    expect(pow).not.toHaveBeenCalled();
+    pow.mockRestore();
   });
 });

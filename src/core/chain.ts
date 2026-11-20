@@ -45,7 +45,8 @@ export function chainMultiplier(step: number, riseTo?: number): number {
     top = riseTo;
   }
   if (n < knee) return ipow(base, n - 1);
-  return top * Math.pow(n / knee, CHAIN.tailPower);
+  // sqrt, not Math.pow: pow's last digit can differ between engines, and records are replayed
+  return top * Math.sqrt(n / knee);
 }
 
 /**
