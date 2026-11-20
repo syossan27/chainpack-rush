@@ -18,6 +18,8 @@ export interface LegacyV1 {
   backpackLevel: number;
   /** Techniques found (the old 図鑑) */
   discoveredTechs: string[];
+  /** Sorties used the stacked board (the debug setting and its trial switch were on), not the bag */
+  stackSortie: boolean;
 }
 
 /** Gold paid for the backpack upgrade by level (300, then 600, then 1200): given back */
@@ -39,22 +41,24 @@ export function migrateV1(save: SaveData, legacy: LegacyV1): SaveData {
   const rec = save.boards.layouts[id];
   delete save.boards.layouts[id];
   const kept = rec ? restoreStackBoard(rec, owned, slots, id) : null;
-  if (kept && boardUids(kept).length > 0) save.loadout = kept;
-  else {
-    // A board laid out afresh keeps the bag's consumable slots
-    const bag = legacy.bag;
-    const consumables = (bag?.consumables ?? [])
+  // The consumable slots follow the player: the bag's, unless sorties used the kept board
+  const bag = legacy.bag;
+  const bagSlots = {
+    consumables: (bag?.consumables ?? [])
       .filter((u) => {
         const it = owned.get(u);
         return !!it && getItemDef(it.defId).kind === 'consumable';
       })
-      .slice(0, slots);
-    save.loadout = {
-      ...autoBoard(save.inventory, id),
-      consumables,
-      ...(bag?.consumableAuto ? { consumableAuto: bag.consumableAuto.slice() } : {}),
-    };
-  }
+      .slice(0, slots),
+    ...(bag?.consumableAuto ? { consumableAuto: bag.consumableAuto.slice() } : {}),
+  };
+  if (kept && boardUids(kept).length > 0) {
+    if (legacy.stackSortie) save.loadout = kept;
+    else {
+      save.loadout = { ...kept, ...bagSlots };
+      if (!bagSlots.consumableAuto) delete save.loadout.consumableAuto;
+    }
+  } else save.loadout = { ...autoBoard(save.inventory, id), ...bagSlots };
   const level = Math.max(
     0,
     Math.min(BACKPACK_REFUND.length - 1, Math.floor(legacy.backpackLevel) || 0),

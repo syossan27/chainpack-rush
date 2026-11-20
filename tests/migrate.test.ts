@@ -158,6 +158,27 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(s.charms).toHaveLength(1);
   });
 
+  it('試作の盤面を試してバッグに戻っていた人は、バッグの薬の枠と自動補充を引き継ぐ（盤面の配置は残る）', () => {
+    // The board was tried once (its slots never set up), then the switch went off: sorties used the bag
+    const tried = {
+      ...board('standard', [
+        ['i1', 4],
+        ['i3', 5],
+      ]),
+      consumables: [],
+    };
+    const settings = (JSON.parse(v1()) as { settings: Record<string, unknown> }).settings;
+    const s = deserializeSave(
+      v1({
+        trialBoards: { active: 'standard', layouts: { standard: tried } },
+        settings: { ...settings, trialStack: false },
+      }),
+    );
+    expect(s.loadout.cells).toEqual(tried.cells);
+    expect(s.loadout.consumables).toEqual(['i7']);
+    expect(s.loadout.consumableAuto).toEqual(['potion']);
+  });
+
   it('選んでいた盤面の配置がなければ、その盤面を自動で作る', () => {
     const s = deserializeSave(v1({ trialBoards: { active: 'standard', layouts: {} } }));
     expect(s.loadout.board).toBe('standard');

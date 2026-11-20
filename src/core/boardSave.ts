@@ -39,10 +39,14 @@ export function switchBoard(save: SaveData, id: BoardId): boolean {
   return true;
 }
 
-/** Gear used on a board other than the one in `loadout` → those boards (consumables not counted) */
+/**
+ * Gear used on a board other than the one in `loadout` → those boards (consumables not counted).
+ * While the challenge layout is edited, `loadout` is the challenge's and every stored layout,
+ * the usual board's too, counts as elsewhere
+ */
 export function otherBoardUse(save: SaveData): Map<string, BoardId[]> {
   const out = new Map<string, BoardId[]>();
-  const here = save.loadout.board ?? 'standard';
+  const here = save.editingChallenge ? null : (save.loadout.board ?? 'standard');
   for (const [id, l] of Object.entries(save.boards.layouts) as [BoardId, Loadout | undefined][]) {
     if (!l || id === here) continue;
     for (const u of boardUids(l)) {

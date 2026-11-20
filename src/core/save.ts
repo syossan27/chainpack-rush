@@ -339,6 +339,8 @@ function legacyOf(data: Record<string, unknown>, save: SaveData): LegacyV1 {
     discoveredTechs: Array.isArray(data.discoveredTechs)
       ? data.discoveredTechs.filter((t): t is string => typeof t === 'string')
       : [],
+    stackSortie:
+      isObj(data.settings) && data.settings.debug === true && data.settings.trialStack === true,
   };
 }
 

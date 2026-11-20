@@ -95,7 +95,9 @@ export function buildSubmission(
     season,
     seed: cfg.seed,
     regionId: cfg.regionId,
-    loadout: cfg.loadout,
+    // A copy: in endless the run's loadout is the save's, and the result screen uses up and refills
+    // its consumables before the record is sent
+    loadout: JSON.parse(JSON.stringify(cfg.loadout)) as Loadout,
     items: items.map((i) => ({ ...i, locked: undefined })).map(stripUndefined),
     consumableSlots: cfg.consumableSlots ?? 0,
     hero:

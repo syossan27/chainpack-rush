@@ -120,6 +120,29 @@ describe('挑戦用の配置', () => {
     expect(s.loadout.board).toBe('small');
   });
 
+  it('挑戦の配置を編集している間も、ふだんの盤面の装備は、あふれた分の売却の候補に入らない', () => {
+    const s = createInitialSave();
+    // Epic swords: the challenge (rare at most) leaves them out, so they are only on the usual board
+    const swords = s.inventory.filter((i) => i.defId === 'sword');
+    for (const it of swords) it.rarity = 'epic';
+    enterChallengeEdit(s, rare);
+    for (const it of swords) {
+      expect(boardUids(s.loadout)).not.toContain(it.uid);
+      expect(otherBoardUse(s).get(it.uid)).toEqual(['standard']);
+    }
+    for (let i = 0; i < 60; i++)
+      s.inventory.push({
+        uid: `j${i}`,
+        defId: 'dagger',
+        rarity: 'common',
+        exits: ['right'],
+        rerollCount: 0,
+      } as ItemInstance);
+    const plan = overflowSellPlan(s);
+    expect(plan.uids.length).toBeGreaterThan(0);
+    for (const it of swords) expect(plan.uids).not.toContain(it.uid);
+  });
+
   it('挑戦の編集中に閉じても、読み込み時にふだんの盤面へ戻す', () => {
     const s = grown();
     switchBoard(s, 'small');

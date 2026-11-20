@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS, Combat, type RunConfig, type RunMastery } from '../src/core/combat';
 import { createInitialSave } from '../src/core/save';
-import { heroFrom, itemMap } from '../src/core/economy';
+import { consumeItems, heroFrom, itemMap, refillConsumables } from '../src/core/economy';
+import { runConfig } from '../src/core/runConfig';
 import { currentChallenge } from '../src/core/challenge';
 import { autoBoard } from '../src/core/autoBoard';
 import { allowsRarity } from '../src/core/loot';
@@ -153,6 +154,34 @@ describe('ランキングの記録の確認', () => {
     expect(
       fake(sub, (x) => (x.items[0]!.affixes = [{ id: 'sharp' as never, value: 999 }])),
     ).toMatchObject({ ok: false });
+  });
+
+  it('∞ の記録は、結果の画面が薬を減らし補充したあとに送っても通る（ランを始めたときの配置のまま）', () => {
+    const s = createInitialSave();
+    s.upgrades = { ...s.upgrades, maxHp: 25, atb: 10, attack: 50, runTime: 5 };
+    // A spare potion in storage, so the refill puts one back into the slot
+    s.inventory.push({
+      uid: 'spare',
+      defId: 'potion',
+      rarity: 'common',
+      exits: [],
+      rerollCount: 0,
+    });
+    const cfg = runConfig(s, 'endless', 'endless', 12345);
+    const c = new Combat(cfg);
+    let used = false;
+    while (!c.ended) {
+      if (c.tick === 100 && !used) used = c.useConsumable(0);
+      if (c.relicOffer) c.skipRelic();
+      c.step();
+    }
+    expect(used).toBe(true);
+    const r = c.result();
+    const sub = buildSubmission('endless', endlessSeason(NOW), cfg, r, s, 0);
+    // What the result screen does before it sends the record
+    consumeItems(s, r.usedConsumables);
+    refillConsumables(s);
+    expect(verify(sub)).toMatchObject({ ok: true });
   });
 
   it('v2: ∞ の記録が通る。途中で閃き、遺物を選んだランでも一致する', () => {
