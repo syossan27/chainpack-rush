@@ -98,6 +98,14 @@ export const ITEM_DEFS: readonly ItemDef[] = [
       '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。',
   },
   {
+    id: 'origin_echo',
+    name: '残響の起点石',
+    kind: 'origin',
+    line: { echo: true },
+    description:
+      '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。',
+  },
+  {
     id: 'origin_far',
     name: '彼方の起点石',
     kind: 'origin',

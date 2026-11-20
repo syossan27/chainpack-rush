@@ -258,6 +258,9 @@ export const DATA: Dict = {
   一番槍の起点石: 'Spearhead Origin Stone',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Attacks in the first {cells} cells to ring in a chain deal +{v}% damage (counted in cells; armor cells count too).',
+  残響の起点石: 'Echo Origin Stone',
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    'The last attack cell to ring in a chain rings once more (the chain count does not go up, and no special move fires).',
   彼方の起点石: 'Horizon Origin Stone',
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     'The farther a cell is from the origin, the stronger its attacks: +{v}% damage for each cell away (armor cells count too).',

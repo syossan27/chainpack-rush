@@ -260,6 +260,9 @@ export const DATA: Dict = {
   一番槍の起点石: 'Piedra de Origen Punta de Lanza',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Los ataques de las primeras {cells} casillas que suenan en una cadena hacen +{v}% de daño (se cuenta por casillas; las casillas de armadura también cuentan).',
+  残響の起点石: 'Piedra de Origen del Eco',
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    'La última casilla de ataque que suena en una cadena vuelve a sonar una vez (el contador de la cadena no sube y no sale ningún golpe especial).',
   彼方の起点石: 'Piedra de Origen del Horizonte',
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     'Cuanto más lejos del origen está una casilla, más fuertes son sus ataques: +{v}% de daño por cada casilla de distancia (las casillas de armadura también cuentan).',

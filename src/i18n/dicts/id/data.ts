@@ -261,6 +261,9 @@ export const DATA: Dict = {
   一番槍の起点石: 'Batu Asal Ujung Tombak',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Serangan di {cells} petak pertama yang berbunyi dalam rantai memberi damage +{v}% (dihitung per petak; petak pelindung juga dihitung).',
+  残響の起点石: 'Batu Asal Gema',
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    'Petak serangan terakhir yang berbunyi dalam rantai berbunyi sekali lagi (hitungan rantai tidak bertambah, dan tidak ada jurus spesial yang keluar).',
   彼方の起点石: 'Batu Asal Cakrawala',
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     'Makin jauh petak dari asal, makin kuat serangannya: damage +{v}% untuk setiap petak (petak pelindung juga dihitung).',

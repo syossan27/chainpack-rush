@@ -261,6 +261,9 @@ export const DATA: Dict = {
   一番槍の起点石: 'Pedra de Origem Ponta de Lança',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Os ataques das primeiras {cells} casas que soam numa corrente causam +{v}% de dano (contado em casas; casas de armadura também contam).',
+  残響の起点石: 'Pedra de Origem do Eco',
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    'A última casa de ataque a soar numa corrente soa mais uma vez (a contagem da corrente não sobe e nenhum golpe especial é ativado).',
   彼方の起点石: 'Pedra de Origem do Horizonte',
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     'Quanto mais longe da origem estiver uma casa, mais fortes são seus ataques: +{v}% de dano para cada casa de distância (casas de armadura também contam).',

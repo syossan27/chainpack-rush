@@ -260,6 +260,9 @@ export const DATA: Dict = {
   一番槍の起点石: "Pierre d'origine fer de lance",
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     "Les attaques des {cells} premières cases qui sonnent dans une chaîne infligent +{v}% de dégâts (compté en cases ; les cases d'armure comptent aussi).",
+  残響の起点石: "Pierre d'origine de l'écho",
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    "La dernière case d'attaque à sonner dans une chaîne sonne encore une fois (le compteur de chaîne n'augmente pas et aucun coup spécial ne se déclenche).",
   彼方の起点石: "Pierre d'origine de l'horizon",
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     "Plus une case est loin de l'origine, plus ses attaques sont fortes : +{v}% de dégâts par case d'écart (les cases d'armure comptent aussi).",

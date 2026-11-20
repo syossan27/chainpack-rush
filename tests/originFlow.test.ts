@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { CHAIN_RULES, HERO, NO_LUCK } from '../src/config/balance';
 import { planChain } from '../src/core/chain';
+import type { CharmSlots } from '../src/core/charms';
+import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
+import { replayRun, sameResult } from '../src/core/replay';
 import type { ChainPlan, Loadout } from '../src/core/types';
 import { getItemDef, itemDescVars } from '../src/data/items';
 import { build, type Placed } from './helpers';
@@ -103,5 +107,166 @@ describe('起点石の説明文', () => {
       v: getItemDef('origin_far').line!.far,
     });
     expect(itemDescVars(getItemDef('sword'))).toEqual({});
+  });
+});
+
+/** Every event of the scarecrow's first chain */
+function dummyChain(cfg: RunConfig): { c: Combat; evs: CombatEvent[] } {
+  const c = new Combat({ ...cfg, mode: 'dummy' });
+  c.drainEvents();
+  c.fireNext();
+  const evs: CombatEvent[] = [...c.drainEvents()];
+  for (let i = 0; i < 60 * 10 && c.chain; i++) {
+    c.step();
+    evs.push(...c.drainEvents());
+  }
+  return { c, evs };
+}
+
+describe('残響の起点石', () => {
+  /** o → a (sword) → b (sword ×2: b0 under b), on a stacked 3×1 row */
+  const row = (origin: string) =>
+    stacked(
+      3,
+      1,
+      [
+        { uid: 'o', defId: origin, x: 0, y: 0, exits: ['right'] },
+        { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+        { uid: 'b', defId: 'sword', x: 2, y: 0, exits: [] },
+      ],
+      { b: 1 },
+    );
+
+  it('最後に鳴った攻撃のマスが、重ね全体で同じ段・同じ倍率でもう一度鳴る。最大連鎖は増えない', () => {
+    const e = row('origin_echo');
+    const p = row('origin_stone');
+    const plan = planChain(e.loadout, e.items, 'o');
+    const plain = planChain(p.loadout, p.items, 'o');
+    const echo = plan.steps.filter((s) => s.echo);
+    expect(echo.map((s) => s.uid)).toEqual(['b0', 'b']);
+    for (const s of echo) {
+      const orig = plan.steps[s.parentIndex]!;
+      expect(orig.uid).toBe(s.uid);
+      expect([s.step, s.mult, s.ring, s.stackMult, s.cell]).toEqual([
+        orig.step,
+        orig.mult,
+        orig.ring,
+        orig.stackMult,
+        orig.cell,
+      ]);
+      expect(s.tech).toBeUndefined();
+    }
+    expect(plan.maxStep).toBe(plain.maxStep);
+    expect(plan.steps.filter((s) => !s.echo)).toHaveLength(plain.steps.length);
+    // One relay (0.2 s) after the last ring, then 0.1 s apart inside the stack
+    const lastT = Math.max(...plain.steps.map((s) => s.t));
+    expect(echo[0]!.t).toBeCloseTo(lastT + 0.2);
+    expect(echo[1]!.t).toBeCloseTo(lastT + 0.3);
+    expect(plan.duration).toBeGreaterThan(plain.duration);
+  });
+
+  it('最後に鳴るのが防具のマスなら、その前の攻撃のマスが鳴る。攻撃のマスがなければ何もしない', () => {
+    const shieldLast = stacked(3, 1, [
+      { uid: 'o', defId: 'origin_echo', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'd', defId: 'wood_shield', x: 2, y: 0, exits: [] },
+    ]);
+    const echoOf = (b: ReturnType<typeof stacked>) =>
+      planChain(b.loadout, b.items, 'o')
+        .steps.filter((s) => s.echo)
+        .map((s) => s.uid);
+    expect(echoOf(shieldLast)).toEqual(['a']);
+    const shields = stacked(3, 1, [
+      { uid: 'o', defId: 'origin_echo', x: 0, y: 0, exits: ['right'] },
+      { uid: 'd1', defId: 'wood_shield', x: 1, y: 0, exits: ['right'] },
+      { uid: 'd2', defId: 'wood_shield', x: 2, y: 0, exits: [] },
+    ]);
+    expect(echoOf(shields)).toEqual([]);
+  });
+
+  /** o → s1 (sword) → s2 (dagger) → s3 (greatsword: トリプル・スラッシュ) on a stacked 4×1 row */
+  const techRow = (origin: string, extra: Partial<RunConfig> = {}): RunConfig => {
+    const b = stacked(4, 1, [
+      { uid: 'o', defId: origin, x: 0, y: 0, exits: ['right'] },
+      { uid: 's1', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 's2', defId: 'dagger', x: 2, y: 0, exits: ['right'] },
+      { uid: 's3', defId: 'greatsword', x: 3, y: 0, exits: [] },
+    ]);
+    return {
+      seed: 3,
+      regionId: 'grassland',
+      loadout: b.loadout,
+      items: b.items,
+      hero: { ...BASE_HERO_STATS, maxHp: 1e6 },
+      luck: NO_LUCK,
+      ...extra,
+    };
+  };
+  // そろいの指輪 on the row (slot 4 = row 0 on a 4×1 board), トリプル・スラッシュ learned
+  const counted: Partial<RunConfig> = {
+    charms: [
+      null,
+      null,
+      null,
+      null,
+      { uid: 'c', defId: 'match_ring', rarity: 'rare' },
+    ] as CharmSlots,
+    mastery: { levels: {}, learned: ['triple'] },
+  };
+
+  it('もう一度鳴る分は、段数・必殺技・アクセサリーのマスの数え・熟練に入らず、待ちも増えない', () => {
+    const echo = dummyChain(techRow('origin_echo', counted));
+    const plain = dummyChain(techRow('origin_stone', counted));
+    const count = (evs: CombatEvent[], type: CombatEvent['type']) =>
+      evs.filter((e) => e.type === type).length;
+    const hitsOf = (evs: CombatEvent[], uid: string) =>
+      evs.filter((e) => e.type === 'hit' && e.itemUid === uid).length;
+    expect(hitsOf(echo.evs, 's3')).toBe(hitsOf(plain.evs, 's3') * 2);
+    expect(hitsOf(echo.evs, 's2')).toBe(hitsOf(plain.evs, 's2'));
+    expect(count(plain.evs, 'technique')).toBe(1);
+    expect(count(echo.evs, 'technique')).toBe(1);
+    expect(count(plain.evs, 'charm')).toBeGreaterThan(0);
+    expect(count(echo.evs, 'charm')).toBe(count(plain.evs, 'charm'));
+    expect(echo.c.stats.maxStep).toBe(plain.c.stats.maxStep);
+    expect(echo.c.stats.rings).toEqual(plain.c.stats.rings);
+    expect(echo.c.atb).toBeCloseTo(plain.c.atb);
+  });
+
+  it('よろめいて途切れたら、もう一度は鳴らない', () => {
+    const c = new Combat({ ...techRow('origin_echo'), mode: 'dummy', hero: BASE_HERO_STATS });
+    c.fireNext();
+    const firstEcho = c.chain!.plan.steps.findIndex((s) => s.echo);
+    expect(firstEcho).toBeGreaterThan(0);
+    while (c.chain && c.chain.next < firstEcho) c.step();
+    c.drainEvents();
+    expect(c.unguarded).toBe(true);
+    const hit = (
+      c as unknown as {
+        damageHero(e: { id: number; atk: number; statuses: Map<string, number> }): void;
+      }
+    ).damageHero.bind(c);
+    hit({
+      id: -1,
+      atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1,
+      statuses: new Map(),
+    });
+    const evs: CombatEvent[] = [];
+    while (c.chain) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    const end = evs.find((e) => e.type === 'chainEnd');
+    expect(end?.type === 'chainEnd' && end.staggered).toBe(true);
+    expect(evs.filter((e) => e.type === 'step')).toHaveLength(0);
+  });
+
+  it('残響の石で遊んだランは最後まで進み、記録を再生しても同じ結果', () => {
+    const run = techRow('origin_echo', {
+      hero: { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 30 },
+    });
+    const r = new Combat(run).runToEnd();
+    expect(r.reachedLoop).toBeGreaterThan(1);
+    const again = replayRun(run, r.inputs ?? []);
+    expect(again && sameResult(again, r)).toBe(true);
   });
 });

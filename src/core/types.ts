@@ -36,6 +36,8 @@ export interface LineEffect {
   lead?: { cells: number; damage: number };
   /** Attack damage +`far` % per cell from the origin along the chain */
   far?: number;
+  /** At the end of the chain, the last attack cell rings its stack once more (same counts) */
+  echo?: boolean;
 }
 
 /** 線の効果を、その段の装備について掛け算にまとめたもの（1 は効果なし） */
@@ -131,6 +133,11 @@ export interface ChainStep {
   ring?: number;
   /** Stacked board (trial): the position's multiplier (×1 / ×1.5 / ×2 from the bottom) */
   stackMult?: number;
+  /**
+   * 残響の起点石: a ring repeated at the end of the chain. `parentIndex` is the ring it repeats; the
+   * count, multipliers and cell are that ring's. No technique, and it adds no step, cell or wait
+   */
+  echo?: true;
 }
 
 export interface ChainPlan {

@@ -232,10 +232,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
       if (focused && plan !== focused) return;
       const color = routeColor(pi);
       const width = focused ? 7 : 4;
+      // Rings repeated by 残響の起点石 are their cells again: no extra line, dot or label
+      const steps = plan.steps.filter((s) => !s.echo);
       if (focused) {
         // 通るマスをルートの色で縁取る
         this.lineG.lineStyle(4, color, 1);
-        for (const s of plan.steps) {
+        for (const s of steps) {
           const c = this.cellCenter(s.cell);
           this.lineG.strokeRoundedRect(
             c.x - this.cell / 2 + 4,
@@ -246,7 +248,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
           );
         }
       }
-      for (const s of plan.steps) {
+      for (const s of steps) {
         if (s.parentIndex < 0) continue;
         const b = this.cellCenter(s.cell);
         const parent = plan.steps[s.parentIndex]!;
@@ -261,8 +263,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
       }
       // Stacked board (trial): a cell is labelled with its top ring (the last count, the technique)
       const topRing = new Map<number, number>();
-      for (const s of plan.steps) if (s.step !== null) topRing.set(s.cell, s.ring ?? 0);
-      for (const s of plan.steps) {
+      for (const s of steps) if (s.step !== null) topRing.set(s.cell, s.ring ?? 0);
+      for (const s of steps) {
         if (s.step === null || labeled.has(s.cell)) continue;
         if ((s.ring ?? 0) !== topRing.get(s.cell)) continue;
         labeled.add(s.cell);

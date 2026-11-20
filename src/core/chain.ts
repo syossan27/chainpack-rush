@@ -45,7 +45,8 @@ export function firedPieces(
   // Stacked board: the cells where something other than an origin stone rang, each once
   const cells = new Set<number>();
   for (const s of steps) {
-    if (isOrigin(s.uid)) continue;
+    // A ring repeated by 残響の起点石 is its cell again, not a new piece
+    if (isOrigin(s.uid) || s.echo) continue;
     if (s.ring === undefined) pieces++;
     else cells.add(s.cell);
   }
@@ -334,6 +335,31 @@ function spread(
     const p = queue.splice(best, 1)[0]!;
     if (visited.has(p.cell)) continue;
     fire(p.cell, p.tMs, p.parentIndex, p.branch);
+  }
+
+  // 残響の起点石: the attack cell whose top rang last rings its stack once more, at the same counts
+  if (effectsOf([originUid]).some((e) => e.echo)) {
+    let last = -1;
+    steps.forEach((s, i) => {
+      if (s.step !== null && (last < 0 || s.t >= steps[last]!.t)) last = i;
+    });
+    if (last >= 0) {
+      const cell = steps[last]!.cell;
+      const rings = steps.flatMap((s, i) => (s.cell === cell ? [i] : []));
+      const top = rings[rings.length - 1]!;
+      const start =
+        lastMs + relayMs(getItemDef(items.get(steps[top]!.uid)!.defId), effectsOf(lines[top]!));
+      rings.forEach((i, k) => {
+        const tMs = start + k * Math.round(STACK.ringRelay * MS);
+        const again: ChainStep = { ...steps[i]!, t: tMs / MS, parentIndex: i, echo: true };
+        delete again.tech;
+        steps.push(again);
+        lines.push(lines[i]!);
+        counts.push(counts[i]!);
+        dists.push(dists[i]!);
+        if (tMs > lastMs) lastMs = tMs;
+      });
+    }
   }
 
   const multCap = Math.max(

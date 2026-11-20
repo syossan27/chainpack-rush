@@ -260,6 +260,9 @@ export const DATA: Dict = {
   一番槍の起点石: 'Speerspitzen-Ursprungsstein',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Angriffe in den ersten {cells} Feldern, die in einer Kette erklingen, verursachen +{v}% Schaden (in Feldern gezählt; Felder mit Rüstung zählen mit).',
+  残響の起点石: 'Echo-Ursprungsstein',
+  '連鎖の最後に鳴った攻撃のマスが、もう一度鳴る（連鎖数は増えない。必殺技は出ない）。':
+    'Das letzte Angriffsfeld, das in einer Kette erklingt, erklingt noch einmal (die Kettenzahl steigt nicht, und kein Spezialangriff wird ausgelöst).',
   彼方の起点石: 'Horizont-Ursprungsstein',
   '起点から遠いマスほど攻撃が強い。1マス離れるごとにダメージ +{v}%（防具のマスも数える）。':
     'Je weiter ein Feld vom Ursprung entfernt ist, desto stärker seine Angriffe: +{v}% Schaden pro Feld Abstand (Felder mit Rüstung zählen mit).',

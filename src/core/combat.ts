@@ -309,6 +309,8 @@ interface ExecInfo {
   aim: number | null;
   /** The count fell below the plan on this branch (a kill restarted it) */
   reset: boolean;
+  /** The count an attack struck with (a ring repeated by 残響の起点石 strikes with it again) */
+  hit?: number;
 }
 
 interface ActiveChain {
@@ -522,7 +524,9 @@ export class Combat {
     // 線を出す起点（先頭にまとめて並ぶ）の分だけずらす。ほかの線が届く起点は途中のマス
     const heads = this.chain.plan.steps.findIndex((s) => s.parentIndex >= 0);
     const origins = heads < 0 ? this.chain.plan.steps.length : heads;
-    return this.chain.next > this.rules.guardSteps + Math.max(1, origins) - 1;
+    // Rings repeated by 残響の起点石 come last and are not new pieces
+    const repeated = this.chain.plan.steps.slice(0, this.chain.next).filter((s) => s.echo).length;
+    return this.chain.next - repeated > this.rules.guardSteps + Math.max(1, origins) - 1;
   }
 
   /** The full gauge: the hero's time, × the board's wait (trial) */
@@ -1231,7 +1235,8 @@ export class Combat {
     const aimId = aim.id;
     // The branch keeps counting while it aims at the same enemy (with the trial rule, across kills too)
     const counts = parent && (parent.aim === aimId || this.rules.keepCountOnKill);
-    const eff = counts ? parent.eff + 1 : 1;
+    // 残響の起点石: a repeated ring strikes with the count its original struck with
+    const eff = s.echo ? (parent?.hit ?? 1) : counts ? parent.eff + 1 : 1;
     this.relicRing(c, relic);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
     // 加速の羽 does the same, once per cell (from the top of a stack)
@@ -1240,12 +1245,13 @@ export class Combat {
       eff: eff + (def.stepBoost ?? 0) + feather,
       aim: aimId,
       reset: eff < (s.step ?? 0),
+      hit: eff,
     };
     const mult = chainMultiplier(eff, c.plan.multCap);
-    if (eff > this.stats.maxStep) this.stats.maxStep = eff;
-    // Every ring of attack gear grows its element
+    if (!s.echo && eff > this.stats.maxStep) this.stats.maxStep = eff;
+    // Every ring of attack gear grows its element (a repeated ring is the same ring)
     const rings = this.stats.rings;
-    if (rings) {
+    if (rings && !s.echo) {
       const el = def.element ?? 'physical';
       rings[el] = (rings[el] ?? 0) + 1;
     }
@@ -1284,10 +1290,11 @@ export class Combat {
     };
     const strikes = (def.hits ?? 1) * (relic === 'bell' ? 2 : 1);
     for (let h = 0; h < strikes; h++) this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
-    // After the step's own strikes, so they still use the multiplier before it
-    if (this.charms && cellTop(s, this.charms)) this.charmEvent(c, 'cell', s.cell);
+    // After the step's own strikes, so they still use the multiplier before it. A ring repeated by
+    // 残響の起点石 is the same cell again: the cell's own charm events are not counted twice
+    if (this.charms && !s.echo && cellTop(s, this.charms)) this.charmEvent(c, 'cell', s.cell);
     if (tech) this.charmEvent(c, 'tech', s.cell);
-    if (this.charms && stackTop(s, this.charms)) this.charmEvent(c, 'stackTop', s.cell);
+    if (this.charms && !s.echo && stackTop(s, this.charms)) this.charmEvent(c, 'stackTop', s.cell);
   }
 
   /** An event in a cell raises the chain's combo multiplier (no charms: nothing) */
