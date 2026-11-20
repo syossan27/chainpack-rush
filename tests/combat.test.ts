@@ -17,9 +17,16 @@ import {
 } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
 import { getEnemyDef } from '../src/data/enemies';
+import { getRegion } from '../src/data/regions';
 import { buyUpgrade, consumeItems, heroStats, itemMap, upgradeCost } from '../src/core/economy';
 import { build, specExample } from './helpers';
 import type { Dir } from '../src/core/types';
+
+/** The base hero with attack scaled by grassland's enemy HP, so kills land as with a 30 HP slime */
+const GRASS_HERO = {
+  ...BASE_HERO_STATS,
+  attackMult: BASE_HERO_STATS.attackMult * getRegion('grassland').power.hp,
+};
 
 function runAll(seed: number) {
   const save = createInitialSave();
@@ -150,7 +157,8 @@ describe('combat', () => {
   });
 
   it('狙いが倒れたら次の段から手前の敵へ移り、段数が1に戻る', () => {
-    // 剣×3の一本道。スライム(30HP)は 10+12=22, 3段目14.4 で倒れる → 4段目は次の敵へ、段数1
+    // 剣×3の一本道。スライム(30HP、草原の倍率は勇者の攻撃に掛けて打ち消す)は 10+12=22, 3段目14.4 で倒れる
+    // → 4段目は次の敵へ、段数1
     const { loadout, items } = build(6, 1, [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
       { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
@@ -159,7 +167,7 @@ describe('combat', () => {
       { uid: 'd', defId: 'sword', x: 4, y: 0, exits: ['right'] },
       { uid: 'e', defId: 'sword', x: 5, y: 0, exits: [] },
     ]);
-    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: BASE_HERO_STATS });
+    const c = new Combat({ seed: 1, regionId: 'grassland', loadout, items, hero: GRASS_HERO });
     const evs: CombatEvent[] = [];
     while (!evs.some((e) => e.type === 'chainEnd')) {
       c.step();
@@ -186,7 +194,7 @@ describe('combat', () => {
       regionId: 'grassland',
       loadout,
       items,
-      hero: BASE_HERO_STATS,
+      hero: GRASS_HERO,
       rules: { keepCountOnKill: true },
     });
     const evs: CombatEvent[] = [];
@@ -698,7 +706,8 @@ describe('乱数（会心・揺れ・精鋭）と新しいボス', () => {
         seen++;
         expect(e.def.boss).toBe(false);
         byGroup.set(e.group, (byGroup.get(e.group) ?? 0) + 1);
-        if (e.elite === 'tough') expect(e.maxHp).toBeCloseTo(e.def.hp * ELITES.tough.hp);
+        if (e.elite === 'tough')
+          expect(e.maxHp).toBeCloseTo(e.def.hp * ELITES.tough.hp * getRegion('grassland').power.hp);
         if (e.elite === 'swift')
           expect(e.interval).toBeCloseTo(e.def.interval * ELITES.swift.interval);
       }

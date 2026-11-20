@@ -28,6 +28,19 @@ describe('実績', () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
   });
 
+  it('連鎖とダメージの実績は、説明の数字が基準と同じで、順に大きくなる', () => {
+    for (const kind of ['maxStep', 'maxDamage'] as const) {
+      const ns: number[] = [];
+      for (const a of ACHIEVEMENTS) {
+        if (a.check.kind !== kind) continue;
+        expect(a.desc).toContain(a.check.n.toLocaleString('en-US'));
+        ns.push(a.check.n);
+      }
+      expect(ns).toEqual([...ns].sort((x, y) => x - y));
+      expect(new Set(ns).size).toBe(ns.length);
+    }
+  });
+
   it('条件を満たすと1回だけ達成になり、報酬のゴールドが入る', () => {
     const s = createInitialSave();
     s.stats.runs = 1;

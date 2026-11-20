@@ -59,16 +59,16 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'step_14',
     name: '連鎖の達人',
-    desc: '14連鎖を決める',
+    desc: '27連鎖を決める',
     reward: 600,
-    check: { kind: 'maxStep', n: 14 },
+    check: { kind: 'maxStep', n: 27 },
   },
   {
     id: 'step_18',
     name: '終わらない連鎖',
-    desc: '18連鎖を決める',
+    desc: '30連鎖を決める',
     reward: 1500,
-    check: { kind: 'maxStep', n: 18 },
+    check: { kind: 'maxStep', n: 30 },
   },
   {
     id: 'dmg_200',
@@ -80,16 +80,16 @@ export const ACHIEVEMENTS: readonly AchievementDef[] = [
   {
     id: 'dmg_1000',
     name: '会心の一撃',
-    desc: '1回の攻撃で1,000ダメージ',
+    desc: '1回の攻撃で6,000ダメージ',
     reward: 300,
-    check: { kind: 'maxDamage', n: 1000 },
+    check: { kind: 'maxDamage', n: 6000 },
   },
   {
     id: 'dmg_5000',
     name: '山をも砕く',
-    desc: '1回の攻撃で5,000ダメージ',
+    desc: '1回の攻撃で12,000ダメージ',
     reward: 1000,
-    check: { kind: 'maxDamage', n: 5000 },
+    check: { kind: 'maxDamage', n: 12000 },
   },
   {
     id: 'dmg_20000',

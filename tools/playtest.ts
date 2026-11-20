@@ -18,6 +18,7 @@ import { runConfig } from '../src/core/runConfig';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, serializeSave } from '../src/core/save';
 import { boardUids } from '../src/core/stack';
+import { ACHIEVEMENTS } from '../src/data/achievements';
 import { getBoard, type BoardId } from '../src/data/boards';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
 import { ENDLESS, REGIONS, getRegion, bossPoolForLoop } from '../src/data/regions';
@@ -59,6 +60,7 @@ interface RunLog {
   goblin: 'none' | 'caught' | 'fled';
   longest: number;
   placed: number;
+  bosses: number;
   bought: UpgradeId[];
 }
 
@@ -68,10 +70,24 @@ const placedCount = new Map<string, number>(); // defId → 配置に入った�
 const ownedCount = new Map<string, number>(); // defId → 持っていた回数
 const dropCount = new Map<string, number>();
 const blocked: string[] = [];
-// Achievement thresholds (the same tally as the 2026-11-20 baseline): the run each bot first got there
-const ACH_STEP = [6, 10, 14, 18];
-const ACH_DMG = [200, 1000, 5000, 20000];
+// Achievement thresholds: the run each bot first got there. Taken from the achievements; ACH_STEP /
+// ACH_DMG (comma-separated) try other thresholds without changing them
+const achList = (env: string | undefined, kind: 'maxStep' | 'maxDamage'): number[] =>
+  env
+    ? env.split(',').map(Number)
+    : ACHIEVEMENTS.flatMap((a) => (a.check.kind === kind ? [a.check.n] : []));
+const ACH_STEP = achList(process.env.ACH_STEP, 'maxStep');
+const ACH_DMG = achList(process.env.ACH_DMG, 'maxDamage');
 const achRun: Record<string, number[]> = {};
+// The max chain / damage each bot has at the runs where the baseline bots first reached each
+// threshold (to see what threshold the new rules reach at the same run)
+const SNAP_RUNS = [6, 12, 13, 75, 121, 239, 465];
+const snaps: Record<number, { step: number[]; dmg: number[] }> = Object.fromEntries(
+  SNAP_RUNS.map((r) => [r, { step: [], dmg: [] }]),
+);
+// Each bot's best chain / damage after its last run (how far the top thresholds can go)
+const stepEnd: number[] = [];
+const dmgEnd: number[] = [];
 // At the end of each bot: mastery levels and techniques learned, then ∞ loops
 const masteryEnd: { top: number; sum: number; learned: number }[] = [];
 const endlessLoops: number[] = [];
@@ -180,6 +196,10 @@ for (let p = 0; p < PLAYERS; p++) {
     };
     for (const n of ACH_STEP) if (save.stats.maxStep >= n) mark(`step${n}`);
     for (const n of ACH_DMG) if (save.stats.maxDamage >= n) mark(`dmg${n}`);
+    if (snaps[run]) {
+      snaps[run]!.step.push(save.stats.maxStep);
+      snaps[run]!.dmg.push(save.stats.maxDamage);
+    }
     logs.push({
       player: p,
       run,
@@ -202,9 +222,12 @@ for (let p = 0; p < PLAYERS; p++) {
       goblin,
       longest: chain.longest,
       placed: chain.placed,
+      bosses: r.stats.bossesDefeated,
       bought,
     });
   }
+  stepEnd.push(save.stats.maxStep);
+  dmgEnd.push(save.stats.maxDamage);
   // 熟練: 一番高い属性の Lv と、全属性の Lv の合計、覚えた技の数
   const levels = Object.values(save.mastery.points).map((pt) => masteryLevel(pt ?? 0));
   masteryEnd.push({
@@ -240,6 +263,14 @@ const median = (xs: number[]) => {
   if (!xs.length) return NaN;
   const s = [...xs].sort((a, b) => a - b);
   return s[Math.floor(s.length / 2)]!;
+};
+const spread = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b);
+  return {
+    median: median(s),
+    p90: s[Math.floor(s.length * 0.9)] ?? NaN,
+    max: s[s.length - 1] ?? NaN,
+  };
 };
 const lines: string[] = [];
 const out = (s = '') => lines.push(s);
@@ -451,6 +482,29 @@ console.log(lines.join('\n'));
     charmDropsPerRun: avg(logs.map((l) => l.charmDrops)),
     masteryTop: avg(masteryEnd.map((m) => m.top)),
     endless: { bots: endlessBots, median: endlessLoops.length ? median(endlessLoops) : null },
+    snaps: Object.fromEntries(
+      Object.entries(snaps).map(([r, v]) => [
+        r,
+        { step: v.step.length ? median(v.step) : null, dmg: v.dmg.length ? median(v.dmg) : null },
+      ]),
+    ),
+    // Spread of the best chain / damage after the last run (median, 90th percentile, max)
+    stepEnd: spread(stepEnd),
+    dmgEnd: spread(dmgEnd),
+    // How runs 1-5 ended (share of each reason)
+    earlyReasons: Object.fromEntries(
+      (['timeout', 'dead', 'retreat'] as const).map((k) => [
+        k,
+        avg(logs.filter((l) => l.run <= 5).map((l) => (l.reason === k ? 1 : 0))),
+      ]),
+    ),
+    // The run each bot first beat a boss (median over the bots that did)
+    firstBossRun: median(
+      Array.from(
+        { length: PLAYERS },
+        (_, p) => logs.find((l) => l.player === p && l.bosses > 0)?.run,
+      ).filter((x): x is number => x !== undefined),
+    ),
   };
   console.log('PLAYTEST_JSON ' + JSON.stringify(summary));
 }

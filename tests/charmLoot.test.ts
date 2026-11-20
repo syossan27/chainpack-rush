@@ -5,6 +5,7 @@ import { rollCharmDrop, type CharmInstance } from '../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { Rng } from '../src/core/rng';
 import { createInitialSave } from '../src/core/save';
+import { ENDLESS } from '../src/data/regions';
 import { build } from './helpers';
 
 /** A random stream whose every draw is v */
@@ -84,12 +85,12 @@ describe('試作アクセサリー: ドロップ', () => {
   });
 
   it('∞ ではアクセサリーが落ちない（最初のボスの確定も）', () => {
-    // Endless foes are tougher: a stronger hero beats at least one boss
+    // Endless foes are tougher: a hero scaled to the endless power beats at least one boss
     const r = new Combat(
       runCfg({
         regionId: 'endless',
         charmSure: true,
-        hero: { ...BASE_HERO_STATS, maxHp: 1e9, attackMult: 300 },
+        hero: { ...BASE_HERO_STATS, maxHp: 1e9, attackMult: 25 * ENDLESS.power.hp },
       }),
     ).runToEnd();
     expect(r.stats.bossesDefeated).toBeGreaterThanOrEqual(1);

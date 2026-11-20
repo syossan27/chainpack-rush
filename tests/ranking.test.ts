@@ -48,8 +48,8 @@ const best = (d: string) =>
 
 /**
  * A strong endless run: a snake over the standard board (three of each gear per cell, the best
- * rarity it comes in), a maxed hero and physical mastery Lv30. With seed 78 it beats a boss, takes
- * the relic offered, and sparks トリプル・スラッシュ on the way
+ * rarity it comes in, two cells of armor so the hero lasts), a maxed hero and physical mastery
+ * Lv30. With seed 78 it beats a boss, takes the relic offered, and sparks トリプル・スラッシュ on the way
  */
 function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number } {
   const path: [number, string, Dir][] = [
@@ -57,10 +57,10 @@ function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number
     [1, 'sword', 'right'],
     [2, 'sword', 'right'],
     [3, 'greatsword', 'down'],
-    [7, 'spear', 'left'],
+    [7, 'steel_armor', 'left'],
     [6, 'war_axe', 'left'],
     [5, 'greatsword', 'left'],
-    [4, 'spear', 'down'],
+    [4, 'steel_armor', 'down'],
     [8, 'war_axe', 'right'],
     [9, 'greatsword', 'right'],
     [10, 'spear', 'right'],
