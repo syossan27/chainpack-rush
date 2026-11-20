@@ -3,9 +3,13 @@ import { BASE_HERO_STATS } from '../src/core/combat';
 import { createInitialSave, deserializeSave, serializeSave, type SaveData } from '../src/core/save';
 import { itemMap, overflowSellPlan, sellItems } from '../src/core/economy';
 import { activeBoardId, otherBoardUse, switchBoard } from '../src/core/boardSave';
-import { challengeLoadoutOf, enterChallengeEdit } from '../src/core/challengeLoadout';
+import {
+  challengeLoadoutOf,
+  enterChallengeEdit,
+  rebuildChallengeLoadout,
+} from '../src/core/challengeLoadout';
 import { runConfig } from '../src/core/runConfig';
-import { boardUids, stackAt, stackTake } from '../src/core/stack';
+import { boardUids, emptyStackBoard, stackAt, stackTake } from '../src/core/stack';
 import { CHALLENGES } from '../src/data/challenges';
 import { getSave, setSave } from '../src/platform/store';
 import type { ItemInstance } from '../src/core/types';
@@ -102,6 +106,18 @@ describe('挑戦用の配置', () => {
     expect(l.originOrder).toEqual(s.loadout.originOrder);
     // The usual board is left as it was
     expect(boardUids(s.loadout)).toContain(sword.uid);
+  });
+
+  it('「ふだんの配置から組む」: ほかの盤面を選んでいても、標準の盤面から組み直す', () => {
+    const s = grown();
+    switchBoard(s, 'small');
+    s.challengeLoadout = { ...emptyStackBoard('standard'), consumables: [] };
+    const l = rebuildChallengeLoadout(s, rare);
+    expect(l.board).toBe('standard');
+    expect(l.width).toBe(4);
+    expect(s.challengeLoadout).toBe(l);
+    expect(boardUids(l).length).toBeGreaterThan(1);
+    expect(s.loadout.board).toBe('small');
   });
 
   it('挑戦の編集中に閉じても、読み込み時にふだんの盤面へ戻す', () => {

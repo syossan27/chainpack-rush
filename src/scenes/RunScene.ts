@@ -1,42 +1,24 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { MONETIZE, RARITY, RELIC, SIM, TREASURE } from '../config/balance';
+import { MONETIZE, RARITY, RELIC, SIM } from '../config/balance';
 import { addPet } from '../ui/cosmeticsView';
-import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../core/combat';
+import { Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
-import {
-  consumableSlots,
-  heroStats,
-  itemMap,
-  ownedArtifactIds,
-  refillConsumables,
-  totalStars,
-} from '../core/economy';
+import { ownedArtifactIds, refillConsumables, totalStars } from '../core/economy';
 import { randomSeed } from '../core/rng';
-import {
-  stackBoardOf,
-  trialRules,
-  usesCharms,
-  usesMastery,
-  usesRelics,
-  usesStackBoard,
-  usesTreasure,
-} from '../core/trial';
+import { featureRules, runFeatures, runKindOf } from '../core/runRules';
+import { runConfig } from '../core/runConfig';
+import { challengeOfPeriod } from '../core/challenge';
 import { canStickRelic } from '../core/relics';
 import { getRelic, type RelicId } from '../data/relics';
 import { RelicPicker } from '../ui/relicPicker';
-import { runMastery } from '../core/mastery';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef, RARITY_NAMES } from '../data/items';
 import { getEnemyDef } from '../data/enemies';
 import { setAudioSuspended, sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
-import {
-  challengeLoadoutOf,
-  enterChallengeEdit,
-  leaveChallengeEdit,
-} from '../core/challengeLoadout';
-import { debugFps, debugMenuAllowed, debugSeed, debugStress } from '../platform/debug';
+import { enterChallengeEdit, leaveChallengeEdit } from '../core/challengeLoadout';
+import { debugFps, debugSeed, debugStress } from '../platform/debug';
 import { hapticMedium, hapticSuccess } from '../platform/haptics';
 import { onAppStateChange } from '../platform/lifecycle';
 import { session, type ChallengeSortie } from '../platform/session';
@@ -44,7 +26,6 @@ import { gameSpeed, getSave, persist } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, originLabel } from '../ui/backpackView';
 import { CharmStrip, charmStepLabel } from '../ui/charmStrip';
-import { boardCharmSlots } from '../core/charmSave';
 import { getBoard } from '../data/boards';
 import { FieldView } from '../ui/fieldView';
 import { avatar } from '../ui/kit/chrome';
@@ -65,7 +46,6 @@ import { ElementFx } from '../ui/elementFx';
 import { getTechnique, type TechniqueDef } from '../data/techniques';
 import { scaleMs, techFxFor } from '../data/techFx';
 import { earnReward, isPremium } from '../platform/monetization';
-import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { DEMO_HERO, DEMO_REGION, demoLoadout } from '../data/demoLoadout';
 import { COLORS, H, JUICE, RUN_LAYOUT, W, textStyle } from '../ui/theme';
@@ -97,7 +77,7 @@ const STEP_SPARK: Record<number, number> = { 2: 0xffc84a, 3: 0xff6a3a, 4: 0xffff
 
 export class RunScene extends Phaser.Scene {
   private combat!: Combat;
-  private items!: Map<string, ItemInstance>;
+  private items!: ReadonlyMap<string, ItemInstance>;
   private elementFx!: ElementFx;
   private field!: FieldView;
   private view!: BackpackView;
@@ -119,9 +99,7 @@ export class RunScene extends Phaser.Scene {
   private recordShown = new Set<'step' | 'damage'>();
   /** 出撃前の記録（初めてなら null: 比べるものがない） */
   private bestBefore: { step: number; damage: number } | null = null;
-  /** Played under a trial rule from the home screen switch (records are left alone) */
-  private trial = false;
-  /** Trial (mastery): mastery grows and techniques must spark before they are known */
+  /** Mastery grows in this run (ordinary and endless runs) */
   private mastery = false;
   /** Trial (relics): the cards a beaten boss offers (null when none is offered) */
   private picker: RelicPicker | null = null;
@@ -173,8 +151,11 @@ export class RunScene extends Phaser.Scene {
     this.demo = !this.challenge && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
     // 挑戦は挑戦用の編成で（消耗品の入れ直しも挑戦用の編成に）
+    const challengeRules = this.challenge
+      ? challengeOfPeriod(this.challenge.period).rules
+      : undefined;
     if (this.challenge) {
-      enterChallengeEdit(save);
+      enterChallengeEdit(save, challengeRules!);
       refillConsumables(save);
       leaveChallengeEdit(save);
       persist();
@@ -192,65 +173,33 @@ export class RunScene extends Phaser.Scene {
         : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
-    const demo = this.demo ? demoLoadout() : null;
-    // Trial: the stacked board, with the home screen switch on (ordinary runs only)
-    const stackRun = usesStackBoard(save, debugMenuAllowed(), {
+    const kind = runKindOf({
       challenge: !!this.challenge,
       demo: this.demo,
       regionId: this.regionId,
     });
-    const loadout = demo
-      ? demo.loadout
-      : this.challenge
-        ? challengeLoadoutOf(save)
-        : stackRun
-          ? stackBoardOf(save)
-          : save.loadout;
+    if (kind === 'demo') {
+      const demo = demoLoadout();
+      const rules = featureRules(runFeatures('demo'));
+      this.cfg = {
+        seed: this.seed,
+        regionId: this.regionId,
+        loadout: demo.loadout,
+        items: demo.items,
+        hero: DEMO_HERO,
+        consumableSlots: 0,
+        demo: true,
+        ownedArtifacts: ownedArtifactIds(save),
+        ...(rules ? { rules } : {}),
+      };
+    } else this.cfg = runConfig(save, kind, this.regionId, this.seed, challengeRules);
+    const loadout = this.cfg.loadout;
     this.loadout = loadout;
-    this.items = demo ? demo.items : itemMap(save);
+    this.items = this.cfg.items;
     this.shake = save.settings.shake;
-    this.cfg = {
-      seed: this.seed,
-      regionId: this.regionId,
-      loadout,
-      items: this.items,
-      hero: demo ? DEMO_HERO : this.challenge ? BASE_HERO_STATS : heroStats(save),
-      noLoot: !!this.challenge,
-      consumableSlots: demo ? 0 : consumableSlots(save),
-      demo: this.demo,
-      firstRun: !this.demo && !this.challenge && save.stats.runs === 0,
-      ownedArtifacts: ownedArtifactIds(save),
-    };
-    // Trial rule from the home screen switch (debug setting on, ordinary runs only)
-    const trial = trialRules(save, debugMenuAllowed(), {
-      challenge: !!this.challenge,
-      demo: this.demo,
-      regionId: this.regionId,
-    });
-    // Trial (mastery): the hero's levels and learned techniques come along
-    this.mastery = usesMastery(save, debugMenuAllowed(), {
-      challenge: !!this.challenge,
-      demo: this.demo,
-      regionId: this.regionId,
-    });
-    if (this.mastery) this.cfg.mastery = runMastery(save);
-    // Trial (relics, treasure goblin): from the home screen switches too
-    const kind = { challenge: !!this.challenge, demo: this.demo, regionId: this.regionId };
-    const relics = usesRelics(save, debugMenuAllowed(), kind);
-    if (relics) this.cfg.relics = {};
-    const treasure = usesTreasure(save, debugMenuAllowed(), kind);
-    if (treasure) this.cfg.treasure = { chance: TREASURE.chance };
-    // Trial (charms): the charms on the board's edge (they need the stacked board, already a trial)
-    if (usesCharms(save, debugMenuAllowed(), kind)) {
-      this.cfg.charms = boardCharmSlots(save, loadout.board ?? 'standard');
-      // A player with no charms yet surely gets one from the first boss
-      if (!save.charms?.length) this.cfg.charmSure = true;
-    }
+    // Mastery grows from this run's rings and sparks (ordinary and endless runs)
+    this.mastery = runFeatures(kind).mastery === 'grow';
     this.picker = null;
-    this.trial = trial !== undefined || this.mastery || relics || treasure;
-    if (trial) this.cfg.rules = trial;
-    // No new-record banners: the trial run does not count toward the records
-    if (this.trial) this.bestBefore = null;
     this.combat = new Combat(this.cfg);
     // ランキングのシーズン（出撃した時点で決める）
     this.season = this.challenge ? this.challenge.period : endlessSeason(Date.now());
@@ -905,15 +854,6 @@ export class RunScene extends Phaser.Scene {
     const p = this.enemyPos(enemyId);
     const fx = techFxFor(tech?.id);
     const timing = this.field.heroSpecial(tech?.id, p, this.speed);
-    // 初めて出した技は図鑑に登録して、テロップで知らせる
-    const save = getSave();
-    // (Not from the mastery trial: there a technique is learned by a spark, apart from the 図鑑)
-    if (tech && !this.demo && !this.mastery && !save.discoveredTechs.includes(tech.id)) {
-      save.discoveredTechs.push(tech.id);
-      persist();
-      // showDiscovery translates the data key itself
-      showDiscovery(this, tech.name);
-    }
     const burst = () => {
       if (p) {
         if (fx) this.elementFx.technique(fx.impact, p.x, p.y);
@@ -1316,7 +1256,6 @@ export class RunScene extends Phaser.Scene {
       seed: this.seed,
       demo: this.demo,
       ...(this.challenge ? { challenge: this.challenge } : {}),
-      ...(this.trial ? { trial: true } : {}),
       ...(this.mastery ? { mastery: true } : {}),
       ...(mode && !this.demo
         ? { submission: buildSubmission(mode, this.season, this.cfg, r, save, totalStars(save)) }

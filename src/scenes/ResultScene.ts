@@ -40,13 +40,12 @@ import { buildShareImage, shareImage } from '../ui/shareCard';
 import { shareText, type ShareSummary } from '../core/shareText';
 import { itemMap } from '../core/economy';
 import { challengeLoadoutOf } from '../core/challengeLoadout';
-import { sortieBoard, stackSwitchOn } from '../core/trial';
+import { challengeOfPeriod } from '../core/challenge';
 import { ownedBoards } from '../core/boards';
 import type { BoardDef } from '../data/boards';
 import { recordMastery, type MasteryGain } from '../core/mastery';
 import { ELEMENT_NAMES } from '../data/items';
 import { getTechnique } from '../data/techniques';
-import { debugMenuAllowed } from '../platform/debug';
 import { rankScore } from '../core/ranking';
 import { ensureName, rankingReady, submitScore } from '../platform/ranking';
 import { num, t } from '../i18n';
@@ -165,7 +164,6 @@ export class ResultScene extends Phaser.Scene {
     }
     const { result, regionId } = last;
     const demo = last.demo === true;
-    const trial = last.trial === true;
     const challenge = last.challenge ?? null;
     let challengeBest = false;
     // 撤退の確定: 戦利品をすべて倉庫へ、記録を更新して保存。
@@ -186,7 +184,7 @@ export class ResultScene extends Phaser.Scene {
     let mastery: { gains: MasteryGain[]; learned: string[] } | null = null;
     let newLooks: string[] = [];
     let newBoards: BoardDef[] = [];
-    // Trial (charms): the charms brought home (and any sold because the case was full)
+    // The charms brought home (and any sold because the case was full)
     let charmsGot: ReturnType<typeof acceptCharms> | null = null;
     if (demo) markDemoDone();
     else {
@@ -208,19 +206,15 @@ export class ResultScene extends Phaser.Scene {
         save.stats.runs++;
       } else {
         const hadBoards = ownedBoards(save).map((b) => b.id);
-        unlocked = recordRun(save, regionId, result, { trial }).unlocked;
-        // Trial (stacked board): clearing a region for the first time gives its board
-        if (stackSwitchOn(save, debugMenuAllowed()))
-          newBoards = ownedBoards(save).filter((b) => !hadBoards.includes(b.id));
-        // Trial (mastery): the run's rings and sparks grow the hero's mastery
+        unlocked = recordRun(save, regionId, result).unlocked;
+        // Clearing a region for the first time gives its board
+        newBoards = ownedBoards(save).filter((b) => !hadBoards.includes(b.id));
+        // The run's rings and sparks grow the hero's mastery
         if (last.mastery && result.stats.rings)
           mastery = recordMastery(save, result.stats.rings, result.stats.sparks ?? []);
-        // A trial run earns no achievements or looks (its strength is not the real game's)
-        if (!trial) {
-          achieved = checkAchievements(save, result);
-          // Looks earned by this run's stars or endless loop
-          newLooks = grantCosmetics(save);
-        }
+        achieved = checkAchievements(save, result);
+        // Looks earned by this run's stars or endless loop
+        newLooks = grantCosmetics(save);
       }
     }
     persist();
@@ -290,7 +284,9 @@ export class ResultScene extends Phaser.Scene {
             const blob = await buildShareImage(
               this,
               summary,
-              challenge ? challengeLoadoutOf(save) : save.loadout,
+              challenge
+                ? challengeLoadoutOf(save, challengeOfPeriod(challenge.period).rules)
+                : save.loadout,
               itemMap(save),
             );
             const res = blob ? await shareImage(blob, shareText(summary)) : 'failed';
@@ -332,7 +328,7 @@ export class ResultScene extends Phaser.Scene {
     // 記録（羊皮紙）
     panel(this, W / 2, 408, W - 60, 206, 'paper');
     // 自己ベストを更新した記録（初めてのランは、比べるものがないので出さない）
-    const comparable = !demo && !challenge && !trial && !prev.first;
+    const comparable = !demo && !challenge && !prev.first;
     const stats: { label: string; value: string; isNew: boolean }[] = [
       { label: t('ボス撃破'), value: `${result.stats.bossesDefeated}`, isNew: false },
       {
@@ -369,7 +365,6 @@ export class ResultScene extends Phaser.Scene {
         this.stamp(x + lbl.displayWidth + 30, y + 2, 'NEW!', 500 + i * 120, 15);
       }
     });
-    // A trial run counts toward the region's best loop too (only its chain / damage records do not)
     if (challenge ? challengeBest : !demo && !prev.first && result.reachedLoop > prev.loop)
       this.stamp(W / 2 + 200, 220, t('自己ベスト！'), 400);
     // 地域の★（3・6・10周目のボス撃破）。★ごとに攻撃+3%・最大HP+5
@@ -400,8 +395,7 @@ export class ResultScene extends Phaser.Scene {
     // After the achievement cards, so the two never overlap
     if (newLooks.length > 0)
       showNewLooks(this, newLooks, 62, 1400 + achieved.length * TOAST_STEP_MS);
-    // Trial (board shapes): a run of the stacked board earns no achievements or looks, so the
-    // board's card comes after any that did
+    // A new board's card comes after the achievement and look cards
     if (newBoards.length > 0)
       showNewBoards(
         this,
@@ -409,7 +403,7 @@ export class ResultScene extends Phaser.Scene {
         62,
         1400 + (achieved.length + newLooks.length) * TOAST_STEP_MS,
       );
-    // Trial (charms): after the board cards, which come from the same kind of run
+    // Charms come after the board cards
     if (charmsGot)
       showNewCharms(
         this,
@@ -599,10 +593,7 @@ export class ResultScene extends Phaser.Scene {
     // 挑戦は地域を覚えない（開放していない地域のこともある）。「もう一度」は同じ挑戦
     if (!challenge) session.regionId = regionId;
     // 挑戦は装備が出ないので、倉庫があふれていても同じ挑戦はできる
-    // Trial: a run on the stacked board needs an origin stone there
-    const block = challenge
-      ? null
-      : sortieBlock(save, sortieBoard(save, debugMenuAllowed(), regionId));
+    const block = challenge ? null : sortieBlock(save);
     const again = () => {
       if (!block && challenge) session.challenge = challenge;
       this.scene.start(block ? 'Loadout' : 'Run');
@@ -680,7 +671,7 @@ interface Note {
   pulse?: boolean;
 }
 
-/** Trial (mastery): the techniques sparked, and the top three elements' mastery gains */
+/** The techniques sparked, and the top three elements' mastery gains */
 function masteryNotes(m: { gains: readonly MasteryGain[]; learned: readonly string[] }): Note[] {
   const out: Note[] = [];
   if (m.learned.length > 0) {

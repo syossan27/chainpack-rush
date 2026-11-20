@@ -2,7 +2,6 @@
 import Phaser from 'phaser';
 import { MONETIZE, PROGRESS, SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
 import {
-  backpackSize,
   buyUpgrade,
   canReorient,
   consumableSlots,
@@ -30,6 +29,9 @@ import { Rng, randomSeed } from '../core/rng';
 import type { SaveData } from '../core/save';
 import type { Dir, ItemInstance, Rarity } from '../core/types';
 import { DIRS } from '../core/types';
+import { boardUids } from '../core/stack';
+import { getBoard } from '../data/boards';
+import { boardMark } from '../ui/boardText';
 import { RARITY_NAMES, getItemDef } from '../data/items';
 import { REGIONS, getRegion } from '../data/regions';
 import { UNIT_SPRITES, animKey, iconKey, stillOrigin } from '../data/sprites';
@@ -52,7 +54,7 @@ import {
 } from '../platform/monetization';
 import { TECHNIQUES } from '../data/techniques';
 import { HeroAura, auraTier } from '../ui/aura';
-import { otherPresetUse, presetMark, presetName } from '../core/presets';
+import { otherBoardUse } from '../core/boardSave';
 import {
   challengeStart,
   checkRules,
@@ -104,7 +106,7 @@ import {
 
 /** ランキングの報酬は、起動してから1回だけ確かめる */
 let rewardsChecked = false;
-import { challengeLoadoutOf, fitToRules } from '../core/challengeLoadout';
+import { challengeLoadoutOf, rebuildChallengeLoadout } from '../core/challengeLoadout';
 import { ItemList } from '../ui/itemList';
 import { TAB_BAR_H, TOP_BAR_H, TabBar, TopBar, goTab, type TabId } from '../ui/kit/chrome';
 import type { IconName } from '../ui/kit/icons';
@@ -144,7 +146,6 @@ const UPGRADE_ICON: Record<UpgradeId, IconName> = {
   atb: 'clock',
   attack: 'swords',
   runTime: 'hourglass',
-  backpack: 'bag',
   consumableSlots: 'star',
   storage: 'chest',
 };
@@ -563,42 +564,6 @@ export class BaseScene extends Phaser.Scene {
       new RoundButton(this, W - 70, 620, 96, 'crown', t('図鑑'), () => this.go('techs')),
     );
 
-    // Trial rule switches for ordinary runs, with the debug setting on (the stacked board comes
-    // with the count going on)
-    if (debugMenuAllowed() && save.settings.debug) {
-      type TrialKey =
-        | 'trialKeepCount'
-        | 'trialStack'
-        | 'trialMastery'
-        | 'trialRelic'
-        | 'trialTreasure'
-        | 'trialCharm';
-      const switches: [TrialKey, string][] = [
-        ['trialKeepCount', k('試作: 倒しても連鎖が続く {state}')],
-        ['trialStack', k('試作: 重ねる盤面 {state}')],
-        ['trialMastery', k('試作: 熟練と閃き {state}')],
-        ['trialRelic', k('試作: レリック {state}')],
-        ['trialTreasure', k('試作: 黄金ゴブリン {state}')],
-        ['trialCharm', k('試作: アクセサリー {state}')],
-      ];
-      switches.forEach(([key, label], i) => {
-        const on = save.settings[key];
-        this.root.add(
-          new Button(
-            this,
-            W / 2,
-            300 + i * 58,
-            t(label, { state: on ? 'ON' : 'OFF' }),
-            () => {
-              save.settings[key] = !on;
-              persist();
-              this.render();
-            },
-            { width: 400, height: 52, fontSize: 20, skin: on ? 'blue' : 'gray' },
-          ),
-        );
-      });
-    }
     // Debug: play from zero on a second save (the real one stays). Shown on the second save even
     // with the debug setting off, so there is always a way back
     if (debugMenuAllowed() && (save.settings.debug || activeSlot() === 'fresh'))
@@ -713,14 +678,14 @@ export class BaseScene extends Phaser.Scene {
                 this.render();
                 this.showToast(`+${g}G`);
               };
-              // ほかの編成で使っている装備は、編成から外れることを確認する
-              const usedIn = otherPresetUse(save).get(it.uid);
+              // Gear on a board not chosen now: confirm that it leaves that board
+              const usedIn = otherBoardUse(save).get(it.uid);
               if (usedIn && usedIn.length > 0)
                 confirmDialog(
                   this,
-                  t('編成で使っている装備'),
-                  t('{presets}で使っています。\n売ると、その編成のマスは空きになります', {
-                    presets: usedIn.map((i) => presetName(save, i)).join(t('・|sep')),
+                  t('ほかの盤面で使っている装備'),
+                  t('{boards}で使っています。\n売ると、その盤面から外れます', {
+                    boards: usedIn.map((b) => t(getBoard(b).name)).join(t('・|sep')),
                   }),
                   t('売る'),
                   sell,
@@ -745,7 +710,7 @@ export class BaseScene extends Phaser.Scene {
     };
     // まとめて売る: 選ぶモードではタップで選択／解除し、最後にまとめて売る
     const pick = this.sellPick;
-    const presetUses = otherPresetUse(save);
+    const boardUses = otherBoardUse(save);
     const stored = () => getSave().inventory.filter((i) => !eq.has(i.uid));
     const list = new ItemList(
       this,
@@ -759,9 +724,9 @@ export class BaseScene extends Phaser.Scene {
             this.showToast(t('ロック中の装備は売れません'), true);
             return;
           }
-          if (presetUses.has(it.uid)) {
+          if (boardUses.has(it.uid)) {
             sfx('error');
-            this.showToast(t('ほかの編成で使っている装備です（詳細から売れます）'), true);
+            this.showToast(t('ほかの盤面で使っている装備です（詳細から売れます）'), true);
             return;
           }
           // Artifacts: one of each type stays (only an older save's extra copy can go)
@@ -781,7 +746,7 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: openDetail,
       },
-      (it) => (pick?.has(it.uid) ? t('売る') : presetMark(save, presetUses, it.uid)),
+      (it) => (pick?.has(it.uid) ? t('売る') : boardMark(boardUses, it.uid)),
     );
     list.setItems(stored());
     this.root.add(list);
@@ -899,7 +864,7 @@ export class BaseScene extends Phaser.Scene {
       const below = (max: Rarity) =>
         stored().filter((i) => {
           const d = getItemDef(i.defId);
-          if (d.kind === 'consumable' || d.artifact || i.locked || presetUses.has(i.uid))
+          if (d.kind === 'consumable' || d.artifact || i.locked || boardUses.has(i.uid))
             return false;
           if (this.keepAffixes && (i.affixes?.length ?? 0) > 0) return false;
           return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
@@ -925,7 +890,7 @@ export class BaseScene extends Phaser.Scene {
         });
         // 消耗品（装備とは別枠。消耗品枠に入れているもの・ロック中は売らない）
         const consumables = stored().filter(
-          (i) => getItemDef(i.defId).kind === 'consumable' && !i.locked && !presetUses.has(i.uid),
+          (i) => getItemDef(i.defId).kind === 'consumable' && !i.locked && !boardUses.has(i.uid),
         );
         const cGold = consumables.reduce((sum, i) => sum + sellPrice(i), 0);
         choices.push({
@@ -1026,7 +991,7 @@ export class BaseScene extends Phaser.Scene {
     }
     const save = getSave();
     const eq = equippedUids(save);
-    const presetUses = otherPresetUse(save);
+    const boardUses = otherBoardUse(save);
     const list = new ItemList(
       this,
       CONTENT_TOP + 84,
@@ -1042,7 +1007,7 @@ export class BaseScene extends Phaser.Scene {
         },
         onLongPress: (it) => showItemDetail(this, it),
       },
-      (it) => (eq.has(it.uid) ? t('装備中') : presetMark(save, presetUses, it.uid)),
+      (it) => (eq.has(it.uid) ? t('装備中') : boardMark(boardUses, it.uid)),
     );
     list.setItems(save.inventory.filter((i) => getItemDef(i.defId).kind !== 'consumable'));
     list.setSelected(this.selected);
@@ -1206,7 +1171,6 @@ export class BaseScene extends Phaser.Scene {
     const save = getSave();
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('強化')));
     const hs = heroStats(save);
-    const bp = backpackSize(save.upgrades.backpack);
     const stars = totalStars(save);
     const now: Record<UpgradeId, string> = {
       maxHp: t(stars > 0 ? '最大HP {hp}（★{stars}で+{bonus}込み）' : '最大HP {hp}', {
@@ -1226,7 +1190,6 @@ export class BaseScene extends Phaser.Scene {
             max: TIME_BONUS.maxRunTime,
           })
         : t('出撃 {sec}秒', { sec: hs.runTime }),
-      backpack: t('{w}×{h}マス', { w: bp.width, h: bp.height }),
       consumableSlots: t('{n}枠', { n: consumableSlots(save) }),
       storage: t('{n}個', { n: storageCapacity(save) }),
     };
@@ -1235,7 +1198,7 @@ export class BaseScene extends Phaser.Scene {
       const lv = save.upgrades[id];
       const max = upgradeMaxLevel(save, id);
       const cost = upgradeCost(id, lv, max);
-      // 7項目を1画面に収める（1行 128px）
+      // 6項目を1画面に収める（1行 128px）
       const y = upgradeRowY(i);
       this.root.add(panel(this, W / 2, y, W - 30, 120, 'panel'));
       this.root.add(new RoundButton(this, 80, y, 84, UPGRADE_ICON[id], null, () => undefined));
@@ -1655,12 +1618,12 @@ export class BaseScene extends Phaser.Scene {
     this.render();
   }
 
-  /** An item to try the smith on: in storage, not in any preset, and its reroll is affordable */
+  /** An item to try the smith on: in storage, on no other board, and its reroll is affordable */
   private smithCandidate(): ItemInstance | null {
     const save = getSave();
     if (save.inventory.some((i) => i.rerollCount > 0)) return null;
     const eq = equippedUids(save);
-    const uses = otherPresetUse(save);
+    const uses = otherBoardUse(save);
     return (
       save.inventory.find(
         (i) =>
@@ -1780,8 +1743,8 @@ export class BaseScene extends Phaser.Scene {
   private renderSynth(): void {
     const save = getSave();
     const eq = equippedUids(save);
-    const presetUses = otherPresetUse(save);
-    const usable = (i: ItemInstance) => !eq.has(i.uid) && !i.locked && !presetUses.has(i.uid);
+    const boardUses = otherBoardUse(save);
+    const usable = (i: ItemInstance) => !eq.has(i.uid) && !i.locked && !boardUses.has(i.uid);
     const groupCount = (i: ItemInstance) =>
       save.inventory.filter((o) => o.defId === i.defId && o.rarity === i.rarity && usable(o))
         .length;
@@ -1804,7 +1767,7 @@ export class BaseScene extends Phaser.Scene {
         if (eq.has(it.uid)) return t('装備中');
         if (it.locked) return t('ロック');
         const n = groupCount(it);
-        return n >= 3 ? t('{n}つ', { n }) : presetMark(save, presetUses, it.uid);
+        return n >= 3 ? t('{n}つ', { n }) : boardMark(boardUses, it.uid);
       },
     );
     list.setItems(candidates);
@@ -2624,13 +2587,12 @@ export class BaseScene extends Phaser.Scene {
     );
     y += 110;
 
-    // 挑戦用の編成（ふだんの編成とは別）
-    const lo = challengeLoadoutOf(save);
+    // 挑戦用の配置（ふだんの盤面とは別。いつも標準の盤面）
+    const lo = challengeLoadoutOf(save, def.rules);
     const items = itemMap(save);
-    const placed = lo.cells.filter(Boolean).length;
-    const origins = lo.cells.filter(
-      (u) => u && getItemDef(items.get(u)!.defId).kind === 'origin',
-    ).length;
+    const onBoard = boardUids(lo);
+    const placed = onBoard.length;
+    const origins = onBoard.filter((u) => getItemDef(items.get(u)!.defId).kind === 'origin').length;
     const loStatus = this.add
       .text(
         W - 40,
@@ -2674,7 +2636,7 @@ export class BaseScene extends Phaser.Scene {
     y += 110;
     // ふだんの編成をもとに、制限に合わない装備を入れ替えて「出撃できる形」まで組む（最適にはしない）
     const fromNormal = () => {
-      save.challengeLoadout = fitToRules(save, save.loadout, def.rules);
+      rebuildChallengeLoadout(save, def.rules);
       persist();
       this.showToast(t('ふだんの編成から組みました。並べ方を詰めよう'));
       this.render();
@@ -2815,7 +2777,7 @@ export class BaseScene extends Phaser.Scene {
   private renderTechs(): void {
     const save = getSave();
     this.addBookTabs();
-    const found = TECHNIQUES.filter((tech) => save.discoveredTechs.includes(tech.id)).length;
+    const found = TECHNIQUES.filter((tech) => save.mastery.learned.includes(tech.id)).length;
     this.root.add(
       this.add
         .text(
@@ -2832,7 +2794,7 @@ export class BaseScene extends Phaser.Scene {
     const lineW = W - 100;
     TECHNIQUES.forEach((tech, i) => {
       const y = top + i * (rowH + 10) + rowH / 2;
-      const known = save.discoveredTechs.includes(tech.id);
+      const known = save.mastery.learned.includes(tech.id);
       this.root.add(panel(this, W / 2, y, W - 40, rowH, known ? 'paper' : 'inset'));
       const color = TECH_CSS[tech.element] ?? '#5a3a20';
       if (known) {

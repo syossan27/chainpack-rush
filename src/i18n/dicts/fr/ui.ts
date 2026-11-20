@@ -166,15 +166,10 @@ export const UI: Dict = {
   まだありません: 'Rien pour le moment',
   ロック中: 'Verrouillé',
   '売る {price}G': 'Vendre {price}G',
-  編成で使っている装備: 'Équipement utilisé dans un Set',
-  '{presets}で使っています。\n売ると、その編成のマスは空きになります':
-    'Utilisé dans : {presets}.\nSi tu le vends, sa case dans ce Set sera vide.',
   売る: 'Vendre',
   アーティファクトを売る: "Vendre l'Artefact",
   '{item}を{price}Gで売ります': 'Vendre {item} pour {price}G ?',
   ロック中の装備は売れません: 'Impossible de vendre un objet verrouillé',
-  'ほかの編成で使っている装備です（詳細から売れます）':
-    'Utilisé dans un autre Set (vendable depuis sa fiche)',
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Touche les objets à vendre (touche encore pour annuler, maintiens pour les détails)',
   '自動売却：オフ': 'Vente auto : désactivée',
@@ -223,7 +218,6 @@ export const UI: Dict = {
   '出撃 {sec}秒（延長込みの上限 {max}秒）':
     "Durée d'expédition {sec} s (max {max} s avec les bonus)",
   '出撃 {sec}秒': "Durée d'expédition {sec} s",
-  '{w}×{h}マス': 'Grille {w}×{h}',
   '{n}枠': 'Places : {n}',
   '{n}個': 'Capacité : {n}',
   最大: 'MAX',
@@ -244,9 +238,6 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Le tutoriel de chaque écran va réapparaître',
   振動: 'Vibrations',
   '画面揺れ・光': 'Tremblements et flashs',
-  '試作: 倒しても連鎖が続く {state}':
-    'Prototype : La chaîne continue après un ennemi vaincu {state}',
-  '試作: 重ねる盤面 {state}': 'Prototype : Plateau empilé {state}',
   '重ね（下から順に鳴る）': 'Pile (se déclenche de bas en haut)',
   '一番上 ×{m}（矢印はこの装備）': 'Haut ×{m} (ses flèches mènent la suite)',
   '×{m}': '×{m}',
@@ -398,8 +389,6 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Annuler',
   全部外す: 'Tout retirer',
-  おまかせ: 'Auto',
-  '持ち物から、おまかせで並べます。': 'Place ton équipement automatiquement.',
   使えない: 'Interdit',
   挑戦へ: 'Défi',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
@@ -422,24 +411,14 @@ export const UI: Dict = {
   '必殺技|fallback': 'Coup spécial',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Chaîne {step} · Combos {combo}',
   '約{n}・{step}連鎖': '~{n} · Chaîne {step}',
-  診断: 'Conseils',
-  配置の診断: 'Conseils de disposition',
-  'いまの推定ダメージ 合計 約{n}': 'Estimation actuelle : ~{n} au total',
-  'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！':
-    'Aucune meilleure option avec ton équipement actuel.\nBelle disposition !',
-  '+約{n}': '+~{n}',
-  '（+{pct}%）': '(+{pct}%)',
-  場所を見る: 'Voir où',
   閉じる: 'Fermer',
   '挑戦「{name}」用': 'Défi : {name}',
   制限に合わせる: 'Rendre conforme',
-  '{name} に切り替えました': 'Passage à {name}',
   もう制限に合っています: 'Déjà conforme aux règles',
   '制限に合わせました。並べ方を詰めよう':
     'Set rendu conforme aux règles. Peaufine la disposition !',
   '合う装備が足りず、空いたマスがあります':
     "Pas assez d'objets autorisés : certaines cases restent vides",
-  '編成の名前（8文字まで）': 'Nom du Set (8 caractères max)',
   '消耗品|slots': 'Consommables',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Dernière modification annulée',
@@ -610,9 +589,6 @@ export const UI: Dict = {
   広告: 'Pub',
 
   // src/ui/discovery.ts
-  図鑑に登録: 'Ajouté au Codex',
-  'NEW  必殺技を発見！': 'NOUVEAU  Coup spécial découvert !',
-  '【{name}】': '« {name} »',
 
   // src/ui/itemInfo.ts
   上: 'Haut',
@@ -721,7 +697,6 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '« Relancer » tourne les sorties dans des sens au hasard. Avec « Au choix », tu choisis toi-même les sens.',
   'この装備をタップして、選んでみよう': 'Touche cet objet pour le sélectionner.',
-  '試作: 熟練と閃き {state}': 'Prototype : Maîtrise et Éclair {state}',
   '閃いた必殺技: {names}': 'Éclair de génie : {names}',
   '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Niv.{lv}↑)',
   '{el} +{n}（Lv{lv}）': '{el} +{n} (Niv.{lv})',
@@ -729,8 +704,6 @@ export const UI: Dict = {
   '閃いた！ {name}': 'Éclair de génie ! {name}',
   レア順: 'Rareté',
   装備ごと: 'Par objet',
-  '試作: レリック {state}': 'Prototype : Reliques {state}',
-  '試作: 黄金ゴブリン {state}': 'Prototype : Gobelin doré {state}',
   '黄金ゴブリンだ！ 逃げる前に倒せ！': 'Un gobelin doré ! Battez-le avant sa fuite !',
   '{name}を貼った！': '{name} posé !',
   '黄金ゴブリンを倒した！': 'Gobelin doré vaincu !',
@@ -747,7 +720,6 @@ export const UI: Dict = {
   売れません: 'Invendable',
   'アーティファクトは売れません（1種類につき1つ）':
     'Impossible de vendre un artefact (un seul de chaque)',
-  '試作: アクセサリー {state}': 'Prototype : Accessoires {state}',
   '0から遊ぶ（今のセーブは残る）': 'Jouer depuis zéro (ta sauvegarde reste)',
   元のセーブに戻る: 'Revenir à ta sauvegarde',
   '0からやり直す': 'Zéro à nouveau',
@@ -765,4 +737,9 @@ export const UI: Dict = {
     'Écrin à accessoires plein : {n} vendu(s) (+{gold}G)',
   '1マスに1つだけ（重ねない）': 'Un objet par case (pas d’empilement)',
   重ねた装備がある: 'Équipement empilé sur le plateau',
+  ほかの盤面で使っている装備: 'Équipement utilisé sur un autre plateau',
+  '{boards}で使っています。\n売ると、その盤面から外れます':
+    'Utilisé sur : {boards}.\nSi tu le vends, il quitte ce plateau.',
+  'ほかの盤面で使っている装備です（詳細から売れます）':
+    'Utilisé sur un autre plateau (vendable depuis sa fiche)',
 };

@@ -1,18 +1,11 @@
-// 配置画面: 上半分にバックパック、下半分に倉庫。ドラッグで置き、グリッド外へドラッグで外す
+// 配置画面: 上半分に盤面、下半分に倉庫。ドラッグで置き、盤面の外へドラッグで外す
 import { runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
 import { estimateRoute } from '../core/estimate';
-import { diagnose } from '../core/diagnose';
-import { autoLayout } from '../core/autoLayout';
-import { getTechnique } from '../data/techniques';
-import {
-  defaultPresetName,
-  otherPresetUse,
-  presetMark,
-  presetName,
-  switchPreset,
-} from '../core/presets';
+import { getTechnique, TECHNIQUES } from '../data/techniques';
+import { otherBoardUse, switchBoard } from '../core/boardSave';
+import { runFeatures } from '../core/runRules';
 import {
   checkRules,
   challengeStart,
@@ -21,15 +14,7 @@ import {
   type ChallengeNow,
 } from '../core/challenge';
 import { enterChallengeEdit, fitToRules, leaveChallengeEdit } from '../core/challengeLoadout';
-import { debugMenuAllowed, devChallengeOpen } from '../platform/debug';
-import {
-  charmSwitchOn,
-  enterTrialEdit,
-  leaveTrialEdit,
-  masterySwitchOn,
-  stackSwitchOn,
-  switchTrialBoard,
-} from '../core/trial';
+import { devChallengeOpen } from '../platform/debug';
 import {
   boardCharmSlots,
   charmEquipped,
@@ -42,9 +27,11 @@ import { getCharm } from '../data/charms';
 import { CharmStrip } from '../ui/charmStrip';
 import { CharmList, charmText } from '../ui/charmList';
 import { boardDepth, boardPosMult, ownedBoards } from '../core/boards';
-import { BOARDS, getBoard } from '../data/boards';
-import { boardTraitText } from '../ui/boardText';
+import { BOARDS, getBoard, type BoardId } from '../data/boards';
+import { boardMark, boardTraitText } from '../ui/boardText';
 import {
+  boardUids,
+  restoreStackBoard,
   stackAt,
   stackMove,
   stackPut,
@@ -62,14 +49,7 @@ import {
   sellItems,
   sortieBlock,
 } from '../core/economy';
-import {
-  clearLoadout,
-  cycleOriginOrder,
-  placeItem,
-  removeItem,
-  setConsumable,
-} from '../core/loadout';
-import { BASE_HERO_STATS } from '../core/combat';
+import { clearLoadout, cycleOriginOrder, removeItem, setConsumable } from '../core/loadout';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
@@ -107,22 +87,20 @@ export class LoadoutScene extends Phaser.Scene {
   private info!: Phaser.GameObjects.Text;
   /** ルートの選択（起点の発火順の添字。null は全部） */
   private focus: number | null = null;
-  /** Trial: the stacked board is being edited (home screen switch on) */
-  private stackMode = false;
-  /** Trial (charms): the edge slots, the charm case and the chosen slot (null: switch off) */
+  /** The edge slots, the charm case and the chosen slot (null: no charms, as in the challenge) */
   private charmStrip: CharmStrip | null = null;
   private charmList: CharmList | null = null;
   private charmSlot: number | null = null;
   private charmCtx: CharmContext | undefined;
   private routeBar!: Phaser.GameObjects.Container;
   private routeText!: Phaser.GameObjects.Text;
-  /** Width the route summary may use (up to the diagnosis button) */
+  /** Width the route summary may use */
   private routeTextMaxW = 0;
-  private presetBar!: Phaser.GameObjects.Container;
-  /** ほかの編成で使っている装備 */
-  private presetUses = new Map<string, number[]>();
+  private boardBar!: Phaser.GameObjects.Container;
+  /** ほかの盤面で使っている装備 */
+  private boardUses = new Map<string, BoardId[]>();
   private resetBtn!: Button;
-  /** 戻す: 変える前の並べ方（新しいものが後ろ）。編成を切り替えたら空にする */
+  /** 戻す: 変える前の並べ方（新しいものが後ろ）。盤面を切り替えたら空にする */
   private undoStack: string[] = [];
   /** 消耗品枠の中身（変わったら「入れておきたいもの」として覚え直す） */
   private lastCons = '';
@@ -131,10 +109,8 @@ export class LoadoutScene extends Phaser.Scene {
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
   private selected: ItemInstance | null = null;
-  /** 挑戦用の編成を編集中（その挑戦） */
+  /** 挑戦用の配置を編集中（その挑戦） */
   private challenge: ChallengeNow | null = null;
-  /** おまかせ (null when there is no room next to the consumable slots, or in the challenge) */
-  private autoBtn: RoundButton | null = null;
 
   constructor() {
     super('Loadout');
@@ -151,34 +127,24 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     this.drag = null;
     this.selected = null;
-    // Trial (charms): made again below when the switch is on (a restart keeps old fields)
+    // Charms: made again below (a restart keeps old fields)
     this.charmStrip = null;
     this.charmList = null;
     this.charmSlot = null;
     this.charmCtx = undefined;
-    // 挑戦用の編成: 画面を出ている間だけ loadout と入れ替える（出るときに戻す）
+    // 挑戦用の配置: 画面を出ている間だけ loadout と入れ替える（出るときに戻す）
     if (this.challenge) {
-      enterChallengeEdit(save);
+      enterChallengeEdit(save, this.challenge.def.rules);
       persist();
       this.events.once('shutdown', () => {
         leaveChallengeEdit(getSave());
         persist();
       });
     }
-    // Trial: the stacked board, with the home screen switch on (it sits in loadout while editing)
-    this.stackMode = !this.challenge && stackSwitchOn(save, debugMenuAllowed());
-    if (this.stackMode) {
-      enterTrialEdit(save);
-      persist();
-      this.events.once('shutdown', () => {
-        leaveTrialEdit(getSave());
-        persist();
-      });
-    }
     this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
-    // 編成の切り替え（並べ方の記録。装備は倉庫に置いたまま）
-    this.presetBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
-    this.buildPresetBar();
+    // 盤面の切り替え（盤面ごとに並べ方を覚える。装備は倉庫に置いたまま）
+    this.boardBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
+    this.buildBoardBar();
     // 戻す（ひとつ前の並べ方へ）
     this.undoStack = [];
     this.lastSnapshot = JSON.stringify(save.loadout);
@@ -236,11 +202,11 @@ export class LoadoutScene extends Phaser.Scene {
           ? itemViolation(it, this.challenge.def.rules)
             ? t('使えない')
             : null
-          : presetMark(getSave(), this.presetUses, it.uid),
+          : boardMark(this.boardUses, it.uid),
     );
-    // Trial (charms): slots on the stacked board's edge; the case covers the item list while a
-    // slot is chosen
-    if (this.stackMode && charmSwitchOn(save, debugMenuAllowed())) {
+    // Charms: slots on the board's edge; the case covers the item list while a slot is chosen
+    // (none in the challenge, which plays without them)
+    if (runFeatures(this.challenge ? 'challenge' : 'normal').charms !== 'off') {
       const board = getBoard(save.loadout.board);
       this.charmStrip = new CharmStrip(this, this.view, board, boardCharmSlots(save, board.id), {
         // A tall board leaves no room for full slots above the route bar
@@ -257,24 +223,6 @@ export class LoadoutScene extends Phaser.Scene {
     new RoundButton(this, W - 196, LOADOUT_LAYOUT.slotsTop + 44, 88, scare, t('カカシ'), () =>
       this.scene.start('Dummy'),
     );
-    // おまかせ: between the consumable slots and the scarecrow (not in the challenge, which ranks
-    // arranging). With 5 slots there is no room, so 全部外す offers it instead
-    this.autoBtn = null;
-    if (!this.challenge && !this.stackMode) {
-      const left = this.slotX(consumableSlots(save) - 1) + SLOT_SIZE / 2;
-      const right = W - 196 - 44;
-      const size = Math.min(88, right - left - 16);
-      if (size >= 64)
-        this.autoBtn = new RoundButton(
-          this,
-          (left + right) / 2,
-          LOADOUT_LAYOUT.slotsTop + 44,
-          size,
-          'star',
-          t('おまかせ'),
-          () => this.applyAuto(),
-        );
-    }
     new RoundButton(
       this,
       W - 76,
@@ -327,20 +275,20 @@ export class LoadoutScene extends Phaser.Scene {
     this.view.tick(this.time.now);
   }
 
-  /** Techniques shown by name: the 図鑑's, or with the mastery trial on, the ones learned by a spark */
+  /**
+   * Techniques shown by name: the ones learned by a spark. The challenge plays without mastery, so
+   * every technique goes off there and all are named
+   */
   private knownTechs(): readonly string[] {
-    const save = getSave();
-    return masterySwitchOn(save, debugMenuAllowed())
-      ? (save.mastery?.learned ?? [])
-      : save.discoveredTechs;
+    return this.challenge ? TECHNIQUES.map((x) => x.id) : getSave().mastery.learned;
   }
 
   private refresh(): void {
     const save = getSave();
-    this.presetUses = otherPresetUse(save);
+    this.boardUses = otherBoardUse(save);
     const items = itemMap(save);
     this.view.setLoadout(save.loadout, items);
-    // Trial (charms): what the slots react to on this layout (the estimate uses it too)
+    // Charms: what the slots react to on this layout (the estimate uses it too)
     if (this.charmStrip) {
       const slots = boardCharmSlots(save, save.loadout.board ?? 'standard');
       this.charmCtx = charmContext(slots, save.loadout, items);
@@ -524,7 +472,7 @@ export class LoadoutScene extends Phaser.Scene {
         color: routeCss(this.focus),
       };
     })();
-    // Trial (charms): the combo multiplier the route builds up to
+    // Charms: the combo multiplier the route builds up to
     const peak =
       this.focus === null
         ? Math.max(1, ...est.map((e) => e.charmPeak))
@@ -532,170 +480,20 @@ export class LoadoutScene extends Phaser.Scene {
     if (shown && preview.plans.length > 0 && peak > 1)
       summary.text = t('{route}・コンボ ×{m}', { route: summary.text, m: peak.toFixed(1) });
     this.routeText = this.add
-      .text(W - 132, -2, summary.text, textStyle(18, summary.color))
+      .text(W - 36, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
-    // 長いときは縮めて、診断ボタンに重ねない
-    this.routeTextMaxW = W - 132 - x - 6;
+    // 長いときは縮めて、枠からはみ出さない
+    this.routeTextMaxW = W - 36 - x - 6;
     fitText(this.routeText, this.routeTextMaxW);
     bar.add(this.routeText);
-    // 診断: いまの並べ方から、伸ばせる次の一手を出す（重ねる盤面では出さない: 試作）
-    if (this.stackMode) return;
-    const dg = this.add
-      .nineslice(W - 80, 0, SKIN.tabOn, undefined, 92, 44, SLICE.tab, SLICE.tab, 14, 14)
-      .setInteractive({ useHandCursor: true });
-    bindTap(dg, () => {
-      sfx('click');
-      this.openDiagnosis();
-    });
-    bar.add(dg);
-    bar.add(
-      fitText(this.add.text(W - 80, -2, t('診断'), textStyle(18, '#fff6d0')).setOrigin(0.5), 84),
-    );
   }
 
-  /** 配置の診断（入れ替え・置きかえ・空きマスを実際に試して、伸びる手を出す） */
-  private openDiagnosis(): void {
-    const save = getSave();
-    // In the challenge: the hero starts from base strength and only allowed items are suggested
-    const rules = this.challenge?.def.rules;
-    const res = diagnose(
-      save.loadout,
-      save.inventory,
-      rules ? BASE_HERO_STATS.attackMult : heroStats(save).attackMult,
-      save.discoveredTechs,
-      rules ? (it) => !itemViolation(it, rules) : undefined,
-    );
-    const H = this.scale.gameSize.height;
-    const root = this.add.container(0, 0).setDepth(2600);
-    const close = () => root.destroy();
-    const shade = this.add.rectangle(0, 0, W, H, 0x000000, 0.62).setOrigin(0, 0).setInteractive();
-    shade.on('pointerup', close);
-    root.add(shade);
-    const cw = W - 50;
-    const cardH = 150;
-    const list = res.advices;
-    const ch = 170 + Math.max(1, list.length) * (cardH + 12) + 100;
-    const top = H / 2 - ch / 2;
-    root.add(panel(this, W / 2, H / 2, cw, ch, 'panel').setInteractive());
-    root.add(
-      fitText(
-        this.add.text(W / 2, top + 44, t('配置の診断'), textStyle(34, '#ffe27a')).setOrigin(0.5),
-        cw - 40,
-      ),
-    );
-    root.add(
-      fitText(
-        this.add
-          .text(
-            W / 2,
-            top + 92,
-            t('いまの推定ダメージ 合計 約{n}', { n: num(res.total) }),
-            textStyle(20, COLORS.text),
-          )
-          .setOrigin(0.5),
-        cw - 40,
-      ),
-    );
-    if (list.length === 0)
-      root.add(
-        this.add
-          .text(
-            W / 2,
-            top + 170 + cardH / 2,
-            t('いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！'),
-            {
-              ...textStyle(22, COLORS.text),
-              align: 'center',
-              wordWrap: { width: cw - 60, useAdvancedWrap: true },
-            },
-          )
-          .setOrigin(0.5),
-      );
-    list.forEach((a, i) => {
-      const y = top + 140 + i * (cardH + 12);
-      root.add(panel(this, W / 2, y + cardH / 2, cw - 40, cardH, 'paper'));
-      const left = 60;
-      const titleText = this.add.text(left, y + 16, a.title, {
-        ...inkStyle(22),
-        wordWrap: { width: cw - 260, useAdvancedWrap: true },
-      });
-      root.add(titleText);
-      root.add(
-        this.add.text(left, y + 24 + titleText.height, a.reason, {
-          ...inkStyle(18, '#8a5a10'),
-          wordWrap: { width: cw - 260, useAdvancedWrap: true },
-        }),
-      );
-      // Right column: between the text column (ends at x=left + cw - 260) and the card edge
-      const rx = W - 130;
-      const colW = 2 * (W - 40 - rx);
-      if (a.gain > 0)
-        root.add(
-          fitText(
-            this.add
-              .text(rx, y + 40, t('+約{n}', { n: num(a.gain) }), textStyle(28, '#3a8a3a'))
-              .setOrigin(0.5)
-              .setStroke('#fff6d0', 4),
-            colW,
-          ),
-        );
-      if (a.gain > 0 && res.total > 0)
-        root.add(
-          fitText(
-            this.add
-              .text(
-                rx,
-                y + 72,
-                t('（+{pct}%）', { pct: Math.round((a.gain / res.total) * 100) }),
-                inkStyle(18, '#3a8a3a'),
-              )
-              .setOrigin(0.5),
-            colW,
-          ),
-        );
-      if (a.cells.length > 0) {
-        root.add(
-          new Button(
-            this,
-            rx,
-            y + cardH - 34,
-            t('場所を見る'),
-            () => {
-              close();
-              this.flashCells(a.cells);
-            },
-            { width: 170, height: 52, fontSize: 18, skin: 'blue' },
-          ),
-        );
-      }
-    });
-    root.add(
-      new Button(this, W / 2, top + ch - 50, t('閉じる'), close, {
-        width: 230,
-        height: 68,
-        skin: 'gray',
-      }),
-    );
-  }
-
-  /** 診断で示したマスを、しばらく光らせる */
-  private flashCells(cells: readonly number[]): void {
-    const now = this.time.now;
-    for (const c of cells) this.view.glow(c, 0x6ee06a, now, 2500);
-  }
-
-  /** 編成のタブ: 1〜5。今の編成をもう一度押すと名前を変えられる */
-  private buildPresetBar(): void {
-    const save = getSave();
-    const bar = this.presetBar;
+  /** The bar above the board: the board's name and ◀ ▶, or the challenge's name */
+  private buildBoardBar(): void {
+    const bar = this.boardBar;
     bar.removeAll(true);
-    if (this.stackMode) {
-      // Trial: the board to arrange on instead of the presets
-      this.buildBoardBar(bar);
-      return;
-    }
     if (this.challenge) {
-      // 挑戦用の編成: 編成の切り替えの代わりに、名前と「制限に合わせる」
+      // 挑戦用の配置: 盤面の切り替えの代わりに、名前と「制限に合わせる」（いつも標準の盤面）
       const label = this.add
         .text(
           24,
@@ -716,51 +514,11 @@ export class LoadoutScene extends Phaser.Scene {
       );
       return;
     }
-    const w = 54;
-    save.presets.forEach((p, i) => {
-      const x = 24 + i * (w + 6);
-      const on = i === save.activePreset;
-      const bg = this.add
-        .nineslice(
-          x + w / 2,
-          0,
-          on ? SKIN.tabOn : SKIN.tab,
-          undefined,
-          w,
-          52,
-          SLICE.tab,
-          SLICE.tab,
-          14,
-          14,
-        )
-        .setInteractive({ useHandCursor: true });
-      bindTap(bg, () => {
-        sfx('click');
-        if (on) this.renamePreset(i);
-        else this.changePreset(i);
-      });
-      bar.add(bg);
-      bar.add(
-        this.add
-          .text(
-            x + w / 2,
-            -2,
-            `${i + 1}`,
-            textStyle(24, on ? '#fff6d0' : p.loadout ? COLORS.text : COLORS.textDim),
-          )
-          .setOrigin(0.5),
-      );
-    });
-    const name = presetName(save, save.activePreset);
-    // 名前は「戻す」ボタンの手前まで（長い名前は縮める）
-    const nameX = 24 + 5 * (w + 6) + 4;
-    const label = this.add.text(nameX, -2, `${name} ✎`, textStyle(22, '#ffe27a')).setOrigin(0, 0.5);
-    fitText(label, W - 206 - 53 - 8 - nameX);
-    bar.add(label);
+    this.buildBoardSwitch(bar);
   }
 
-  /** Trial: the board's name and trait, with ◀ ▶ to go through the owned boards */
-  private buildBoardBar(bar: Phaser.GameObjects.Container): void {
+  /** The board's name and trait, with ◀ ▶ to go through the owned boards */
+  private buildBoardSwitch(bar: Phaser.GameObjects.Container): void {
     const save = getSave();
     const owned = ownedBoards(save);
     const def = getBoard(save.loadout.board);
@@ -775,7 +533,7 @@ export class LoadoutScene extends Phaser.Scene {
     const step = (d: number) => {
       const next = owned[(at + d + owned.length) % owned.length]!;
       sfx('click');
-      if (!switchTrialBoard(getSave(), next.id)) return;
+      if (!switchBoard(getSave(), next.id)) return;
       persist();
       this.scene.restart();
     };
@@ -801,20 +559,6 @@ export class LoadoutScene extends Phaser.Scene {
     }
   }
 
-  private changePreset(i: number): void {
-    const save = getSave();
-    if (!switchPreset(save, i)) return;
-    persist();
-    // 別の編成の並べ方には戻さない
-    this.undoStack = [];
-    this.lastSnapshot = JSON.stringify(save.loadout);
-    this.focus = null;
-    this.selected = null;
-    this.buildPresetBar();
-    this.refresh();
-    this.showToastLine(t('{name} に切り替えました', { name: presetName(save, i) }));
-  }
-
   /** 制限に合わない装備を、同じ種類で出口の向きが近いものに入れ替える（最適にはしない） */
   private fitChallenge(): void {
     if (!this.challenge) return;
@@ -837,21 +581,6 @@ export class LoadoutScene extends Phaser.Scene {
     );
   }
 
-  private renamePreset(i: number): void {
-    const save = getSave();
-    const now = presetName(save, i);
-    const v =
-      typeof window !== 'undefined' ? window.prompt(t('編成の名前（8文字まで）'), now) : null;
-    if (v === null) return;
-    const name = v.trim().slice(0, 8);
-    if (!name) return;
-    // Keeping the shown default name stores '' so it stays translated in every language
-    save.presets[i]!.name = name === defaultPresetName(i).slice(0, 8) ? '' : name;
-    persist();
-    this.buildPresetBar();
-    this.refresh();
-  }
-
   /** 画面下の一時的なお知らせ */
   /** Under the board, or under the charm slots when they are full size */
   private routeBarY(): number {
@@ -863,7 +592,7 @@ export class LoadoutScene extends Phaser.Scene {
     return h >= 5 ? under + 44 : h >= 4 ? under + 50 : this.charmStrip.bottom + 30;
   }
 
-  /** Trial (charms): choose an edge slot (the charm case replaces the item list) or none */
+  /** Charms: choose an edge slot (the charm case replaces the item list) or none */
   private chooseCharmSlot(slot: number | null): void {
     // The item picked for placing is hidden with the list: forget it, or a tap on a cell would
     // place it unseen
@@ -878,7 +607,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.list.setVisible(slot === null);
   }
 
-  /** Trial (charms): a tap on a slot chooses it; a tap on the chosen one takes its charm off */
+  /** Charms: a tap on a slot chooses it; a tap on the chosen one takes its charm off */
   private tapCharmSlot(slot: number): void {
     sfx('click');
     if (this.charmSlot !== slot) {
@@ -895,7 +624,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Trial (charms): put a charm from the case into the chosen slot */
+  /** Charms: put a charm from the case into the chosen slot */
   private putCharm(c: CharmInstance): void {
     if (this.charmSlot === null) return;
     const save = getSave();
@@ -906,7 +635,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Trial (charms): what a charm does, and selling it (not while it is worn on any board) */
+  /** Charms: what a charm does, and selling it (not while it is worn on any board) */
   private charmDetail(c: CharmInstance): void {
     const def = getCharm(c.defId);
     if (!def) return;
@@ -972,7 +701,7 @@ export class LoadoutScene extends Phaser.Scene {
         this.add.text(30, -18, t('消耗品|slots'), textStyle(18, COLORS.textDim)).setOrigin(0, 0.5),
         92,
       )
-        // Trial (charms): a 5-row board's route bar comes down over this label
+        // Charms: a 5-row board's route bar comes down over this label
         .setVisible(!(this.charmStrip && save.loadout.height >= 5)),
     );
     // 覚えている消耗品のうち、いま枠に入っていないもの（空いた枠にうすく出す）
@@ -1035,12 +764,13 @@ export class LoadoutScene extends Phaser.Scene {
     const prev = this.undoStack.pop();
     if (prev === undefined) return;
     const save = getSave();
-    const have = new Set(save.inventory.map((i) => i.uid));
-    const l = JSON.parse(prev) as Loadout;
-    l.cells = l.cells.map((u) => (u && have.has(u) ? u : null));
-    l.originOrder = l.originOrder.filter((u) => have.has(u));
-    l.consumables = l.consumables.filter((u) => have.has(u));
-    save.loadout = l;
+    // Items sold since then drop out (the item below moves up)
+    save.loadout = restoreStackBoard(
+      JSON.parse(prev) as Loadout,
+      itemMap(save),
+      consumableSlots(save),
+      save.loadout.board ?? 'standard',
+    );
     this.lastSnapshot = JSON.stringify(save.loadout);
     this.selected = null;
     persist();
@@ -1055,7 +785,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.refresh();
   }
 
-  /** Trial: put an item on a cell of the stacked board (an occupied cell stacks it on top) */
+  /** Put an item on a cell of the board (an occupied cell stacks it on top) */
   private putOnStack(uid: string, cell: number): void {
     const save = getSave();
     const r = stackPut(save.loadout, itemMap(save), uid, cell);
@@ -1069,8 +799,8 @@ export class LoadoutScene extends Phaser.Scene {
   }
 
   /**
-   * Trial: a cell's stack, top first (it rings last and hits hardest). Each item can move up or
-   * down or come off; tapping its icon shows the item
+   * A cell's stack, top first (it rings last and hits hardest). Each item can move up or down or
+   * come off; tapping its icon shows the item
    */
   private openStackPanel(cell: number): void {
     const save = getSave();
@@ -1180,36 +910,10 @@ export class LoadoutScene extends Phaser.Scene {
     );
   }
 
-  /** おまかせ: lay out the gear by the simple rule (戻す brings the previous layout back) */
-  private applyAuto(): void {
-    const save = getSave();
-    const next = autoLayout(save.loadout, itemMap(save));
-    if (JSON.stringify(next) === JSON.stringify(save.loadout)) return;
-    save.loadout = next;
-    this.selected = null;
-    this.commit();
-  }
-
   private confirmReset(): void {
     const save = getSave();
-    const placed = save.loadout.cells.filter(Boolean).length + save.loadout.consumables.length;
-    // Without the おまかせ button (no room for it), offer it here
-    const auto =
-      !this.autoBtn && !this.challenge && !this.stackMode
-        ? { label: t('おまかせ'), onTap: () => this.applyAuto(), skin: 'green' as const }
-        : undefined;
-    if (placed === 0) {
-      if (auto)
-        confirmDialog(
-          this,
-          t('おまかせ'),
-          t('持ち物から、おまかせで並べます。'),
-          t('おまかせ'),
-          () => this.applyAuto(),
-          'green',
-        );
-      return;
-    }
+    const placed = boardUids(save.loadout).length + save.loadout.consumables.length;
+    if (placed === 0) return;
     confirmDialog(
       this,
       t('全部外す'),
@@ -1224,7 +928,6 @@ export class LoadoutScene extends Phaser.Scene {
         this.commit();
       },
       'red',
-      auto,
     );
   }
 
@@ -1259,9 +962,10 @@ export class LoadoutScene extends Phaser.Scene {
         label: t('外す'),
         skin: 'red',
         onTap: () => {
-          save.loadout = this.stackMode
-            ? stackTake(save.loadout, items, it.uid)
-            : removeItem(save.loadout, items, it.uid);
+          save.loadout =
+            where === 'grid'
+              ? stackTake(save.loadout, items, it.uid)
+              : removeItem(save.loadout, items, it.uid);
           this.commit();
         },
       });
@@ -1304,7 +1008,7 @@ export class LoadoutScene extends Phaser.Scene {
 
   private setupGridInput(): void {
     // バックパックのマス: タップ（能力の詳細／選択中を置く）、ドラッグ（移動・外す）
-    // Only as wide as the grid: the charm row slots left of it take their own taps (trial)
+    // Only as wide as the grid: the charm slots left of it take their own taps
     const zone = this.add
       .zone(
         this.view.left,
@@ -1318,24 +1022,16 @@ export class LoadoutScene extends Phaser.Scene {
       const save = getSave();
       const cell = this.view.cellAt(p.x, p.y);
       if (cell < 0) return;
-      // Trial: the selected item goes on the cell (an occupied cell stacks it on top)
+      // The selected item goes on the cell (an occupied cell stacks it on top)
       const sel = this.selected;
-      if (this.stackMode && sel && getItemDef(sel.defId).kind !== 'consumable') {
+      if (sel && getItemDef(sel.defId).kind !== 'consumable') {
         this.selected = null;
         this.putOnStack(sel.uid, cell);
         return;
       }
       const uid = save.loadout.cells[cell];
       const it = uid ? save.inventory.find((i) => i.uid === uid) : undefined;
-      if (!it) {
-        if (this.selected && getItemDef(this.selected.defId).kind !== 'consumable') {
-          save.loadout = placeItem(save.loadout, itemMap(save), this.selected.uid, cell);
-          this.selected = null;
-          this.commit();
-        }
-        return;
-      }
-      this.pressGrid(it, cell, -1, p);
+      if (it) this.pressGrid(it, cell, -1, p);
     });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.drag) return;
@@ -1369,8 +1065,8 @@ export class LoadoutScene extends Phaser.Scene {
       long.remove();
       cleanup();
       if (moved || done) return;
-      // Trial: a tap on the stacked board shows the cell's stack
-      if (this.stackMode && cell >= 0) {
+      // A tap on the board shows the cell's stack
+      if (cell >= 0) {
         this.openStackPanel(cell);
         return;
       }
@@ -1413,21 +1109,15 @@ export class LoadoutScene extends Phaser.Scene {
         save.loadout = setConsumable(save.loadout, slot, d.item.uid, consumableSlots(save));
       else if (d.fromSlot >= 0) save.loadout = removeItem(save.loadout, items, d.item.uid);
       else return;
-    } else if (this.stackMode) {
-      // Trial: a cell's stack moves as a whole (swapping with the stack there); from storage
-      // the item goes on the cell; dragged off the board the whole stack comes off
+    } else {
+      // A cell's stack moves as a whole (swapping with the stack there); from storage the item
+      // goes on the cell; dragged off the board the whole stack comes off
       if (cell >= 0 && d.fromCell >= 0) save.loadout = stackMove(save.loadout, d.fromCell, cell);
       else if (cell >= 0) return this.putOnStack(d.item.uid, cell);
       else if (d.fromCell >= 0)
         for (const u of stackAt(save.loadout, d.fromCell))
           save.loadout = stackTake(save.loadout, items, u);
       else return;
-    } else if (cell >= 0) {
-      save.loadout = placeItem(save.loadout, items, d.item.uid, cell);
-    } else if (d.fromCell >= 0) {
-      save.loadout = removeItem(save.loadout, items, d.item.uid); // グリッド外へドラッグで外す
-    } else {
-      return;
     }
     this.commit();
   }
@@ -1455,7 +1145,7 @@ export function sellOverflow(scene: Phaser.Scene): void {
   );
 }
 
-/** Trial: why an item cannot go on that cell of the stacked board (depth: items per cell) */
+/** Why an item cannot go on that cell of the board (depth: items per cell) */
 function stackBlockText(b: StackBlock, depth: number): string {
   return b === 'group'
     ? t('同じ装備だけ重ねられます')

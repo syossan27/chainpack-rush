@@ -166,15 +166,10 @@ export const UI: Dict = {
   まだありません: 'Nada ainda',
   ロック中: 'Travado',
   '売る {price}G': 'Vender {price}G',
-  編成で使っている装備: 'Item Usado em Conjunto',
-  '{presets}で使っています。\n売ると、その編成のマスは空きになります':
-    'Usado em {presets}.\nSe você vender, a casa dele nesse Conjunto fica vazia.',
   売る: 'Vender',
   アーティファクトを売る: 'Vender Artefato',
   '{item}を{price}Gで売ります': 'Vender {item} por {price}G?',
   ロック中の装備は売れません: 'Itens travados não podem ser vendidos',
-  'ほかの編成で使っている装備です（詳細から売れます）':
-    'Usado em outro Conjunto (dá para vender pelos detalhes)',
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Toque nos itens para escolher (toque de novo para desmarcar, segure para ver detalhes)',
   '自動売却：オフ': 'Autovenda: Desligada',
@@ -221,7 +216,6 @@ export const UI: Dict = {
   '攻撃倍率 ×{mult}': 'Multiplicador de Ataque ×{mult}',
   '出撃 {sec}秒（延長込みの上限 {max}秒）': 'Tempo de Expedição {sec}s (máx. {max}s com extensões)',
   '出撃 {sec}秒': 'Tempo de Expedição {sec}s',
-  '{w}×{h}マス': 'Grade {w}×{h}',
   '{n}枠': 'Espaços: {n}',
   '{n}個': 'Capacidade: {n}',
   最大: 'MÁX',
@@ -242,8 +236,6 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'O tutorial de cada tela vai aparecer de novo',
   振動: 'Vibração',
   '画面揺れ・光': 'Tremor e Flash da Tela',
-  '試作: 倒しても連鎖が続く {state}': 'Protótipo: Corrente continua após abates {state}',
-  '試作: 重ねる盤面 {state}': 'Protótipo: Tabuleiro Empilhado {state}',
   '重ね（下から順に鳴る）': 'Pilha (dispara de baixo para cima)',
   '一番上 ×{m}（矢印はこの装備）': 'Topo ×{m} (as setas são deste item)',
   '×{m}': '×{m}',
@@ -394,8 +386,6 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Desfazer',
   全部外す: 'Tirar Tudo',
-  おまかせ: 'Auto',
-  '持ち物から、おまかせで並べます。': 'Organiza seu equipamento automaticamente.',
   使えない: 'Proibido',
   挑戦へ: 'Desafio',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
@@ -418,23 +408,13 @@ export const UI: Dict = {
   '必殺技|fallback': 'Golpe Especial',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Corrente {step} · Combos {combo}',
   '約{n}・{step}連鎖': '~{n} · Corrente {step}',
-  診断: 'Análise',
-  配置の診断: 'Análise da Mochila',
-  'いまの推定ダメージ 合計 約{n}': 'Estimativa atual: ~{n} no total',
-  'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！':
-    'Nenhuma jogada melhor com o equipamento atual.\nÓtima organização!',
-  '+約{n}': '+~{n}',
-  '（+{pct}%）': '(+{pct}%)',
-  場所を見る: 'Ver Local',
   閉じる: 'Fechar',
   '挑戦「{name}」用': 'Desafio: {name}',
   制限に合わせる: 'Seguir Regras',
-  '{name} に切り替えました': 'Trocado para {name}',
   もう制限に合っています: 'Já segue as regras',
   '制限に合わせました。並べ方を詰めよう': 'Pronto, dentro das regras. Agora refine a organização!',
   '合う装備が足りず、空いたマスがあります':
     'Faltam itens permitidos, então algumas casas ficaram vazias',
-  '編成の名前（8文字まで）': 'Nome do Conjunto (até 8 caracteres)',
   '消耗品|slots': 'Consumíveis',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Última mudança desfeita',
@@ -603,9 +583,6 @@ export const UI: Dict = {
   広告: 'Anúncio',
 
   // src/ui/discovery.ts
-  図鑑に登録: 'Adicionado ao Compêndio',
-  'NEW  必殺技を発見！': 'NOVO  Golpe Especial descoberto!',
-  '【{name}】': '“{name}”',
 
   // src/ui/itemInfo.ts
   上: 'Cima',
@@ -715,7 +692,6 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '"Sortear" muda as saídas para direções aleatórias. Em "Escolher", você escolhe as direções.',
   'この装備をタップして、選んでみよう': 'Toque neste item para selecioná-lo.',
-  '試作: 熟練と閃き {state}': 'Protótipo: Maestria e Lampejo {state}',
   '閃いた必殺技: {names}': 'Lampejo: {names}',
   '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Nv{lv}↑)',
   '{el} +{n}（Lv{lv}）': '{el} +{n} (Nv{lv})',
@@ -723,8 +699,6 @@ export const UI: Dict = {
   '閃いた！ {name}': 'Lampejo! {name}',
   レア順: 'Raridade',
   装備ごと: 'Por item',
-  '試作: レリック {state}': 'Protótipo: Relíquias {state}',
-  '試作: 黄金ゴブリン {state}': 'Protótipo: Goblin Dourado {state}',
   '黄金ゴブリンだ！ 逃げる前に倒せ！': 'Um Goblin Dourado! Derrote-o antes que fuja!',
   '{name}を貼った！': '{name} colocado!',
   '黄金ゴブリンを倒した！': 'Goblin Dourado derrotado!',
@@ -740,7 +714,6 @@ export const UI: Dict = {
   配置画面で切り替えられます: 'Troque de tabuleiro na tela Equipar',
   売れません: 'Não vende',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefatos não podem ser vendidos (um de cada)',
-  '試作: アクセサリー {state}': 'Protótipo: Acessórios {state}',
   '0から遊ぶ（今のセーブは残る）': 'Jogar do zero (seu save fica)',
   元のセーブに戻る: 'Voltar ao seu save',
   '0からやり直す': 'Zerar de novo',
@@ -758,4 +731,9 @@ export const UI: Dict = {
     'Estojo de acessórios cheio: {n} vendido(s) (+{gold}G)',
   '1マスに1つだけ（重ねない）': 'Um item por casa (sem empilhar)',
   重ねた装備がある: 'Há equipamento empilhado',
+  ほかの盤面で使っている装備: 'Item Usado em Outro Tabuleiro',
+  '{boards}で使っています。\n売ると、その盤面から外れます':
+    'Usado em {boards}.\nSe você vender, ele sai desse tabuleiro.',
+  'ほかの盤面で使っている装備です（詳細から売れます）':
+    'Usado em outro tabuleiro (dá para vender pelos detalhes)',
 };

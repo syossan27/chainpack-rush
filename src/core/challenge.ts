@@ -38,7 +38,7 @@ export function challengeStart(forceOpenFrom?: number): number | null {
 export function currentChallenge(now: number, start: number | null): ChallengeNow | null {
   if (start === null || now < start) return null;
   const period = Math.floor((now - start) / (CHALLENGE_DAYS * DAY));
-  const def = CHALLENGES[period % CHALLENGES.length]!;
+  const def = challengeOfPeriod(period);
   const startsAt = start + period * CHALLENGE_DAYS * DAY;
   return {
     def,
@@ -47,6 +47,11 @@ export function currentChallenge(now: number, start: number | null): ChallengeNo
     startsAt,
     endsAt: startsAt + CHALLENGE_DAYS * DAY,
   };
+}
+
+/** The challenge of a period (the same turn as currentChallenge) */
+export function challengeOfPeriod(period: number): ChallengeDef {
+  return CHALLENGES[period % CHALLENGES.length]!;
 }
 
 /** 最初の挑戦（予告に出す） */

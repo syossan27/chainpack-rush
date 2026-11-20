@@ -20,9 +20,7 @@ export const session: {
     challenge?: ChallengeSortie;
     /** ランキングに送れる記録（挑戦・エンドレス） */
     submission?: ScoreSubmission;
-    /** Played under a trial rule: the records are not updated */
-    trial?: boolean;
-    /** Trial (mastery): the run's rings and sparks go to the hero's mastery */
+    /** The run's rings and sparks go to the hero's mastery (ordinary and endless runs) */
     mastery?: boolean;
   } | null;
   /** 次の出撃を挑戦にする（出撃したら空に戻す） */

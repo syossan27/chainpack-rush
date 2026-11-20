@@ -478,21 +478,14 @@ export function recordRun(
   save: SaveData,
   regionId: string,
   result: RunResult,
-  opts: { trial?: boolean } = {},
 ): { unlocked: string | null } {
   save.stats.runs++;
   // 倒した敵から拾ったゴールド
   save.gold += result.stats.gold ?? 0;
-  // A run under a trial rule leaves the max chain / max damage records alone. The region's best
-  // loop (★) and unlocks still count: trials are how the game is played while they are tried
-  if (!opts.trial) {
-    save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
-    save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
-  }
+  save.stats.maxStep = Math.max(save.stats.maxStep, result.stats.maxStep);
+  save.stats.maxDamage = Math.max(save.stats.maxDamage, Math.round(result.stats.maxDamage));
   // エンドレス: 地域の記録・開放とは別に、自己ベスト（到達周回、同じなら合計ダメージ）
   if (regionId === ENDLESS.id) {
-    // Trials are for ordinary runs only: an endless best never comes from one
-    if (opts.trial) return { unlocked: null };
     const e = save.endless;
     const dmg = Math.round(result.stats.totalDamage);
     if (

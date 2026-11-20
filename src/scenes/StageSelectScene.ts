@@ -9,8 +9,6 @@ import { ENDLESS, REGIONS, regionBosses, type RegionDef } from '../data/regions'
 import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
-import { debugMenuAllowed } from '../platform/debug';
-import { sortieBoard } from '../core/trial';
 import { getSave } from '../platform/store';
 import { TopBar } from '../ui/kit/chrome';
 import { Button, Pill, fitText, icon, panel, ribbon, bindTap } from '../ui/kit/widgets';
@@ -72,8 +70,7 @@ export class StageSelectScene extends Phaser.Scene {
       skin: 'blue',
       icon: 'bag',
     });
-    // Trial: a run on the stacked board needs an origin stone there
-    const block = sortieBlock(save, sortieBoard(save, debugMenuAllowed(), session.regionId ?? ''));
+    const block = sortieBlock(save);
     // Shared by the button and the tutorial's action step
     const sortie = () => this.scene.start('Run');
     const go = new Button(this, W - 140, H - 80, t('出撃！'), sortie, {

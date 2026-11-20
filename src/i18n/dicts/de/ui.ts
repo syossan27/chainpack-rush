@@ -165,15 +165,10 @@ export const UI: Dict = {
   まだありません: 'Noch keine',
   ロック中: 'Gesperrt',
   '売る {price}G': 'Verkaufen {price}G',
-  編成で使っている装備: 'In einem Set verwendet',
-  '{presets}で使っています。\n売ると、その編成のマスは空きになります':
-    'Verwendet in: {presets}.\nBeim Verkauf wird das Feld in diesem Set leer.',
   売る: 'Verkaufen',
   アーティファクトを売る: 'Artefakt verkaufen',
   '{item}を{price}Gで売ります': '{item} für {price}G verkaufen?',
   ロック中の装備は売れません: 'Gesperrte Ausrüstung kann man nicht verkaufen',
-  'ほかの編成で使っている装備です（詳細から売れます）':
-    'In einem anderen Set verwendet (über die Details verkaufbar)',
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Tippe zum Auswählen (nochmal: abwählen, halten: Details)',
   '自動売却：オフ': 'Auto-Verkauf: Aus',
@@ -221,7 +216,6 @@ export const UI: Dict = {
   '攻撃倍率 ×{mult}': 'Angriffsmultiplikator ×{mult}',
   '出撃 {sec}秒（延長込みの上限 {max}秒）': 'Zeitlimit {sec}s (max. {max}s mit Bonuszeit)',
   '出撃 {sec}秒': 'Zeitlimit {sec}s',
-  '{w}×{h}マス': '{w}×{h} Felder',
   '{n}枠': 'Slots: {n}',
   '{n}個': 'Kapazität: {n}',
   最大: 'MAX',
@@ -242,8 +236,6 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Das Tutorial erscheint auf jedem Bildschirm erneut',
   振動: 'Vibration',
   '画面揺れ・光': 'Bildwackeln & Blitze',
-  '試作: 倒しても連鎖が続く {state}': 'Prototyp: Kette zählt nach Kills weiter {state}',
-  '試作: 重ねる盤面 {state}': 'Prototyp: Stapelbrett {state}',
   '重ね（下から順に鳴る）': 'Stapel (löst von unten nach oben aus)',
   '一番上 ×{m}（矢印はこの装備）': 'Oben ×{m} (seine Pfeile führen weiter)',
   '×{m}': '×{m}',
@@ -394,8 +386,6 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Zurück',
   全部外す: 'Alles raus',
-  おまかせ: 'Auto',
-  '持ち物から、おまかせで並べます。': 'Ordnet deine Ausrüstung automatisch an.',
   使えない: 'Verboten',
   挑戦へ: 'Zur Prüfung',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
@@ -418,23 +408,13 @@ export const UI: Dict = {
   '必殺技|fallback': 'Spezialangriff',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Kette {step} · Kombos {combo}',
   '約{n}・{step}連鎖': '~{n} · Kette {step}',
-  診断: 'Analyse',
-  配置の診断: 'Rucksack-Analyse',
-  'いまの推定ダメージ 合計 約{n}': 'Aktuelle Schätzung: ~{n} gesamt',
-  'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！':
-    'Mit deiner Ausrüstung gibt es keine besseren Züge.\nSuper Anordnung!',
-  '+約{n}': '+~{n}',
-  '（+{pct}%）': '(+{pct}%)',
-  場所を見る: 'Anzeigen',
   閉じる: 'Schließen',
   '挑戦「{name}」用': 'Prüfung: {name}',
   制限に合わせる: 'Anpassen',
-  '{name} に切り替えました': 'Gewechselt zu {name}',
   もう制限に合っています: 'Erfüllt die Regeln bereits',
   '制限に合わせました。並べ方を詰めよう': 'An die Regeln angepasst. Jetzt der Feinschliff!',
   '合う装備が足りず、空いたマスがあります':
     'Nicht genug erlaubte Ausrüstung – einige Felder sind leer',
-  '編成の名前（8文字まで）': 'Set-Name (bis zu 8 Zeichen)',
   '消耗品|slots': 'Items',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Letzte Änderung rückgängig gemacht',
@@ -602,9 +582,6 @@ export const UI: Dict = {
   広告: 'Werbung',
 
   // src/ui/discovery.ts
-  図鑑に登録: 'Ins Kompendium eingetragen',
-  'NEW  必殺技を発見！': 'NEU  Spezialangriff entdeckt!',
-  '【{name}】': '„{name}“',
 
   // src/ui/itemInfo.ts
   上: 'Oben',
@@ -713,7 +690,6 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '„Neu würfeln“ dreht die Ausgänge in zufällige Richtungen. Mit „Gezielt“ wählst du die Richtungen selbst.',
   'この装備をタップして、選んでみよう': 'Tippe auf diesen Gegenstand, um ihn auszuwählen.',
-  '試作: 熟練と閃き {state}': 'Prototyp: Meisterschaft & Geistesblitz {state}',
   '閃いた必殺技: {names}': 'Geistesblitz: {names}',
   '{el} +{n}（Lv{lv}↑）': '{el} +{n} (St.{lv}↑)',
   '{el} +{n}（Lv{lv}）': '{el} +{n} (St.{lv})',
@@ -721,8 +697,6 @@ export const UI: Dict = {
   '閃いた！ {name}': 'Geistesblitz! {name}',
   レア順: 'Seltenheit',
   装備ごと: 'Nach Art',
-  '試作: レリック {state}': 'Prototyp: Relikte {state}',
-  '試作: 黄金ゴブリン {state}': 'Prototyp: Goldkobold {state}',
   '黄金ゴブリンだ！ 逃げる前に倒せ！': 'Ein Goldkobold! Besiege ihn, bevor er flieht!',
   '{name}を貼った！': '{name} angebracht!',
   '黄金ゴブリンを倒した！': 'Goldkobold besiegt!',
@@ -740,7 +714,6 @@ export const UI: Dict = {
   売れません: 'Unverkäuflich',
   'アーティファクトは売れません（1種類につき1つ）':
     'Artefakte kann man nicht verkaufen (je eins pro Art)',
-  '試作: アクセサリー {state}': 'Prototyp: Accessoires {state}',
   '0から遊ぶ（今のセーブは残る）': 'Von null spielen (Spielstand bleibt)',
   元のセーブに戻る: 'Zurück zum Spielstand',
   '0からやり直す': 'Null neu starten',
@@ -758,4 +731,9 @@ export const UI: Dict = {
     'Accessoire-Kasten voll: {n} verkauft (+{gold}G)',
   '1マスに1つだけ（重ねない）': 'Ein Gegenstand pro Feld (nicht stapeln)',
   重ねた装備がある: 'Gestapelte Ausrüstung auf dem Brett',
+  ほかの盤面で使っている装備: 'Auf einem anderen Brett verwendet',
+  '{boards}で使っています。\n売ると、その盤面から外れます':
+    'Verwendet auf: {boards}.\nBeim Verkauf verschwindet es von diesem Brett.',
+  'ほかの盤面で使っている装備です（詳細から売れます）':
+    'Auf einem anderen Brett verwendet (über die Details verkaufbar)',
 };

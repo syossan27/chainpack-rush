@@ -164,15 +164,10 @@ export const UI: Dict = {
   まだありません: 'None yet',
   ロック中: 'Locked',
   '売る {price}G': 'Sell {price}G',
-  編成で使っている装備: 'Gear Used in a Set',
-  '{presets}で使っています。\n売ると、その編成のマスは空きになります':
-    'Used in {presets}.\nIf you sell it, its cell in that Set becomes empty.',
   売る: 'Sell',
   アーティファクトを売る: 'Sell Artifact',
   '{item}を{price}Gで売ります': 'Sell {item} for {price}G?',
   ロック中の装備は売れません: "Locked gear can't be sold",
-  'ほかの編成で使っている装備です（詳細から売れます）':
-    'Used in another Set (you can sell it from its details)',
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Tap items to select them (tap again to unselect, hold for details)',
   '自動売却：オフ': 'Auto-Sell: Off',
@@ -220,7 +215,6 @@ export const UI: Dict = {
   '攻撃倍率 ×{mult}': 'Attack Multiplier ×{mult}',
   '出撃 {sec}秒（延長込みの上限 {max}秒）': 'Run Time {sec}s (max {max}s with extensions)',
   '出撃 {sec}秒': 'Run Time {sec}s',
-  '{w}×{h}マス': '{w}×{h} grid',
   '{n}枠': '{n} slots',
   '{n}個': 'Capacity {n}',
   最大: 'MAX',
@@ -241,8 +235,6 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': "Each screen's tutorial will show again",
   振動: 'Vibration',
   '画面揺れ・光': 'Screen Shake & Flash',
-  '試作: 倒しても連鎖が続く {state}': 'Prototype: Chain Carries Over Kills {state}',
-  '試作: 重ねる盤面 {state}': 'Prototype: Stacked Board {state}',
   '重ね（下から順に鳴る）': 'Stack (rings from the bottom up)',
   '一番上 ×{m}（矢印はこの装備）': 'Top ×{m} (its arrows lead on)',
   '×{m}': '×{m}',
@@ -391,8 +383,6 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Undo',
   全部外す: 'Clear All',
-  おまかせ: 'Auto',
-  '持ち物から、おまかせで並べます。': 'Lay out your gear automatically.',
   使えない: 'Not allowed',
   挑戦へ: 'Challenge',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
@@ -415,22 +405,12 @@ export const UI: Dict = {
   '必殺技|fallback': 'Special Move',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Chain {step} · Combos {combo}',
   '約{n}・{step}連鎖': '~{n} · Chain {step}',
-  診断: 'Advice',
-  配置の診断: 'Loadout Advice',
-  'いまの推定ダメージ 合計 約{n}': 'Current estimate: ~{n} total',
-  'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！':
-    'No better moves found with your current gear.\nNice layout!',
-  '+約{n}': '+~{n}',
-  '（+{pct}%）': '(+{pct}%)',
-  場所を見る: 'Show Where',
   閉じる: 'Close',
   '挑戦「{name}」用': 'Challenge: {name}',
   制限に合わせる: 'Fit to Rules',
-  '{name} に切り替えました': 'Switched to {name}',
   もう制限に合っています: 'Already meets the rules',
   '制限に合わせました。並べ方を詰めよう': 'Adjusted to the rules. Now fine-tune the layout!',
   '合う装備が足りず、空いたマスがあります': 'Not enough allowed gear, so some cells are empty',
-  '編成の名前（8文字まで）': 'Set name (up to 8 characters)',
   '消耗品|slots': 'Consumables',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Undid the last change',
@@ -598,9 +578,6 @@ export const UI: Dict = {
   広告: 'Ad',
 
   // src/ui/discovery.ts
-  図鑑に登録: 'Added to Codex',
-  'NEW  必殺技を発見！': 'NEW  Special Move found!',
-  '【{name}】': '“{name}”',
 
   // src/ui/itemInfo.ts
   上: 'Up',
@@ -709,7 +686,6 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '"Reroll" turns the exits in random directions. "Custom" lets you pick the directions.',
   'この装備をタップして、選んでみよう': 'Tap this item to select it.',
-  '試作: 熟練と閃き {state}': 'Prototype: Mastery & Sparks {state}',
   '閃いた必殺技: {names}': 'Sparked: {names}',
   '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Lv{lv}↑)',
   '{el} +{n}（Lv{lv}）': '{el} +{n} (Lv{lv})',
@@ -717,8 +693,6 @@ export const UI: Dict = {
   '閃いた！ {name}': 'Sparked! {name}',
   レア順: 'By rarity',
   装備ごと: 'By gear',
-  '試作: レリック {state}': 'Prototype: Relics {state}',
-  '試作: 黄金ゴブリン {state}': 'Prototype: Golden Goblin {state}',
   '黄金ゴブリンだ！ 逃げる前に倒せ！': 'A Golden Goblin! Beat it before it runs!',
   '{name}を貼った！': '{name} placed!',
   '黄金ゴブリンを倒した！': 'Golden Goblin beaten!',
@@ -734,7 +708,6 @@ export const UI: Dict = {
   配置画面で切り替えられます: 'Switch boards on the Loadout screen',
   売れません: "Can't Sell",
   'アーティファクトは売れません（1種類につき1つ）': "Artifacts can't be sold (one of each)",
-  '試作: アクセサリー {state}': 'Prototype: Accessories {state}',
   '0から遊ぶ（今のセーブは残る）': 'Play from zero (your save stays)',
   元のセーブに戻る: 'Back to your save',
   '0からやり直す': 'Start zero over',
@@ -752,4 +725,9 @@ export const UI: Dict = {
     'Accessory case full: sold {n} (+{gold}G)',
   '1マスに1つだけ（重ねない）': 'One item per cell (no stacking)',
   重ねた装備がある: 'Stacked gear on the board',
+  ほかの盤面で使っている装備: 'Gear Used on Another Board',
+  '{boards}で使っています。\n売ると、その盤面から外れます':
+    'Used on {boards}.\nIf you sell it, it leaves that board.',
+  'ほかの盤面で使っている装備です（詳細から売れます）':
+    'Used on another board (you can sell it from its details)',
 };

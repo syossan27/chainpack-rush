@@ -71,7 +71,11 @@ export function runFeatures(kind: RunKind): RunFeatures {
 }
 
 /** The kind of a sortie (the scarecrow is never one) */
-export function runKindOf(run: { regionId: string; challenge: boolean; demo: boolean }): RunKind {
+export function runKindOf(run: {
+  regionId: string;
+  challenge: boolean;
+  demo: boolean;
+}): Exclude<RunKind, 'dummy'> {
   if (run.challenge) return 'challenge';
   if (run.demo) return 'demo';
   if (run.regionId === ENDLESS.id) return 'endless';

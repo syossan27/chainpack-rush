@@ -165,15 +165,10 @@ export const UI: Dict = {
   まだありません: 'Belum ada',
   ロック中: 'Terkunci',
   '売る {price}G': 'Jual {price}G',
-  編成で使っている装備: 'Perlengkapan Dipakai di Set',
-  '{presets}で使っています。\n売ると、その編成のマスは空きになります':
-    'Dipakai di {presets}.\nKalau dijual, kotaknya di Set itu jadi kosong.',
   売る: 'Jual',
   アーティファクトを売る: 'Jual Artefak',
   '{item}を{price}Gで売ります': 'Jual {item} seharga {price}G?',
   ロック中の装備は売れません: 'Perlengkapan terkunci tak bisa dijual',
-  'ほかの編成で使っている装備です（詳細から売れます）':
-    'Dipakai di Set lain (bisa dijual dari detailnya)',
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Ketuk item untuk memilih (ketuk lagi untuk batal, tahan untuk detail)',
   '自動売却：オフ': 'Jual Otomatis: Mati',
@@ -222,7 +217,6 @@ export const UI: Dict = {
   '出撃 {sec}秒（延長込みの上限 {max}秒）':
     'Waktu Ekspedisi {sec} dtk (maks. {max} dtk dengan tambahan)',
   '出撃 {sec}秒': 'Waktu Ekspedisi {sec} dtk',
-  '{w}×{h}マス': 'Kotak {w}×{h}',
   '{n}枠': '{n} slot',
   '{n}個': 'Kapasitas {n}',
   最大: 'MAKS',
@@ -243,8 +237,6 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Tutorial di tiap layar akan muncul lagi',
   振動: 'Getaran',
   '画面揺れ・光': 'Guncangan & Kilatan Layar',
-  '試作: 倒しても連鎖が続く {state}': 'Prototipe: Rantai berlanjut setelah mengalahkan {state}',
-  '試作: 重ねる盤面 {state}': 'Prototipe: Papan Tumpuk {state}',
   '重ね（下から順に鳴る）': 'Tumpukan (berbunyi dari bawah ke atas)',
   '一番上 ×{m}（矢印はこの装備）': 'Teratas ×{m} (panahnya dari item ini)',
   '×{m}': '×{m}',
@@ -393,8 +385,6 @@ export const UI: Dict = {
   // src/scenes/LoadoutScene.ts
   '↶ 戻す': '↶ Urungkan',
   全部外す: 'Lepas Semua',
-  おまかせ: 'Otomatis',
-  '持ち物から、おまかせで並べます。': 'Atur perlengkapanmu secara otomatis.',
   使えない: 'Dilarang',
   挑戦へ: 'Tantangan',
   '下は倉庫。装備を少し押さえてから、\nバックパックへドラッグして置こう':
@@ -417,24 +407,14 @@ export const UI: Dict = {
   '必殺技|fallback': 'Jurus Spesial',
   '約{n}・{step}連鎖・コンボ{combo}': '~{n} · Rantai {step} · Kombo {combo}',
   '約{n}・{step}連鎖': '~{n} · Rantai {step}',
-  診断: 'Saran',
-  配置の診断: 'Saran Susunan',
-  'いまの推定ダメージ 合計 約{n}': 'Perkiraan sekarang: total ~{n}',
-  'いまの装備では、これ以上の手は見つかりませんでした。\nいい並べ方です！':
-    'Tak ada langkah yang lebih baik dengan perlengkapanmu sekarang.\nSusunan yang bagus!',
-  '+約{n}': '+~{n}',
-  '（+{pct}%）': '(+{pct}%)',
-  場所を見る: 'Lihat Lokasi',
   閉じる: 'Tutup',
   '挑戦「{name}」用': 'Tantangan: {name}',
   制限に合わせる: 'Sesuaikan Aturan',
-  '{name} に切り替えました': 'Beralih ke {name}',
   もう制限に合っています: 'Sudah sesuai aturan',
   '制限に合わせました。並べ方を詰めよう':
     'Sudah disesuaikan dengan aturan. Sekarang sempurnakan susunannya!',
   '合う装備が足りず、空いたマスがあります':
     'Perlengkapan yang diizinkan kurang, jadi ada kotak kosong',
-  '編成の名前（8文字まで）': 'Nama Set (maks. 8 karakter)',
   '消耗品|slots': 'Item Sekali Pakai',
   '自動|refill': 'Auto',
   ひとつ前の並べ方に戻しました: 'Perubahan terakhir dibatalkan',
@@ -604,9 +584,6 @@ export const UI: Dict = {
   広告: 'Iklan',
 
   // src/ui/discovery.ts
-  図鑑に登録: 'Masuk Ensiklopedia',
-  'NEW  必殺技を発見！': 'NEW  Jurus Spesial ditemukan!',
-  '【{name}】': '“{name}”',
 
   // src/ui/itemInfo.ts
   上: 'Atas',
@@ -715,7 +692,6 @@ export const UI: Dict = {
   '「再抽選」は、出口の向きがランダムに。\n「指定」は、好きな向きを選べるよ':
     '"Acak Ulang" mengubah arah jalur secara acak. Dengan "Atur", kamu memilih arahnya sendiri.',
   'この装備をタップして、選んでみよう': 'Ketuk item ini untuk memilihnya.',
-  '試作: 熟練と閃き {state}': 'Prototipe: Penguasaan & Ilham {state}',
   '閃いた必殺技: {names}': 'Ilham: {names}',
   '{el} +{n}（Lv{lv}↑）': '{el} +{n} (Lv{lv}↑)',
   '{el} +{n}（Lv{lv}）': '{el} +{n} (Lv{lv})',
@@ -723,8 +699,6 @@ export const UI: Dict = {
   '閃いた！ {name}': 'Dapat ilham! {name}',
   レア順: 'Kelangkaan',
   装備ごと: 'Per item',
-  '試作: レリック {state}': 'Prototipe: Relik {state}',
-  '試作: 黄金ゴブリン {state}': 'Prototipe: Goblin Emas {state}',
   '黄金ゴブリンだ！ 逃げる前に倒せ！': 'Goblin Emas! Kalahkan sebelum kabur!',
   '{name}を貼った！': '{name} dipasang!',
   '黄金ゴブリンを倒した！': 'Goblin Emas dikalahkan!',
@@ -740,7 +714,6 @@ export const UI: Dict = {
   配置画面で切り替えられます: 'Ganti papan di layar Susun',
   売れません: 'Tak bisa dijual',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefak tak bisa dijual (satu per jenis)',
-  '試作: アクセサリー {state}': 'Prototipe: Aksesori {state}',
   '0から遊ぶ（今のセーブは残る）': 'Main dari nol (save tetap ada)',
   元のセーブに戻る: 'Kembali ke save-mu',
   '0からやり直す': 'Ulang dari nol',
@@ -758,4 +731,9 @@ export const UI: Dict = {
     'Kotak aksesori penuh: {n} dijual (+{gold}G)',
   '1マスに1つだけ（重ねない）': 'Satu per petak (tanpa tumpuk)',
   重ねた装備がある: 'Ada perlengkapan bertumpuk',
+  ほかの盤面で使っている装備: 'Perlengkapan Dipakai di Papan Lain',
+  '{boards}で使っています。\n売ると、その盤面から外れます':
+    'Dipakai di {boards}.\nKalau dijual, perlengkapan ini keluar dari papan itu.',
+  'ほかの盤面で使っている装備です（詳細から売れます）':
+    'Dipakai di papan lain (bisa dijual dari detailnya)',
 };

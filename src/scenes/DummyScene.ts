@@ -5,16 +5,18 @@ import { SIM } from '../config/balance';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../core/combat';
 import { heroStats, itemMap } from '../core/economy';
 import type { ItemInstance, Loadout } from '../core/types';
-import { charmSwitchOn, stackBoardOf, stackSwitchOn } from '../core/trial';
 import { boardCharmSlots } from '../core/charmSave';
+import { activeBoardId } from '../core/boardSave';
+import { runMastery } from '../core/mastery';
+import { featureRules, runFeatures } from '../core/runRules';
 import { getBoard } from '../data/boards';
 import { CharmStrip, charmStepLabel } from '../ui/charmStrip';
 import { REGIONS } from '../data/regions';
 import { sfx, sfxChainStep, sfxCombo } from '../audio/sfx';
-import { debugMenuAllowed, devRage } from '../platform/debug';
+import { devRage } from '../platform/debug';
 import { hapticMedium } from '../platform/haptics';
 import { session } from '../platform/session';
-import { gameSpeed, getSave, persist } from '../platform/store';
+import { gameSpeed, getSave } from '../platform/store';
 import { chainContext, showItemDetail } from '../ui/itemInfo';
 import { BackpackView, unitLabel } from '../ui/backpackView';
 import { Button, panel, ribbon } from '../ui/kit/widgets';
@@ -24,7 +26,6 @@ import { getItemDef } from '../data/items';
 import { ElementFx } from '../ui/elementFx';
 import { getTechnique, type TechniqueDef } from '../data/techniques';
 import { scaleMs, techFxFor } from '../data/techFx';
-import { showDiscovery } from '../ui/discovery';
 import { auraTier } from '../ui/aura';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from '../ui/theme';
 import { t } from '../i18n';
@@ -40,9 +41,9 @@ export class DummyScene extends Phaser.Scene {
   private stats!: Phaser.GameObjects.Text;
   private acc = 0;
   private comboLabel: string[] = [];
-  /** The board to try: the stacked board while that trial switch is on */
+  /** The board to try: the board chosen now */
   private board!: Loadout;
-  /** Trial (charms): the edge slots and the combo meter (null: the switch is off) */
+  /** The charms on the board's edge and the combo meter (null: no charm slots) */
   private charmStrip: CharmStrip | null = null;
 
   constructor() {
@@ -52,12 +53,13 @@ export class DummyScene extends Phaser.Scene {
   create(): void {
     const save = getSave();
     this.items = itemMap(save);
-    this.board = stackSwitchOn(save, debugMenuAllowed()) ? stackBoardOf(save) : save.loadout;
+    this.board = save.loadout;
     this.cameras.main.setBackgroundColor(COLORS.bg);
-    // Trial (charms): the charms on this board's edge build the combo multiplier here too
-    const charms = charmSwitchOn(save, debugMenuAllowed())
-      ? boardCharmSlots(save, this.board.board ?? 'standard')
-      : undefined;
+    // The scarecrow plays by a sortie's rules: charms on the edge, the mastery as it is (it does
+    // not grow here, and no technique sparks)
+    const f = runFeatures('dummy');
+    const charms = f.charms !== 'off' ? boardCharmSlots(save, activeBoardId(save)) : undefined;
+    const rules = featureRules(f);
     this.combat = new Combat({
       seed: 1,
       regionId: session.regionId ?? REGIONS[0]!.id,
@@ -65,6 +67,8 @@ export class DummyScene extends Phaser.Scene {
       items: this.items,
       hero: save ? heroStats(save) : BASE_HERO_STATS,
       mode: 'dummy',
+      mastery: runMastery(save),
+      ...(rules ? { rules } : {}),
       ...(charms ? { charms } : {}),
     });
     // Development only: an angry dummy, to check the angry boss look
@@ -140,12 +144,6 @@ export class DummyScene extends Phaser.Scene {
     const fx = techFxFor(tech?.id);
     const timing = this.field.heroSpecial(tech?.id, p, gameSpeed());
     const save = getSave();
-    if (tech && !save.discoveredTechs.includes(tech.id)) {
-      save.discoveredTechs.push(tech.id);
-      persist();
-      // showDiscovery translates the data key itself
-      showDiscovery(this, tech.name, 190);
-    }
     const burst = () => {
       if (p) {
         if (fx) this.elementFx.technique(fx.impact, p.x, p.y);

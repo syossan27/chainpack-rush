@@ -48,6 +48,14 @@ export function challengeLoadoutOf(save: SaveData, rules: ChallengeRules): Loado
   );
 }
 
+/** 挑戦用の配置を、ふだんの標準の盤面から組み直して保存する（ほかの盤面を選んでいても標準で） */
+export function rebuildChallengeLoadout(save: SaveData, rules: ChallengeRules): Loadout {
+  save.challengeLoadout = null;
+  const l = challengeLoadoutOf(save, rules);
+  save.challengeLoadout = l;
+  return l;
+}
+
 /** 配置画面で挑戦用の配置を編集し始める（ふだんの盤面は、その盤面の配置としてしまっておく） */
 export function enterChallengeEdit(save: SaveData, rules: ChallengeRules): void {
   if (save.editingChallenge) return;
