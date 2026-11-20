@@ -330,8 +330,8 @@ export const DATA: Dict = {
   鉄の盾: 'Escudo de Ferro',
   '連鎖が通ると、終了時に防御値+18。': '+18 de Defesa no fim de cada corrente que passa por aqui.',
   循環の環: 'Anel Ouroboros',
-  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
-    'Espalha a corrente nas 4 direções. Correntes que passam por este anel têm o limite do multiplicador de corrente elevado a ×4.0.',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
+    'Espalha a corrente nas quatro direções. Correntes que passam por este anel crescem ×1,2 por elo até ×4,0 e depois continuam crescendo bastante.',
   竜牙の剣: 'Presa de Dragão',
   '竜を討った剣。ボスへのダメージ×2。': 'A espada que derrotou um dragão. Dano contra chefes ×2.',
   天雷の大槌: 'Malho do Trovão',

@@ -80,8 +80,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'Como o Dano Funciona',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Raridade: Comum ×1, Raro ×1.5, Épico ×2.5, Lendário ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    '• Multiplicador de corrente: ×1.2 por elo, até o limite de ×2.5 no 6º elo (limite de ×4.0 passando pelo Anel Ouroboros)',
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    '• Multiplicador de corrente: ×1,2 por elo até o 6º; depois continua crescendo sem limite (um pouco menos a cada elo). Pelo Anel Ouroboros, cresce ×1,2 por elo até ×4,0',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos: Molhado + Raio = Choque ×3, Óleo + Fogo = Explosão ×2 (atinge também os inimigos próximos), Congelado + Impacto = Estilhaço ×2.5. Mesmo sem combo, inimigos com efeito recebem ×1.2',
   '・強化：拠点の「攻撃倍率」': '• Melhorias: "Multiplicador de Ataque" na Base',
@@ -580,7 +580,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Mesmo dano a mais {n} atrás do alvo',
   連撃: 'Multigolpe',
   会心率: 'Taxa Crítica',
-  連鎖倍率の上限: 'Mult. Máximo',
+  連鎖倍率の伸び: 'Crescimento do multiplicador',
+  '×{v}まで×1.2ずつ': '×1,2 por elo até ×{v}',
   この環を通る連鎖すべて: 'Toda corrente que passa por este anel',
   吸血: 'Roubo de Vida',
   '与えたダメージの{pct}%を回復': 'Cura {pct}% do dano causado',

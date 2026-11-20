@@ -327,8 +327,8 @@ export const DATA: Dict = {
   鉄の盾: 'Iron Shield',
   '連鎖が通ると、終了時に防御値+18。': '+18 Defense at the end of each chain that passes through.',
   循環の環: 'Ouroboros Ring',
-  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
-    'Spreads the chain in all 4 directions. Chains through this ring raise their chain multiplier cap to ×4.0.',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
+    'Spreads the chain in all four directions. Chains through this ring grow ×1.2 per link up to ×4.0, and keep growing a lot after that.',
   竜牙の剣: 'Dragonfang Sword',
   '竜を討った剣。ボスへのダメージ×2。': 'The sword that slew a dragon. Damage to bosses ×2.',
   天雷の大槌: 'Thundermaul',

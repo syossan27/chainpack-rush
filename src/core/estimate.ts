@@ -95,7 +95,7 @@ export function estimateRoute(
       comboMult: combo?.mult ?? (statused ? STATUS.exposedMult : 1),
       upgradeMult: attackMult,
       area: def.area === 'all' ? 'all' : undefined,
-      multCap: plan.multCap,
+      riseTo: plan.riseTo,
     });
     let m = 1 + affixValue(inst, 'sharp') / 100;
     if (s.step <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;

@@ -80,8 +80,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'Calcul des dégâts',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rareté : Commun ×1, Rare ×1.5, Épique ×2.5, Légendaire ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    "• Multiplicateur de chaîne : ×1.2 par maillon, plafonné à ×2.5 au 6e maillon (plafond ×4.0 en passant par l'Anneau d'Ouroboros)",
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    "• Multiplicateur de chaîne : ×1,2 par maillon jusqu'au 6e, puis il continue de croître sans limite (un peu moins à chaque maillon). Par l'Anneau Ouroboros, il croît de ×1,2 par maillon jusqu'à ×4,0",
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos : Mouillé + Foudre = Électrochoc ×3, Huile + Feu = Explosion ×2 (touche aussi les ennemis proches), Gelé + Contondant = Fracas ×2.5. Même sans combo, les ennemis avec une altération subissent ×1.2',
   '・強化：拠点の「攻撃倍率」': "• Améliorations : « Multiplicateur d'attaque » à la Base",
@@ -585,7 +585,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Ennemis touchés derrière la cible : {n}',
   連撃: 'Multi-coups',
   会心率: 'Taux critique',
-  連鎖倍率の上限: 'Plafond du multiplicateur',
+  連鎖倍率の伸び: 'Croissance du multiplicateur',
+  '×{v}まで×1.2ずつ': "×1,2 par maillon jusqu'à ×{v}",
   この環を通る連鎖すべて: 'Toute chaîne qui traverse cet anneau',
   吸血: 'Vol de vie',
   '与えたダメージの{pct}%を回復': 'Soigne {pct}% des dégâts infligés',

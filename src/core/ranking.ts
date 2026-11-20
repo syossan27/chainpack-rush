@@ -30,8 +30,11 @@ import { k, locale, t } from '../i18n';
 import type { RewardBand } from './names';
 import { REGIONS } from '../data/regions';
 
-/** 2 → 3 (2026-11-21): the origin stones became flow stones, so older records replay differently */
-export const SUBMISSION_VERSION = 3;
+/**
+ * 2 → 3 (2026-11-21): the origin stones became flow stones. 3 → 4 (2026-11-21): the chain
+ * multiplier has no cap. Older records replay differently
+ */
+export const SUBMISSION_VERSION = 4;
 
 export type RankMode = 'challenge' | 'endless';
 

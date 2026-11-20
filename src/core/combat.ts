@@ -1249,7 +1249,7 @@ export class Combat {
       reset: eff < (s.step ?? 0),
       hit: eff,
     };
-    const mult = chainMultiplier(eff, c.plan.multCap);
+    const mult = chainMultiplier(eff, c.plan.riseTo);
     if (!s.echo && eff > this.stats.maxStep) this.stats.maxStep = eff;
     // Every ring of attack gear grows its element (a repeated ring is the same ring)
     const rings = this.stats.rings;
@@ -1373,7 +1373,7 @@ export class Combat {
         comboMult: combo?.mult ?? (t.statuses.size > 0 ? STATUS.exposedMult : 1),
         upgradeMult: this.cfg.hero.attackMult,
         area: def.area === 'all' ? 'all' : undefined,
-        multCap: c.plan.multCap,
+        riseTo: c.plan.riseTo,
       });
       const v = this.luck.damageVariance;
       const roll = v > 0 ? 1 + (this.rng.next() * 2 - 1) * v : 1;

@@ -79,8 +79,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'So entsteht Schaden',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Seltenheit: Gewöhnlich ×1, Selten ×1.5, Episch ×2.5, Legendär ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    '• Kettenmultiplikator: ×1.2 pro Glied, ab Glied 6 maximal ×2.5 (durch den Ouroboros-Ring maximal ×4.0)',
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    '• Kettenmultiplikator: ×1,2 pro Glied bis Glied 6, danach wächst er ohne Obergrenze weiter (jedes Glied etwas weniger). Durch den Ouroboros-Ring wächst er ×1,2 pro Glied bis ×4,0',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Kombos: Nass + Blitz = Schock ×3, Öl + Feuer = Explosion ×2 (trifft auch Gegner in der Nähe), Gefroren + Wucht = Zertrümmern ×2.5. Auch ohne Kombo erleiden Gegner mit Status ×1.2.',
   '・強化：拠点の「攻撃倍率」': '• Training: „Angriffsmultiplikator“ in der Basis',
@@ -578,7 +578,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Gleicher Schaden für {n} hinter dem Ziel',
   連撃: 'Mehrfachtreffer',
   会心率: 'Krit-Chance',
-  連鎖倍率の上限: 'Multiplikator-Limit',
+  連鎖倍率の伸び: 'Wachstum des Kettenmultiplikators',
+  '×{v}まで×1.2ずつ': '×1,2 pro Glied bis ×{v}',
   この環を通る連鎖すべて: 'Alle Ketten durch diesen Ring',
   吸血: 'Lebensraub',
   '与えたダメージの{pct}%を回復': 'Heilt {pct}% des verursachten Schadens',

@@ -333,8 +333,8 @@ export const DATA: Dict = {
   鉄の盾: 'Perisai Besi',
   '連鎖が通ると、終了時に防御値+18。': 'Pertahanan +18 di akhir setiap rantai yang melewatinya.',
   循環の環: 'Cincin Siklus',
-  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
-    'Menyebarkan rantai ke 4 arah. Rantai yang melewati cincin ini punya batas pengganda rantai ×4.0.',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
+    'Menyebarkan rantai ke empat arah. Rantai yang lewat cincin ini naik ×1,2 per mata rantai sampai ×4,0, lalu terus naik banyak.',
   竜牙の剣: 'Pedang Taring Naga',
   '竜を討った剣。ボスへのダメージ×2。': 'Pedang yang pernah menumbangkan naga. Damage ke bos ×2.',
   天雷の大槌: 'Palu Halilintar',

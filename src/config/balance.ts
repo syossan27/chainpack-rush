@@ -40,7 +40,10 @@ export const FIELD = {
 export const CHAIN = {
   relayDelay: 0.2,
   multBase: 1.2,
-  multCap: 2.5, // 連鎖倍率の上限（1.2^5≒2.49 まで＝6段目までは仕様どおり）
+  // 連鎖倍率: riseSteps 段目までは multBase ずつ（6段目で 1.2^5≒2.49）、その先は上限なく
+  // ×(段/riseSteps)^tailPower で伸びる（伸びは段々小さく）
+  riseSteps: 6,
+  tailPower: 0.5,
   tailDelay: 0.2, // 最後の発動から連鎖終了まで
   minRelay: 0.05, // 速の起点石などで縮めても、これより速くは伝わらない
 } as const;

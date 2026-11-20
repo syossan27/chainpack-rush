@@ -11,8 +11,8 @@ export interface DamageInput {
   comboMult?: number;
   upgradeMult?: number;
   area?: Area;
-  /** 連鎖倍率の上限（循環の環を通る連鎖は大きい） */
-  multCap?: number;
+  /** 循環の環を通る連鎖: 連鎖倍率が ×1.2 ずつ伸びる上の値 */
+  riseTo?: number;
 }
 
 export function computeDamage(input: DamageInput): number {
@@ -20,7 +20,7 @@ export function computeDamage(input: DamageInput): number {
   const c = input.comboMult ?? 1;
   const u = input.upgradeMult ?? 1;
   const areaMult = input.area === 'all' ? AREA.allMult : 1;
-  return input.atk * r * chainMultiplier(input.step, input.multCap) * c * u * areaMult;
+  return input.atk * r * chainMultiplier(input.step, input.riseTo) * c * u * areaMult;
 }
 
 /** その属性が消費する状態があればコンボを返す */

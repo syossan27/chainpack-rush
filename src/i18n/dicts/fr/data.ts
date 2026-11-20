@@ -331,8 +331,8 @@ export const DATA: Dict = {
   鉄の盾: 'Bouclier de fer',
   '連鎖が通ると、終了時に防御値+18。': '+18 de Défense à la fin de chaque chaîne qui le traverse.',
   循環の環: "Anneau d'Ouroboros",
-  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
-    'Répand la chaîne dans les 4 directions. Les chaînes qui traversent cet anneau voient leur plafond de multiplicateur passer à ×4.0.',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
+    "Propage la chaîne dans les quatre directions. Les chaînes qui passent par cet anneau croissent de ×1,2 par maillon jusqu'à ×4,0, puis continuent de croître fortement.",
   竜牙の剣: 'Croc-de-dragon',
   '竜を討った剣。ボスへのダメージ×2。':
     "L'épée qui a terrassé un dragon. Dégâts contre les boss ×2.",

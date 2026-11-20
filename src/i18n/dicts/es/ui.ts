@@ -80,8 +80,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'Cómo se calcula el daño',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rareza: Común ×1, Raro ×1.5, Épico ×2.5, Legendario ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    '• Multiplicador de cadena: ×1.2 por eslabón, hasta un máximo de ×2.5 en el eslabón 6 (máximo ×4.0 si pasa por el Anillo Uróboros)',
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    '• Multiplicador de cadena: ×1.2 por eslabón hasta el 6.º; después sigue creciendo sin límite (un poco menos cada vez). Por el Anillo Uróboros crece ×1.2 por eslabón hasta ×4.0',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos: Mojado + Rayo = Descarga ×3, Aceite + Fuego = Explosión ×2 (también alcanza a los enemigos cercanos), Congelado + Contundente = Destrozo ×2.5. Aunque no haya combo, los enemigos con estado reciben ×1.2',
   '・強化：拠点の「攻撃倍率」': '• Mejoras: "Multiplicador de ataque" en la Base',
@@ -579,7 +579,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Mismo daño a {n} detrás del objetivo',
   連撃: 'Multigolpe',
   会心率: 'Prob. de crítico',
-  連鎖倍率の上限: 'Multiplicador máx.',
+  連鎖倍率の伸び: 'Crecimiento del multiplicador',
+  '×{v}まで×1.2ずつ': '×1.2 por eslabón hasta ×{v}',
   この環を通る連鎖すべて: 'Toda cadena que pase por este anillo',
   吸血: 'Robo de vida',
   '与えたダメージの{pct}%を回復': 'Cura el {pct}% del daño causado',

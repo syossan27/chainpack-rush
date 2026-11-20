@@ -78,8 +78,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'How Damage Works',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Rarity: Common ×1, Rare ×1.5, Epic ×2.5, Legendary ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    '• Chain multiplier: ×1.2 per link, capped at ×2.5 by link 6 (cap ×4.0 through the Ouroboros Ring)',
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    '• Chain multiplier: ×1.2 per link up to link 6, then it keeps growing with no cap (a little less each link). Through the Ouroboros Ring it grows ×1.2 per link up to ×4.0',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Combos: Wet + Thunder = Shock ×3, Oil + Fire = Explosion ×2 (hits nearby enemies too), Frozen + Blunt = Shatter ×2.5. Even without a combo, enemies with a status take ×1.2',
   '・強化：拠点の「攻撃倍率」': '• Upgrades: "Attack Multiplier" at Base',
@@ -574,7 +574,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Same damage to {n} behind the target',
   連撃: 'Multi-hit',
   会心率: 'Critical Rate',
-  連鎖倍率の上限: 'Chain Multiplier Cap',
+  連鎖倍率の伸び: 'Chain multiplier growth',
+  '×{v}まで×1.2ずつ': '×1.2 per link up to ×{v}',
   この環を通る連鎖すべて: 'Every chain through this ring',
   吸血: 'Lifesteal',
   '与えたダメージの{pct}%を回復': 'Heals {pct}% of damage dealt',

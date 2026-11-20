@@ -330,8 +330,8 @@ export const DATA: Dict = {
   鉄の盾: 'Eisenschild',
   '連鎖が通ると、終了時に防御値+18。': '+18 Verteidigung am Ende jeder Kette, die hindurchläuft.',
   循環の環: 'Ouroboros-Ring',
-  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。':
-    'Verteilt die Kette in alle 4 Richtungen. Bei Ketten durch diesen Ring steigt das Limit des Kettenmultiplikators auf ×4.0.',
+  '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
+    'Verbreitet die Kette in alle vier Richtungen. Ketten durch diesen Ring wachsen ×1,2 pro Glied bis ×4,0 und danach weiter stark.',
   竜牙の剣: 'Drachenzahn',
   '竜を討った剣。ボスへのダメージ×2。':
     'Das Schwert, das einen Drachen erschlug. Schaden gegen Bosse ×2.',

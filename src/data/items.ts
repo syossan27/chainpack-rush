@@ -425,9 +425,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     element: 'physical',
     area: 'single',
     atk: 8,
-    multCap: 4,
+    riseTo: 4,
     artifact: { exits: ['up', 'right', 'down', 'left'] },
-    description: '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率の上限が×4.0になる。',
+    description: '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。',
   },
   {
     id: 'dragon_fang',

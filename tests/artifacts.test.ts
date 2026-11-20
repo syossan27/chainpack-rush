@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN, ECONOMY, HERO, LOOT, NO_LUCK, RARITY } from '../src/config/balance';
+import { ECONOMY, HERO, LOOT, NO_LUCK, RARITY } from '../src/config/balance';
+import { chainMultiplier } from '../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import {
   canReorient,
@@ -90,7 +91,7 @@ describe('アーティファクト', () => {
     expect(it.affixes).toBeUndefined();
   });
 
-  it('循環の環: 通る連鎖は連鎖倍率の上限が ×4.0', () => {
+  it('循環の環: 通る連鎖は ×4.0 まで ×1.2 ずつ伸びる', () => {
     const row = (withRing: boolean): Placed[] => [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
       ...[1, 2, 3, 4, 5, 6].map((x) => ({
@@ -117,8 +118,10 @@ describe('アーティファクト', () => {
           .filter((e) => e.type === 'step')
           .map((e) => (e.type === 'step' ? e.mult : 0)),
       );
-    expect(maxMult(false)).toBeCloseTo(CHAIN.multCap);
-    expect(maxMult(true)).toBeGreaterThan(CHAIN.multCap + 1);
+    // 13 sword steps: no cap any more, and the ring grows faster up to ×4.0
+    expect(maxMult(false)).toBeCloseTo(chainMultiplier(13));
+    expect(maxMult(true)).toBeCloseTo(chainMultiplier(13, 4));
+    expect(maxMult(true)).toBeGreaterThan(maxMult(false) + 1);
   });
 
   it('竜牙の剣はボスに×2、賢者の石は3つの状態をまとめて付ける', () => {

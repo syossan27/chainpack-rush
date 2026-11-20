@@ -79,8 +79,8 @@ export const UI: Dict = {
   ダメージの決まり方: 'Cara Damage Dihitung',
   '・レアリティ：コモン×1、レア×1.5、エピック×2.5、レジェンド×4':
     '• Kelangkaan: Biasa ×1, Langka ×1.5, Epik ×2.5, Legendaris ×4',
-  '・連鎖倍率：1連鎖ごとに×1.2、6連鎖目で上限×2.5（循環の環を通ると上限×4.0）':
-    '• Pengganda rantai: ×1.2 per mata rantai, maksimal ×2.5 di mata rantai ke-6 (maks. ×4.0 lewat Cincin Siklus)',
+  '・連鎖倍率：6連鎖目までは1連鎖ごとに×1.2。その先も上限なく伸び続ける（伸びは少しずつ小さく）。循環の環を通ると×4.0まで×1.2ずつ':
+    '• Pengali rantai: ×1,2 per mata rantai sampai ke-6, lalu terus naik tanpa batas (sedikit lebih kecil tiap mata rantai). Lewat Cincin Ouroboros naik ×1,2 per mata rantai sampai ×4,0',
   '・コンボ：濡れ＋雷で感電×3、油＋炎で爆発×2（周りも巻き込む）、凍結＋打撃で粉砕×2.5。コンボでなくても、状態が付いた敵には×1.2':
     '• Kombo: Basah + Petir = Setrum ×3, Minyak + Api = Ledakan ×2 (musuh di sekitar ikut kena), Beku + Hantam = Hancur ×2.5. Meski bukan kombo, musuh yang terkena efek status menerima ×1.2',
   '・強化：拠点の「攻撃倍率」': '• Peningkatan: "Pengganda Serangan" di Markas',
@@ -580,7 +580,8 @@ export const UI: Dict = {
   '狙いの後ろ {n}体にも同じダメージ': 'Damage sama ke {n} musuh di belakang target',
   連撃: 'Serangan Beruntun',
   会心率: 'Peluang Kritikal',
-  連鎖倍率の上限: 'Batas Pengganda Rantai',
+  連鎖倍率の伸び: 'Kenaikan pengali rantai',
+  '×{v}まで×1.2ずつ': '×1,2 per mata rantai sampai ×{v}',
   この環を通る連鎖すべて: 'Semua rantai yang melewati cincin ini',
   吸血: 'Serap Darah',
   '与えたダメージの{pct}%を回復': 'Memulihkan {pct}% dari damage yang diberikan',

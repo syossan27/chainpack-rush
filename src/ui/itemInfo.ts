@@ -293,8 +293,12 @@ export function showItemDetail(
     if (def.hits && def.hits > 1)
       rows.push([t('連撃'), t('{n}回攻撃（連鎖数は1つ）', { n: def.hits })]);
     if (def.critBonus) rows.push([t('会心率'), `+${Math.round(def.critBonus * 100)}%`]);
-    if (def.multCap)
-      rows.push([t('連鎖倍率の上限'), `×${def.multCap.toFixed(1)}`, t('この環を通る連鎖すべて')]);
+    if (def.riseTo)
+      rows.push([
+        t('連鎖倍率の伸び'),
+        t('×{v}まで×1.2ずつ', { v: def.riseTo.toFixed(1) }),
+        t('この環を通る連鎖すべて'),
+      ]);
     if (def.bossMult) rows.push([t('ボス特効'), `×${def.bossMult}`]);
     if (def.lifesteal)
       rows.push([

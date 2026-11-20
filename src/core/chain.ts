@@ -29,8 +29,23 @@ const DIR_DELTA: Record<Dir, readonly [number, number]> = {
 /** 時間は整数ミリ秒で扱い、浮動小数の誤差で同時判定がぶれないようにする */
 const MS = 1000;
 
-export function chainMultiplier(step: number, cap: number = CHAIN.multCap): number {
-  return Math.min(cap, ipow(CHAIN.multBase, Math.max(0, step - 1)));
+/**
+ * The chain multiplier at a step. ×1.2 per step up to step 6, then no cap: it keeps growing as
+ * (step / 6)^0.5. `riseTo` (循環の環): ×1.2 per step until that value, then the same kind of
+ * growth from the step that reached it
+ */
+export function chainMultiplier(step: number, riseTo?: number): number {
+  const n = Math.max(1, step);
+  const base = CHAIN.multBase;
+  let knee: number = CHAIN.riseSteps;
+  let top = ipow(base, knee - 1);
+  if (riseTo !== undefined) {
+    knee = 1;
+    while (ipow(base, knee - 1) < riseTo) knee++;
+    top = riseTo;
+  }
+  if (n < knee) return ipow(base, n - 1);
+  return top * Math.pow(n / knee, CHAIN.tailPower);
 }
 
 /**
@@ -181,7 +196,6 @@ export function planChain(
       duration: 0,
       defenseGain: 0,
       maxStep: 0,
-      multCap: CHAIN.multCap,
     };
   return spread(loadout, items, originUid);
 }
@@ -397,12 +411,11 @@ function spread(
     }
   }
 
-  const multCap = Math.max(
-    CHAIN.multCap,
-    ...steps.map((s) => getItemDef(items.get(s.uid)!.defId).multCap ?? 0),
-  );
-  if (multCap !== CHAIN.multCap)
-    for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, multCap);
+  // 循環の環: a ring anywhere in the firing changes the whole plan's growth
+  const rises = steps.flatMap((s) => getItemDef(items.get(s.uid)!.defId).riseTo ?? []);
+  const riseTo = rises.length > 0 ? Math.max(...rises) : undefined;
+  if (riseTo !== undefined)
+    for (const s of steps) if (s.step !== null) s.mult = chainMultiplier(s.step, riseTo);
   return {
     originUid,
     originUids: [originUid],
@@ -410,7 +423,7 @@ function spread(
     duration: (lastMs + Math.round(CHAIN.tailDelay * MS)) / MS,
     defenseGain,
     maxStep,
-    multCap,
+    ...(riseTo !== undefined ? { riseTo } : {}),
   };
 }
 

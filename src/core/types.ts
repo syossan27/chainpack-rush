@@ -54,8 +54,8 @@ export interface ItemDef {
   critBonus?: number; // この装備の会心率に足す（聖剣）
   /** アーティファクト: 滅多に出ない。常にレジェンダリー、出口はこの形で出る（数は固定、向きは鍛冶屋で高額）、追加効果なし */
   artifact?: { exits: Dir[] };
-  /** この装備を通る連鎖は、連鎖倍率の上限がこの値になる（循環の環） */
-  multCap?: number;
+  /** この装備を通る連鎖は、連鎖倍率がこの値まで ×1.2 ずつ伸び、その先も伸びる（循環の環） */
+  riseTo?: number;
   /** ボスへのダメージ倍率（竜牙の剣） */
   bossMult?: number;
   /** バックパックに置いてあれば、連鎖中も無防備にならず、よろめかない（不落の城門） */
@@ -140,6 +140,6 @@ export interface ChainPlan {
   duration: number; // 無防備の長さ
   defenseGain: number;
   maxStep: number;
-  /** 連鎖倍率の上限（通常は CHAIN.multCap） */
-  multCap: number;
+  /** 循環の環を通る発火: 連鎖倍率が ×1.2 ずつ伸びる上の値（通らなければなし） */
+  riseTo?: number;
 }
