@@ -231,33 +231,9 @@ export const DATA: Dict = {
   重い起点石: 'Pedra de Origem Pesada',
   'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
     'Os ataques nas linhas desta Origem causam +20% de dano, mas a corrente passa 0.05s mais devagar.',
-  炎の起点石: 'Pedra de Origem de Fogo',
-  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Fogo causam +15% de dano.',
-  雷の起点石: 'Pedra de Origem de Raio',
-  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Raio causam +15% de dano.',
-  打撃の起点石: 'Pedra de Origem de Impacto',
-  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Impacto causam +15% de dano.',
   盾の起点石: 'Pedra de Origem de Escudo',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Sua proteção dura até a casa {to} da corrente (normalmente {from}). Você só cambaleia depois de sofrer {v}% do HP Máximo numa corrente (normalmente {base}%).',
-  毒の起点石: 'Pedra de Origem de Veneno',
-  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
-    'Nas linhas desta Origem, o Veneno causa +60% de dano por segundo.',
-  吸血の起点石: 'Pedra de Origem Vampírica',
-  'この起点から伸びる線の、吸血で回復する量 +50%。':
-    'Nas linhas desta Origem, o Roubo de Vida cura +50%.',
-  風の起点石: 'Pedra de Origem do Vento',
-  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Vento causam +15% de dano.',
-  光の起点石: 'Pedra de Origem de Luz',
-  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Luz causam +15% de dano.',
-  闇の起点石: 'Pedra de Origem Sombria',
-  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
-    'Nas linhas desta Origem, ataques de Sombra causam +15% de dano.',
   一番槍の起点石: 'Pedra de Origem Ponta de Lança',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Os ataques das primeiras {cells} casas que soam numa corrente causam +{v}% de dano (contado em casas; casas de armadura também contam).',

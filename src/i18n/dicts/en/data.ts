@@ -228,33 +228,9 @@ export const DATA: Dict = {
   重い起点石: 'Heavy Origin Stone',
   'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
     'Attacks on lines from this Origin deal +20% damage, but the chain passes on 0.05s slower.',
-  炎の起点石: 'Fire Origin Stone',
-  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
-    'On lines from this Origin, Fire attacks deal +15% damage.',
-  雷の起点石: 'Thunder Origin Stone',
-  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
-    'On lines from this Origin, Thunder attacks deal +15% damage.',
-  打撃の起点石: 'Blunt Origin Stone',
-  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
-    'On lines from this Origin, Blunt attacks deal +15% damage.',
   盾の起点石: 'Shield Origin Stone',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Your guard lasts until cell {to} of a chain (normally {from}). You get Staggered only after taking {v}% of your Max HP in one chain (normally {base}%).',
-  毒の起点石: 'Poison Origin Stone',
-  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
-    'On lines from this Origin, Poison deals +60% damage per second.',
-  吸血の起点石: 'Vampire Origin Stone',
-  'この起点から伸びる線の、吸血で回復する量 +50%。':
-    'On lines from this Origin, Lifesteal heals +50% more.',
-  風の起点石: 'Wind Origin Stone',
-  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
-    'On lines from this Origin, Wind attacks deal +15% damage.',
-  光の起点石: 'Light Origin Stone',
-  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
-    'On lines from this Origin, Light attacks deal +15% damage.',
-  闇の起点石: 'Dark Origin Stone',
-  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
-    'On lines from this Origin, Dark attacks deal +15% damage.',
   一番槍の起点石: 'Spearhead Origin Stone',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Attacks in the first {cells} cells to ring in a chain deal +{v}% damage (counted in cells; armor cells count too).',

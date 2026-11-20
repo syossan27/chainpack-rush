@@ -231,33 +231,9 @@ export const DATA: Dict = {
   重い起点石: 'Batu Asal Berat',
   'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
     'Serangan di garis dari Asal ini memberi damage +20%, tapi rantai diteruskan 0.05 detik lebih lambat.',
-  炎の起点石: 'Batu Asal Api',
-  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Api memberi damage +15%.',
-  雷の起点石: 'Batu Asal Petir',
-  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Petir memberi damage +15%.',
-  打撃の起点石: 'Batu Asal Hantam',
-  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Hantam memberi damage +15%.',
   盾の起点石: 'Batu Asal Perisai',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Perlindunganmu bertahan sampai petak ke-{to} dalam rantai (biasanya {from}). Kamu baru terhuyung setelah menerima {v}% HP Maks dalam satu rantai (biasanya {base}%).',
-  毒の起点石: 'Batu Asal Racun',
-  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
-    'Di garis dari Asal ini, damage Racun per detik +60%.',
-  吸血の起点石: 'Batu Asal Vampir',
-  'この起点から伸びる線の、吸血で回復する量 +50%。':
-    'Di garis dari Asal ini, pemulihan Serap Darah +50%.',
-  風の起点石: 'Batu Asal Angin',
-  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Angin memberi damage +15%.',
-  光の起点石: 'Batu Asal Cahaya',
-  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Cahaya memberi damage +15%.',
-  闇の起点石: 'Batu Asal Kegelapan',
-  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
-    'Di garis dari Asal ini, serangan Kegelapan memberi damage +15%.',
   一番槍の起点石: 'Batu Asal Ujung Tombak',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Serangan di {cells} petak pertama yang berbunyi dalam rantai memberi damage +{v}% (dihitung per petak; petak pelindung juga dihitung).',

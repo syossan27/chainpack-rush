@@ -131,9 +131,9 @@ const fake = (sub: ScoreSubmission, f: (x: ScoreSubmission) => void) => {
 };
 
 describe('ランキングの記録の確認', () => {
-  it('v2: 挑戦の記録が確認を通る（重ねる標準盤面）。スコアは合計ダメージ', () => {
+  it('v3: 挑戦の記録が確認を通る（重ねる標準盤面）。スコアは合計ダメージ', () => {
     const sub = playChallenge();
-    expect(sub.v).toBe(2);
+    expect(sub.v).toBe(3);
     expect(sub.loadout.board).toBe('standard');
     expect(sub.mastery).toBeNull();
     expect(sub.charms).toBeNull();
@@ -310,6 +310,12 @@ describe('ランキングの記録の確認', () => {
   it('版 1 は受け付けない', () => {
     const sub = playChallenge();
     expect(fake(sub, (x) => (x.v = 1))).toEqual({ ok: false, reason: 'version' });
+  });
+
+  it('記録の版は 3。起点石の効果が変わる前の版 2 は受け付けない', () => {
+    const sub = playChallenge();
+    expect(sub.v).toBe(3);
+    expect(fake(sub, (x) => (x.v = 2))).toEqual({ ok: false, reason: 'version' });
   });
 });
 

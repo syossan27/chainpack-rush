@@ -30,7 +30,8 @@ import { k, locale, t } from '../i18n';
 import type { RewardBand } from './names';
 import { REGIONS } from '../data/regions';
 
-export const SUBMISSION_VERSION = 2;
+/** 2 → 3 (2026-11-21): the origin stones became flow stones, so older records replay differently */
+export const SUBMISSION_VERSION = 3;
 
 export type RankMode = 'challenge' | 'endless';
 

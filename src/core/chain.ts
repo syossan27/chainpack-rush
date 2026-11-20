@@ -104,28 +104,22 @@ export function lineBoost(
   fx: readonly LineEffect[],
   pos: FlowPos,
 ): LineBoost | undefined {
-  const b: LineBoost = { damage: 1, defense: 1, poison: 1, lifesteal: 1 };
+  if (def.kind !== 'attack') return undefined;
+  let damage = 1;
   for (const e of fx) {
-    if (def.kind === 'attack') {
-      b.damage *= 1 + (e.damage ?? 0) / 100;
-      if (e.lead && pos.cellOrder <= e.lead.cells) b.damage *= 1 + e.lead.damage / 100;
-      if (e.far) b.damage *= 1 + (e.far / 100) * pos.dist;
-      if (e.element && e.element === (def.element ?? 'physical'))
-        b.damage *= 1 + (e.elementDamage ?? 0) / 100;
-      if (def.applies === 'poison') b.poison *= 1 + (e.poison ?? 0) / 100;
-      if (def.lifesteal) b.lifesteal *= 1 + (e.lifesteal ?? 0) / 100;
-    } else if (def.kind === 'defense') b.defense *= 1 + (e.defense ?? 0) / 100;
+    damage *= 1 + (e.damage ?? 0) / 100;
+    if (e.lead && pos.cellOrder <= e.lead.cells) damage *= 1 + e.lead.damage / 100;
+    if (e.far) damage *= 1 + (e.far / 100) * pos.dist;
   }
-  return b.damage === 1 && b.defense === 1 && b.poison === 1 && b.lifesteal === 1 ? undefined : b;
+  return damage === 1 ? undefined : { damage };
 }
 
-/** 防御装備が連鎖で通ったときの防御値（盾の起点石の効果込み） */
-export function defenseValue(inst: ItemInstance, line?: LineBoost): number {
+/** 防御装備が連鎖で通ったときの防御値 */
+export function defenseValue(inst: ItemInstance): number {
   return (
     (getItemDef(inst.defId).defense ?? 0) *
     RARITY[inst.rarity].mult *
-    (1 + affixValue(inst, 'sturdy') / 100) *
-    (line?.defense ?? 1)
+    (1 + affixValue(inst, 'sturdy') / 100)
   );
 }
 
@@ -303,7 +297,7 @@ function spread(
       step = count;
       if (count > maxStep) maxStep = count;
     } else if (def.kind === 'defense') {
-      defenseGain += defenseValue(inst, boost) * (stackMult ?? 1);
+      defenseGain += defenseValue(inst) * (stackMult ?? 1);
     }
     steps.push({
       t: tMs / MS,

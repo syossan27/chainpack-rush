@@ -10,7 +10,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     description:
       '連鎖の始まり。攻撃力なし。レアリティで出口の数が決まる（コモン1・レア2・エピック3・レジェンド4）。',
   },
-  // 起点石の種類: この起点から伸びる線に乗った装備にだけ効く（数値は仮）
+  // 起点石の種類: その起点の連鎖に効く（数値は仮）
   {
     id: 'origin_swift',
     name: '速の起点石',
@@ -27,27 +27,6 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     description: 'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。',
   },
   {
-    id: 'origin_fire',
-    name: '炎の起点石',
-    kind: 'origin',
-    line: { element: 'fire', elementDamage: 15 },
-    description: 'この起点から伸びる線の、炎の攻撃はダメージ +15%。',
-  },
-  {
-    id: 'origin_thunder',
-    name: '雷の起点石',
-    kind: 'origin',
-    line: { element: 'thunder', elementDamage: 15 },
-    description: 'この起点から伸びる線の、雷の攻撃はダメージ +15%。',
-  },
-  {
-    id: 'origin_blunt',
-    name: '打撃の起点石',
-    kind: 'origin',
-    line: { element: 'blunt', elementDamage: 15 },
-    description: 'この起点から伸びる線の、打撃の攻撃はダメージ +15%。',
-  },
-  {
     id: 'origin_shield',
     name: '盾の起点石',
     kind: 'origin',
@@ -55,41 +34,6 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     line: { guardCells: 3, staggerRatio: 0.25 },
     description:
       '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。',
-  },
-  {
-    id: 'origin_poison',
-    name: '毒の起点石',
-    kind: 'origin',
-    line: { poison: 60 },
-    description: 'この起点から伸びる線の、毒の毎秒ダメージ +60%。',
-  },
-  {
-    id: 'origin_vamp',
-    name: '吸血の起点石',
-    kind: 'origin',
-    line: { lifesteal: 50 },
-    description: 'この起点から伸びる線の、吸血で回復する量 +50%。',
-  },
-  {
-    id: 'origin_wind',
-    name: '風の起点石',
-    kind: 'origin',
-    line: { element: 'wind', elementDamage: 15 },
-    description: 'この起点から伸びる線の、風の攻撃はダメージ +15%。',
-  },
-  {
-    id: 'origin_light',
-    name: '光の起点石',
-    kind: 'origin',
-    line: { element: 'light', elementDamage: 15 },
-    description: 'この起点から伸びる線の、光の攻撃はダメージ +15%。',
-  },
-  {
-    id: 'origin_dark',
-    name: '闇の起点石',
-    kind: 'origin',
-    line: { element: 'dark', elementDamage: 15 },
-    description: 'この起点から伸びる線の、闇の攻撃はダメージ +15%。',
   },
   // Flow stones (2026-11-21): they change only how the chain flows; {…} in a text is filled by itemDescVars
   {

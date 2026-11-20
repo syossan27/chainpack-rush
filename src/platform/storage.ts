@@ -4,7 +4,7 @@ import {
   SAVE_SLOT_KEY,
   deserializeSave,
   freshStartSave,
-  legacyKeyFor,
+  olderKeysFor,
   pickSaveRaw,
   saveKeyFor,
   serializeSave,
@@ -27,12 +27,14 @@ export async function loadSave(): Promise<SaveData> {
       const { value } = await Preferences.get({ key: SAVE_SLOT_KEY });
       slot = value === 'fresh' ? 'fresh' : 'main';
     }
-    // Version 2 lives under its own key; a version 1 save is read from the old key and moved (the old
-    // key is never written again, so an older build would still find it as it was)
-    const { value } = await Preferences.get({ key: saveKeyFor(slot) });
-    const legacy =
-      value === null ? (await Preferences.get({ key: legacyKeyFor(slot) })).value : null;
-    return deserializeSave(pickSaveRaw(value, legacy));
+    // Each version lives under its own key; an older save is read from its key and moved (an old key
+    // is never written again, so an older build would still find its save as it was)
+    const values: (string | null)[] = [];
+    for (const key of [saveKeyFor(slot), ...olderKeysFor(slot)]) {
+      values.push((await Preferences.get({ key })).value);
+      if (values[values.length - 1] !== null) break;
+    }
+    return deserializeSave(pickSaveRaw(values));
   } catch {
     return deserializeSave(null);
   }
@@ -56,9 +58,10 @@ export function writeSave(save: SaveData): Promise<void> {
 export async function switchSlot(to: SaveSlot, current: SaveData, restart = false): Promise<void> {
   await pending;
   if (to === 'fresh') {
-    const { value } = await Preferences.get({ key: saveKeyFor('fresh') });
-    const { value: legacy } = await Preferences.get({ key: legacyKeyFor('fresh') });
-    if (restart || (value === null && legacy === null)) {
+    let found = false;
+    for (const key of [saveKeyFor('fresh'), ...olderKeysFor('fresh')])
+      if ((await Preferences.get({ key })).value !== null) found = true;
+    if (restart || !found) {
       await Preferences.set({
         key: saveKeyFor('fresh'),
         value: serializeSave(freshStartSave(current)),

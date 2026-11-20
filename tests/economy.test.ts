@@ -45,8 +45,8 @@ describe('save', () => {
     s.gold = 123;
     expect(deserializeSave(serializeSave(s))).toEqual(s);
     expect(deserializeSave('{oops').gold).toBe(0);
-    expect(deserializeSave(JSON.stringify({ ...s, version: 3 })).gold).toBe(0);
-    expect(deserializeSave(null).version).toBe(2);
+    expect(deserializeSave(JSON.stringify({ ...s, version: 4 })).gold).toBe(0);
+    expect(deserializeSave(null).version).toBe(3);
   });
 });
 

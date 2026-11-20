@@ -230,33 +230,9 @@ export const DATA: Dict = {
   重い起点石: "Pierre d'origine lourde",
   'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
     'Les attaques sur les lignes de cette Origine infligent +20% de dégâts, mais la chaîne passe 0.05 s plus lentement.',
-  炎の起点石: "Pierre d'origine de feu",
-  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques de Feu infligent +15% de dégâts.',
-  雷の起点石: "Pierre d'origine de foudre",
-  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques de Foudre infligent +15% de dégâts.',
-  打撃の起点石: "Pierre d'origine contondante",
-  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques contondantes infligent +15% de dégâts.',
   盾の起点石: "Pierre d'origine de bouclier",
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     "Ta protection dure jusqu'à la case {to} d'une chaîne (normalement {from}). Tu n'es sonné qu'après avoir subi {v}% de tes HP max en une chaîne (normalement {base}%).",
-  毒の起点石: "Pierre d'origine de poison",
-  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
-    'Sur les lignes de cette Origine, le Poison inflige +60% de dégâts par seconde.',
-  吸血の起点石: "Pierre d'origine vampire",
-  'この起点から伸びる線の、吸血で回復する量 +50%。':
-    'Sur les lignes de cette Origine, le Vol de vie soigne +50%.',
-  風の起点石: "Pierre d'origine de vent",
-  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques de Vent infligent +15% de dégâts.',
-  光の起点石: "Pierre d'origine de lumière",
-  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques de Lumière infligent +15% de dégâts.',
-  闇の起点石: "Pierre d'origine des ténèbres",
-  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
-    'Sur les lignes de cette Origine, les attaques de Ténèbres infligent +15% de dégâts.',
   一番槍の起点石: "Pierre d'origine fer de lance",
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     "Les attaques des {cells} premières cases qui sonnent dans une chaîne infligent +{v}% de dégâts (compté en cases ; les cases d'armure comptent aussi).",

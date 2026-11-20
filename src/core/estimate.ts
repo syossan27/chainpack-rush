@@ -96,7 +96,7 @@ export function estimateRoute(
     total += hit;
     // 毒: 時間でじわじわ与える分（敵が先に倒れることもあるので半分に見積もる）
     if (def.applies === 'poison') {
-      const dps = hit * POISON.dpsRatio * (s.line?.poison ?? 1);
+      const dps = hit * POISON.dpsRatio;
       total += dps * STATUS.duration * 0.5;
       poisonDps = Math.max(poisonDps, dps);
       layers = Math.max(1, layers);

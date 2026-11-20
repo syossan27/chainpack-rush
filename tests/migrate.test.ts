@@ -93,7 +93,7 @@ describe('セーブの移行（版1 → 版2）', () => {
   it('バッグだけの人: 標準の重ねる盤面が自動で作られ、装備は全部倉庫に残る', () => {
     const s = deserializeSave(v1());
     expect(s.version).toBe(SAVE_VERSION);
-    expect(SAVE_VERSION).toBe(2);
+    expect(SAVE_VERSION).toBe(3);
     expect(s.boards.active).toBe('standard');
     expect(s.loadout.board).toBe('standard');
     expect(s.inventory.map((i) => i.uid).sort()).toEqual(
@@ -103,6 +103,13 @@ describe('セーブの移行（版1 → 版2）', () => {
     );
     expect(s.loadout.originOrder).toHaveLength(1);
     expect(boardUids(s.loadout)).toEqual(expect.arrayContaining(['i3', 'i4', 'i5', 'i6']));
+  });
+
+  it('なくした起点石は、移行のあとで新しい石に置きかわる（吸血 → 一番槍）', () => {
+    const s = deserializeSave(
+      v1({ inventory: inv().map((i) => (i.uid === 'i2' ? { ...i, defId: 'origin_vamp' } : i)) }),
+    );
+    expect(s.inventory.find((i) => i.uid === 'i2')?.defId).toBe('origin_lead');
   });
 
   it('バックパック拡張の返金: Lv0 → 0、Lv1 → 300、Lv3 → 2100。拡張の項目は消える', () => {

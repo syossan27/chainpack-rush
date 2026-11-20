@@ -25,7 +25,7 @@ const item = (
 const items = new Map(
   [
     item('o1', 'origin_stone'),
-    item('o2', 'origin_fire'),
+    item('o2', 'origin_far'),
     item('s1', 'sword'),
     item('s2', 'sword'),
     item('s3', 'dagger'),

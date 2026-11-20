@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { POISON, STATUS } from '../src/config/balance';
 import { planChain } from '../src/core/chain';
 import type { ChainPlan } from '../src/core/types';
-import { BASE_HERO_STATS, Combat } from '../src/core/combat';
-import { estimateRoute } from '../src/core/estimate';
 import { pickDef } from '../src/core/loot';
 import { Rng } from '../src/core/rng';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
@@ -34,30 +31,23 @@ const stepOf = (plan: ChainPlan, uid: string) => plan.steps.find((s) => s.uid ==
 
 describe('起点石の種類', () => {
   it('効くのは、その発火の起点の線だけ（合流の先も、発火した起点の分だけ）', () => {
-    const { loadout, items } = yShape('origin_fire', 'origin_heavy', 'torch');
+    const { loadout, items } = yShape('origin_swift', 'origin_heavy', 'torch');
     const p1 = planChain(loadout, items, 'o1');
     const p2 = planChain(loadout, items, 'o2');
-    // Fire stone line: fire items +15%; heavy stone line: +20%
-    expect(stepOf(p1, 'a').line?.damage).toBeCloseTo(1.15);
+    // Swift stone line: -10%; heavy stone line: +20%
+    expect(stepOf(p1, 'a').line?.damage).toBeCloseTo(0.9);
     expect(stepOf(p2, 'c').line?.damage).toBeCloseTo(1.2);
     // Origins fire one at a time, so the shared part takes the firing origin's stone only
-    expect(stepOf(p1, 'J').line?.damage).toBeCloseTo(1.15);
-    expect(stepOf(p1, 'f').line?.damage).toBeCloseTo(1.15);
+    expect(stepOf(p1, 'J').line?.damage).toBeCloseTo(0.9);
+    expect(stepOf(p1, 'f').line?.damage).toBeCloseTo(0.9);
     expect(stepOf(p2, 'J').line?.damage).toBeCloseTo(1.2);
     expect(stepOf(p1, 'J').origins).toEqual(['o1']);
   });
 
-  it('属性の起点石は、その属性の装備だけに効く', () => {
-    const { loadout, items } = yShape('origin_fire', 'origin_stone', 'sword');
-    const plan = planChain(loadout, items, 'o1');
-    expect(stepOf(plan, 'a').line).toBeUndefined();
-    expect(stepOf(plan, 'J').line).toBeUndefined();
-  });
-
   it('同じ種類の起点石どうしが合流しても、効果は1回分', () => {
-    const { loadout, items } = yShape('origin_fire', 'origin_fire', 'torch');
+    const { loadout, items } = yShape('origin_heavy', 'origin_heavy', 'torch');
     for (const o of ['o1', 'o2'])
-      expect(stepOf(planChain(loadout, items, o), 'J').line?.damage).toBeCloseTo(1.15);
+      expect(stepOf(planChain(loadout, items, o), 'J').line?.damage).toBeCloseTo(1.2);
   });
 
   it('速の起点石は伝わるのが速く、重い起点石は遅い。合流の先も、その発火の起点石の速さ', () => {
@@ -79,55 +69,6 @@ describe('起点石の種類', () => {
     expect(stepOf(s2, 'J').line?.damage).toBeCloseTo(1.2);
   });
 
-  it('毒の起点石: 毒の毎秒ダメージが上がり、見積もりにも入る', () => {
-    const run = (o1: string) => {
-      const { loadout, items } = yShape(o1, 'origin_stone', 'poison_dagger');
-      loadout.originOrder = ['o1'];
-      const c = new Combat({
-        seed: 1,
-        regionId: 'grassland',
-        loadout,
-        items,
-        hero: BASE_HERO_STATS,
-        mode: 'dummy',
-        luck: { critChance: 0, damageVariance: 0 },
-      });
-      c.fireNext();
-      while (c.chain) c.step();
-      return { dps: c.enemies[0]!.poisonDps, plan: planChain(loadout, items, 'o1'), items };
-    };
-    const plain = run('origin_stone');
-    const poison = run('origin_poison');
-    const up = getItemDef('origin_poison').line!.poison! / 100;
-    expect(poison.dps).toBeCloseTo(plain.dps * (1 + up));
-    const term = (r: ReturnType<typeof run>) => estimateRoute(r.plan, r.items, 1).total;
-    // Only the poison part of the estimate grows
-    const ratio = POISON.dpsRatio * STATUS.duration * 0.5;
-    expect(term(poison) - term(plain)).toBeCloseTo(((term(plain) * ratio) / (1 + ratio)) * up);
-  });
-
-  it('吸血の起点石: 吸血で回復する量が上がる', () => {
-    const run = (o1: string) => {
-      const { loadout, items } = yShape(o1, 'origin_stone', 'vampire_sword');
-      loadout.originOrder = ['o1'];
-      const c = new Combat({
-        seed: 1,
-        regionId: 'grassland',
-        loadout,
-        items,
-        hero: BASE_HERO_STATS,
-        mode: 'dummy',
-        luck: { critChance: 0, damageVariance: 0 },
-      });
-      c.hp = 10;
-      c.fireNext();
-      while (c.chain) c.step();
-      return c.hp - 10;
-    };
-    const up = getItemDef('origin_vamp').line!.lifesteal! / 100;
-    expect(run('origin_vamp')).toBeCloseTo(run('origin_stone') * (1 + up));
-  });
-
   it('戦利品: 起点石が出るときは半分がふつうの起点石。ほかの装備の出やすさは変わらない', () => {
     const origins = ITEM_DEFS.filter((d) => d.kind === 'origin' && !d.artifact);
     const rng = new Rng(7);
@@ -142,5 +83,35 @@ describe('起点石の種類', () => {
     const b = new Rng(3);
     for (let i = 0; i < 50; i++) expect(pickDef(a, swords)).toBe(b.pick(swords));
     expect(getItemDef('origin_swift').kind).toBe('origin');
+  });
+
+  it('種類つきは流れの石6種で、残りの半分を等分する', () => {
+    const origins = ITEM_DEFS.filter((d) => d.kind === 'origin' && !d.artifact);
+    expect(
+      origins
+        .filter((d) => d.line)
+        .map((d) => d.id)
+        .sort(),
+    ).toEqual(
+      [
+        'origin_swift',
+        'origin_heavy',
+        'origin_shield',
+        'origin_lead',
+        'origin_echo',
+        'origin_far',
+      ].sort(),
+    );
+    const rng = new Rng(11);
+    const got = new Map<string, number>();
+    const n = 6000;
+    for (let i = 0; i < n; i++) {
+      const id = pickDef(rng, origins).id;
+      got.set(id, (got.get(id) ?? 0) + 1);
+    }
+    for (const d of origins.filter((x) => x.line)) {
+      expect((got.get(d.id) ?? 0) / n, d.id).toBeGreaterThan(0.06);
+      expect((got.get(d.id) ?? 0) / n, d.id).toBeLessThan(0.11);
+    }
   });
 });

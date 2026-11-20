@@ -65,7 +65,6 @@ import type {
   Area,
   ChainPlan,
   ChainStep,
-  LineBoost,
   ConsumableEffect,
   Element,
   ItemDef,
@@ -350,8 +349,6 @@ interface StrikeMods {
   bonus: number;
   /** 初撃: この線の起点 */
   origin: string;
-  /** 起点石の種類（毒・吸血の分） */
-  line?: LineBoost;
   /** The relic on the cell of this gear */
   relic?: RelicId;
   /** The cell of this gear (the charms of its column and row react to it) */
@@ -1153,7 +1150,7 @@ export class Combat {
     // A cut chain counts only the defense items it reached (盾の起点石 included, per step)
     const gain = c.cut
       ? defenseSteps.reduce(
-          (sum, s) => sum + defenseValue(this.cfg.items.get(s.uid)!, s.line) * (s.stackMult ?? 1),
+          (sum, s) => sum + defenseValue(this.cfg.items.get(s.uid)!) * (s.stackMult ?? 1),
           0,
         )
       : c.plan.defenseGain;
@@ -1296,7 +1293,6 @@ export class Combat {
       // 起点石の種類のダメージと、重ねの位置
       bonus: (s.line?.damage ?? 1) * (s.stackMult ?? 1),
       origin: lineOrigin(c.plan, index),
-      line: s.line,
       ...(relic ? { relic } : {}),
       cell: s.cell,
     };
@@ -1427,14 +1423,10 @@ export class Combat {
           // 吸血の牙
           if (mods.relic === 'fang') this.hp = Math.min(this.maxHp, this.hp + dmg * RELIC.fangHeal);
           // 吸血: 与えた分の一部を回復
-          if (def.lifesteal)
-            this.hp = Math.min(
-              this.maxHp,
-              this.hp + dmg * def.lifesteal * (mods.line?.lifesteal ?? 1),
-            );
+          if (def.lifesteal) this.hp = Math.min(this.maxHp, this.hp + dmg * def.lifesteal);
           // 毒: この一撃の一部を、毎秒のダメージにする（強い方を残す）
           if (def.applies === 'poison') {
-            t.poisonDps = Math.max(t.poisonDps, dmg * POISON.dpsRatio * (mods.line?.poison ?? 1));
+            t.poisonDps = Math.max(t.poisonDps, dmg * POISON.dpsRatio);
             t.poisonLayers = Math.max(1, t.poisonLayers);
           }
         }

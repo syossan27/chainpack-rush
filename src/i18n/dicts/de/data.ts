@@ -230,33 +230,9 @@ export const DATA: Dict = {
   重い起点石: 'Schwerer Ursprungsstein',
   'この起点から伸びる線の攻撃はダメージ +20%。そのかわり伝わるのが0.05秒遅い。':
     'Angriffe auf Linien ab diesem Ursprung machen +20% Schaden, dafür wird die Kette 0.05 s langsamer weitergegeben.',
-  炎の起点石: 'Feuer-Ursprungsstein',
-  'この起点から伸びる線の、炎の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Feuer +15% Schaden.',
-  雷の起点石: 'Blitz-Ursprungsstein',
-  'この起点から伸びる線の、雷の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Blitz +15% Schaden.',
-  打撃の起点石: 'Wucht-Ursprungsstein',
-  'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Wucht +15% Schaden.',
   盾の起点石: 'Schild-Ursprungsstein',
   '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
     'Dein Schutz hält bis Feld {to} einer Kette (normalerweise {from}). Du taumelst erst, wenn du in einer Kette {v}% deiner Max. HP erleidest (normalerweise {base}%).',
-  毒の起点石: 'Gift-Ursprungsstein',
-  'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
-    'Auf Linien ab diesem Ursprung macht Gift +60% Schaden pro Sekunde.',
-  吸血の起点石: 'Vampir-Ursprungsstein',
-  'この起点から伸びる線の、吸血で回復する量 +50%。':
-    'Auf Linien ab diesem Ursprung: Heilung durch Lebensraub +50%.',
-  風の起点石: 'Wind-Ursprungsstein',
-  'この起点から伸びる線の、風の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Wind +15% Schaden.',
-  光の起点石: 'Licht-Ursprungsstein',
-  'この起点から伸びる線の、光の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Licht +15% Schaden.',
-  闇の起点石: 'Schatten-Ursprungsstein',
-  'この起点から伸びる線の、闇の攻撃はダメージ +15%。':
-    'Auf Linien ab diesem Ursprung machen Angriffe mit Schatten +15% Schaden.',
   一番槍の起点石: 'Speerspitzen-Ursprungsstein',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Angriffe in den ersten {cells} Feldern, die in einer Kette erklingen, verursachen +{v}% Schaden (in Feldern gezählt; Felder mit Rüstung zählen mit).',

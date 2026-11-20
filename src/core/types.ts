@@ -15,23 +15,13 @@ export const DIRS: readonly Dir[] = ['up', 'right', 'down', 'left'];
 export const RARITIES: readonly Rarity[] = ['common', 'rare', 'epic', 'legendary'];
 
 /**
- * 起点石の種類の効果。その起点から伸びる線に乗った装備にかかる。
- * 合流した本流には、届いた線の効果が全部かかる（同じ種類の起点石は1回だけ）
+ * 起点石の種類の効果: その起点の連鎖の流れだけを変える（属性なし。同じ種類の起点石は1回だけ）
  */
 export interface LineEffect {
   /** 伝わる時間（秒）に足す（速いなら負） */
   relay?: number;
   /** 攻撃装備のダメージ % */
   damage?: number;
-  /** この属性の攻撃装備だけ、ダメージ +elementDamage % */
-  element?: Element;
-  elementDamage?: number;
-  /** 防御装備の防御値 % */
-  defense?: number;
-  /** 毒の毎秒ダメージ % */
-  poison?: number;
-  /** 吸血の回復量 % */
-  lifesteal?: number;
   /** The first `cells` cells to ring (counted like the guard): attack damage +`damage` % */
   lead?: { cells: number; damage: number };
   /** Attack damage +`far` % per cell from the origin along the chain */
@@ -47,9 +37,6 @@ export interface LineEffect {
 /** 線の効果を、その段の装備について掛け算にまとめたもの（1 は効果なし） */
 export interface LineBoost {
   damage: number;
-  defense: number;
-  poison: number;
-  lifesteal: number;
 }
 
 export interface ItemDef {

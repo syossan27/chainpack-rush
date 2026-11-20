@@ -26,31 +26,48 @@ const REMOVED_ITEMS: Record<string, number> = {
   chrono_glass: 1000, // 時渡りの砂時計（起点のアーティファクト。強すぎたため廃止）
 };
 
-export const SAVE_KEY = 'bp30.save.v2';
-export const SAVE_VERSION = 2;
-/** Where version 1 was kept: read once to move it, never written again (an older build still reads it) */
-export const LEGACY_SAVE_KEY = 'bp30.save.v1';
+/**
+ * Origin stones removed on 2026-11-21 (the flow stones replaced them) → the stone each becomes when
+ * a save is read. Only the kind changes: uid, rarity, exits, affixes and lock stay
+ */
+const RENAMED_ITEMS: Record<string, string> = {
+  origin_fire: 'origin_echo',
+  origin_thunder: 'origin_echo',
+  origin_blunt: 'origin_echo',
+  origin_wind: 'origin_far',
+  origin_light: 'origin_far',
+  origin_dark: 'origin_far',
+  origin_poison: 'origin_lead',
+  origin_vamp: 'origin_lead',
+};
+
+export const SAVE_KEY = 'bp30.save.v3';
+export const SAVE_VERSION = 3;
 
 /**
  * Debug (development and trial builds): a second save to play from zero while the real one stays
  * as it is. Which one is in use is stored under SAVE_SLOT_KEY
  */
 export type SaveSlot = 'main' | 'fresh';
-export const FRESH_SAVE_KEY = 'bp30.save.v2.fresh';
-export const LEGACY_FRESH_SAVE_KEY = 'bp30.save.v1.fresh';
+export const FRESH_SAVE_KEY = 'bp30.save.v3.fresh';
 export const SAVE_SLOT_KEY = 'bp30.slot';
 
 export function saveKeyFor(slot: SaveSlot): string {
   return slot === 'fresh' ? FRESH_SAVE_KEY : SAVE_KEY;
 }
 
-export function legacyKeyFor(slot: SaveSlot): string {
-  return slot === 'fresh' ? LEGACY_FRESH_SAVE_KEY : LEGACY_SAVE_KEY;
+/**
+ * Where older versions were kept, newest first: read once to move them, never written again (an
+ * older build still finds its own save as it was)
+ */
+export function olderKeysFor(slot: SaveSlot): string[] {
+  const keys = ['bp30.save.v2', 'bp30.save.v1'];
+  return slot === 'fresh' ? keys.map((k) => `${k}.fresh`) : keys;
 }
 
-/** The data to read: version 2 when there is one, otherwise version 1 (moved as it is read) */
-export function pickSaveRaw(current: string | null, legacy: string | null): string | null {
-  return current ?? legacy;
+/** The data to read: the first save found, the current key first (an older one is moved as it is read) */
+export function pickSaveRaw(values: readonly (string | null)[]): string | null {
+  return values.find((v) => v !== null) ?? null;
 }
 
 export interface SaveData {
@@ -351,23 +368,31 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
   if (!raw) return createInitialSave();
   try {
     const data: unknown = JSON.parse(raw);
-    if (!isObj(data) || (data.version !== SAVE_VERSION && data.version !== 1))
+    if (!isObj(data) || ![1, 2, SAVE_VERSION].includes(data.version as number))
       return createInitialSave();
-    // Version 1 (the bag, trials as switches) is read and then moved to version 2
+    // Version 1 (the bag, trials as switches) is read and then moved to version 2. Version 2 differs
+    // only in the origin stones it may hold (renamed below, as for any version)
     const v1 = data.version === 1;
     const base = createInitialSave();
     if (!isNum(data.gold) || !isNum(data.nextUid)) return base;
     if (!Array.isArray(data.inventory)) return base;
     // 廃止したアイテムは倉庫・配置から外し、売値ぶんのゴールドを返す
     let refund = 0;
-    const inventory = (data.inventory as unknown[]).filter((v) => {
-      const id = isObj(v) ? v.defId : undefined;
-      if (typeof id === 'string' && id in REMOVED_ITEMS) {
-        refund += REMOVED_ITEMS[id]!;
-        return false;
-      }
-      return true;
-    });
+    const inventory = (data.inventory as unknown[])
+      .filter((v) => {
+        const id = isObj(v) ? v.defId : undefined;
+        if (typeof id === 'string' && id in REMOVED_ITEMS) {
+          refund += REMOVED_ITEMS[id]!;
+          return false;
+        }
+        return true;
+      })
+      .map((v) => {
+        const id = isObj(v) ? v.defId : undefined;
+        return typeof id === 'string' && id in RENAMED_ITEMS
+          ? { ...(v as object), defId: RENAMED_ITEMS[id] }
+          : v;
+      });
     if (!inventory.every(validItem)) return base;
     const gold = data.gold + refund;
     const lo = data.loadout;
