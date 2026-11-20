@@ -30,6 +30,12 @@ export function chainCycle(
   return plan.duration + atbFull * waitFactor(pieces, originQuick(plan.originUids, items), rules);
 }
 
+/** Damage per second when the routes fire one after another: all damage ÷ all their time */
+export function routeRate(routes: readonly { total: number; cycle: number }[]): number {
+  const time = routes.reduce((sum, r) => sum + r.cycle, 0);
+  return time > 0 ? routes.reduce((sum, r) => sum + r.total, 0) / time : 0;
+}
+
 export interface RouteEstimate {
   /** 合計ダメージ（期待値） */
   total: number;

@@ -3,7 +3,7 @@ import { CHAIN_RULES, HERO, NO_LUCK } from '../src/config/balance';
 import { boardScore } from '../src/core/autoBoard';
 import { firedPieces, originQuick, simulateChain, waitFactor } from '../src/core/chain';
 import { BASE_HERO_STATS, Combat, type RunConfig } from '../src/core/combat';
-import { chainCycle, estimateRoute } from '../src/core/estimate';
+import { chainCycle, estimateRoute, routeRate } from '../src/core/estimate';
 import type { BoardId } from '../src/data/boards';
 import { getItemDef } from '../src/data/items';
 import { build, type Placed } from './helpers';
@@ -95,5 +95,17 @@ describe('1秒あたりの見積もり', () => {
     const sc = boardScore(b.loadout, b.items);
     expect(Number.isFinite(sc)).toBe(true);
     expect(sc).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('合計の毎秒', () => {
+  it('起点を順に撃つとき: ダメージの合計 ÷ 時間の合計', () => {
+    expect(
+      routeRate([
+        { total: 300, cycle: 2 },
+        { total: 100, cycle: 3 },
+      ]),
+    ).toBeCloseTo(80);
+    expect(routeRate([])).toBe(0);
   });
 });

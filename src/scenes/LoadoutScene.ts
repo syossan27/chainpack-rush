@@ -2,7 +2,7 @@
 import { runTutorial, type CoachStep } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
-import { estimateRoute } from '../core/estimate';
+import { chainCycle, estimateRoute, routeRate } from '../core/estimate';
 import { getTechnique, TECHNIQUES } from '../data/techniques';
 import { otherBoardUse, switchBoard } from '../core/boardSave';
 import { runFeatures } from '../core/runRules';
@@ -475,7 +475,8 @@ export class LoadoutScene extends Phaser.Scene {
     // 推定ダメージ（ふつうの敵1体に撃ったときの期待値。コンボ・追加効果・会心込み）
     const save = getSave();
     const items = itemMap(save);
-    const u = heroStats(save).attackMult;
+    const hero = heroStats(save);
+    const u = hero.attackMult;
     const est = preview.plans.map((p) =>
       estimateRoute(p, items, u, save.loadout.board, this.charmCtx),
     );
@@ -513,6 +514,16 @@ export class LoadoutScene extends Phaser.Scene {
         : (est[this.focus]?.charmPeak ?? 1);
     if (shown && preview.plans.length > 0 && peak > 1)
       summary.text = t('{route}・コンボ ×{m}', { route: summary.text, m: peak.toFixed(1) });
+    // Per second: the chain plus the wait after it (all routes: fired one after another)
+    if (shown && preview.plans.length > 0) {
+      const atbFull = hero.atbTime * (getBoard(save.loadout.board).wait ?? 1);
+      const rates = preview.plans.map((p, k) => ({
+        total: est[k]!.total,
+        cycle: chainCycle(p, items, atbFull),
+      }));
+      const rate = routeRate(this.focus === null ? rates : [rates[this.focus]!]);
+      summary.text = t('{route}・毎秒 約{d}', { route: summary.text, d: num(rate) });
+    }
     this.routeText = this.add
       .text(W - 36, -2, summary.text, textStyle(18, summary.color))
       .setOrigin(1, 0.5);
