@@ -1,7 +1,12 @@
 // npm run playtest: ボットが初期状態から遊び続け、成長の流れ・詰まる場所・使われない要素を集計する
 // 使い方: PLAYERS=30 RUNS=80 npm run playtest  → reports/playtest.md
 //   ENDLESS_RUNS=3: 最後に∞を何回走るか（∞が開いたボットだけ。記録には残さない）
+//   JOBS=n: ボットを n 個の子プロセスに分けて同時に回す（既定: CPU の数 − 1。1 なら分けない）。
+//           ボットは互いに関係しないので、結果は分けないときと同じ
+import { fork } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { MONETIZE, SIM, UPGRADES, type UpgradeId } from '../src/config/balance';
 import { Combat, type EndReason } from '../src/core/combat';
 import {
@@ -64,12 +69,6 @@ interface RunLog {
   bought: UpgradeId[];
 }
 
-const logs: RunLog[] = [];
-const unlockRun: Record<string, number[]> = Object.fromEntries(REGIONS.map((r) => [r.id, []]));
-const placedCount = new Map<string, number>(); // defId → 配置に入った回数
-const ownedCount = new Map<string, number>(); // defId → 持っていた回数
-const dropCount = new Map<string, number>();
-const blocked: string[] = [];
 // Achievement thresholds: the run each bot first got there. Taken from the achievements; ACH_STEP /
 // ACH_DMG (comma-separated) try other thresholds without changing them
 const achList = (env: string | undefined, kind: 'maxStep' | 'maxDamage'): number[] =>
@@ -78,32 +77,57 @@ const achList = (env: string | undefined, kind: 'maxStep' | 'maxDamage'): number
     : ACHIEVEMENTS.flatMap((a) => (a.check.kind === kind ? [a.check.n] : []));
 const ACH_STEP = achList(process.env.ACH_STEP, 'maxStep');
 const ACH_DMG = achList(process.env.ACH_DMG, 'maxDamage');
-const achRun: Record<string, number[]> = {};
 // The max chain / damage each bot has at the runs where the baseline bots first reached each
 // threshold (to see what threshold the new rules reach at the same run)
 const SNAP_RUNS = [6, 12, 13, 75, 121, 239, 465];
-const snaps: Record<number, { step: number[]; dmg: number[] }> = Object.fromEntries(
-  SNAP_RUNS.map((r) => [r, { step: [], dmg: [] }]),
-);
-// Each bot's best chain / damage after its last run (how far the top thresholds can go)
-const stepEnd: number[] = [];
-const dmgEnd: number[] = [];
-// At the end of each bot: mastery levels and techniques learned, then ∞ loops
-const masteryEnd: { top: number; sum: number; learned: number }[] = [];
-const endlessLoops: number[] = [];
-let endlessBots = 0;
 /** ADS=1: 広告のご褒美を使う（戦利品2倍は1日3回、再開は毎ラン1回） */
 const ADS = process.env.ADS === '1';
 const RUNS_PER_DAY = Number(process.env.RUNS_PER_DAY ?? 10);
-let synthTries = 0;
-let synthOk = 0;
-let techTotal = 0;
-let revives = 0;
-let doubles = 0;
-let doublesToday = 0; // 出撃できなくなって止まったボット
-const t0 = Date.now();
 
-for (let p = 0; p < PLAYERS; p++) {
+/** Everything one bot adds to the report (plain data, so a worker process can send it back) */
+interface BotResult {
+  player: number;
+  logs: RunLog[];
+  /** [region, run] for each region this bot opened */
+  unlocks: [string, number][];
+  placed: [string, number][];
+  owned: [string, number][];
+  drops: [string, number][];
+  blocked: string | null;
+  /** [achievement key, run] the first time this bot got there */
+  ach: [string, number][];
+  /** [run, max chain, max damage] at the snapshot runs */
+  snaps: [number, number, number][];
+  stepEnd: number;
+  dmgEnd: number;
+  mastery: { top: number; sum: number; learned: number };
+  /** ∞ loops reached, or null when ∞ was not open */
+  endless: number[] | null;
+  synthTries: number;
+  synthOk: number;
+  techs: number;
+  revives: number;
+  doubles: number;
+}
+
+const bump = (m: Map<string, number>, k: string) => m.set(k, (m.get(k) ?? 0) + 1);
+
+/** Plays one bot from a fresh save. Depends only on `p`, so bots can run in any process */
+function playBot(p: number): BotResult {
+  const logs: RunLog[] = [];
+  const unlocks: [string, number][] = [];
+  const placed = new Map<string, number>();
+  const owned = new Map<string, number>();
+  const drops = new Map<string, number>();
+  const ach: [string, number][] = [];
+  const snaps: [number, number, number][] = [];
+  let blocked: string | null = null;
+  let synthTries = 0;
+  let synthOk = 0;
+  let techTotal = 0;
+  let revives = 0;
+  let doubles = 0;
+  let doublesToday = 0;
   const save = createInitialSave();
   const rng = new Rng(9000 + p);
   const got = new Set<string>();
@@ -119,16 +143,14 @@ for (let p = 0; p < PLAYERS; p++) {
     goldEarned += sellJunk(save); // 組み直しで外れた装備が倉庫に戻るので、あふれたらもう一度売る
     const block = sortieBlock(save);
     if (block) {
-      blocked.push(
-        `ボット${p + 1}: ${run}回目で出撃不可（${block === 'noOrigin' ? '起点を置けない' : '倉庫があふれた'}）`,
-      );
+      blocked = `ボット${p + 1}: ${run}回目で出撃不可（${block === 'noOrigin' ? '起点を置けない' : '倉庫があふれた'}）`;
       break;
     }
     const eqIds = new Set(boardUids(save.loadout));
     for (const it of save.inventory) {
       if (getItemDef(it.defId).kind === 'consumable') continue;
-      ownedCount.set(it.defId, (ownedCount.get(it.defId) ?? 0) + 1);
-      if (eqIds.has(it.uid)) placedCount.set(it.defId, (placedCount.get(it.defId) ?? 0) + 1);
+      bump(owned, it.defId);
+      if (eqIds.has(it.uid)) bump(placed, it.defId);
     }
     const chain = chainSummary(save);
     // 出撃: 開放済みの一番奥の地域。ただしそこで直近5回の平均が1.5周未満なら、ひとつ手前で稼ぐ
@@ -136,7 +158,7 @@ for (let p = 0; p < PLAYERS; p++) {
     const opened = save.progress.unlocked;
     let region = opened[opened.length - 1]!;
     if (opened.length > 1 && run % 10 !== 0) {
-      const recent = logs.filter((l) => l.player === p && l.region === region).slice(-5);
+      const recent = logs.filter((l) => l.region === region).slice(-5);
       const mean = recent.reduce((a, l) => a + l.loop, 0) / Math.max(1, recent.length);
       if (recent.length >= 5 && mean < 1.5) region = opened[opened.length - 2]!;
     }
@@ -174,7 +196,7 @@ for (let p = 0; p < PLAYERS; p++) {
     }
     // 確定: 使った消耗品を消し、戦利品を受け取る
     consumeItems(save, r.usedConsumables);
-    for (const d of r.drops) dropCount.set(d.defId, (dropCount.get(d.defId) ?? 0) + 1);
+    for (const d of r.drops) bump(drops, d.defId);
     acceptLoot(save, r.drops);
     if (r.charms?.length) acceptCharms(save, r.charms);
     // 広告のご褒美: 戦利品2倍（1日 RUNS_PER_DAY 回出撃する想定で、1日の回数まで）
@@ -187,19 +209,16 @@ for (let p = 0; p < PLAYERS; p++) {
       }
     }
     const { unlocked } = recordRun(save, region, r);
-    if (unlocked) unlockRun[unlocked]!.push(run);
+    if (unlocked) unlocks.push([unlocked, run]);
     if (r.stats.rings) recordMastery(save, r.stats.rings, r.stats.sparks ?? []);
     const mark = (key: string) => {
       if (got.has(key)) return;
       got.add(key);
-      (achRun[key] ??= []).push(run);
+      ach.push([key, run]);
     };
     for (const n of ACH_STEP) if (save.stats.maxStep >= n) mark(`step${n}`);
     for (const n of ACH_DMG) if (save.stats.maxDamage >= n) mark(`dmg${n}`);
-    if (snaps[run]) {
-      snaps[run]!.step.push(save.stats.maxStep);
-      snaps[run]!.dmg.push(save.stats.maxDamage);
-    }
+    if (SNAP_RUNS.includes(run)) snaps.push([run, save.stats.maxStep, save.stats.maxDamage]);
     logs.push({
       player: p,
       run,
@@ -226,18 +245,17 @@ for (let p = 0; p < PLAYERS; p++) {
       bought,
     });
   }
-  stepEnd.push(save.stats.maxStep);
-  dmgEnd.push(save.stats.maxDamage);
   // 熟練: 一番高い属性の Lv と、全属性の Lv の合計、覚えた技の数
   const levels = Object.values(save.mastery.points).map((pt) => masteryLevel(pt ?? 0));
-  masteryEnd.push({
+  const mastery = {
     top: Math.max(0, ...levels),
     sum: levels.reduce((a, b) => a + b, 0),
     learned: save.mastery.learned.length,
-  });
+  };
   // ∞: 開いていれば、最後の盤面で何回か走る（記録には残さない）
+  let endless: number[] | null = null;
   if (endlessUnlocked(save)) {
-    endlessBots++;
+    endless = [];
     optimizeBoard(save, rng);
     equipBestCharms(save);
     for (let k = 0; k < ENDLESS_RUNS; k++) {
@@ -248,11 +266,132 @@ for (let p = 0; p < PLAYERS; p++) {
         for (const e of c.drainEvents())
           if (e.type === 'relicOffer') pickRelic(c, cfg.loadout, cfg.items);
       }
-      endlessLoops.push(c.result().reachedLoop);
+      endless.push(c.result().reachedLoop);
     }
   }
   // SAVE_OUT=path: 1体目のボットのセーブを書き出す（画面の点検用）
   if (p === 0 && process.env.SAVE_OUT) writeFileSync(process.env.SAVE_OUT, serializeSave(save));
+  return {
+    player: p,
+    logs,
+    unlocks,
+    placed: [...placed],
+    owned: [...owned],
+    drops: [...drops],
+    blocked,
+    ach,
+    snaps,
+    stepEnd: save.stats.maxStep,
+    dmgEnd: save.stats.maxDamage,
+    mastery,
+    endless,
+    synthTries,
+    synthOk,
+    techs: techTotal,
+    revives,
+    doubles,
+  };
+}
+
+// ---- 並列実行: JOBS 個の子プロセスにボットを分ける（JOBS=1 ならこのプロセスだけで回す） ----
+if (process.env.PLAYTEST_WORKER) {
+  // Child: play each bot the parent sends, send its result back; stop when told (-1)
+  process.on('message', (p: number) => {
+    if (p < 0) process.exit(0);
+    else process.send!(playBot(p));
+  });
+  await new Promise(() => {});
+}
+const JOBS = Math.max(1, Math.min(PLAYERS, Number(process.env.JOBS ?? availableParallelism() - 1)));
+const t0 = Date.now();
+
+async function playAll(): Promise<BotResult[]> {
+  if (JOBS === 1) return Array.from({ length: PLAYERS }, (_, p) => playBot(p));
+  // A queue: each child takes the next bot as soon as it is free (bots differ a lot in length)
+  let next = 0;
+  const results: BotResult[] = [];
+  await Promise.all(
+    Array.from(
+      { length: JOBS },
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const child = fork(fileURLToPath(import.meta.url), [], {
+            execArgv: process.execArgv,
+            env: { ...process.env, PLAYTEST_WORKER: '1' },
+          });
+          let done = false;
+          const feed = () => {
+            if (next < PLAYERS) child.send(next++);
+            else {
+              done = true;
+              child.send(-1);
+            }
+          };
+          child.on('message', (m) => {
+            results.push(m as BotResult);
+            feed();
+          });
+          child.on('error', reject);
+          child.on('exit', (code) =>
+            done ? resolve() : reject(new Error(`playtest worker exited with ${code}`)),
+          );
+          feed();
+        }),
+    ),
+  );
+  return results.sort((a, b) => a.player - b.player);
+}
+
+// Merge in bot order, so the report is the same as playing the bots one after another
+const bots = await playAll();
+const logs: RunLog[] = bots.flatMap((b) => b.logs);
+const unlockRun: Record<string, number[]> = Object.fromEntries(REGIONS.map((r) => [r.id, []]));
+const placedCount = new Map<string, number>(); // defId → 配置に入った回数
+const ownedCount = new Map<string, number>(); // defId → 持っていた回数
+const dropCount = new Map<string, number>();
+const blocked: string[] = [];
+const achRun: Record<string, number[]> = {};
+const snaps: Record<number, { step: number[]; dmg: number[] }> = Object.fromEntries(
+  SNAP_RUNS.map((r) => [r, { step: [], dmg: [] }]),
+);
+// Each bot's best chain / damage after its last run (how far the top thresholds can go)
+const stepEnd: number[] = [];
+const dmgEnd: number[] = [];
+// At the end of each bot: mastery levels and techniques learned, then ∞ loops
+const masteryEnd: { top: number; sum: number; learned: number }[] = [];
+const endlessLoops: number[] = [];
+let endlessBots = 0;
+let synthTries = 0;
+let synthOk = 0;
+let techTotal = 0;
+let revives = 0;
+let doubles = 0;
+const addAll = (m: Map<string, number>, xs: [string, number][]) => {
+  for (const [k, v] of xs) m.set(k, (m.get(k) ?? 0) + v);
+};
+for (const b of bots) {
+  for (const [region, run] of b.unlocks) unlockRun[region]!.push(run);
+  addAll(placedCount, b.placed);
+  addAll(ownedCount, b.owned);
+  addAll(dropCount, b.drops);
+  if (b.blocked) blocked.push(b.blocked);
+  for (const [key, run] of b.ach) (achRun[key] ??= []).push(run);
+  for (const [run, step, dmg] of b.snaps) {
+    snaps[run]!.step.push(step);
+    snaps[run]!.dmg.push(dmg);
+  }
+  stepEnd.push(b.stepEnd);
+  dmgEnd.push(b.dmgEnd);
+  masteryEnd.push(b.mastery);
+  if (b.endless) {
+    endlessBots++;
+    endlessLoops.push(...b.endless);
+  }
+  synthTries += b.synthTries;
+  synthOk += b.synthOk;
+  techTotal += b.techs;
+  revives += b.revives;
+  doubles += b.doubles;
 }
 
 // ---- 集計 ----
