@@ -1,4 +1,4 @@
-// 保存データのスキーマ（Preferences キー: bp30.save.v2。版1は bp30.save.v1 から読んで移す）。
+// 保存データのスキーマ（Preferences キー: bp30.save.v3。版2・版1は bp30.save.v2・bp30.save.v1 から読んで移す）。
 // 読み書き自体は src/platform/storage.ts。
 import { validName } from './names';
 import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';

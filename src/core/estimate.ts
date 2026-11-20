@@ -120,9 +120,10 @@ export function estimateRoute(
     if (charms) {
       // The battle's order: a combo during the attack, then the cell, technique and stack
       if (comboW > 0) charmEvent('combo', s.cell, comboW);
-      if (cellTop(s, charms)) charmEvent('cell', s.cell);
+      // A repeated ring (残響) counts no cell and no stack, as in battle
+      if (!s.echo && cellTop(s, charms)) charmEvent('cell', s.cell);
       if (s.tech) charmEvent('tech', s.cell);
-      if (stackTop(s, charms)) charmEvent('stackTop', s.cell);
+      if (!s.echo && stackTop(s, charms)) charmEvent('stackTop', s.cell);
     }
     if (def.applies) statuses.add(def.applies);
     if (def.appliesAll) for (const st of ['wet', 'oil', 'frozen'] as const) statuses.add(st);

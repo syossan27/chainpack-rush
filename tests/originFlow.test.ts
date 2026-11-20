@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CHAIN_RULES, HERO, NO_LUCK } from '../src/config/balance';
 import { firedPieces, planChain } from '../src/core/chain';
-import type { CharmSlots } from '../src/core/charms';
+import { charmContext, type CharmSlots } from '../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
 import { replayRun, sameResult } from '../src/core/replay';
 import type { ChainPlan, Loadout } from '../src/core/types';
 import { getItemDef, itemDescVars } from '../src/data/items';
+import { DICT_PARTS, type TargetLang } from '../src/i18n/dicts';
 import { build, type Placed } from './helpers';
 
 /** A stacked board: `extra` puts more of the same gear under a placed item (bottom first) */
@@ -239,6 +240,20 @@ describe('残響の起点石', () => {
     expect(echo.c.atb).toBeCloseTo(plain.c.atb);
   });
 
+  it('見積もりのアクセサリーの数えにも、もう一度鳴る分は入らない', () => {
+    const peak = (cfg: RunConfig) =>
+      estimateRoute(
+        planChain(cfg.loadout, cfg.items, 'o'),
+        cfg.items,
+        1,
+        undefined,
+        charmContext(cfg.charms!, cfg.loadout, cfg.items),
+      ).charmPeak;
+    const plain = peak(techRow('origin_stone', counted));
+    expect(plain).toBeGreaterThan(1);
+    expect(peak(techRow('origin_echo', counted))).toBeCloseTo(plain);
+  });
+
   it('よろめいて途切れたら、もう一度は鳴らない', () => {
     const c = new Combat({ ...techRow('origin_echo'), mode: 'dummy', hero: BASE_HERO_STATS });
     c.fireNext();
@@ -354,5 +369,17 @@ describe('盾の起点石', () => {
       v: Math.round(ratio * 100),
       base: Math.round(CHAIN_RULES.staggerRatio * 100),
     });
+  });
+});
+
+describe('一番槍の起点石の訳', () => {
+  // 先駆け (an affix, strong up to the 3rd step) is a different thing with a similar meaning
+  it.each(Object.keys(DICT_PARTS) as TargetLang[])('%s: 先駆けの訳を名前に含まない', (l) => {
+    const data = DICT_PARTS[l].data;
+    const name = data['一番槍の起点石'];
+    const vanguard = data['先駆け'];
+    expect(name).toBeTruthy();
+    expect(vanguard).toBeTruthy();
+    expect(name!).not.toContain(vanguard!);
   });
 });

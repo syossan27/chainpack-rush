@@ -520,7 +520,7 @@ export class Combat {
     return !!it && getItemDef(it.defId).kind === 'origin';
   }
 
-  /** 連鎖中は無防備。ただし起点のあと rules.guardSteps 段目までは守りが残る（next は起点を含む添字） */
+  /** 連鎖中は無防備。ただし起点のあと chain.guardSteps 段目（盾の起点石で延びる）までは守りが残る（next は起点を含む添字） */
   get unguarded(): boolean {
     if (this.guardAll) return false;
     if (this.chain === null) return false;
