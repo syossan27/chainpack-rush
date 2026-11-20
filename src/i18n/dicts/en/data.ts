@@ -238,8 +238,8 @@ export const DATA: Dict = {
   'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
     'On lines from this Origin, Blunt attacks deal +15% damage.',
   盾の起点石: 'Shield Origin Stone',
-  'この起点から伸びる線の、防御装備の防御値 +25%。':
-    'On lines from this Origin, defense items give +25% Defense.',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
+    'Your guard lasts until cell {to} of a chain (normally {from}). You get Staggered only after taking {v}% of your Max HP in one chain (normally {base}%).',
   毒の起点石: 'Poison Origin Stone',
   'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
     'On lines from this Origin, Poison deals +60% damage per second.',

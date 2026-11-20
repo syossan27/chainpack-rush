@@ -32,7 +32,15 @@ import { getRegion, type RegionDef } from '../data/regions';
 import type { RelicId } from '../data/relics';
 import { getBoard, type BoardDef } from '../data/boards';
 import { rollLoop, type LoopLayout } from './layout';
-import { chainMultiplier, defenseValue, firedPieces, lineOrigin, simulateChain } from './chain';
+import {
+  chainMultiplier,
+  defenseValue,
+  firedPieces,
+  flowRules,
+  lineEffects,
+  lineOrigin,
+  simulateChain,
+} from './chain';
 import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
 import {
@@ -327,6 +335,9 @@ interface ActiveChain {
   recall: boolean;
   /** The combo multiplier (×1 at the start of every chain) */
   charmM: number;
+  /** Cells kept guarded after the origin, and the share of max HP that staggers (盾の起点石) */
+  guardSteps: number;
+  staggerRatio: number;
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -519,14 +530,14 @@ export class Combat {
     // Stacked board (trial): counted in cells, a stack is one
     if (this.cfg.loadout.under) {
       const done = this.chain.plan.steps.slice(0, this.chain.next);
-      return firedPieces(done, (u) => this.isOrigin(u)) >= this.rules.guardSteps;
+      return firedPieces(done, (u) => this.isOrigin(u)) >= this.chain.guardSteps;
     }
     // 線を出す起点（先頭にまとめて並ぶ）の分だけずらす。ほかの線が届く起点は途中のマス
     const heads = this.chain.plan.steps.findIndex((s) => s.parentIndex >= 0);
     const origins = heads < 0 ? this.chain.plan.steps.length : heads;
     // Rings repeated by 残響の起点石 come last and are not new pieces
     const repeated = this.chain.plan.steps.slice(0, this.chain.next).filter((s) => s.echo).length;
-    return this.chain.next - repeated > this.rules.guardSteps + Math.max(1, origins) - 1;
+    return this.chain.next - repeated > this.chain.guardSteps + Math.max(1, origins) - 1;
   }
 
   /** The full gauge: the hero's time, × the board's wait (trial) */
@@ -1100,6 +1111,7 @@ export class Combat {
       taken: 0,
       recall: false,
       charmM: 1,
+      ...flowRules(lineEffects(this.cfg.items, plan.originUids), this.rules),
     };
     this.atb = 0;
     this.chainSerial++;
@@ -1727,7 +1739,7 @@ export class Combat {
     const c = this.chain;
     if (c && !c.cut && this.rules.stagger && unguarded) {
       c.taken += dmg;
-      if (c.taken >= this.maxHp * this.rules.staggerRatio) {
+      if (c.taken >= this.maxHp * c.staggerRatio) {
         c.cut = true;
         c.staggered = true;
       }

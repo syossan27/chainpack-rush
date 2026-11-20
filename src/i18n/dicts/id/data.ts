@@ -241,8 +241,8 @@ export const DATA: Dict = {
   'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
     'Di garis dari Asal ini, serangan Hantam memberi damage +15%.',
   盾の起点石: 'Batu Asal Perisai',
-  'この起点から伸びる線の、防御装備の防御値 +25%。':
-    'Di garis dari Asal ini, item pertahanan memberi Pertahanan +25%.',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
+    'Perlindunganmu bertahan sampai petak ke-{to} dalam rantai (biasanya {from}). Kamu baru terhuyung setelah menerima {v}% HP Maks dalam satu rantai (biasanya {base}%).',
   毒の起点石: 'Batu Asal Racun',
   'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
     'Di garis dari Asal ini, damage Racun per detik +60%.',

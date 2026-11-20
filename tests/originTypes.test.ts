@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { POISON, STATUS } from '../src/config/balance';
-import { defenseValue, planChain } from '../src/core/chain';
+import { planChain } from '../src/core/chain';
 import type { ChainPlan } from '../src/core/types';
 import { BASE_HERO_STATS, Combat } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
@@ -77,18 +77,6 @@ describe('起点石の種類', () => {
     expect(stepOf(s2, 'e').t - stepOf(s2, 'J').t).toBeCloseTo(0.25);
     expect(stepOf(s1, 'J').line?.damage).toBeCloseTo(0.9);
     expect(stepOf(s2, 'J').line?.damage).toBeCloseTo(1.2);
-  });
-
-  it('盾の起点石: 線の防御装備の防御値が上がる（連鎖が途中で切れても、通った分にかかる）', () => {
-    const plain = yShape('origin_stone', 'origin_stone', 'wood_shield');
-    const shield = yShape('origin_shield', 'origin_stone', 'wood_shield');
-    const base = planChain(plain.loadout, plain.items, 'o1');
-    const up = planChain(shield.loadout, shield.items, 'o1');
-    expect(up.defenseGain).toBeCloseTo(base.defenseGain * 1.25);
-    // The cut path adds defenseValue per reached step
-    const a = stepOf(up, 'a');
-    const inst = shield.items.get('a')!;
-    expect(defenseValue(inst, a.line)).toBeCloseTo(defenseValue(inst) * 1.25);
   });
 
   it('毒の起点石: 毒の毎秒ダメージが上がり、見積もりにも入る', () => {

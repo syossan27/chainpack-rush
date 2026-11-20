@@ -240,8 +240,8 @@ export const DATA: Dict = {
   'この起点から伸びる線の、打撃の攻撃はダメージ +15%。':
     'Sur les lignes de cette Origine, les attaques contondantes infligent +15% de dégâts.',
   盾の起点石: "Pierre d'origine de bouclier",
-  'この起点から伸びる線の、防御装備の防御値 +25%。':
-    'Sur les lignes de cette Origine, les objets de défense donnent +25% de Défense.',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
+    "Ta protection dure jusqu'à la case {to} d'une chaîne (normalement {from}). Tu n'es sonné qu'après avoir subi {v}% de tes HP max en une chaîne (normalement {base}%).",
   毒の起点石: "Pierre d'origine de poison",
   'この起点から伸びる線の、毒の毎秒ダメージ +60%。':
     'Sur les lignes de cette Origine, le Poison inflige +60% de dégâts par seconde.',

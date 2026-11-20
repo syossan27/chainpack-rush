@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CHAIN_RULES, HERO, NO_LUCK } from '../src/config/balance';
-import { planChain } from '../src/core/chain';
+import { firedPieces, planChain } from '../src/core/chain';
 import type { CharmSlots } from '../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { estimateRoute } from '../src/core/estimate';
@@ -268,5 +268,83 @@ describe('残響の起点石', () => {
     expect(r.reachedLoop).toBeGreaterThan(1);
     const again = replayRun(run, r.inputs ?? []);
     expect(again && sameResult(again, r)).toBe(true);
+  });
+});
+
+describe('盾の起点石', () => {
+  /** o → 8 swords on a stacked 9×1 row (the scarecrow unless `run`) */
+  const longRow = (origin: string, run = false): RunConfig => {
+    const b = stacked(9, 1, [
+      { uid: 'o', defId: origin, x: 0, y: 0, exits: ['right'] },
+      ...Array.from({ length: 8 }, (_, i) => ({
+        uid: `s${i}`,
+        defId: 'sword',
+        x: i + 1,
+        y: 0,
+        exits: (i < 7 ? ['right'] : []) as Placed['exits'],
+      })),
+    ]);
+    return {
+      seed: 2,
+      regionId: 'grassland',
+      loadout: b.loadout,
+      items: b.items,
+      hero: run ? { ...BASE_HERO_STATS, attackMult: 20 } : BASE_HERO_STATS,
+      luck: NO_LUCK,
+      ...(run ? {} : { mode: 'dummy' as const }),
+    };
+  };
+  const extra = getItemDef('origin_shield').line!.guardCells!;
+  const ratio = getItemDef('origin_shield').line!.staggerRatio!;
+
+  it('守りが 3+3 マス目まで残り、次のマスで無防備になる（重ねる盤面、マスで数える）', () => {
+    for (const [origin, guard] of [
+      ['origin_shield', CHAIN_RULES.guardSteps + extra],
+      ['origin_stone', CHAIN_RULES.guardSteps],
+    ] as const) {
+      const cfg = longRow(origin);
+      const isOrigin = (u: string) => getItemDef(cfg.items.get(u)!.defId).kind === 'origin';
+      const c = new Combat(cfg);
+      c.fireNext();
+      const seen: [number, boolean][] = [];
+      while (c.chain) {
+        seen.push([firedPieces(c.chain.plan.steps.slice(0, c.chain.next), isOrigin), c.unguarded]);
+        c.step();
+      }
+      for (const [cells, ug] of seen) expect(ug, `${origin} ${cells}`).toBe(cells >= guard);
+      expect(seen.some(([, ug]) => ug)).toBe(true);
+    }
+  });
+
+  it('よろめくのは、1回の連鎖で最大HPの25%を受けたとき（15%+1 ではよろめかない）', () => {
+    const c = new Combat(longRow('origin_shield'));
+    c.fireNext();
+    while (c.chain && !c.unguarded) c.step();
+    const hit = (
+      c as unknown as {
+        damageHero(e: { id: number; atk: number; statuses: Map<string, number> }): void;
+      }
+    ).damageHero.bind(c);
+    const atk = (share: number) => (c.maxHp * share) / HERO.unguardedTakenMult + 1;
+    hit({ id: -1, atk: atk(CHAIN_RULES.staggerRatio), statuses: new Map() });
+    expect(c.chain?.staggered).toBe(false);
+    hit({ id: -1, atk: atk(ratio - CHAIN_RULES.staggerRatio), statuses: new Map() });
+    expect(c.chain?.staggered).toBe(true);
+  });
+
+  it('盾の石で遊んだランは、記録を再生しても同じ結果', () => {
+    const run = longRow('origin_shield', true);
+    const r = new Combat(run).runToEnd();
+    const again = replayRun(run, r.inputs ?? []);
+    expect(again && sameResult(again, r)).toBe(true);
+  });
+
+  it('説明文の数値', () => {
+    expect(itemDescVars(getItemDef('origin_shield'))).toEqual({
+      from: CHAIN_RULES.guardSteps,
+      to: CHAIN_RULES.guardSteps + extra,
+      v: Math.round(ratio * 100),
+      base: Math.round(CHAIN_RULES.staggerRatio * 100),
+    });
   });
 });

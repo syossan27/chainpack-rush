@@ -1,4 +1,5 @@
 // 装備・起点・消耗品の定義（仕様書 第6章）
+import { CHAIN_RULES } from '../config/balance';
 import type { ItemDef } from '../core/types';
 
 export const ITEM_DEFS: readonly ItemDef[] = [
@@ -50,8 +51,10 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     id: 'origin_shield',
     name: '盾の起点石',
     kind: 'origin',
-    line: { defense: 25 },
-    description: 'この起点から伸びる線の、防御装備の防御値 +25%。',
+    // A flow stone since 2026-11-21: the guard lasts longer and the chain staggers less
+    line: { guardCells: 3, staggerRatio: 0.25 },
+    description:
+      '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。',
   },
   {
     id: 'origin_poison',
@@ -651,6 +654,13 @@ export function itemDescVars(def: ItemDef): Record<string, number> {
   const line = def.line;
   if (line?.lead) return { cells: line.lead.cells, v: line.lead.damage };
   if (line?.far !== undefined) return { v: line.far };
+  if (line?.guardCells !== undefined || line?.staggerRatio !== undefined)
+    return {
+      from: CHAIN_RULES.guardSteps,
+      to: CHAIN_RULES.guardSteps + (line.guardCells ?? 0),
+      v: Math.round((line.staggerRatio ?? CHAIN_RULES.staggerRatio) * 100),
+      base: Math.round(CHAIN_RULES.staggerRatio * 100),
+    };
   return {};
 }
 

@@ -38,6 +38,10 @@ export interface LineEffect {
   far?: number;
   /** At the end of the chain, the last attack cell rings its stack once more (same counts) */
   echo?: boolean;
+  /** Cells added to the guard kept after the origin (ChainRules.guardSteps) */
+  guardCells?: number;
+  /** Share of max HP taken in one chain that staggers it (instead of ChainRules.staggerRatio) */
+  staggerRatio?: number;
 }
 
 /** 線の効果を、その段の装備について掛け算にまとめたもの（1 は効果なし） */

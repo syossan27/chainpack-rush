@@ -2,7 +2,7 @@
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
-import { CHAIN, RARITY, STACK } from '../config/balance';
+import { CHAIN, RARITY, STACK, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type {
   ChainPlan,
@@ -68,6 +68,20 @@ export function lineEffects(
     if (line) out.push(line);
   }
   return out;
+}
+
+/**
+ * A chain's guard and stagger under its origin stones (盾の起点石): the guard lasts `guardCells`
+ * cells longer, and the chain staggers at the higher share of max HP
+ */
+export function flowRules(
+  fx: readonly LineEffect[],
+  rules: ChainRules,
+): { guardSteps: number; staggerRatio: number } {
+  return {
+    guardSteps: fx.reduce((n, e) => n + (e.guardCells ?? 0), rules.guardSteps),
+    staggerRatio: Math.max(rules.staggerRatio, ...fx.map((e) => e.staggerRatio ?? 0)),
+  };
 }
 
 /** 次の装備へ伝わるまでの時間（ミリ秒）。速の起点石・重い起点石で変わる */
