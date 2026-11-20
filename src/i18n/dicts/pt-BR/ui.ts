@@ -106,8 +106,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Correntes Curtas e Longas',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• A espera até o próximo disparo cresce com o número de itens ativados na última corrente (armaduras também contam). Correntes curtas giram rápido; correntes longas batem forte.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até 3 itens depois da origem serem ativados (armaduras também contam).',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até a corrente passar por 3 casas depois da origem (casas de armadura também contam).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Um golpe forte enquanto você está desprotegido faz você cambalear ("Cambaleou!") e corta o resto da corrente. Aguente com itens de defesa ou coloque o Portão Inabalável para evitar isso.',
   地域と敵: 'Regiões e Inimigos',
@@ -714,8 +714,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     '• Golpes Especiais no total: {n}. No começo você não tem nenhum: aprende um com um "lampejo" quando a sequência dele se forma. A chance é o nível de Maestria do elemento do golpe × 15%. Golpe aprendido é seu para sempre e vai para o "Compêndio" na Base.',
   アクセサリーとレリック: 'Acessórios e relíquias',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    '• Chefes, elites douradas e Goblins Dourados às vezes deixam cair acessórios. Nos espaços da borda do tabuleiro, eles aumentam o multiplicador de combo da corrente inteira quando a condição é cumprida (máx. ×20).',
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• Às vezes um acessório vem junto com o equipamento que os inimigos deixam cair (mais vezes com chefes, elites douradas e Goblins Dourados). Nos espaços da borda do tabuleiro, eles aumentam o multiplicador de combo da corrente inteira quando a condição é cumprida (máx. ×20).',
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     '• A cada chefe derrotado, escolha 1 de 3 relíquias e coloque numa casa do tabuleiro. Ela fortalece o item daquela casa até o fim da expedição.',
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':

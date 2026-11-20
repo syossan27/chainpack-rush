@@ -105,8 +105,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Kurze vs. lange Ketten',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• Die Wartezeit bis zur nächsten Zündung wächst mit der Zahl der Gegenstände, die in der letzten Kette ausgelöst haben (Rüstungen zählen mit). Kurze Ketten sind schnell wieder bereit, lange treffen hart.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    '• Während einer Kette bist du ungeschützt (×1.5 erlittener Schaden), bleibst aber geschützt, bis nach dem Ursprung 3 Gegenstände ausgelöst haben (Rüstungen zählen mit).',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    '• Während einer Kette bist du ungeschützt (×1.5 erlittener Schaden), bleibst aber geschützt, bis die Kette nach dem Ursprung 3 Felder durchlaufen hat (Felder mit Rüstung zählen mit).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Ein harter Treffer, während du ungeschützt bist, bringt dich ins Taumeln („Taumelt!“) und bricht den Rest der Kette ab. Halte mit Verteidigungsausrüstung durch oder platziere das Festungstor, um das zu verhindern.',
   地域と敵: 'Gebiete & Gegner',
@@ -714,8 +714,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     '• Spezialangriffe insgesamt: {n}. Am Anfang kannst du keinen; du lernst einen per „Geistesblitz“, wenn seine Reihe zusammenkommt. Die Chance ist die Meisterschaftsstufe seines Elements × 15%. Einmal gelernt, gehört der Angriff dir für immer und steht im „Kompendium“ der Basis.',
   アクセサリーとレリック: 'Accessoires und Relikte',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    '• Bosse, goldene Elitegegner und Goldkobolde lassen selten Accessoires fallen. In den Plätzen am Rand des Bretts erhöhen sie den Kombo-Multiplikator der ganzen Kette, wenn ihre Bedingung erfüllt ist (höchstens ×20).',
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• Mit der Ausrüstung, die Gegner fallen lassen, kommt manchmal ein Accessoire (bei Bossen, goldenen Elitegegnern und Goldkobolden öfter). In den Plätzen am Rand des Bretts erhöhen sie den Kombo-Multiplikator der ganzen Kette, wenn ihre Bedingung erfüllt ist (höchstens ×20).',
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     '• Nach jedem besiegten Boss wählst du 1 von 3 Relikten und legst es auf ein Feld des Bretts. Es stärkt den Gegenstand auf diesem Feld bis zum Ende der Expedition.',
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':

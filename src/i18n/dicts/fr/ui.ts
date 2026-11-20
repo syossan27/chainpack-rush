@@ -106,8 +106,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Chaînes courtes ou longues',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     "• L'attente avant le prochain déclenchement dépend du nombre d'objets déclenchés dans la dernière chaîne (les armures comptent aussi). Les chaînes courtes tournent vite ; les longues frappent fort.",
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'à ce que 3 objets se soient déclenchés après l'origine (les armures comptent aussi).",
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'à ce que la chaîne ait traversé 3 cases après l'origine (les cases d'armure comptent aussi).",
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     "• Un gros coup reçu à découvert te laisse « Sonné ! » et coupe le reste de la chaîne. Tiens bon avec de l'équipement défensif, ou place la Porte imprenable pour l'éviter.",
   地域と敵: 'Régions et ennemis',
@@ -720,8 +720,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     "• Coups spéciaux au total : {n}. Au début, tu n'en as aucun : tu en apprends un par un « éclair de génie » quand sa combinaison se forme. La chance est le niveau de Maîtrise de son élément × 15%. Un coup appris l'est pour toujours et s'ajoute au « Codex » de la Base.",
   アクセサリーとレリック: 'Accessoires et reliques',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    '• Les boss, les élites dorées et les Gobelins dorés lâchent parfois des accessoires. Placés dans les emplacements au bord du plateau, ils augmentent le multiplicateur de combo de toute la chaîne quand leur condition est remplie (×20 max).',
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    "• Un accessoire accompagne parfois l'équipement lâché par les ennemis (plus souvent avec les boss, les élites dorées et les Gobelins dorés). Placés dans les emplacements au bord du plateau, ils augmentent le multiplicateur de combo de toute la chaîne quand leur condition est remplie (×20 max).",
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     "• À chaque boss vaincu, choisis 1 relique parmi 3 et pose-la sur une case du plateau. Elle renforce l'objet de cette case jusqu'à la fin de l'expédition.",
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':

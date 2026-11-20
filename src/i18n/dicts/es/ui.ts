@@ -106,8 +106,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Cadenas cortas y largas',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• La espera hasta la siguiente activación crece con el número de objetos que se activaron en la última cadena (las armaduras también cuentan). Las cadenas cortas van rápido; las largas pegan fuerte.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    '• Durante una cadena eres vulnerable (recibes daño ×1.5), pero mantienes la guardia hasta que se activan 3 objetos después del origen (las armaduras también cuentan).',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    '• Durante una cadena eres vulnerable (recibes daño ×1.5), pero mantienes la guardia hasta que la cadena recorre 3 casillas después del origen (las casillas de armadura también cuentan).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Si recibes un golpe fuerte mientras eres vulnerable, sufres un "¡Tambaleo!" y se corta el resto de la cadena. Aguanta con equipo de defensa o coloca el Portón Invicto para evitarlo.',
   地域と敵: 'Regiones y enemigos',
@@ -714,8 +714,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     '• Golpes Especiales en total: {n}. Al principio no tienes ninguno: aprendes uno con una "inspiración" cuando se forma su combinación. La probabilidad es el nivel de Maestría de su elemento × 15%. Un golpe aprendido es tuyo para siempre y aparece en el "Compendio" de la Base.',
   アクセサリーとレリック: 'Accesorios y reliquias',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    '• Los jefes, las élites doradas y los Goblins Dorados a veces sueltan accesorios. En los espacios del borde del tablero, suben el multiplicador de combo de toda la cadena cuando se cumple su condición (máx. ×20).',
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• A veces un accesorio acompaña al equipo que sueltan los enemigos (más a menudo con jefes, élites doradas y Goblins Dorados). En los espacios del borde del tablero, suben el multiplicador de combo de toda la cadena cuando se cumple su condición (máx. ×20).',
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     '• Cada vez que derrotas a un jefe, elige 1 de 3 reliquias y ponla en una casilla del tablero. Potencia el objeto de esa casilla hasta el final de la expedición.',
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':

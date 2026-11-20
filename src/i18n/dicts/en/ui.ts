@@ -104,8 +104,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Short vs. Long Chains',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• The wait before the next firing grows with how many items went off in the last chain (armor counts too). Short chains cycle fast; long chains hit big.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded until 3 items after the origin have gone off (armor counts too).",
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded until the chain has moved through 3 cells after the origin (armor cells count too).",
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• A big hit while unguarded leaves you "Staggered!" and cuts off the rest of the chain. Hold out with defense gear, or place the Aegis Gate to prevent it.',
   地域と敵: 'Regions & Enemies',
@@ -708,8 +708,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     '• Special Moves in total: {n}. You start without them and learn one with a "spark" when its line-up comes together. The spark chance is the Mastery level of the move\'s element × 15%. Once learned, a move is yours for good and goes into the "Codex" at Base.',
   アクセサリーとレリック: 'Accessories and Relics',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    "• Bosses, Golden elites and Golden Goblins rarely drop accessories. In the slots around the board's edge, they raise the whole chain's combo multiplier when their condition is met (up to ×20).",
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    "• Accessories sometimes come with the gear enemies drop (more often from bosses, Golden elites and Golden Goblins). In the slots around the board's edge, they raise the whole chain's combo multiplier when their condition is met (up to ×20).",
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     '• Each time you defeat a boss, pick 1 of 3 relics and place it on a board cell. It powers up the item on that cell for the rest of the run.',
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':

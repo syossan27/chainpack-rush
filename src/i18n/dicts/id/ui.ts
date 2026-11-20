@@ -105,8 +105,8 @@ export const UI: Dict = {
   短い連鎖と長い連鎖: 'Rantai Pendek vs. Panjang',
   '・次の発火までの待ちは、直前の連鎖で動いた装備の数に比例します（防具も数えます）。短い連鎖は回転が速く、長い連鎖は一撃が大きい。':
     '• Jeda sebelum pemicuan berikutnya sebanding dengan jumlah item yang aktif di rantai sebelumnya (pelindung juga dihitung). Rantai pendek berputar cepat; rantai panjang menghantam keras.',
-  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、装備が3つ動くまでは守りが残ります（防具も数えます）。':
-    '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai 3 item setelah asal sudah aktif (pelindung juga dihitung).',
+  '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
+    '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai rantai melewati 3 petak setelah asal (petak pelindung juga dihitung).',
   '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
     '• Kena serangan besar saat lengah membuatmu "Terhuyung!" dan sisa rantai terputus. Bertahanlah dengan perlengkapan pertahanan, atau pasang Gerbang Kebal untuk mencegahnya.',
   地域と敵: 'Wilayah & Musuh',
@@ -714,8 +714,8 @@ export const UI: Dict = {
   '・必殺技は全部で{n}つ。はじめは使えず、並びがそろったときに「閃き」で覚えます。閃く確率は、技の属性の熟練Lv×15%。一度覚えた技はずっと使えて、拠点の「図鑑」に載ります。':
     '• Jurus Spesial seluruhnya: {n}. Awalnya belum bisa dipakai; kamu mempelajarinya lewat "ilham" saat susunannya terbentuk. Peluang ilham = level Penguasaan elemen jurus × 15%. Jurus yang sudah dipelajari bisa dipakai selamanya dan masuk "Ensiklopedia" di Markas.',
   アクセサリーとレリック: 'Aksesori dan Relik',
-  '・アクセサリーは、ボス・金ぴか・黄金ゴブリンがまれに落とします。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
-    '• Bos, elite keemasan, dan Goblin Emas sesekali menjatuhkan aksesori. Pasang di slot tepi papan; kalau syaratnya terpenuhi, pengganda kombo seluruh rantai naik (maks. ×20).',
+  '・アクセサリーは、敵が落とす装備にまれについてきます（ボス・金ぴか・黄金ゴブリンは出やすい）。盤面のふちの枠に付けると、条件に合う連鎖で、連鎖全体のコンボ倍率が上がります（上限×20）。':
+    '• Aksesori kadang ikut jatuh bersama perlengkapan dari musuh (lebih sering dari bos, elite keemasan, dan Goblin Emas). Pasang di slot tepi papan; kalau syaratnya terpenuhi, pengganda kombo seluruh rantai naik (maks. ×20).',
   '・ボスを倒すたびに、レリックを3つから1つ選んで盤面のマスに置けます。そのマスの装備に効き、そのランの間だけ続きます。':
     '• Setiap kali mengalahkan bos, pilih 1 dari 3 relik dan taruh di petak papan. Relik itu memperkuat item di petak tersebut sampai ekspedisi selesai.',
   '・ランの途中で、まれに黄金ゴブリンが現れます。逃げられる前に倒すと、レア以上の装備を4つ落とします。':
