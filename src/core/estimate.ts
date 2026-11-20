@@ -2,7 +2,7 @@
 // 連鎖倍率・レアリティ・強化・コンボ（同じルート内で付けた状態を、後ろの装備が使う）・追加効果・会心の期待値を含む。
 // 狙いの切り替え（敵が倒れて段数が戻る）、範囲攻撃で巻き込む分、ボス特効は含めない。
 // 毒は「時間で与える分の半分」と見積もる。風で重ねた毒・毒爆もその見積もりの上に足す（おおよそ）。
-import { LUCK, POISON, STATUS } from '../config/balance';
+import { CHAIN_RULES, LUCK, POISON, STATUS, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
 import { getBoard, type BoardId } from '../data/boards';
 import type { CharmTrigger } from '../data/charms';
@@ -11,8 +11,24 @@ import { affixValue } from './affixes';
 import { boardDamageMult } from './boards';
 import { applyCharmEvent, cellTop, comboWeight, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
-import { lineOrigin } from './chain';
+import { firedPieces, lineOrigin, originQuick, waitFactor } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
+
+/**
+ * Seconds one firing of this plan takes, until the next can fire: the chain itself plus the wait
+ * after it (the same wait as battle; a 呼び戻しの笛 picked during a run is left out).
+ * `atbFull` is the full gauge in seconds: the hero's wait time × the board's wait
+ */
+export function chainCycle(
+  plan: ChainPlan,
+  items: ReadonlyMap<string, ItemInstance>,
+  atbFull: number,
+  rules: ChainRules = CHAIN_RULES,
+): number {
+  const isOrigin = (u: string) => getItemDef(items.get(u)!.defId).kind === 'origin';
+  const pieces = firedPieces(plan.steps, isOrigin);
+  return plan.duration + atbFull * waitFactor(pieces, originQuick(plan.originUids, items), rules);
+}
 
 export interface RouteEstimate {
   /** 合計ダメージ（期待値） */

@@ -35,16 +35,17 @@ const RARITY_RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
 
 /**
  * 盤面を組み直す: 持っている盤面ごとに autoBoard を決まった形で1回と、ゆらして tries 回組み、今の配置も
- * 合わせて、見積もり（boardScore）が一番高いものに切り替える。消耗品は枠に詰める
+ * 合わせて、見積もり（boardScore: 1秒あたり）が一番高いものに切り替える。消耗品は枠に詰める
  */
 export function optimizeBoard(save: SaveData, rng: Rng, tries = 24): void {
   const items = itemMap(save);
-  const mult = heroStats(save).attackMult;
+  const hero = heroStats(save);
+  const mult = hero.attackMult;
   let bestId: BoardId = activeBoardId(save);
   let best: Loadout = save.loadout;
-  let bestScore = boardScore(save.loadout, items, mult);
+  let bestScore = boardScore(save.loadout, items, mult, hero.atbTime);
   const consider = (id: BoardId, l: Loadout) => {
-    const sc = boardScore(l, items, mult);
+    const sc = boardScore(l, items, mult, hero.atbTime);
     if (sc > bestScore) {
       bestId = id;
       best = l;

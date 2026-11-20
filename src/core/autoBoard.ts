@@ -5,12 +5,12 @@
 // board's depth, and the line grown cell by cell (weak piles first, so the strong end up late in
 // the chain). Every start cell is tried and the best estimate wins. Without an rng the result
 // depends only on the gear; with one, the order and the top item vary (the bots search with it).
-import { RARITY } from '../config/balance';
+import { HERO, RARITY } from '../config/balance';
 import { getBoard, type BoardId } from '../data/boards';
 import { getItemDef } from '../data/items';
 import { boardDepth, isHole } from './boards';
 import { defenseValue, neighborCell, simulateChain } from './chain';
-import { estimateRoute } from './estimate';
+import { chainCycle, estimateRoute } from './estimate';
 import type { Rng } from './rng';
 import { emptyStackBoard, stackGroup } from './stack';
 import type { ItemInstance, Loadout } from './types';
@@ -122,14 +122,26 @@ function grow(
   return l;
 }
 
-/** How strong a layout is: the first origin's line, estimated on one ordinary enemy (0: no line) */
+/** The first origin's line on one ordinary enemy, per chain (0: no line) */
+function routeTotal(l: Loadout, items: ReadonlyMap<string, ItemInstance>): number {
+  const plan = simulateChain(l, items).plans[0];
+  return plan ? estimateRoute(plan, items, 1, l.board).total : 0;
+}
+
+/**
+ * How strong a layout is: the first origin's line on one ordinary enemy, per second of the chain
+ * and the wait after it (0: no line). Per chain would favour long lines that are slower overall
+ */
 export function boardScore(
   l: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
   attackMult = 1,
+  atbTime: number = HERO.atbTime,
 ): number {
   const plan = simulateChain(l, items).plans[0];
-  return plan ? estimateRoute(plan, items, attackMult, l.board).total : 0;
+  if (!plan) return 0;
+  const total = estimateRoute(plan, items, attackMult, l.board).total;
+  return total / chainCycle(plan, items, atbTime * (getBoard(l.board).wait ?? 1));
 }
 
 /**
@@ -161,7 +173,9 @@ export function autoBoard(inventory: readonly ItemInstance[], board: BoardId, rn
   let bestScore = -1;
   for (const c of starts) {
     const l = grow(base, origin, c, pool, rng);
-    const score = boardScore(l, items);
+    // Per chain on purpose: per second would leave gear (armor too) off the line to shorten the
+    // wait, and this layout promises to use everything
+    const score = routeTotal(l, items);
     if (score > bestScore) {
       best = l;
       bestScore = score;
