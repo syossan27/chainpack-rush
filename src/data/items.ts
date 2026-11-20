@@ -661,9 +661,8 @@ export const RARITY_NAMES: Record<string, string> = {
   legendary: 'レジェンド',
 };
 
-// 初期所持品: すべてコモン、出口はすべて「右」
+// 初期所持品: すべてコモン、出口はすべて「右」。起点石は1つ（盤面に置けるのは1つだけ）
 export const STARTER_ITEMS: readonly string[] = [
-  'origin_stone',
   'origin_stone',
   'sword',
   'sword',

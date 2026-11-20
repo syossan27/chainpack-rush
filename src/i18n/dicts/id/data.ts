@@ -17,7 +17,6 @@ export const DATA: Dict = {
   攻撃間隔: 'Jeda Serangan',
   攻撃倍率: 'Pengganda Serangan',
   出撃時間: 'Waktu Ekspedisi',
-  バックパック拡張: 'Ransel Lebih Besar',
   消耗品枠: 'Slot Sekali Pakai',
   倉庫容量: 'Kapasitas Gudang',
   '480円': '¥480',

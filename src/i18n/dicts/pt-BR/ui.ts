@@ -39,24 +39,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Chegue à volta {n} no modo Infinito',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': 'Completa a sequência de um Golpe Especial!',
-  '何か特別なことが起きそうな並び…': 'Algo especial pode acontecer com esta ordem…',
-  状態異常のコンボが増える: 'Mais combos de efeito',
-  '{n}連鎖までのびる': 'A corrente cresce até o elo {n}',
-  'もっと強い装備（レアリティ・攻撃力）に替える':
-    'Troca por equipamento mais forte (raridade, Ataque)',
-  空いているマスも連鎖に使う: 'Usa as casas vazias na corrente',
-  '強い装備が後ろ（倍率が高い）に来る':
-    'Leva o equipamento forte para os últimos elos (multiplicador maior)',
-  '「{a}」と「{b}」を入れ替える': 'Troque "{a}" e "{b}" de lugar',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Substitua "{a}" por "{b}" do Armazém',
-  '空いているマスに「{item}」を置く': 'Coloque "{item}" numa casa vazia',
-  'どの起点からも届いていない装備が{n}個': 'Itens que nenhuma Origem alcança: {n}',
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Siga as setas a partir das Origens e reposicione esses itens para que se conectem (casas brilhando)',
-  '起点{n}が{step}連鎖で止まっている': 'A corrente da Origem {n} termina no elo {step}',
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Correntes mais longas dão multiplicadores maiores aos últimos elos. Você também pode mudar a direção das saídas no Ferreiro.',
 
   // src/core/economy.ts
   見つかりません: 'Não encontrado',
@@ -69,7 +51,6 @@ export const UI: Dict = {
   '{cost}G 必要': 'Precisa de {cost}G',
 
   // src/core/presets.ts
-  '編成{n}': 'Conjunto {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Desafio #{n}',

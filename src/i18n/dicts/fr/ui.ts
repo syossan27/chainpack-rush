@@ -39,24 +39,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Atteins le tour {n} en mode Infini',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': "Complète l'ordre d'un coup spécial !",
-  '何か特別なことが起きそうな並び…': 'Cet ordre pourrait déclencher quelque chose de spécial…',
-  状態異常のコンボが増える: "Plus de combos d'altération",
-  '{n}連鎖までのびる': "La chaîne s'allonge jusqu'au maillon {n}",
-  'もっと強い装備（レアリティ・攻撃力）に替える':
-    'Remplace par un objet plus fort (rareté, Attaque)',
-  空いているマスも連鎖に使う: 'Utilise les cases vides dans la chaîne',
-  '強い装備が後ろ（倍率が高い）に来る':
-    'Place les objets forts sur les derniers maillons (multiplicateur plus élevé)',
-  '「{a}」と「{b}」を入れ替える': 'Échange « {a} » et « {b} »',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Remplace « {a} » par « {b} » de la Réserve',
-  '空いているマスに「{item}」を置く': 'Place « {item} » dans une case vide',
-  'どの起点からも届いていない装備が{n}個': "Objets qu'aucune Origine n'atteint : {n}",
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Suis les flèches depuis les Origines et replace ces objets pour les relier (cases lumineuses)',
-  '起点{n}が{step}連鎖で止まっている': "La chaîne de l'Origine {n} s'arrête au maillon {step}",
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Plus la chaîne est longue, plus le multiplicateur des derniers maillons grimpe. Tu peux aussi changer le sens des sorties à la Forge.',
 
   // src/core/economy.ts
   見つかりません: 'Introuvable',
@@ -69,7 +51,6 @@ export const UI: Dict = {
   '{cost}G 必要': 'Il te faut {cost}G',
 
   // src/core/presets.ts
-  '編成{n}': 'Set {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Défi n°{n}',

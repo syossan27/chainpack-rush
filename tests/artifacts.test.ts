@@ -175,7 +175,7 @@ describe('廃止したアーティファクト', () => {
       exits: ['right', 'down'],
       rerollCount: 0,
     });
-    s.loadout.cells[19] = 'cg';
+    s.loadout.cells[11] = 'cg';
     s.loadout.originOrder.push('cg');
     const loaded = deserializeSave(serializeSave(s));
     expect(loaded.inventory.some((i) => i.uid === 'cg')).toBe(false);

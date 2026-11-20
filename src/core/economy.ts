@@ -2,7 +2,6 @@
 import {
   MONETIZE,
   SYNTH,
-  BACKPACK,
   CONSUMABLE,
   ECONOMY,
   HERO,
@@ -19,11 +18,12 @@ import { ITEM_DEFS, getItemDef } from '../data/items';
 import { t } from '../i18n';
 import { ENDLESS, REGIONS } from '../data/regions';
 import type { HeroStats, RunResult } from './combat';
-import { resizeLoadout } from './loadout';
+import { otherBoardUse } from './boardSave';
+import { stackAt } from './stack';
 import { allowsRarity, createItem, lineItemFor, pickDef, rerollExits, rollLoot } from './loot';
 import type { Rng } from './rng';
 import type { SaveData } from './save';
-import type { Dir, ItemInstance, Loadout, Rarity } from './types';
+import type { Dir, ItemInstance, Rarity } from './types';
 
 /** 地域の★（その地域で倒した周目のボスの数。PROGRESS.starLoops） */
 export function regionStars(save: SaveData, regionId: string): number {
@@ -58,18 +58,6 @@ export function heroFrom(
   };
 }
 
-/** バックパック拡張: 列→行→列…と交互に広げる */
-export function backpackSize(level: number): { width: number; height: number } {
-  let width: number = BACKPACK.baseWidth;
-  let height: number = BACKPACK.baseHeight;
-  for (let i = 0; i < level; i++) {
-    if (i % 2 === 0 && width < BACKPACK.maxWidth) width++;
-    else if (height < BACKPACK.maxHeight) height++;
-    else if (width < BACKPACK.maxWidth) width++;
-  }
-  return { width, height };
-}
-
 export function consumableSlots(save: SaveData): number {
   return CONSUMABLE.baseSlots + UPGRADES.consumableSlots.effect * save.upgrades.consumableSlots;
 }
@@ -102,10 +90,6 @@ export function buyUpgrade(save: SaveData, id: UpgradeId): boolean {
   if (cost === null || save.gold < cost) return false;
   save.gold -= cost;
   save.upgrades[id]++;
-  if (id === 'backpack') {
-    const { width, height } = backpackSize(save.upgrades.backpack);
-    save.loadout = resizeLoadout(save.loadout, width, height);
-  }
   return true;
 }
 
@@ -139,29 +123,14 @@ export function sellPrice(item: ItemInstance): number {
   return RARITY[item.rarity].sell;
 }
 
-/** 装備中（バックパック・消耗品枠）のアイテム */
+/** 装備中（今の盤面・消耗品枠）のアイテム */
 export function equippedUids(save: SaveData): Set<string> {
   const s = new Set<string>();
   for (const c of save.loadout.cells) if (c) s.add(c);
-  // Trial (stacked board): the items under the tops are placed too
+  // The items stacked under the tops are placed too
   for (const st of save.loadout.under ?? []) for (const u of st) s.add(u);
   for (const c of save.loadout.consumables) s.add(c);
   return s;
-}
-
-/** ほかの編成（今の編成以外）で使っている装備 → 使っている編成の番号（0始まり） */
-export function otherPresetUse(save: SaveData): Map<string, number[]> {
-  const out = new Map<string, number[]>();
-  save.presets.forEach((p, i) => {
-    if (i === save.activePreset || !p.loadout) return;
-    for (const u of [...p.loadout.cells, ...p.loadout.consumables]) {
-      if (!u) continue;
-      const list = out.get(u) ?? [];
-      if (!list.includes(i)) list.push(i);
-      out.set(u, list);
-    }
-  });
-  return out;
 }
 
 /** 倉庫に入っている数（装備中は数えない） */
@@ -195,8 +164,14 @@ export function sellItems(save: SaveData, uids: readonly string[]): number {
     total += sellPrice(it);
     return false;
   });
-  save.loadout.cells = save.loadout.cells.map((c) => (c && set.has(c) ? null : c));
-  save.loadout.originOrder = save.loadout.originOrder.filter((u) => !set.has(u));
+  // Off the board (a stacked item's place is taken by the one below it)
+  const l = save.loadout;
+  l.cells.forEach((_, i) => {
+    const left = stackAt(l, i).filter((u) => !set.has(u));
+    l.cells[i] = left[left.length - 1] ?? null;
+    if (l.under) l.under[i] = left.slice(0, -1);
+  });
+  l.originOrder = l.originOrder.filter((u) => !set.has(u));
   save.loadout.consumables = save.loadout.consumables.filter((u) => !set.has(u));
   save.gold += total;
   return total;
@@ -210,10 +185,11 @@ export function overflowSellPlan(save: SaveData): { uids: string[]; gold: number
   const over = storageCount(save) - storageCapacity(save);
   if (over <= 0) return { uids: [], gold: 0 };
   const eq = equippedUids(save);
-  const inPresets = otherPresetUse(save);
+  // Gear used on another board is kept (sold from its details only, with a warning)
+  const elsewhere = otherBoardUse(save);
   const picks = save.inventory
     .filter(
-      (i) => !eq.has(i.uid) && !i.locked && !inPresets.has(i.uid) && !getItemDef(i.defId).artifact,
+      (i) => !eq.has(i.uid) && !i.locked && !elsewhere.has(i.uid) && !getItemDef(i.defId).artifact,
     )
     .map((i) => ({ i, consumable: getItemDef(i.defId).kind === 'consumable' ? 1 : 0 }))
     .sort((a, b) => a.consumable - b.consumable || sellPrice(a.i) - sellPrice(b.i))
@@ -407,7 +383,7 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
         eq.has(uid) ? '装備中は合成に使えません（外してから）' : 'ロック中は合成に使えません',
       ),
     };
-  const inPresets = otherPresetUse(save);
+  const elsewhere = otherBoardUse(save);
   const mates = save.inventory
     .filter(
       (i) =>
@@ -416,7 +392,7 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
         i.rarity === it.rarity &&
         !i.locked &&
         !eq.has(i.uid) &&
-        !inPresets.has(i.uid),
+        !elsewhere.has(i.uid),
     )
     .sort(
       (a, b) =>
@@ -541,8 +517,8 @@ export function recordRun(
 
 export type SortieBlock = 'noOrigin' | 'storageFull' | null;
 
-/** `board`: the loadout the run will use (the stacked board in the trial) */
-export function sortieBlock(save: SaveData, board: Loadout = save.loadout): SortieBlock {
+export function sortieBlock(save: SaveData): SortieBlock {
+  const board = save.loadout;
   if (!board.originOrder.some((u) => board.cells.includes(u))) return 'noOrigin';
   if (storageCount(save) > storageCapacity(save)) return 'storageFull';
   return null;

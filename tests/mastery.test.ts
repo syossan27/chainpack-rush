@@ -8,9 +8,6 @@ import {
   sparkChance,
 } from '../src/core/mastery';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
-import { masterySwitchOn, usesMastery } from '../src/core/trial';
-
-const regular = { challenge: false, demo: false, regionId: 'grassland' };
 
 describe('試作「熟練と閃き」: 熟練のレベル', () => {
   it('レベルに要る熟練は 50 → 150 → 300 …と増える（1つ手前では上がらない）', () => {
@@ -82,20 +79,10 @@ describe('試作「熟練と閃き」: 出撃の結果をためる', () => {
   });
 });
 
-describe('試作「熟練と閃き」: 切り替えと保存', () => {
-  it('切り替えは初めは OFF。壊れた値も OFF、ON は保存して読み直しても残る', () => {
-    const s = createInitialSave();
-    expect(s.settings.trialMastery).toBe(false);
-    const data = JSON.parse(serializeSave(s)) as { settings: Record<string, unknown> };
-    data.settings.trialMastery = 'yes';
-    expect(deserializeSave(JSON.stringify(data)).settings.trialMastery).toBe(false);
-    s.settings.trialMastery = true;
-    expect(deserializeSave(serializeSave(s)).settings.trialMastery).toBe(true);
-  });
-
+describe('熟練と閃き: 保存', () => {
   it('熟練と覚えた必殺技は保存して読み直しても残る。壊れた値は捨てる', () => {
     const s = createInitialSave();
-    expect(deserializeSave(serializeSave(s)).mastery).toBeUndefined();
+    expect(deserializeSave(serializeSave(s)).mastery).toEqual({ points: {}, learned: [] });
     recordMastery(s, { physical: 70 }, ['triple']);
     expect(deserializeSave(serializeSave(s)).mastery).toEqual({
       points: { physical: 70 },
@@ -110,19 +97,5 @@ describe('試作「熟練と閃き」: 切り替えと保存', () => {
       points: { fire: 12 },
       learned: ['triple'],
     });
-  });
-
-  it('熟練と閃きで出撃するのは、使える版でデバッグ機能と切り替えが ON の、ふつうの出撃だけ', () => {
-    const s = createInitialSave();
-    s.settings.debug = true;
-    s.settings.trialMastery = true;
-    expect(masterySwitchOn(s, true)).toBe(true);
-    expect(usesMastery(s, true, regular)).toBe(true);
-    expect(usesMastery(s, false, regular)).toBe(false);
-    expect(usesMastery(s, true, { ...regular, challenge: true })).toBe(false);
-    expect(usesMastery(s, true, { ...regular, regionId: 'endless' })).toBe(false);
-    expect(usesMastery(s, true, { ...regular, demo: true })).toBe(false);
-    s.settings.debug = false;
-    expect(usesMastery(s, true, regular)).toBe(false);
   });
 });

@@ -454,8 +454,7 @@ export const ECONOMY = {
   artifactReroll: 1000,
 } as const;
 
-export type UpgradeId =
-  'maxHp' | 'atb' | 'attack' | 'runTime' | 'backpack' | 'consumableSlots' | 'storage';
+export type UpgradeId = 'maxHp' | 'atb' | 'attack' | 'runTime' | 'consumableSlots' | 'storage';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -493,14 +492,6 @@ export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
     lateGrowth: 1.12,
   },
   runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
-  backpack: {
-    id: 'backpack',
-    name: 'バックパック拡張',
-    effect: 1,
-    baseCost: 300,
-    growth: 2.0,
-    maxLevel: 3,
-  }, // 5x4→7x5
   consumableSlots: {
     id: 'consumableSlots',
     name: '消耗品枠',

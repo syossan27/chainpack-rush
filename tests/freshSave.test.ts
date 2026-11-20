@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  FRESH_SAVE_KEY,
-  SAVE_KEY,
-  createInitialSave,
-  freshStartSave,
-  saveKeyFor,
-} from '../src/core/save';
+import { createInitialSave, freshStartSave } from '../src/core/save';
 
 describe('デバッグ: 0から遊ぶ（別のセーブ）', () => {
   it('進み具合は最初の状態、設定だけ引き継ぐ', () => {
@@ -22,8 +16,6 @@ describe('デバッグ: 0から遊ぶ（別のセーブ）', () => {
     grown.settings = {
       ...grown.settings,
       debug: true,
-      trialStack: true,
-      trialCharm: true,
       volume: 0.2,
       gameSpeed: 2,
       lang: 'en',
@@ -37,11 +29,5 @@ describe('デバッグ: 0から遊ぶ（別のセーブ）', () => {
     // A copy: changing one save's settings leaves the other alone
     fresh.settings.volume = 1;
     expect(grown.settings.volume).toBe(0.2);
-  });
-
-  it('セーブの置き場所: ふだんは今までのキー、0のセーブは別のキー', () => {
-    expect(saveKeyFor('main')).toBe(SAVE_KEY);
-    expect(saveKeyFor('fresh')).toBe(FRESH_SAVE_KEY);
-    expect(FRESH_SAVE_KEY).not.toBe(SAVE_KEY);
   });
 });

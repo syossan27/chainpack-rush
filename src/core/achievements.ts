@@ -20,7 +20,8 @@ function met(a: AchievementDef, save: SaveData, run: RunResult | null): boolean 
         ? (save.progress.best.demon_castle ?? 0) > 3
         : save.progress.unlocked.includes(c.region);
     case 'techs':
-      return save.discoveredTechs.length >= (c.n === 0 ? TECHNIQUES.length : c.n);
+      // Techniques learned (by a spark in a run)
+      return save.mastery.learned.length >= (c.n === 0 ? TECHNIQUES.length : c.n);
     case 'own':
       return save.inventory.some((i) =>
         c.rarity === 'artifact'

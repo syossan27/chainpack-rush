@@ -99,14 +99,3 @@ export function clearLoadout(l: Loadout): Loadout {
     ...(l.board ? { board: l.board } : {}),
   };
 }
-
-/** 拡張時: 既存の配置は同じ (x, y) に残す */
-export function resizeLoadout(l: Loadout, width: number, height: number): Loadout {
-  const cells = new Array<string | null>(width * height).fill(null);
-  for (let y = 0; y < l.height; y++) {
-    for (let x = 0; x < l.width; x++) {
-      if (x < width && y < height) cells[y * width + x] = l.cells[y * l.width + x] ?? null;
-    }
-  }
-  return { ...clone(l), width, height, cells };
-}

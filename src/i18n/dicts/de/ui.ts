@@ -38,24 +38,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Erreiche Runde {n} in Endlos',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': 'Vervollständigt einen Spezialangriff!',
-  '何か特別なことが起きそうな並び…': 'Bei dieser Reihenfolge könnte etwas Besonderes passieren…',
-  状態異常のコンボが増える: 'Mehr Status-Kombos',
-  '{n}連鎖までのびる': 'Kette wächst auf Länge {n}',
-  'もっと強い装備（レアリティ・攻撃力）に替える':
-    'Tauscht gegen stärkere Ausrüstung (Seltenheit, Angriff)',
-  空いているマスも連鎖に使う: 'Nutzt freie Felder für die Kette',
-  '強い装備が後ろ（倍率が高い）に来る':
-    'Setzt starke Ausrüstung auf spätere Glieder (höherer Multiplikator)',
-  '「{a}」と「{b}」を入れ替える': 'Tausche „{a}“ und „{b}“',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Ersetze „{a}“ durch „{b}“ aus dem Lager',
-  '空いているマスに「{item}」を置く': 'Lege „{item}“ auf ein freies Feld',
-  'どの起点からも届いていない装備が{n}個': 'Von keinem Ursprung erreicht: {n}',
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Folge den Pfeilen ab den Ursprüngen und lege diese Gegenstände so um, dass sie verbunden sind (leuchtende Felder)',
-  '起点{n}が{step}連鎖で止まっている': 'Kette von Ursprung {n} endet bei Glied {step}',
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Je länger die Kette, desto höher die Multiplikatoren späterer Glieder. Du kannst die Ausgänge auch in der Schmiede neu ausrichten.',
 
   // src/core/economy.ts
   見つかりません: 'Nicht gefunden',
@@ -68,7 +50,6 @@ export const UI: Dict = {
   '{cost}G 必要': '{cost}G nötig',
 
   // src/core/presets.ts
-  '編成{n}': 'Set {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Prüfung #{n}',

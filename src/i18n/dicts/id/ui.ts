@@ -39,24 +39,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Capai putaran {n} di mode Tanpa Batas',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': 'Melengkapi urutan Jurus Spesial!',
-  '何か特別なことが起きそうな並び…': 'Sepertinya urutan ini bisa memicu sesuatu yang spesial…',
-  状態異常のコンボが増える: 'Kombo efek status bertambah',
-  '{n}連鎖までのびる': 'Rantai memanjang sampai {n} mata rantai',
-  'もっと強い装備（レアリティ・攻撃力）に替える':
-    'Ganti dengan perlengkapan lebih kuat (kelangkaan, Serangan)',
-  空いているマスも連鎖に使う: 'Kotak kosong ikut dipakai dalam rantai',
-  '強い装備が後ろ（倍率が高い）に来る':
-    'Perlengkapan kuat pindah ke mata rantai akhir (pengganda lebih tinggi)',
-  '「{a}」と「{b}」を入れ替える': 'Tukar "{a}" dan "{b}"',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Ganti "{a}" dengan "{b}" dari Gudang',
-  '空いているマスに「{item}」を置く': 'Taruh "{item}" di kotak kosong',
-  'どの起点からも届いていない装備が{n}個': 'Item yang tak terjangkau Asal mana pun: {n}',
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Ikuti panah dari Asal dan pindahkan item ini agar tersambung (kotak yang menyala)',
-  '起点{n}が{step}連鎖で止まっている': 'Rantai Asal {n} berhenti di mata rantai ke-{step}',
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Makin panjang rantainya, makin besar pengganda mata rantai akhir. Kamu juga bisa mengubah arah jalur di Pandai Besi.',
 
   // src/core/economy.ts
   見つかりません: 'Tidak ditemukan',
@@ -68,7 +50,6 @@ export const UI: Dict = {
   '{cost}G 必要': 'Butuh {cost}G',
 
   // src/core/presets.ts
-  '編成{n}': 'Set {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Tantangan #{n}',

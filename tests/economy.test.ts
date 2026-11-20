@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   acceptLoot,
   autoSellDrops,
-  backpackSize,
   buyUpgrade,
   heroStats,
   recordRun,
@@ -27,12 +26,13 @@ import { SYNTH } from '../src/config/balance';
 import type { ItemInstance } from '../src/core/types';
 import { getItemDef } from '../src/data/items';
 import type { RunResult } from '../src/core/combat';
+import { build } from './helpers';
 
 describe('save', () => {
-  it('初期所持品: 起点石×2、剣×2、斧、木の盾、回復薬。すべてコモン・右向き', () => {
+  it('初期所持品: 起点石×1、剣×2、斧、木の盾、回復薬。すべてコモン・右向き', () => {
     const s = createInitialSave();
     expect(s.inventory.map((i) => i.defId).sort()).toEqual(
-      ['axe', 'origin_stone', 'origin_stone', 'potion', 'sword', 'sword', 'wood_shield'].sort(),
+      ['axe', 'origin_stone', 'potion', 'sword', 'sword', 'wood_shield'].sort(),
     );
     for (const it of s.inventory) {
       expect(it.rarity).toBe('common');
@@ -45,8 +45,8 @@ describe('save', () => {
     s.gold = 123;
     expect(deserializeSave(serializeSave(s))).toEqual(s);
     expect(deserializeSave('{oops').gold).toBe(0);
-    expect(deserializeSave(JSON.stringify({ ...s, version: 2 })).gold).toBe(0);
-    expect(deserializeSave(null).version).toBe(1);
+    expect(deserializeSave(JSON.stringify({ ...s, version: 3 })).gold).toBe(0);
+    expect(deserializeSave(null).version).toBe(2);
   });
 });
 
@@ -130,9 +130,6 @@ describe('economy', () => {
     s.gold = 1e9;
     for (let i = 0; i < 20; i++) buyUpgrade(s, 'atb');
     expect(heroStats(s).atbTime).toBeCloseTo(1.0);
-    for (let i = 0; i < 10; i++) buyUpgrade(s, 'backpack');
-    expect(s.loadout.width).toBe(7);
-    expect(s.loadout.height).toBe(5);
     for (let i = 0; i < 10; i++) buyUpgrade(s, 'storage');
     expect(storageCapacity(s)).toBe(100);
     for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
@@ -140,21 +137,6 @@ describe('economy', () => {
     s.progress.unlocked.push('volcano', 'glacier');
     for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
     expect(s.upgrades.attack).toBe(40);
-  });
-
-  it('バックパック拡張は列と行を交互に', () => {
-    expect(backpackSize(0)).toEqual({ width: 5, height: 4 });
-    expect(backpackSize(1)).toEqual({ width: 6, height: 4 });
-    expect(backpackSize(2)).toEqual({ width: 6, height: 5 });
-    expect(backpackSize(3)).toEqual({ width: 7, height: 5 });
-  });
-
-  it('拡張しても配置は同じ座標に残る', () => {
-    const s = createInitialSave();
-    s.gold = 1e6;
-    const before = s.loadout.cells[5];
-    buyUpgrade(s, 'backpack');
-    expect(s.loadout.cells[6]).toBe(before); // (0,1)
   });
 
   it('倉庫があふれても全部受け取るが、出撃はできない', () => {
@@ -167,7 +149,7 @@ describe('economy', () => {
       rerollCount: 0,
     }));
     acceptLoot(s, drops);
-    expect(s.inventory.length).toBe(67);
+    expect(s.inventory.length).toBe(66);
     expect(sortieBlock(s)).toBe('storageFull');
   });
 
@@ -262,11 +244,14 @@ describe('economy', () => {
 });
 
 describe('loadout', () => {
-  it('置く・入れ替える・起点の発火順', () => {
-    const s = createInitialSave();
-    const items = itemMap(s);
-    const [o1, o2] = s.loadout.originOrder;
-    let l = cycleOriginOrder(s.loadout, o2!);
+  it('置く・入れ替える・起点の発火順（格子の配置の道具）', () => {
+    const { loadout, items } = build(5, 4, [
+      { uid: 'o1', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'sw', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'o2', defId: 'origin_stone', x: 0, y: 1, exits: ['right'] },
+    ]);
+    const [o1, o2] = loadout.originOrder;
+    let l = cycleOriginOrder(loadout, o2!);
     expect(l.originOrder).toEqual([o2, o1]);
     const sword = l.cells[1]!;
     l = placeItem(l, items, sword, 3);
@@ -278,12 +263,14 @@ describe('loadout', () => {
     expect(l.cells[0]).toBe(sword);
   });
 
-  it('全部外す: マス・発火順・消耗品枠が空になり、大きさとアイテムは残る', () => {
+  it('全部外す: マス・重ねた分・発火順・消耗品枠が空になり、盤面とアイテムは残る', () => {
     const s = createInitialSave();
     const n = s.inventory.length;
     s.loadout = clearLoadout(s.loadout);
     expect(s.loadout.cells.every((c) => c === null)).toBe(true);
-    expect(s.loadout.cells).toHaveLength(5 * 4);
+    expect(s.loadout.under!.every((u) => u.length === 0)).toBe(true);
+    expect(s.loadout.cells).toHaveLength(4 * 3);
+    expect(s.loadout.board).toBe('standard');
     expect(s.loadout.originOrder).toEqual([]);
     expect(s.loadout.consumables).toEqual([]);
     expect(s.inventory).toHaveLength(n);

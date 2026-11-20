@@ -1,11 +1,12 @@
-// 保存データのスキーマ（Preferences キー: bp30.save.v1）。読み書き自体は src/platform/storage.ts。
+// 保存データのスキーマ（Preferences キー: bp30.save.v2。版1は bp30.save.v1 から読んで移す）。
+// 読み書き自体は src/platform/storage.ts。
 import { validName } from './names';
 import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { isAffix } from './affixes';
 import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
-import { BACKPACK, CONSUMABLE, SIM, type UpgradeId } from '../config/balance';
+import { CONSUMABLE, SIM, UPGRADES, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
 import { REGIONS } from '../data/regions';
 import { getTechnique } from '../data/techniques';
@@ -14,6 +15,9 @@ import { ITEM_SORTS, type ItemSort } from './itemSort';
 import { isBoardId, type BoardId } from '../data/boards';
 import { isCharmId } from '../data/charms';
 import type { CharmInstance } from './charms';
+import { activeBoardId } from './boardSave';
+import { migrateV1, type LegacyV1 } from './migrate';
+import { emptyStackBoard, restoreStackBoard } from './stack';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -22,19 +26,31 @@ const REMOVED_ITEMS: Record<string, number> = {
   chrono_glass: 1000, // 時渡りの砂時計（起点のアーティファクト。強すぎたため廃止）
 };
 
-export const SAVE_KEY = 'bp30.save.v1';
-export const SAVE_VERSION = 1;
+export const SAVE_KEY = 'bp30.save.v2';
+export const SAVE_VERSION = 2;
+/** Where version 1 was kept: read once to move it, never written again (an older build still reads it) */
+export const LEGACY_SAVE_KEY = 'bp30.save.v1';
 
 /**
  * Debug (development and trial builds): a second save to play from zero while the real one stays
  * as it is. Which one is in use is stored under SAVE_SLOT_KEY
  */
 export type SaveSlot = 'main' | 'fresh';
-export const FRESH_SAVE_KEY = 'bp30.save.v1.fresh';
+export const FRESH_SAVE_KEY = 'bp30.save.v2.fresh';
+export const LEGACY_FRESH_SAVE_KEY = 'bp30.save.v1.fresh';
 export const SAVE_SLOT_KEY = 'bp30.slot';
 
 export function saveKeyFor(slot: SaveSlot): string {
   return slot === 'fresh' ? FRESH_SAVE_KEY : SAVE_KEY;
+}
+
+export function legacyKeyFor(slot: SaveSlot): string {
+  return slot === 'fresh' ? LEGACY_FRESH_SAVE_KEY : LEGACY_SAVE_KEY;
+}
+
+/** The data to read: version 2 when there is one, otherwise version 1 (moved as it is read) */
+export function pickSaveRaw(current: string | null, legacy: string | null): string | null {
+  return current ?? legacy;
 }
 
 export interface SaveData {
@@ -46,11 +62,6 @@ export interface SaveData {
   upgrades: Record<UpgradeId, number>;
   progress: { unlocked: string[]; best: Record<string, number> };
   stats: { runs: number; maxStep: number; maxDamage: number };
-  /** 編成（並べ方の記録）。今の並べ方は loadout で、presets[activePreset] は切り替えたときに更新する */
-  presets: Preset[];
-  activePreset: number;
-  /** 見つけた必殺技（図鑑） */
-  discoveredTechs: string[];
   /** プレミアム（買い切り）を持っているか */
   premium: boolean;
   /** 見た初心者向けの案内（ui/tutorial.ts のキー） */
@@ -63,19 +74,19 @@ export interface SaveData {
   challenge: { period: number; best: number; bestLoop: number };
   /** 挑戦用の編成（並べ方の記録。ふだんの編成とは別） */
   challengeLoadout: Loadout | null;
-  /** Trial: the stacked boards in use and each board's layout (apart from the ordinary loadouts) */
-  trialBoards?: {
+  /**
+   * The stacked boards: the chosen one (its layout is `loadout`), the other boards' layouts, and each
+   * board's edge slots (charm uids; columns, then rows)
+   */
+  boards: {
     active: BoardId;
     layouts: Partial<Record<BoardId, Loadout>>;
-    /** Trial (charms): each board's edge slots (charm uids; columns, then rows) */
-    charms?: Partial<Record<BoardId, (string | null)[]>>;
+    charms: Partial<Record<BoardId, (string | null)[]>>;
   };
-  /** Trial (charms): the charm case (charms carried home) */
-  charms?: CharmInstance[];
-  /** Trial: the stacked board is being edited and sits in loadout for now */
-  editingTrial?: boolean;
-  /** Trial (mastery): the hero's mastery per element and the techniques learned by a spark */
-  mastery?: MasteryData;
+  /** The charm case (charms carried home) */
+  charms: CharmInstance[];
+  /** The hero's mastery per element and the techniques learned (by a spark) */
+  mastery: MasteryData;
   /** ランキングに送った自己ベスト（シーズンごと。'challenge-3' → スコア） */
   rankSent: Record<string, number>;
   /** ランキングの報酬でもらった称号（新しい順） */
@@ -109,51 +120,12 @@ export interface SaveData {
      * looks really owned stay as they are)
      */
     debug: boolean;
-    /** Trial switch on the home screen (debug setting on): the chain count goes on across kills */
-    trialKeepCount: boolean;
-    /** Trial switch on the home screen (debug setting on): runs use the stacked board */
-    trialStack: boolean;
-    /** Trial switch on the home screen (debug setting on): mastery grows, techniques must spark */
-    trialMastery: boolean;
-    /** Trial switch on the home screen (debug setting on): a beaten boss offers run-only relics */
-    trialRelic: boolean;
-    /** Trial switch on the home screen (debug setting on): a fleeing 黄金ゴブリン now and then */
-    trialTreasure: boolean;
-    /** Trial switch on the home screen (debug setting on): charms on the stacked board's edge */
-    trialCharm: boolean;
     /** The order of the storage lists (loadout, storage, fusion) */
     itemSort: ItemSort;
   };
 }
 
-export const PRESET_COUNT = 5;
-
-/** 編成: 装備そのものは持たず、どの装備をどこに置くか（と消耗品の枠）だけを覚える */
-export interface Preset {
-  name: string;
-  /** null はまだ一度も使っていない編成 */
-  loadout: Loadout | null;
-}
-
-export function defaultPresets(): Preset[] {
-  // '' = the default name, shown as t('編成{n}') in the current language (see presetName)
-  return Array.from({ length: PRESET_COUNT }, () => ({ name: '', loadout: null }));
-}
-
-export function emptyLoadout(
-  width: number = BACKPACK.baseWidth,
-  height: number = BACKPACK.baseHeight,
-): Loadout {
-  return {
-    width,
-    height,
-    cells: new Array<string | null>(width * height).fill(null),
-    originOrder: [],
-    consumables: [],
-  };
-}
-
-/** Debug: a save from zero that keeps the player's settings (debug, trial switches, sound, …) */
+/** Debug: a save from zero that keeps the player's settings (debug, sound, …) */
 export function freshStartSave(from: SaveData): SaveData {
   const save = createInitialSave();
   save.settings = { ...from.settings };
@@ -168,18 +140,17 @@ export function createInitialSave(): SaveData {
     exits: getItemDef(defId).kind === 'consumable' ? [] : ['right'],
     rerollCount: 0,
   }));
-  const loadout = emptyLoadout();
-  // 最初の連鎖を迷わず組めるように、初期配置を入れておく
-  // 行0: 起点1 → 剣 → 斧 / 行1: 起点2 → 剣 → 木の盾
+  const loadout = emptyStackBoard('standard');
+  // 最初の連鎖を迷わず組めるように、初期配置を入れておく（標準の盤面の真ん中の行）
+  // 起点 → 剣（2つ重ね） → 斧 → 木の盾
   const byDef = (id: string, n = 0): string => inventory.filter((it) => it.defId === id)[n]!.uid;
-  const w = loadout.width;
-  loadout.cells[0] = byDef('origin_stone', 0);
-  loadout.cells[1] = byDef('sword', 0);
-  loadout.cells[2] = byDef('axe');
-  loadout.cells[w] = byDef('origin_stone', 1);
-  loadout.cells[w + 1] = byDef('sword', 1);
-  loadout.cells[w + 2] = byDef('wood_shield');
-  loadout.originOrder = [byDef('origin_stone', 0), byDef('origin_stone', 1)];
+  const row = loadout.width;
+  loadout.cells[row] = byDef('origin_stone');
+  loadout.under![row + 1] = [byDef('sword', 0)];
+  loadout.cells[row + 1] = byDef('sword', 1);
+  loadout.cells[row + 2] = byDef('axe');
+  loadout.cells[row + 3] = byDef('wood_shield');
+  loadout.originOrder = [byDef('origin_stone')];
   loadout.consumables = [byDef('potion')];
   loadout.consumableAuto = ['potion'];
   return {
@@ -193,21 +164,20 @@ export function createInitialSave(): SaveData {
       atb: 0,
       attack: 0,
       runTime: 0,
-      backpack: 0,
       consumableSlots: 0,
       storage: 0,
     },
     progress: { unlocked: [REGIONS[0]!.id], best: {} },
     stats: { runs: 0, maxStep: 0, maxDamage: 0 },
-    presets: defaultPresets(),
-    activePreset: 0,
-    discoveredTechs: [],
     premium: false,
     tutorialSeen: [],
     achievements: [],
     endless: { bestLoop: 0, bestDamage: 0 },
     challenge: { period: -1, best: 0, bestLoop: 0 },
     challengeLoadout: null,
+    boards: { active: 'standard', layouts: {}, charms: {} },
+    charms: [],
+    mastery: { points: {}, learned: [] },
     rankSent: {},
     titles: [],
     rankName: null,
@@ -225,12 +195,6 @@ export function createInitialSave(): SaveData {
       autoSellKeepAffix: true,
       lang: 'auto',
       debug: false,
-      trialKeepCount: false,
-      trialStack: false,
-      trialMastery: false,
-      trialRelic: false,
-      trialTreasure: false,
-      trialCharm: false,
       itemSort: 'rarity',
     },
   };
@@ -240,23 +204,6 @@ function validLoadout(v: unknown): v is Loadout {
   if (!isObj(v) || !isNum(v.width) || !isNum(v.height) || !Array.isArray(v.cells)) return false;
   if (v.cells.length !== v.width * v.height) return false;
   return Array.isArray(v.originOrder) && Array.isArray(v.consumables);
-}
-
-/** 編成の読み込み。壊れた分は空の編成にする */
-function readPresets(v: unknown): Preset[] {
-  const base = defaultPresets();
-  if (!Array.isArray(v)) return base;
-  return base.map((b, i) => {
-    const p: unknown = v[i];
-    if (!isObj(p)) return b;
-    // Older saves stored the Japanese default name ('編成2'); turn it back into the default
-    const legacy = typeof p.name === 'string' ? /^編成(\d+)$/.exec(p.name) : null;
-    const name =
-      typeof p.name === 'string' && !(legacy && Number(legacy[1]) === i + 1)
-        ? p.name.slice(0, 12)
-        : b.name;
-    return { name, loadout: readLoadoutRec(p.loadout) };
-  });
 }
 
 /** 並べ方の記録の読み込み。壊れていたら null */
@@ -276,11 +223,11 @@ function readLoadoutRec(v: unknown): Loadout | null {
 }
 
 /**
- * Trial (stacked board): the boards' layouts. A save from before the board variants has one
- * stacked board (trialLoadout): it becomes the standard board's layout
+ * The stacked boards (version 1 kept them as the trial's `trialBoards`). A save from before the
+ * board variants has one stacked board (trialLoadout): it becomes the standard board's layout
  */
-function readTrialBoards(data: Record<string, unknown>): Pick<SaveData, 'trialBoards'> {
-  const tb = data.trialBoards;
+function readBoards(data: Record<string, unknown>): SaveData['boards'] {
+  const tb = data.boards ?? data.trialBoards;
   if (isObj(tb)) {
     const layouts: Partial<Record<BoardId, Loadout>> = {};
     if (isObj(tb.layouts))
@@ -288,17 +235,14 @@ function readTrialBoards(data: Record<string, unknown>): Pick<SaveData, 'trialBo
         const l = isBoardId(id) ? readLoadoutRec(v) : null;
         if (l && isBoardId(id)) layouts[id] = l;
       }
-    const charms = readBoardCharms(tb.charms);
     return {
-      trialBoards: {
-        active: isBoardId(tb.active) ? tb.active : 'standard',
-        layouts,
-        ...(charms ? { charms } : {}),
-      },
+      active: isBoardId(tb.active) ? tb.active : 'standard',
+      layouts,
+      charms: readBoardCharms(tb.charms) ?? {},
     };
   }
   const old = data.trialLoadout ? readLoadoutRec(data.trialLoadout) : null;
-  return old ? { trialBoards: { active: 'standard', layouts: { standard: old } } } : {};
+  return { active: 'standard', layouts: old ? { standard: old } : {}, charms: {} };
 }
 
 /** Trial (charms): each board's slots, as arrays of charm uids or null (checked again on use) */
@@ -380,12 +324,35 @@ function validItem(v: unknown): v is ItemInstance {
   return true;
 }
 
+/** What only a version 1 save has, for the move (see core/migrate.ts) */
+function legacyOf(data: Record<string, unknown>, save: SaveData): LegacyV1 {
+  const editing = data.editingTrial === true || data.editingChallenge === true;
+  // While a board or the challenge was being edited, the bag waited in the active preset
+  const presets = Array.isArray(data.presets) ? data.presets : [];
+  const active = isNum(data.activePreset) ? presets[Math.floor(data.activePreset)] : undefined;
+  const bag = editing ? (isObj(active) ? readLoadoutRec(active.loadout) : null) : save.loadout;
+  return {
+    bag,
+    editingBoard: data.editingTrial === true ? save.loadout : null,
+    backpackLevel:
+      isObj(data.upgrades) && isNum(data.upgrades.backpack) ? data.upgrades.backpack : 0,
+    discoveredTechs: Array.isArray(data.discoveredTechs)
+      ? data.discoveredTechs.filter((t): t is string => typeof t === 'string')
+      : [],
+  };
+}
+
+const itemMapOf = (save: SaveData) => new Map(save.inventory.map((i) => [i.uid, i]));
+
 /** パース失敗やバージョン不一致なら初期値で始める */
 export function deserializeSave(raw: string | null | undefined): SaveData {
   if (!raw) return createInitialSave();
   try {
     const data: unknown = JSON.parse(raw);
-    if (!isObj(data) || data.version !== SAVE_VERSION) return createInitialSave();
+    if (!isObj(data) || (data.version !== SAVE_VERSION && data.version !== 1))
+      return createInitialSave();
+    // Version 1 (the bag, trials as switches) is read and then moved to version 2
+    const v1 = data.version === 1;
     const base = createInitialSave();
     if (!isNum(data.gold) || !isNum(data.nextUid)) return base;
     if (!Array.isArray(data.inventory)) return base;
@@ -419,17 +386,20 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         consumables: lo.consumables.filter((u): u is string => typeof u === 'string'),
         ...autoOf(lo),
         ...underOf(lo),
+        ...(isBoardId(lo.board) ? { board: lo.board } : {}),
       },
-      upgrades: {
-        ...base.upgrades,
-        ...(isObj(data.upgrades) ? (data.upgrades as Partial<SaveData['upgrades']>) : {}),
-      },
+      // Known upgrades only (the backpack upgrade of version 1 is paid back by the move)
+      upgrades: Object.fromEntries(
+        (Object.keys(base.upgrades) as UpgradeId[]).map((id) => {
+          const v = isObj(data.upgrades) ? data.upgrades[id] : undefined;
+          return [id, isNum(v) ? v : base.upgrades[id]];
+        }),
+      ) as SaveData['upgrades'],
       progress: isObj(data.progress) ? (data.progress as SaveData['progress']) : base.progress,
       stats: {
         ...base.stats,
         ...(isObj(data.stats) ? (data.stats as Partial<SaveData['stats']>) : {}),
       },
-      presets: readPresets(data.presets),
       premium: data.premium === true,
       // 案内を入れる前のセーブで、もう遊んでいる人には案内を出さない
       tutorialSeen: Array.isArray(data.tutorialSeen)
@@ -453,8 +423,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
             }
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
-      ...readTrialBoards(data),
-      ...(Array.isArray(data.charms) ? { charms: readCharms(data.charms) } : {}),
+      boards: readBoards(data),
+      charms: Array.isArray(data.charms) ? readCharms(data.charms) : [],
       rankSent: isObj(data.rankSent)
         ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
             string,
@@ -488,8 +458,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ? data.titles.filter((t): t is string => typeof t === 'string').slice(0, 50)
         : [],
       ...(data.editingChallenge === true ? { editingChallenge: true } : {}),
-      ...(data.editingTrial === true ? { editingTrial: true } : {}),
-      ...(isObj(data.mastery) ? { mastery: readMastery(data.mastery) } : {}),
+      mastery: isObj(data.mastery) ? readMastery(data.mastery) : { points: {}, learned: [] },
       achievements: Array.isArray(data.achievements)
         ? data.achievements.filter((t): t is string => typeof t === 'string')
         : [],
@@ -502,17 +471,13 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
               ) as Record<string, number>,
             }
           : { date: '', counts: {} },
-      discoveredTechs: Array.isArray(data.discoveredTechs)
-        ? data.discoveredTechs.filter((t): t is string => typeof t === 'string')
-        : [],
-      activePreset:
-        isNum(data.activePreset) && data.activePreset >= 0 && data.activePreset < PRESET_COUNT
-          ? Math.floor(data.activePreset)
-          : 0,
-      settings: {
-        ...base.settings,
-        ...(isObj(data.settings) ? (data.settings as Partial<SaveData['settings']>) : {}),
-      },
+      // Known settings only (the trial switches of version 1 are gone)
+      settings: Object.fromEntries(
+        Object.keys(base.settings).map((k) => {
+          const v = isObj(data.settings) ? data.settings[k] : undefined;
+          return [k, v === undefined ? base.settings[k as keyof SaveData['settings']] : v];
+        }),
+      ) as SaveData['settings'],
     };
     if (typeof save.settings.showRoutes !== 'boolean') save.settings.showRoutes = true;
     if (save.settings.lang !== 'auto' && !LANGS.includes(save.settings.lang))
@@ -522,12 +487,6 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
       save.settings.autoSellKeepAffix = true;
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
-    if (typeof save.settings.trialKeepCount !== 'boolean') save.settings.trialKeepCount = false;
-    if (typeof save.settings.trialStack !== 'boolean') save.settings.trialStack = false;
-    if (typeof save.settings.trialMastery !== 'boolean') save.settings.trialMastery = false;
-    if (typeof save.settings.trialRelic !== 'boolean') save.settings.trialRelic = false;
-    if (typeof save.settings.trialTreasure !== 'boolean') save.settings.trialTreasure = false;
-    if (typeof save.settings.trialCharm !== 'boolean') save.settings.trialCharm = false;
     if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
     const sp = save.settings.gameSpeed;
     if (typeof sp !== 'number' || !Number.isFinite(sp) || sp <= 0 || sp > SIM.maxSpeed)
@@ -570,6 +529,14 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     }
     if (!Array.isArray(save.progress.unlocked) || !isObj(save.progress.best))
       save.progress = base.progress;
+    if (v1) return migrateV1(save, legacyOf(data, save));
+    // The board in loadout, put in order against the gear owned: the chosen board, or the standard
+    // one while the challenge layout is being edited (the chosen board waits in boards.layouts)
+    const slots =
+      CONSUMABLE.baseSlots + UPGRADES.consumableSlots.effect * save.upgrades.consumableSlots;
+    const board = save.editingChallenge ? 'standard' : activeBoardId(save);
+    save.boards.active = activeBoardId(save);
+    save.loadout = restoreStackBoard(save.loadout, itemMapOf(save), slots, board);
     return save;
   } catch {
     return createInitialSave();

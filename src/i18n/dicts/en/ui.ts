@@ -38,22 +38,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Reach loop {n} in Endless',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': 'Completes a Special Move sequence!',
-  '何か特別なことが起きそうな並び…': 'Something special might happen with this order…',
-  状態異常のコンボが増える: 'More status combos',
-  '{n}連鎖までのびる': 'Chain grows to {n} links',
-  'もっと強い装備（レアリティ・攻撃力）に替える': 'Swaps in stronger gear (rarity, Attack)',
-  空いているマスも連鎖に使う: 'Puts empty cells to use in the chain',
-  '強い装備が後ろ（倍率が高い）に来る': 'Moves strong gear to later links (higher multiplier)',
-  '「{a}」と「{b}」を入れ替える': 'Swap "{a}" and "{b}"',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Replace "{a}" with "{b}" from Storage',
-  '空いているマスに「{item}」を置く': 'Place "{item}" in an empty cell',
-  'どの起点からも届いていない装備が{n}個': 'Items no Origin reaches: {n}',
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Follow the arrows from the Origins and move these so they connect (glowing cells)',
-  '起点{n}が{step}連鎖で止まっている': "Origin {n}'s chain stops at link {step}",
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Longer chains give later links bigger multipliers. You can also change exit directions at the Smith.',
 
   // src/core/economy.ts
   見つかりません: 'Not found',
@@ -65,7 +49,6 @@ export const UI: Dict = {
   '{cost}G 必要': 'Need {cost}G',
 
   // src/core/presets.ts
-  '編成{n}': 'Set {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Challenge #{n}',

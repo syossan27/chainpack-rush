@@ -71,17 +71,15 @@ describe('必殺技', () => {
 });
 
 describe('必殺技図鑑', () => {
-  it('見つけた技はセーブに残る。古いセーブ・壊れた値は空から', async () => {
+  it('図鑑は覚えた技（閃いた技）。セーブに残り、壊れた値は捨てる', async () => {
     const { createInitialSave, serializeSave, deserializeSave } = await import('../src/core/save');
     const s = createInitialSave();
-    expect(s.discoveredTechs).toEqual([]);
-    s.discoveredTechs.push('crimson');
-    expect(deserializeSave(serializeSave(s)).discoveredTechs).toEqual(['crimson']);
+    expect(s.mastery.learned).toEqual([]);
+    s.mastery.learned.push('crimson');
+    expect(deserializeSave(serializeSave(s)).mastery.learned).toEqual(['crimson']);
     const old = JSON.parse(serializeSave(s));
-    delete old.discoveredTechs;
-    expect(deserializeSave(JSON.stringify(old)).discoveredTechs).toEqual([]);
-    old.discoveredTechs = ['frost', 3, null];
-    expect(deserializeSave(JSON.stringify(old)).discoveredTechs).toEqual(['frost']);
+    old.mastery.learned = ['frost', 3, null];
+    expect(deserializeSave(JSON.stringify(old)).mastery.learned).toEqual(['frost']);
   });
 
   it('すべての技に、見つける前のヒントがある', () => {

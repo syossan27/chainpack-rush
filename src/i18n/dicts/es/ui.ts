@@ -39,23 +39,6 @@ export const UI: Dict = {
   'エンドレスで{n}周目に着く': 'Llega a la vuelta {n} en Infinito',
 
   // src/core/diagnose.ts
-  '必殺技の並びがそろう！': '¡Completa la secuencia de un Golpe Especial!',
-  '何か特別なことが起きそうな並び…': 'Con este orden podría pasar algo especial…',
-  状態異常のコンボが増える: 'Más combos de estado',
-  '{n}連鎖までのびる': 'La cadena crece hasta el eslabón {n}',
-  'もっと強い装備（レアリティ・攻撃力）に替える': 'Cambia a equipo más fuerte (rareza, Ataque)',
-  空いているマスも連鎖に使う: 'Aprovecha las casillas vacías en la cadena',
-  '強い装備が後ろ（倍率が高い）に来る':
-    'Mueve el equipo fuerte a los últimos eslabones (más multiplicador)',
-  '「{a}」と「{b}」を入れ替える': 'Intercambia "{a}" y "{b}"',
-  '「{a}」を倉庫の「{b}」に置きかえる': 'Reemplaza "{a}" por "{b}" del Almacén',
-  '空いているマスに「{item}」を置く': 'Coloca "{item}" en una casilla vacía',
-  'どの起点からも届いていない装備が{n}個': 'Objetos sin conexión a ningún Origen: {n}',
-  '起点から矢印をたどって、つながる向きに置き直そう（光っているマス）':
-    'Sigue las flechas desde los Orígenes y recoloca estos objetos para que conecten (casillas brillantes)',
-  '起点{n}が{step}連鎖で止まっている': 'La cadena del Origen {n} se detiene en el eslabón {step}',
-  '長くつなぐほど後ろの装備の倍率が上がる。出口の向きを鍛冶屋で変えるのも手':
-    'Cuanto más larga la cadena, mayor el multiplicador de los últimos eslabones. También puedes cambiar la dirección de las salidas en la Herrería.',
 
   // src/core/economy.ts
   見つかりません: 'No encontrado',
@@ -68,7 +51,6 @@ export const UI: Dict = {
   '{cost}G 必要': 'Necesitas {cost}G',
 
   // src/core/presets.ts
-  '編成{n}': 'Conjunto {n}',
 
   // src/core/ranking.ts
   '挑戦 第{n}回': 'Desafío #{n}',

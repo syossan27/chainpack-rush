@@ -1,11 +1,13 @@
-// 挑戦用の編成（ふだんの編成とは別に持つ）。配置画面で編集するときは、一時的に loadout と入れ替える
+// 挑戦用の配置（ふだんの盤面とは別に持つ、重ねる標準の盤面）。配置画面で編集するときは、一時的に
+// loadout と入れ替える（ふだんの盤面は boards.layouts で待つ）
 import { getItemDef } from '../data/items';
 import type { ChallengeRules } from '../data/challenges';
 import { itemViolation } from './challenge';
-import { itemMap } from './economy';
-import { restoreLoadout, storeActivePreset } from './presets';
+import { consumableSlots, itemMap } from './economy';
+import { autoBoard } from './autoBoard';
+import { activeBoardId } from './boardSave';
 import { holeIn } from './boards';
-import { boardUids, stackAt, stackGroup } from './stack';
+import { boardUids, restoreStackBoard, stackAt, stackGroup } from './stack';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Loadout } from './types';
 
@@ -23,26 +25,49 @@ function clone(l: Loadout): Loadout {
   };
 }
 
-/** 挑戦用の編成（今の持ち物とバックパックの大きさに合わせたもの） */
-export function challengeLoadoutOf(save: SaveData): Loadout {
+/**
+ * 挑戦用の配置（今の持ち物に合わせたもの）。まだないときは、ふだんの標準の盤面を写して、制限に合わせて作る
+ */
+export function challengeLoadoutOf(save: SaveData, rules: ChallengeRules): Loadout {
   if (save.editingChallenge) return save.loadout;
-  return restoreLoadout(save, save.challengeLoadout);
+  const owned = itemMap(save);
+  const slots = consumableSlots(save);
+  if (save.challengeLoadout)
+    return restoreStackBoard(save.challengeLoadout, owned, slots, 'standard');
+  const rec = save.boards.layouts.standard;
+  const standard =
+    save.loadout.board === 'standard'
+      ? save.loadout
+      : rec
+        ? restoreStackBoard(rec, owned, slots, 'standard')
+        : autoBoard(save.inventory, 'standard');
+  return fitToRules(
+    save,
+    { ...clone(standard), consumables: save.loadout.consumables.slice() },
+    rules,
+  );
 }
 
-/** 配置画面で挑戦用の編成を編集し始める（ふだんの並べ方は今の編成に保存しておく） */
-export function enterChallengeEdit(save: SaveData): void {
+/** 配置画面で挑戦用の配置を編集し始める（ふだんの盤面は、その盤面の配置としてしまっておく） */
+export function enterChallengeEdit(save: SaveData, rules: ChallengeRules): void {
   if (save.editingChallenge) return;
-  storeActivePreset(save);
-  save.loadout = restoreLoadout(save, save.challengeLoadout);
+  const board = challengeLoadoutOf(save, rules);
+  save.boards.layouts[save.loadout.board ?? 'standard'] = clone(save.loadout);
+  save.loadout = board;
   save.editingChallenge = true;
 }
 
-/** 編集を終える（挑戦用を保存して、ふだんの編成に戻す）。読み込み時の後始末にも使う */
+/** 編集を終える（挑戦用を保存して、ふだんの盤面に戻す）。読み込み時の後始末にも使う */
 export function leaveChallengeEdit(save: SaveData): void {
   if (!save.editingChallenge) return;
   save.challengeLoadout = clone(save.loadout);
   delete save.editingChallenge;
-  save.loadout = restoreLoadout(save, save.presets[save.activePreset]?.loadout ?? null);
+  const id = activeBoardId(save);
+  const rec = save.boards.layouts[id];
+  delete save.boards.layouts[id];
+  save.loadout = rec
+    ? restoreStackBoard(rec, itemMap(save), consumableSlots(save), id)
+    : autoBoard(save.inventory, id);
 }
 
 const RANK = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;

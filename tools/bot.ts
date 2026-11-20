@@ -252,7 +252,6 @@ const UPGRADE_PRIORITY: UpgradeId[] = [
   'attack',
   'maxHp',
   'atb',
-  'backpack',
   'runTime',
   'consumableSlots',
   'storage',

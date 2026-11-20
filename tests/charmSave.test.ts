@@ -7,7 +7,8 @@ import {
   sellCharm,
 } from '../src/core/charmSave';
 import { createInitialSave, deserializeSave, serializeSave, type SaveData } from '../src/core/save';
-import { charmSwitchOn, enterTrialEdit, leaveTrialEdit, usesCharms } from '../src/core/trial';
+import { switchBoard } from '../src/core/boardSave';
+import { runConfig } from '../src/core/runConfig';
 
 function load(patch: (raw: Record<string, unknown>) => void): SaveData {
   const raw = JSON.parse(serializeSave(createInitialSave())) as Record<string, unknown>;
@@ -25,16 +26,12 @@ function owning(): SaveData {
   });
 }
 
-const ordinary = { challenge: false, demo: false, regionId: 'grassland' };
-
-describe('試作アクセサリー: セーブと盤面ごとのスロット', () => {
+describe('アクセサリー: セーブと盤面ごとのスロット', () => {
   it('古いセーブ（アクセサリーの項目なし）も読める', () => {
     const save = load((raw) => {
       delete raw.charms;
-      delete (raw.settings as Record<string, unknown>).trialCharm;
     });
-    expect(save.charms ?? []).toEqual([]);
-    expect(save.settings.trialCharm).toBe(false);
+    expect(save.charms).toEqual([]);
     expect(boardCharmSlots(save, 'standard')).toEqual(new Array(7).fill(null));
   });
 
@@ -47,7 +44,7 @@ describe('試作アクセサリー: セーブと盤面ごとのスロット', ()
         { uid: 'c1', defId: 'tech_bangle', rarity: 'epic' },
         'junk',
       ];
-      raw.trialBoards = {
+      raw.boards = {
         active: 'standard',
         layouts: {},
         charms: { standard: ['c1', 'gone', null, 5], nowhere: ['c1'] },
@@ -58,7 +55,7 @@ describe('試作アクセサリー: セーブと盤面ごとのスロット', ()
     expect(slots).toHaveLength(7);
     expect(slots[0]).toEqual({ uid: 'c1', defId: 'match_ring', rarity: 'rare' });
     expect(slots.slice(1)).toEqual(new Array(6).fill(null));
-    expect(Object.keys(save.trialBoards?.charms ?? {})).toEqual(['standard']);
+    expect(Object.keys(save.boards.charms)).toEqual(['standard']);
   });
 
   it('付け替え: 同じ盤面で別のスロットへ移す。知らないアクセサリーやないスロットは断る', () => {
@@ -93,34 +90,20 @@ describe('試作アクセサリー: セーブと盤面ごとのスロット', ()
     expect(sellCharm(save, 'nope')).toBe(0);
   });
 
-  it('盤面の編集を出入りしても、付けたアクセサリーは残る', () => {
+  it('盤面を切り替えて戻っても、付けたアクセサリーは残る', () => {
     const save = owning();
+    save.progress.unlocked.push('cave', 'rampart');
     equipCharm(save, 'standard', 1, 'c2');
-    enterTrialEdit(save);
-    leaveTrialEdit(save);
+    switchBoard(save, 'small');
+    switchBoard(save, 'standard');
     expect(boardCharmSlots(save, 'standard')[1]?.uid).toBe('c2');
   });
 
-  it('積み重ね盤面がオフなら、アクセサリーのスイッチがオンでも使わない', () => {
+  it('普通のランは付けたアクセサリーで出る。挑戦では使わない', () => {
     const save = owning();
-    save.settings.debug = true;
-    save.settings.trialCharm = true;
-    save.settings.trialStack = false;
-    expect(charmSwitchOn(save, true)).toBe(false);
-    expect(usesCharms(save, true, ordinary)).toBe(false);
-    save.settings.trialStack = true;
-    expect(charmSwitchOn(save, true)).toBe(true);
-    expect(usesCharms(save, true, ordinary)).toBe(true);
-    expect(charmSwitchOn(save, false)).toBe(false);
-  });
-
-  it('挑戦・エンドレス・体験ランでは使わない', () => {
-    const save = owning();
-    save.settings.debug = true;
-    save.settings.trialCharm = true;
-    save.settings.trialStack = true;
-    expect(usesCharms(save, true, { ...ordinary, challenge: true })).toBe(false);
-    expect(usesCharms(save, true, { ...ordinary, regionId: 'endless' })).toBe(false);
-    expect(usesCharms(save, true, { ...ordinary, demo: true })).toBe(false);
+    equipCharm(save, 'standard', 1, 'c2');
+    expect(runConfig(save, 'normal', 'grassland', 1).charms![1]?.uid).toBe('c2');
+    expect(runConfig(save, 'endless', 'endless', 1).charms![1]?.uid).toBe('c2');
+    expect(runConfig(save, 'challenge', 'cave', 1).charms).toBeUndefined();
   });
 });

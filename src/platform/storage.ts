@@ -4,6 +4,8 @@ import {
   SAVE_SLOT_KEY,
   deserializeSave,
   freshStartSave,
+  legacyKeyFor,
+  pickSaveRaw,
   saveKeyFor,
   serializeSave,
   type SaveData,
@@ -25,8 +27,12 @@ export async function loadSave(): Promise<SaveData> {
       const { value } = await Preferences.get({ key: SAVE_SLOT_KEY });
       slot = value === 'fresh' ? 'fresh' : 'main';
     }
+    // Version 2 lives under its own key; a version 1 save is read from the old key and moved (the old
+    // key is never written again, so an older build would still find it as it was)
     const { value } = await Preferences.get({ key: saveKeyFor(slot) });
-    return deserializeSave(value);
+    const legacy =
+      value === null ? (await Preferences.get({ key: legacyKeyFor(slot) })).value : null;
+    return deserializeSave(pickSaveRaw(value, legacy));
   } catch {
     return deserializeSave(null);
   }
@@ -51,7 +57,8 @@ export async function switchSlot(to: SaveSlot, current: SaveData, restart = fals
   await pending;
   if (to === 'fresh') {
     const { value } = await Preferences.get({ key: saveKeyFor('fresh') });
-    if (restart || value === null) {
+    const { value: legacy } = await Preferences.get({ key: legacyKeyFor('fresh') });
+    if (restart || (value === null && legacy === null)) {
       await Preferences.set({
         key: saveKeyFor('fresh'),
         value: serializeSave(freshStartSave(current)),

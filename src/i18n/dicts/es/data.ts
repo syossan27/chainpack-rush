@@ -17,7 +17,6 @@ export const DATA: Dict = {
   攻撃間隔: 'Intervalo de ataque',
   攻撃倍率: 'Multiplicador de ataque',
   出撃時間: 'Tiempo de expedición',
-  バックパック拡張: 'Mochila más grande',
   消耗品枠: 'Espacios de consumibles',
   倉庫容量: 'Capacidad del Almacén',
   '480円': '¥480',
