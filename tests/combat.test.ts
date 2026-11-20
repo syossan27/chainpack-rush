@@ -179,7 +179,7 @@ describe('combat', () => {
     expect(steps).toEqual([1, 2, 3, 1, 2]);
   });
 
-  it('試作 keepCountOnKill: 狙いが倒れて次の敵へ移っても、段数は続く', () => {
+  it('keepCountOnKill: 狙いが倒れて次の敵へ移っても、段数は続く', () => {
     // Same line as above: the slime falls at step 3, steps 4-5 hit the next enemy at 4 and 5
     const { loadout, items } = build(6, 1, [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },

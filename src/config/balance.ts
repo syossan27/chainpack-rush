@@ -46,7 +46,7 @@ export const CHAIN = {
 } as const;
 
 /**
- * 短い連鎖と長い連鎖の性格づけ（試作。RunConfig.rules で切り替えられる）
+ * 短い連鎖と長い連鎖の性格づけ（RunConfig.rules で切り替えられる）
  * B: 次の発火までの待ちは、直前の連鎖の段数に比例（短い連鎖は回転が速い）
  * A: 連鎖中に一定以上のダメージを受けると、よろめいて残りの段が途切れる（長い連鎖はリスクが大きい）
  */
@@ -62,7 +62,7 @@ export interface ChainRules {
   staggerRatio: number;
   /** 連鎖のこの段数までは無防備にならない（0 = 連鎖中はずっと無防備。短い連鎖を安全にする） */
   guardSteps: number;
-  /** Trial: when the aimed enemy dies, the branch moves on to the next enemy and keeps counting */
+  /** When the aimed enemy dies, the branch moves on to the next enemy and keeps counting */
   keepCountOnKill: boolean;
 }
 
@@ -78,7 +78,7 @@ export const CHAIN_RULES: ChainRules = {
 };
 
 /**
- * Trial (stacked board): a small board where a cell holds a stack of gear of one element. The
+ * A small board where a cell holds a stack of gear of one element. The
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
 export const STACK = {
@@ -95,7 +95,7 @@ export const STACK = {
 } as const;
 
 /**
- * Trial (relics): every boss beaten offers relics to stick on a board cell. A relic works on the gear
+ * Every boss beaten offers relics to stick on a board cell. A relic works on the gear
  * in its cell for the rest of the run only (nothing is kept)
  */
 export const RELIC = {
@@ -123,7 +123,7 @@ export const RELIC = {
 } as const;
 
 /**
- * Trial (treasure): now and then a lone 黄金ゴブリン takes a group's place. It does not attack, and
+ * Now and then a lone 黄金ゴブリン takes a group's place. It does not attack, and
  * runs off some seconds after it reaches the hero unless it is beaten first
  */
 export const TREASURE = {
@@ -144,7 +144,7 @@ export const TREASURE = {
 } as const;
 
 /**
- * Trial (mastery): the hero's mastery per element grows with every ring of attack gear. A technique
+ * The hero's mastery per element grows with every ring of attack gear. A technique
  * is not known until it sparks: when its line-up comes, it may spark (chance by the element's level)
  */
 export const MASTERY = {
@@ -415,7 +415,7 @@ export const LOOT = {
 } as const;
 
 /**
- * Trial (charms): accessories on the stacked board's edge build a combo multiplier during a chain
+ * Accessories on the stacked board's edge build a combo multiplier during a chain
  * (data/charms.ts, core/charms.ts). Tuned with the bot on 2026-11-20 (see the design memo)
  */
 export const CHARM = {

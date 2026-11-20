@@ -1,4 +1,4 @@
-// Trial (relics): the 3 relics a beaten boss offers, over the field while the run waits. Drag a card
+// The 3 relics a beaten boss offers, over the field while the run waits. Drag a card
 // onto a cell of the board, or tap a card and then a cell; 「いらない」 or the time running out goes on
 // without one.
 import Phaser from 'phaser';

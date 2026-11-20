@@ -14,7 +14,7 @@ import { createInitialSave } from '../src/core/save';
 import { BOARDS, getBoard } from '../src/data/boards';
 import { REGIONS } from '../src/data/regions';
 
-describe('試作「盤面の種類」: 一覧', () => {
+describe('盤面の種類: 一覧', () => {
   it('形はこわれていない（行の長さがそろい、画面に収まり、マスが4つ以上）', () => {
     for (const b of BOARDS) {
       const { width, height } = boardSize(b);
@@ -64,7 +64,7 @@ describe('試作「盤面の種類」: 一覧', () => {
   });
 });
 
-describe('試作「盤面の種類」: 特徴', () => {
+describe('盤面の種類: 特徴', () => {
   it('ダメージの倍率は、盤面全体の倍率と属性の倍率をかけたもの', () => {
     expect(boardDamageMult(getBoard('standard'), 'fire')).toBe(1);
     expect(boardDamageMult(getBoard('small'), 'physical')).toBe(getBoard('small').damage);
@@ -90,7 +90,7 @@ describe('試作「盤面の種類」: 特徴', () => {
   });
 });
 
-describe('試作「盤面の種類」: 持っている盤面', () => {
+describe('盤面の種類: 持っている盤面', () => {
   it('初めは標準だけ。地域を抜ける（次が開く）とその地域のご褒美が増える', () => {
     const s = createInitialSave();
     expect(ownedBoards(s).map((b) => b.id)).toEqual(['standard']);

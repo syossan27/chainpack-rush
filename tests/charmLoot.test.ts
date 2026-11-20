@@ -35,7 +35,7 @@ function runCfg(extra: Partial<RunConfig> = {}): RunConfig {
   };
 }
 
-describe('試作アクセサリー: ドロップ', () => {
+describe('アクセサリー: ドロップ', () => {
   it('確率で出る。ボスなどは出やすい', () => {
     expect(rollCharmDrop(fixed(CHARM.dropChance - 0.001), 1, false, region, false)).not.toBeNull();
     expect(rollCharmDrop(fixed(CHARM.dropChance + 0.001), 1, false, region, false)).toBeNull();

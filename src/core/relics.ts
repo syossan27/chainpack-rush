@@ -1,4 +1,4 @@
-// Trial (relics): which relics a beaten boss offers, which cells take them, and the value in each
+// Which relics a beaten boss offers, which cells take them, and the value in each
 // relic's text. Pure: no Phaser.
 import { RELIC } from '../config/balance';
 import { getItemDef } from '../data/items';

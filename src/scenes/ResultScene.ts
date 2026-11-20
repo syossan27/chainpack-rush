@@ -99,7 +99,7 @@ export class ResultScene extends Phaser.Scene {
   }
 
   /**
-   * Trial (mastery): between the record and the loot — techniques learned by a spark, then the
+   * Between the record and the loot — techniques learned by a spark, then the
    * elements that grew most (a level up is marked and pulses)
    */
   /**

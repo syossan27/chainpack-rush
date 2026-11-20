@@ -131,7 +131,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     for (let i = 0; i < this.loadout.cells.length; i++) {
       const c = this.cellCenter(i);
       if (holeIn(this.loadout, i)) {
-        // Trial (board shapes): outside the shape, plain frame with a faint hatch (no slot)
+        // Outside the shape, plain frame with a faint hatch (no slot)
         this.cellImgs.push(null);
         const g = this.scene.add.graphics().lineStyle(2, 0xffffff, 0.06);
         const h = (this.cell - 12) / 2;
@@ -160,7 +160,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
       const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
       this.iconLayer.add(icon);
       this.icons.set(i, icon);
-      // Trial (stacked board): the items under the top, small at the top-left (labels sit below)
+      // The items under the top, small at the top-left (labels sit below)
       (this.loadout.under?.[i] ?? []).forEach((u, k) => {
         const low = this.items.get(u);
         if (!low) return;

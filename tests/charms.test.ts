@@ -66,7 +66,7 @@ function ctx(placed: Record<number, CharmInstance>, matched: number[] = []): Cha
   };
 }
 
-describe('試作アクセサリー: スロットと判定', () => {
+describe('アクセサリー: スロットと判定', () => {
   it('スロットの番号: 列が先、行が後', () => {
     expect(slotsOfCell(5, 4)).toEqual([1, 5]);
     expect(slotCells(0, 4, 3)).toEqual([0, 4, 8]);
@@ -201,7 +201,7 @@ function estimateRow(defIds: string[], onRow: CharmId[] = []) {
   return estimateRoute(plan, b.items, 1, undefined, ctx);
 }
 
-describe('試作アクセサリー: 配置画面の予想', () => {
+describe('アクセサリー: 配置画面の予想', () => {
   it('予想にもそろいの指輪が入る', () => {
     const v = getCharm('match_ring')!.values.rare;
     const row = ['torch', 'flame_staff', 'torch'];

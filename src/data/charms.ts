@@ -1,4 +1,4 @@
-// Trial (charms): accessories worn on the stacked board's edge. A column slot watches its column, a
+// Accessories worn on the stacked board's edge. A column slot watches its column, a
 // row slot its row; when its event happens there, the chain's combo multiplier goes up (+ adds,
 // × multiplies) for every later hit of that chain. Values are per rarity, provisional ({v} in a
 // text is filled with the value). The rules are in core/charms.ts

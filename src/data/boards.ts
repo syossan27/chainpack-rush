@@ -1,4 +1,4 @@
-// Trial (stacked board): the boards to arrange gear on. Each has a shape (cells outside it are holes)
+// The boards to arrange gear on. Each has a shape (cells outside it are holes)
 // and one trait. A region's reward board helps in the next region.
 import type { Element } from '../core/types';
 

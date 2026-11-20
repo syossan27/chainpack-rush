@@ -64,7 +64,7 @@ const hits = (evs: CombatEvent[], uid: string) =>
     (e): e is Extract<CombatEvent, { type: 'hit' }> => e.type === 'hit' && e.itemUid === uid,
   );
 
-describe('試作「レリック」: ボスを倒すと3つから選ぶ', () => {
+describe('レリック: ボスを倒すと3つから選ぶ', () => {
   it('切り替えがなければ出ない。ボスのあともそのまま進む', () => {
     const c = new Combat(cfg({ hero: strong }));
     until(c, 'bossDefeated');
@@ -138,7 +138,7 @@ describe('試作「レリック」: ボスを倒すと3つから選ぶ', () => {
   });
 });
 
-describe('試作「レリック」: 貼ったマスの装備に効く', () => {
+describe('レリック: 貼ったマスの装備に効く', () => {
   it('二度鳴りの鈴: 2回攻撃する', () => {
     const plain = dummyChain([]);
     const evs = dummyChain([[2, 'bell']]);
@@ -242,7 +242,7 @@ describe('試作「レリック」: 貼ったマスの装備に効く', () => {
   });
 });
 
-describe('試作「レリック」: 重ねる盤面', () => {
+describe('レリック: 重ねる盤面', () => {
   it('加速の羽は、アーティファクト（ひとりで3回鳴る）のマスでも1回だけ、最後に効く', () => {
     const b = build(3, 1, [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },

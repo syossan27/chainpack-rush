@@ -56,7 +56,7 @@ function stepAll(c: Combat, ticks: number): CombatEvent[] {
   return out;
 }
 
-describe('試作「黄金ゴブリン」: 出てくるとき', () => {
+describe('黄金ゴブリン: 出てくるとき', () => {
   it('切り替えがなければ出ない', () => {
     const plain = cfg();
     delete plain.treasure;
@@ -90,7 +90,7 @@ describe('試作「黄金ゴブリン」: 出てくるとき', () => {
   });
 });
 
-describe('試作「黄金ゴブリン」: 倒すか、逃げられるか', () => {
+describe('黄金ゴブリン: 倒すか、逃げられるか', () => {
   it('倒すと、レア以上の装備4個（1個目はエピック以上）と、ふつうの敵10体ぶんの金貨', () => {
     const seed = seedWithGoblinFirst();
     const strong = { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 1e4 };
@@ -148,7 +148,7 @@ describe('試作「黄金ゴブリン」: 倒すか、逃げられるか', () =>
   });
 });
 
-describe('試作「黄金ゴブリン」: 1個目はエピック以上', () => {
+describe('黄金ゴブリン: 1個目はエピック以上', () => {
   it('どの乱数でも、下限つきの戦利品はエピックかレジェンダリー', async () => {
     const { rollLoot } = await import('../src/core/loot');
     const { Rng } = await import('../src/core/rng');

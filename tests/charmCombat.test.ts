@@ -76,7 +76,7 @@ const hits = (evs: CombatEvent[]) =>
 const charmEvs = (evs: CombatEvent[]) =>
   evs.filter((e): e is Extract<CombatEvent, { type: 'charm' }> => e.type === 'charm');
 
-describe('試作アクセサリー: 戦闘のコンボ倍率', () => {
+describe('アクセサリー: 戦闘のコンボ倍率', () => {
   it('アクセサリーがなければ今と同じ', () => {
     const base = rowCfg(['torch', 'flame_staff', 'torch'], null, { seed: 3 });
     const without: RunConfig = { ...base };
@@ -206,7 +206,7 @@ describe('試作アクセサリー: 戦闘のコンボ倍率', () => {
   });
 });
 
-describe('試作アクセサリー: 連鎖の首飾りはコンボの強さで伸びる', () => {
+describe('アクセサリー: 連鎖の首飾りはコンボの強さで伸びる', () => {
   const necklace = getCharm('combo_necklace')!.values.rare;
   // poison, then wind until the poison is 5 layers deep, then one more wind: 毒爆
   const venomRow = ['poison_dagger', ...new Array(5).fill('wind_sword')];
@@ -242,7 +242,7 @@ describe('試作アクセサリー: 連鎖の首飾りはコンボの強さで�
   });
 });
 
-describe('試作アクセサリー: 予想と戦闘が同じ計算をする', () => {
+describe('アクセサリー: 予想と戦闘が同じ計算をする', () => {
   it('同じマスで + と × が反応しても、予想の最後の倍率は戦闘と同じ', () => {
     // 3x2: origin (0,0) → canteen (1,0) down → thunder (1,1) right → thunder (2,1)
     const b = build(3, 2, [

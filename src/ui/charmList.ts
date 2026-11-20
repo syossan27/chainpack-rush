@@ -1,4 +1,4 @@
-// Trial (charms): the charm case on the loadout screen, in place of the item list while an edge slot
+// The charm case on the loadout screen, in place of the item list while an edge slot
 // is chosen. Tap a row to put that charm in the slot; hold a row to see it and sell it.
 import Phaser from 'phaser';
 import { CHARM } from '../config/balance';

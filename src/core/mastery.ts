@@ -1,4 +1,4 @@
-// Trial (mastery): the hero's mastery per element grows with every ring of attack gear; a level
+// The hero's mastery per element grows with every ring of attack gear; a level
 // adds a little damage to that element. Techniques are not known until they spark in a run (see
 // Combat). Pure: no Phaser.
 import { MASTERY } from '../config/balance';

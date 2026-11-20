@@ -73,7 +73,7 @@ const RAGE = {
 
 /** 精鋭の色（体の色味と名札） */
 const ELITE_TINT: Record<EliteId, number> = { tough: 0xa8b8ff, swift: 0xffa0a0, golden: 0xffe070 };
-/** Trial (treasure): the goblin's tint and its time-left gauge */
+/** The goblin's tint and its time-left gauge */
 const TREASURE_TINT = 0xffd040;
 const FLEE_COLOR = 0xfff6c0;
 const FLEE_TICKS = TREASURE.fleeSeconds * SIM.ticksPerSecond;
@@ -649,7 +649,7 @@ export class FieldView {
           }
       }
       if (sealed) dot(SEALED.dot);
-      // Trial (treasure): the time left before it runs off, under the HP bar
+      // The time left before it runs off, under the HP bar
       if (e.treasure) {
         const left = Math.max(0, e.fleeLeft / FLEE_TICKS);
         // A dark frame keeps the bar readable over the goblin's gold head

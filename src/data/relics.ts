@@ -1,4 +1,4 @@
-// Trial (relics): what a relic stuck on a cell does to the gear in that cell, for one run only.
+// What a relic stuck on a cell does to the gear in that cell, for one run only.
 // The values are in RELIC (config/balance.ts); {v} in a text is filled with the relic's value.
 
 export type RelicId =

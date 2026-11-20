@@ -101,11 +101,11 @@ export class RunScene extends Phaser.Scene {
   private bestBefore: { step: number; damage: number } | null = null;
   /** Mastery grows in this run (ordinary and endless runs) */
   private mastery = false;
-  /** Trial (relics): the cards a beaten boss offers (null when none is offered) */
+  /** The cards a beaten boss offers (null when none is offered) */
   private picker: RelicPicker | null = null;
-  /** Trial (charms): the edge slots and the combo meter (null: not in this run) */
+  /** The edge slots and the combo meter (null: not in this run) */
   private charmStrip: CharmStrip | null = null;
-  /** Trial (relics): the marks of the relics stuck on the board */
+  /** The marks of the relics stuck on the board */
   private relicBadges!: Phaser.GameObjects.Container;
   private loadout!: Loadout;
   private speed = 1;
@@ -530,7 +530,7 @@ export class RunScene extends Phaser.Scene {
     zone.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (this.paused || this.ending || this.inspecting) return;
       if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
-      // Trial (relics): while relics are offered, a tap on a cell sticks the chosen one
+      // While relics are offered, a tap on a cell sticks the chosen one
       if (this.picker) {
         this.picker.tapCell(this.view.cellAt(p.x, p.y));
         return;
@@ -573,7 +573,7 @@ export class RunScene extends Phaser.Scene {
     const halted = this.paused || this.inspecting;
     // ヒットストップ中は止め、ボス撃破のあとはしばらくスロー
     const juice = now < this.hitStopUntil ? 0 : now < this.slowUntil ? JUICE.bossSlowRate : 1;
-    // Trial (relics): the choosing time runs in real time, whatever the game speed
+    // The choosing time runs in real time, whatever the game speed
     const offer = this.combat.relicOffer;
     const rate = offer ? 1 : this.speed * juice;
     if (!halted && !this.ending) {
@@ -751,7 +751,7 @@ export class RunScene extends Phaser.Scene {
       if (p.x > W + 160) continue;
       this.warned.add(e.id);
       if (e.treasure) {
-        // Trial (treasure): it has come into view
+        // It has come into view
         this.showBanner(t('黄金ゴブリンだ！ 逃げる前に倒せ！'), COLORS.gold);
         sfx('openEpic');
         hapticMedium();
@@ -954,7 +954,7 @@ export class RunScene extends Phaser.Scene {
           break;
         }
         case 'spark': {
-          // Trial (mastery): the technique is learned right now (its technique event follows)
+          // The technique is learned right now (its technique event follows)
           const name = t(getTechnique(ev.id)?.name ?? '');
           this.showBanner(t('閃いた！ {name}', { name }), '#ffe27a');
           this.slowUntil = now + JUICE.bossSlowMs;
@@ -1156,7 +1156,7 @@ export class RunScene extends Phaser.Scene {
     }
   }
 
-  /** Trial (relics): the cards over the field, while the run waits */
+  /** The cards over the field, while the run waits */
   private openRelicPicker(ids: RelicId[]): void {
     this.picker?.close();
     const view = this.view;
@@ -1187,7 +1187,7 @@ export class RunScene extends Phaser.Scene {
     this.picker = null;
   }
 
-  /** Trial (relics): a round mark at the top right of each cell with a relic */
+  /** A round mark at the top right of each cell with a relic */
   private drawRelicBadges(): void {
     this.relicBadges.removeAll(true);
     const view = this.view;

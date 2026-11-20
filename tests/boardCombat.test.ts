@@ -56,7 +56,7 @@ function wait(cfg: RunConfig): number {
   throw new Error('no second chain');
 }
 
-describe('試作「盤面の種類」: 戦闘での特徴', () => {
+describe('盤面の種類: 戦闘での特徴', () => {
   it('盤面の指定がない・標準の盤面は、今までどおり', () => {
     expect(firstHits(board('standard'))).toEqual(firstHits(board(undefined)));
   });
@@ -83,7 +83,7 @@ describe('試作「盤面の種類」: 戦闘での特徴', () => {
   });
 });
 
-describe('試作「盤面の種類」: 配置画面の見積もり', () => {
+describe('盤面の種類: 配置画面の見積もり', () => {
   it('見積もりにも盤面の倍率がかかる（小さな盤面は全部、炎の盤面は炎だけ）', () => {
     const est = (id: BoardId | undefined) => {
       const cfg = board(id);

@@ -24,7 +24,7 @@ const loadout: Loadout = {
   consumables: [],
 };
 
-describe('試作「レリック」: 出てくる3つ', () => {
+describe('レリック: 出てくる3つ', () => {
   it('ボスを倒すたびに、重ならない3種類が出る', () => {
     for (let seed = 1; seed <= 50; seed++) {
       const offer = rollRelicOffer(new Rng(seed));
@@ -45,7 +45,7 @@ describe('試作「レリック」: 出てくる3つ', () => {
   });
 });
 
-describe('試作「レリック」: 貼れるマス', () => {
+describe('レリック: 貼れるマス', () => {
   const none = new Map<number, RelicId>();
 
   it('攻撃用は攻撃装備のマスだけ。どれでも用は装備のあるマスならどこでも', () => {

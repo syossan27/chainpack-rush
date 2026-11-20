@@ -28,7 +28,7 @@ const off = (uid: string, defId: string, exits: Placed['exits'] = []): Placed =>
   exits,
 });
 
-describe('重ねる盤面（試作）: 連鎖', () => {
+describe('重ねる盤面: 連鎖', () => {
   it('重ねは下から順に鳴り、1つごとに数える。中は0.1秒、位置で ×1 / ×1.5 / ×2。矢印は一番上だけ', () => {
     const { loadout, items } = stacked(
       3,
@@ -234,7 +234,7 @@ describe('重ねる盤面（試作）: 連鎖', () => {
   });
 });
 
-describe('重ねる盤面（試作）: アーティファクトは1個で山3つぶん', () => {
+describe('重ねる盤面: アーティファクトは1個で山3つぶん', () => {
   it('重ねる盤面では、ひとりで3回鳴る（×1 / ×1.5 / ×2）。ふつうの盤面では1回', () => {
     const placed: Placed[] = [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
@@ -260,7 +260,7 @@ describe('重ねる盤面（試作）: アーティファクトは1個で山3つ
   });
 });
 
-describe('試作「盤面の種類」: 深い盤面の連鎖', () => {
+describe('盤面の種類: 深い盤面の連鎖', () => {
   it('深い盤面では、4つの山が ×1・×1.25・×1.5・×2 で鳴り、アーティファクトはひとりで4回鳴る', () => {
     const placed: Placed[] = [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },

@@ -1,4 +1,4 @@
-// Trial (stacked board): editing a small board whose cells hold stacks of gear. The top item of a
+// Editing a small board whose cells hold stacks of gear. The top item of a
 // cell is cells[i]; the items under it are under[i], bottom first. Pure: no Phaser.
 import { getBoard, type BoardId } from '../data/boards';
 import { getItemDef } from '../data/items';

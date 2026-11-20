@@ -1,4 +1,4 @@
-// Trial (stacked board): the boards' shapes and traits, and which boards the player has. Pure: no
+// The boards' shapes and traits, and which boards the player has. Pure: no
 // Phaser.
 import { PROGRESS, STACK } from '../config/balance';
 import { BOARDS, getBoard, type BoardDef } from '../data/boards';

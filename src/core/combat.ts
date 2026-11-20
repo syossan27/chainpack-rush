@@ -100,22 +100,22 @@ export interface RunConfig {
   firstRun?: boolean;
   /** Artifact types the player already has: they never drop (one of each type) */
   ownedArtifacts?: readonly string[];
-  /** Trial (mastery): the hero's levels per element and the techniques learned so far */
+  /** The hero's levels per element and the techniques learned so far */
   mastery?: RunMastery;
-  /** Trial (relics): a beaten boss offers relics. `stuck` are on the board from the start (bots) */
+  /** A beaten boss offers relics. `stuck` are on the board from the start (bots) */
   relics?: { stuck?: readonly (readonly [number, RelicId])[] };
-  /** Trial (treasure): the chance per loop that a lone treasure goblin takes a group's place */
+  /** The chance per loop that a lone treasure goblin takes a group's place */
   treasure?: { chance: number };
   /**
-   * Trial (charms): the charm in each edge slot of the board (columns, then rows). Its presence also
+   * The charm in each edge slot of the board (columns, then rows). Its presence also
    * lets charms drop (from their own random stream)
    */
   charms?: CharmSlots;
-  /** Trial (charms): the player has none yet, so the first boss beaten surely drops one */
+  /** The player has none yet, so the first boss beaten surely drops one */
   charmSure?: boolean;
 }
 
-/** Trial (mastery): what a run starts with (see core/mastery.ts) */
+/** What a run starts with (see core/mastery.ts) */
 export interface RunMastery {
   levels: Partial<Record<Element, number>>;
   learned: readonly string[];
@@ -152,9 +152,9 @@ export interface EnemyState {
   slowUntil: number;
   /** 粉砕: この tick まで「一撃○○未満を無効」が効かない */
   guardBrokenUntil: number;
-  /** Trial (treasure): the fleeing treasure goblin (does not attack) */
+  /** The fleeing treasure goblin (does not attack) */
   treasure: boolean;
-  /** Trial (treasure): ticks left at the hero before it runs off */
+  /** Ticks left at the hero before it runs off */
   fleeLeft: number;
 }
 
@@ -176,7 +176,7 @@ export type CombatEvent =
   | { type: 'revive'; tick: number }
   /** 必殺技の一撃（演出用。ダメージは続く hit に入っている） */
   | { type: 'technique'; tick: number; id: string; enemyId: number; uid: string }
-  /** Trial (mastery): a technique sparked and is learned (its technique event follows) */
+  /** A technique sparked and is learned (its technique event follows) */
   | { type: 'spark'; tick: number; id: string; enemyId: number; uid: string }
   | {
       type: 'chainStart';
@@ -212,9 +212,9 @@ export type CombatEvent =
       dot?: boolean;
     }
   | { type: 'combo'; tick: number; enemyId: number; name: string; label: string }
-  /** Trial (charms): a charm in `slot` raised the chain's combo multiplier to m */
+  /** A charm in `slot` raised the chain's combo multiplier to m */
   | { type: 'charm'; tick: number; slot: number; op: '+' | '×'; value: number; m: number }
-  /** Trial (charms): an enemy dropped a charm */
+  /** An enemy dropped a charm */
   | { type: 'charmDrop'; tick: number; enemyId: number; charm: CharmInstance }
   | { type: 'statusApplied'; tick: number; enemyId: number; status: Status }
   | {
@@ -255,11 +255,11 @@ export type CombatEvent =
       capped: boolean;
     }
   | { type: 'runEnd'; tick: number; reason: EndReason; reachedLoop: number }
-  /** Trial (relics): a beaten boss offers these; the run waits until one is stuck or skipped */
+  /** A beaten boss offers these; the run waits until one is stuck or skipped */
   | { type: 'relicOffer'; tick: number; ids: RelicId[] }
   | { type: 'relicStuck'; tick: number; id: RelicId; cell: number }
   | { type: 'relicSkipped'; tick: number }
-  /** Trial (treasure): the goblin came, was beaten, or ran off */
+  /** The goblin came, was beaten, or ran off */
   | { type: 'treasure'; tick: number; enemyId: number; phase: 'appear' | 'caught' | 'fled' };
 
 export type TimeBonusReason = 'boss' | 'sweep' | 'consumable';
@@ -274,9 +274,9 @@ export interface RunStats {
   /** 倒した敵から拾ったゴールド */
   gold?: number;
   sweeps: number; // 一網打尽の回数
-  /** Trial (mastery): rings of attack gear per element */
+  /** Rings of attack gear per element */
   rings?: Partial<Record<Element, number>>;
-  /** Trial (mastery): techniques that sparked in this run */
+  /** Techniques that sparked in this run */
   sparks?: string[];
 }
 
@@ -287,7 +287,7 @@ export interface RunResult {
   progress: number;
   reachedLoop: number;
   drops: ItemInstance[];
-  /** Trial (charms): charms picked up (only when the run had charms on) */
+  /** Charms picked up (only when the run had charms on) */
   charms?: CharmInstance[];
   stats: RunStats;
   ticks: number;
@@ -300,7 +300,7 @@ export type RunInput =
   | { t: number; k: 'use'; slot: number }
   | { t: number; k: 'retreat' }
   | { t: number; k: 'revive'; s: number }
-  /** Trial (relics) */
+  /** Relics: stick an offered one on a cell, or go on without */
   | { t: number; k: 'relic'; id: RelicId; cell: number }
   | { t: number; k: 'relicSkip' };
 
@@ -321,9 +321,9 @@ interface ActiveChain {
   cut: boolean; // 狙える敵がいなくなって打ち切った、またはよろめいた
   staggered: boolean; // 被弾でよろめいて途切れた
   taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
-  /** Trial (relics): the chain reached a 呼び戻しの笛, so the wait before the next is cut */
+  /** The chain reached a 呼び戻しの笛, so the wait before the next is cut */
   recall: boolean;
-  /** Trial (charms): the combo multiplier (×1 at the start of every chain) */
+  /** The combo multiplier (×1 at the start of every chain) */
   charmM: number;
 }
 
@@ -339,7 +339,7 @@ interface StrikeMods {
   origin: string;
   /** 起点石の種類（毒・吸血の分） */
   line?: LineBoost;
-  /** Trial (relics): the relic on the cell of this gear */
+  /** The relic on the cell of this gear */
   relic?: RelicId;
   /** The cell of this gear (the charms of its column and row react to it) */
   cell: number;
@@ -358,7 +358,7 @@ export function resistMult(
 
 const secToTicks = (s: number): number => Math.round(s * SIM.ticksPerSecond);
 
-/** Trial (treasure): the enemy the treasure goblin looks like */
+/** The enemy the treasure goblin looks like */
 const TREASURE_ENEMY = 'goblin';
 
 export class Combat {
@@ -409,25 +409,25 @@ export class Combat {
     sweeps: 0,
   };
 
-  /** Trial (relics): the relics offered now (the run waits until `until`), or null */
+  /** The relics offered now (the run waits until `until`), or null */
   relicOffer: { ids: RelicId[]; until: number } | null = null;
-  /** Trial (relics): the relic stuck on each cell (cell → relic) */
+  /** The relic stuck on each cell (cell → relic) */
   readonly relics = new Map<number, RelicId>();
-  /** Trial (treasure): the goblin came already (once per run) */
+  /** The goblin came already (once per run) */
   private treasureDone = false;
 
   private readonly rng: Rng;
   private readonly cfg: RunConfig;
   /** Artifact types the player has, plus those dropped in this run (one of each type) */
   private readonly artifactsOwned: Set<string>;
-  /** Trial (stacked board): which board the gear sits on (its trait works in combat) */
+  /** Which board the gear sits on (its trait works in combat) */
   private readonly board: BoardDef;
-  /** Trial (charms): what the edge charms react to (null: no charms, nothing changes) */
+  /** What the edge charms react to (null: no charms, nothing changes) */
   private readonly charms: CharmContext | null;
-  /** Trial (charms): charm drops draw from here, so every other drop stays as it was */
+  /** Charm drops draw from here, so every other drop stays as it was */
   private readonly charmRng: Rng | null;
   private readonly charmDrops: CharmInstance[] = [];
-  /** Trial (mastery): techniques known in this run (null: every technique fires as usual) */
+  /** Techniques known in this run (null: every technique fires as usual) */
   private readonly learned: Set<string> | null;
   private readonly origins: string[];
   /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
@@ -625,7 +625,7 @@ export class Combat {
   }
 
   useConsumable(slot: number): boolean {
-    // Trial (relics): not while the run waits for a relic choice
+    // Not while the run waits for a relic choice
     if (this.ended || this.relicOffer) return false;
     const uid = this.consumables[slot];
     if (!uid) return false;
@@ -692,7 +692,7 @@ export class Combat {
   step(): void {
     if (this.ended) return;
     const dt = SIM.fixedStep;
-    // Trial (relics): the run waits while a beaten boss's relics are offered
+    // The run waits while a beaten boss's relics are offered
     if (this.relicOffer) {
       if (this.tick < this.relicOffer.until) {
         this.tick++;
@@ -780,7 +780,7 @@ export class Combat {
   /** このランで再開を使ったか */
   revived = false;
 
-  /** Trial (relics): stick an offered relic on a cell (false: not offered, or the cell won't take it) */
+  /** Stick an offered relic on a cell (false: not offered, or the cell won't take it) */
   placeRelic(id: RelicId, cell: number): boolean {
     const offer = this.relicOffer;
     if (!offer || this.ended || !offer.ids.includes(id)) return false;
@@ -792,7 +792,7 @@ export class Combat {
     return true;
   }
 
-  /** Trial (relics): go on without a relic */
+  /** Go on without a relic */
   skipRelic(): boolean {
     if (!this.relicOffer || this.ended) return false;
     this.inputs.push({ t: this.tick, k: 'relicSkip' });
@@ -823,7 +823,7 @@ export class Combat {
       this.luck.eliteChanceMax,
       this.luck.eliteChance + this.luck.eliteChancePerLoop * (this.loop - 1),
     );
-    // Trial (treasure): once per run, a lone goblin may take one group's place
+    // Once per run, a lone goblin may take one group's place
     let treasureAt = -1;
     if (
       this.cfg.treasure &&
@@ -924,7 +924,7 @@ export class Combat {
     return e;
   }
 
-  /** Trial (treasure): the lone goblin, much tougher than a goblin of this loop */
+  /** The lone goblin, much tougher than a goblin of this loop */
   private spawnTreasure(x: number, group: number): void {
     const e = this.spawnEnemy(TREASURE_ENEMY, x, FIELD.frontStand, false, group);
     e.treasure = true;
@@ -934,7 +934,7 @@ export class Combat {
     this.emit({ type: 'treasure', tick: this.tick, enemyId: e.id, phase: 'appear' });
   }
 
-  /** Trial (treasure): at the hero, the goblin's time runs out, and then it runs off */
+  /** At the hero, the goblin's time runs out, and then it runs off */
   private treasureWaits(e: EnemyState): void {
     if (e.x > this.heroX + e.standOffset + 0.5) return;
     e.fleeLeft--;
@@ -951,7 +951,7 @@ export class Combat {
     this.emit({ type: 'treasure', tick: this.tick, enemyId: e.id, phase: 'fled' });
   }
 
-  /** Trial (relics): a beaten boss offers relics; the run waits for a choice */
+  /** A beaten boss offers relics; the run waits for a choice */
   private openRelicOffer(): void {
     const ids = rollRelicOffer(this.rng);
     this.relicOffer = { ids, until: this.tick + secToTicks(RELIC.pickSeconds) };
@@ -963,7 +963,7 @@ export class Combat {
     this.emit({ type: 'relicSkipped', tick: this.tick });
   }
 
-  /** Trial (relics): a cell with a 呼び戻しの笛 or a 守りの札 rang */
+  /** A cell with a 呼び戻しの笛 or a 守りの札 rang */
   private relicRing(c: ActiveChain, relic: RelicId | undefined): void {
     if (relic === 'whistle') c.recall = true;
     if (relic === 'ward') this.defense = Math.min(this.maxHp, this.defense + RELIC.wardDefense);
@@ -1183,7 +1183,7 @@ export class Combat {
     } else {
       this.atb = 0;
     }
-    // Trial (relics): a 呼び戻しの笛 on the way cuts the wait before the next chain
+    // A 呼び戻しの笛 on the way cuts the wait before the next chain
     if (c.recall) {
       const full = this.atbFull;
       this.atb = full - (full - this.atb) * RELIC.whistleWait;
@@ -1196,7 +1196,7 @@ export class Combat {
     const def = getItemDef(inst.defId);
     const parent = s.parentIndex >= 0 ? c.exec[s.parentIndex]! : null;
     const fromCell = s.parentIndex >= 0 ? c.plan.steps[s.parentIndex]!.cell : null;
-    // Trial (relics): the relic on this cell works on the gear in it
+    // The relic on this cell works on the gear in it
     const relic = this.relics.size > 0 ? this.relics.get(s.cell) : undefined;
 
     if (def.kind !== 'attack') {
@@ -1234,7 +1234,7 @@ export class Combat {
     const eff = counts ? parent.eff + 1 : 1;
     this.relicRing(c, relic);
     // 疾風の羽: このあとに続く装備の段数を多く数える（子へ渡す段数だけ増やす）
-    // Trial (relics): 加速の羽 does the same, once per cell (from the top of a stack)
+    // 加速の羽 does the same, once per cell (from the top of a stack)
     const feather = relic === 'feather' && this.topOfCell(s) ? RELIC.featherSteps : 0;
     c.exec[index] = {
       eff: eff + (def.stepBoost ?? 0) + feather,
@@ -1243,7 +1243,7 @@ export class Combat {
     };
     const mult = chainMultiplier(eff, c.plan.multCap);
     if (eff > this.stats.maxStep) this.stats.maxStep = eff;
-    // Trial (mastery): every ring of attack gear grows its element
+    // Every ring of attack gear grows its element
     const rings = this.stats.rings;
     if (rings) {
       const el = def.element ?? 'physical';
@@ -1284,13 +1284,13 @@ export class Combat {
     };
     const strikes = (def.hits ?? 1) * (relic === 'bell' ? 2 : 1);
     for (let h = 0; h < strikes; h++) this.strike(c, s.uid, inst, def, eff, aim, critChance, mods);
-    // Trial (charms): after the step's own strikes, so they still use the multiplier before it
+    // After the step's own strikes, so they still use the multiplier before it
     if (this.charms && cellTop(s, this.charms)) this.charmEvent(c, 'cell', s.cell);
     if (tech) this.charmEvent(c, 'tech', s.cell);
     if (this.charms && stackTop(s, this.charms)) this.charmEvent(c, 'stackTop', s.cell);
   }
 
-  /** Trial (charms): an event in a cell raises the chain's combo multiplier (no charms: nothing) */
+  /** An event in a cell raises the chain's combo multiplier (no charms: nothing) */
   private charmEvent(c: ActiveChain, trigger: CharmTrigger, cell: number, weight = 1): void {
     if (!this.charms) return;
     const r = applyCharmEvent(c.charmM, trigger, cell, this.charms, weight);
@@ -1299,7 +1299,7 @@ export class Combat {
   }
 
   /**
-   * The technique this step fires. Trial (mastery): one not learned yet fires only if it sparks
+   * The technique this step fires. One not learned yet fires only if it sparks
    * now (chance by its element's level), and is learned from then on
    */
   private knownTech(id: string | undefined, enemyId: number, uid: string): string | undefined {
@@ -1334,14 +1334,14 @@ export class Combat {
     const crit = (def.atk ?? 0) > 0 && this.rng.next() < critChance;
     const aimCombo = findCombo(def.element, aim.statuses);
     const baseArea = effectiveArea(def.area ?? 'single', aimCombo);
-    // Trial (relics): 薙ぎ払いの紋 widens a single or splash attack, 貫きの矢じり pierces further
+    // 薙ぎ払いの紋 widens a single or splash attack, 貫きの矢じり pierces further
     const area = mods.relic === 'sweep' && baseArea !== 'all' ? 'sweep' : baseArea;
     const pierce = (def.pierce ?? 0) + (mods.relic === 'pierce' ? RELIC.pierce : 0);
     const targets = this.resolveTargets(aim, area, pierce);
-    // Trial (charms): the whole attack uses the multiplier as it was when the attack began
+    // The whole attack uses the multiplier as it was when the attack began
     const charmM = c.charmM;
     let landed = false;
-    // Trial (charms): the strongest combo this attack made (0: none)
+    // The strongest combo this attack made (0: none)
     let comboW = 0;
     for (const t of targets) {
       const statused = t.statuses.size > 0;
@@ -1405,7 +1405,7 @@ export class Combat {
           c.totalDamage += dmg;
           this.stats.totalDamage += dmg;
           if (dmg > this.stats.maxDamage) this.stats.maxDamage = dmg;
-          // Trial (relics): 吸血の牙
+          // 吸血の牙
           if (mods.relic === 'fang') this.hp = Math.min(this.maxHp, this.hp + dmg * RELIC.fangHeal);
           // 吸血: 与えた分の一部を回復
           if (def.lifesteal)
@@ -1428,11 +1428,11 @@ export class Combat {
         comboW = Math.max(comboW, comboWeight(POISON.burstName));
       if (t.hp <= 0 && t.alive) {
         this.killEnemy(t, mods.relic === 'claw');
-        // Trial (charms): とどめ counts every enemy this attack beats
+        // とどめ counts every enemy this attack beats
         this.charmEvent(c, 'kill', mods.cell);
       }
     }
-    // Trial (charms): once per attack, however many enemies it reached
+    // Once per attack, however many enemies it reached
     if (landed && crit) this.charmEvent(c, 'crit', mods.cell);
     if (comboW > 0) this.charmEvent(c, 'combo', mods.cell, comboW);
   }
@@ -1443,7 +1443,7 @@ export class Combat {
     return this.region.resist?.[element ?? 'physical'] ?? 1;
   }
 
-  /** Trial (mastery): the element's level adds damage to its gear */
+  /** The element's level adds damage to its gear */
   private masteryMult(def: ItemDef): number {
     const levels = this.cfg.mastery?.levels;
     if (!levels) return 1;
@@ -1629,7 +1629,7 @@ export class Combat {
             rareOrBetter,
             this.region.loot,
             promised,
-            // Trial (treasure): the first of the goblin's drops is epic or better
+            // The first of the goblin's drops is epic or better
             e.treasure && k === 0 ? 'epic' : undefined,
             this.artifactsOwned,
           );
@@ -1639,7 +1639,7 @@ export class Combat {
           this.dropCharm(e, rareOrBetter, false);
         }
       }
-      // Trial (charms): a player with none gets one from the first boss
+      // A player with none gets one from the first boss
       if (e.def.boss && this.cfg.charmSure && this.charmDrops.length === 0)
         this.dropCharm(e, true, true);
     }
@@ -1678,7 +1678,7 @@ export class Combat {
     }
   }
 
-  /** Trial (charms): maybe a charm comes with a dropped item (never without charms on) */
+  /** Maybe a charm comes with a dropped item (never without charms on) */
   private dropCharm(e: EnemyState, rareOrBetter: boolean, sure: boolean): void {
     if (!this.charmRng) return;
     const c = rollCharmDrop(this.charmRng, e.loop, rareOrBetter, this.region.loot, sure);

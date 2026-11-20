@@ -24,7 +24,7 @@ export interface RouteEstimate {
   /** 成立している必殺技（id） */
   techs: string[];
   /**
-   * Trial (charms): the combo multiplier at the end of the route (1 without charms). Crits and
+   * The combo multiplier at the end of the route (1 without charms). Crits and
    * kills are left out: they depend on luck and the enemy's health
    */
   charmPeak: number;
@@ -34,9 +34,9 @@ export function estimateRoute(
   plan: ChainPlan,
   items: ReadonlyMap<string, ItemInstance>,
   attackMult: number,
-  /** Trial (stacked board): the board's damage trait counts too */
+  /** The board's damage trait counts too */
   board?: BoardId,
-  /** Trial (charms): the edge charms build a combo multiplier along the route */
+  /** The edge charms build a combo multiplier along the route */
   charms?: CharmContext,
 ): RouteEstimate {
   const boardDef = getBoard(board);
@@ -59,7 +59,7 @@ export function estimateRoute(
     const def = getItemDef(inst.defId);
     const statused = statuses.size > 0;
     const combo = findCombo(def.element, statuses);
-    // Trial (charms): the strongest combo of this step (0: none)
+    // The strongest combo of this step (0: none)
     let comboW = 0;
     if (combo) {
       statuses.delete(combo.status);
@@ -116,7 +116,7 @@ export function estimateRoute(
     }
     if (combo) fromCombos += hit - hit / combo.mult;
     if (s.tech) techs.push(s.tech);
-    // Trial (charms): after the step (both strikes of twin blades use the multiplier before it)
+    // After the step (both strikes of twin blades use the multiplier before it)
     if (charms) {
       // The battle's order: a combo during the attack, then the cell, technique and stack
       if (comboW > 0) charmEvent('combo', s.cell, comboW);

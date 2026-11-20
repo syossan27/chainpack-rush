@@ -1,4 +1,4 @@
-// Trial (charms): the rules of the combo multiplier, shared by the battle (combat.ts) and the
+// The rules of the combo multiplier, shared by the battle (combat.ts) and the
 // loadout screen's estimate (estimate.ts) so the two never drift. Pure: no Phaser.
 //
 // Slots: one per column (0..width-1), then one per row (width..width+height-1). A charm reacts to

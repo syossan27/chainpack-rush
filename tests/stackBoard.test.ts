@@ -47,7 +47,7 @@ function put(l: Loadout, uid: string, cell: number): Loadout {
   return r.loadout;
 }
 
-describe('重ねる盤面（試作）: 置き方', () => {
+describe('重ねる盤面: 置き方', () => {
   it('空きマスに置き、同じ装備なら上に重なる（レアリティは問わない、3つまで）', () => {
     let l = emptyStackBoard();
     expect([l.width, l.height]).toEqual([4, 3]);
@@ -160,7 +160,7 @@ describe('重ねる盤面（試作）: 置き方', () => {
   });
 });
 
-describe('試作「盤面の種類」: 形と深さ', () => {
+describe('盤面の種類: 形と深さ', () => {
   it('空の盤面は、その盤面の大きさと種類で作る', () => {
     const l = emptyStackBoard('lightning');
     expect([l.width, l.height]).toEqual([4, 5]);

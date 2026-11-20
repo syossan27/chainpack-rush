@@ -116,7 +116,7 @@ export function showNewLooks(
   });
 }
 
-/** Trial (board shapes): a board earned by clearing a region, in the same card */
+/** A board earned by clearing a region, in the same card */
 export function showNewBoards(
   scene: Phaser.Scene,
   list: readonly BoardDef[],
@@ -147,7 +147,7 @@ export function showNewBoards(
 }
 
 /**
- * Trial (charms): the charms a run brought home, one card each, and a last card when the case was
+ * The charms a run brought home, one card each, and a last card when the case was
  * full and some were sold
  */
 export function showNewCharms(

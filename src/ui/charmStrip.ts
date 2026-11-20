@@ -1,4 +1,4 @@
-// Trial (charms): the board's edge slots (one under each column, one left of each row) and the
+// The board's edge slots (one under each column, one left of each row) and the
 // combo meter. The loadout screen uses full slots outside the frame (tappable); the battle screens
 // use small badges on the frame's edge (a tall board leaves no room under it there).
 import Phaser from 'phaser';

@@ -9,7 +9,7 @@ import {
 } from '../src/core/mastery';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
 
-describe('試作「熟練と閃き」: 熟練のレベル', () => {
+describe('熟練と閃き: 熟練のレベル', () => {
   it('レベルに要る熟練は 50 → 150 → 300 …と増える（1つ手前では上がらない）', () => {
     expect(pointsForLevel(0)).toBe(0);
     expect(pointsForLevel(1)).toBe(MASTERY.base);
@@ -50,7 +50,7 @@ describe('試作「熟練と閃き」: 熟練のレベル', () => {
   });
 });
 
-describe('試作「熟練と閃き」: 出撃の結果をためる', () => {
+describe('熟練と閃き: 出撃の結果をためる', () => {
   it('鳴った回数を属性ごとに足し、上がったレベルと閃いた必殺技を返す', () => {
     const s = createInitialSave();
     const first = recordMastery(s, { physical: 60, fire: 10 }, ['triple']);

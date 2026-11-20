@@ -55,7 +55,7 @@ const hitsOf = (evs: CombatEvent[], uid: string) =>
 /** A level whose spark chance is 100% */
 const sure = Math.ceil(1 / MASTERY.sparkPerLevel);
 
-describe('試作「熟練と閃き」: 必殺技は閃くまで出ない', () => {
+describe('熟練と閃き: 必殺技は閃くまで出ない', () => {
   it('切り替えがないふだんの出撃では、並べればそのまま出る（今まで通り）', () => {
     const evs = firstChain(new Combat(cfg(undefined)));
     expect(evs.filter((e) => e.type === 'technique').map((e) => (e as { id: string }).id)).toEqual([
@@ -103,7 +103,7 @@ describe('試作「熟練と閃き」: 必殺技は閃くまで出ない', () =>
   });
 });
 
-describe('試作「熟練と閃き」: 熟練がたまり、強くなる', () => {
+describe('熟練と閃き: 熟練がたまり、強くなる', () => {
   it('攻撃の装備が鳴るたびに、その属性の熟練が1たまる', () => {
     const c = new Combat(cfg({ levels: {}, learned: [] }));
     const evs = firstChain(c);

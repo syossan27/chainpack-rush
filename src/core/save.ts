@@ -245,7 +245,7 @@ function readBoards(data: Record<string, unknown>): SaveData['boards'] {
   return { active: 'standard', layouts: old ? { standard: old } : {}, charms: {} };
 }
 
-/** Trial (charms): each board's slots, as arrays of charm uids or null (checked again on use) */
+/** Each board's slots, as arrays of charm uids or null (checked again on use) */
 function readBoardCharms(v: unknown): Partial<Record<BoardId, (string | null)[]>> | undefined {
   if (!isObj(v)) return undefined;
   const out: Partial<Record<BoardId, (string | null)[]>> = {};
@@ -255,7 +255,7 @@ function readBoardCharms(v: unknown): Partial<Record<BoardId, (string | null)[]>
   return out;
 }
 
-/** Trial (charms): known charms with a real rarity, each uid once */
+/** Known charms with a real rarity, each uid once */
 function readCharms(v: unknown[]): CharmInstance[] {
   const seen = new Set<string>();
   const out: CharmInstance[] = [];
@@ -269,7 +269,7 @@ function readCharms(v: unknown[]): CharmInstance[] {
 }
 
 /** 消耗品の自動補充の記録（古いセーブにはない） */
-/** Trial (stacked board): the items under each cell's top, when the board has them */
+/** The items under each cell's top, when the board has them */
 function underOf(l: { under?: unknown; cells?: unknown }): { under?: string[][] } {
   if (!Array.isArray(l.under) || !Array.isArray(l.cells) || l.under.length !== l.cells.length)
     return {};
@@ -294,7 +294,7 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 
-/** Trial (mastery): points per known element (non-negative numbers) and learned technique ids */
+/** Points per known element (non-negative numbers) and learned technique ids */
 function readMastery(v: Record<string, unknown>): MasteryData {
   const points: MasteryData['points'] = {};
   if (isObj(v.points))
