@@ -7,6 +7,7 @@ import {
 } from '../data/challenges';
 import { getItemDef, RARITY_NAMES, ELEMENT_NAMES } from '../data/items';
 import { t } from '../i18n';
+import { boardUids } from './stack';
 import type { ItemInstance, Loadout, Rarity } from './types';
 
 /**
@@ -68,7 +69,7 @@ export function rulesText(r: ChallengeRules): string[] {
     t('レアリティは{rarity}まで（起点は問わない）', { rarity: t(RARITY_NAMES[r.maxRarity] ?? '') }),
     t('アーティファクトは使えない'),
   ];
-  if (r.maxOrigins) out.push(t('起点は{n}つまで', { n: r.maxOrigins }));
+  if (r.noStack) out.push(t('1マスに1つだけ（重ねない）'));
   if (r.elements)
     out.push(
       t('攻撃装備は {elements} だけ', {
@@ -97,7 +98,10 @@ export function itemViolation(it: ItemInstance, r: ChallengeRules): string | nul
   return null;
 }
 
-/** 並べ方が制限に合っているか。合っていなければ、その理由（空なら出撃できる） */
+/**
+ * 並べ方が制限に合っているか。合っていなければ、その理由（空なら出撃できる）。
+ * Every item on the board counts, the ones stacked under the tops too
+ */
 export function checkRules(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
@@ -105,16 +109,14 @@ export function checkRules(
 ): string[] {
   const out = new Set<string>();
   let origins = 0;
-  for (const uid of loadout.cells) {
-    if (!uid) continue;
+  for (const uid of boardUids(loadout)) {
     const it = items.get(uid);
     if (!it) continue;
     const v = itemViolation(it, r);
     if (v) out.add(v);
     if (getItemDef(it.defId).kind === 'origin') origins++;
   }
-  if (r.maxOrigins && origins > r.maxOrigins)
-    out.add(t('起点が{n}つある（{max}つまで）', { n: origins, max: r.maxOrigins }));
+  if (r.noStack && loadout.under?.some((u) => u.length > 0)) out.add(t('重ねた装備がある'));
   if (origins === 0) out.add(t('起点がない'));
   return [...out];
 }

@@ -10,9 +10,11 @@ import {
 } from '../src/core/challengeLoadout';
 import { CHALLENGES } from '../src/data/challenges';
 import { setSave, getSave } from '../src/platform/store';
+import { emptyStackBoard, stackAt, stackPut } from '../src/core/stack';
+import type { ItemInstance, Loadout } from '../src/core/types';
+import type { SaveData } from '../src/core/save';
 
 const rare = CHALLENGES.find((c) => c.id === 'rare_rush')!.rules;
-const one = CHALLENGES.find((c) => c.id === 'one_origin')!.rules;
 const noGuard = CHALLENGES.find((c) => c.id === 'no_guard')!.rules;
 
 describe('挑戦用の編成', () => {
@@ -69,12 +71,8 @@ describe('挑戦用の編成', () => {
     expect(s.loadout.cells[1]).toBe('i3');
   });
 
-  it('起点が多ければ発火順の後ろから外し、防具なしなら防具を空ける', () => {
+  it('防具なしなら防具を空ける', () => {
     const s = createInitialSave();
-    const l = fitToRules(s, s.loadout, one);
-    expect(l.originOrder).toEqual(['i1']);
-    expect(l.cells.includes('i2')).toBe(false);
-    expect(checkRules(l, itemMap(s), one)).toEqual([]);
     const g = fitToRules(s, s.loadout, noGuard);
     expect(g.cells.includes('i6')).toBe(false);
     expect(checkRules(g, itemMap(s), noGuard)).toEqual([]);
@@ -87,4 +85,97 @@ describe('挑戦用の編成', () => {
     expect(l.originOrder.length).toBe(1);
     expect(l.cells.filter(Boolean)).toHaveLength(1);
   });
+
+  it('重ねる盤面: 代わりは同じ装備の、制限内のレアリティ（斧には替えない）', () => {
+    const s = save([
+      ['o', 'origin_stone', 'common', ['right']],
+      ['e1', 'sword', 'epic', ['right']],
+      ['e2', 'sword', 'epic', ['right']],
+      // The axe points the same way as the sword it would replace; the rare sword does not
+      ['r1', 'sword', 'rare', ['up']],
+      ['ax', 'axe', 'rare', ['right']],
+    ]);
+    const board = put(s, [
+      ['o', 0],
+      ['e1', 1],
+      ['e2', 1],
+    ]);
+    const l = fitToRules(s, board, rare);
+    // One rare sword stands in; the other epic has no stand-in and drops out
+    expect(stackAt(l, 1)).toEqual(['r1']);
+    expect(l.under![1]).toEqual([]);
+    expect(checkRules(l, itemMap(s), rare)).toEqual([]);
+  });
+
+  it('重ねる盤面: 代わりがなければ外し、下のものが上がる', () => {
+    const s = save([
+      ['o', 'origin_stone', 'common', ['right']],
+      ['c', 'sword', 'common', ['right']],
+      ['e', 'sword', 'epic', ['down']],
+    ]);
+    const board = put(s, [
+      ['o', 0],
+      ['c', 1],
+      ['e', 1],
+    ]);
+    const l = fitToRules(s, board, rare);
+    expect(stackAt(l, 1)).toEqual(['c']);
+    expect(l.cells[1]).toBe('c');
+    expect(l.under![1]).toEqual([]);
+  });
+
+  it('重ねない連鎖では、各マスの一番上だけ残す', () => {
+    const s = save([
+      ['o', 'origin_stone', 'common', ['right']],
+      ['a', 'sword', 'common', ['right']],
+      ['b', 'sword', 'common', ['right']],
+    ]);
+    const board = put(s, [
+      ['o', 0],
+      ['a', 1],
+      ['b', 1],
+    ]);
+    const rules = CHALLENGES.find((c) => c.id === 'no_stack')!.rules;
+    const l = fitToRules(s, board, rules);
+    expect(stackAt(l, 1)).toEqual(['b']);
+    expect(checkRules(l, itemMap(s), rules)).toEqual([]);
+  });
+
+  it('重ねた分と盤面の種類は、合わせても落ちない', () => {
+    const s = save([
+      ['o', 'origin_stone', 'common', ['right']],
+      ['a', 'sword', 'common', ['right']],
+      ['b', 'sword', 'common', ['right']],
+    ]);
+    const board = put(s, [
+      ['o', 0],
+      ['a', 1],
+      ['b', 1],
+    ]);
+    const l = fitToRules(s, board, rare);
+    expect(l.board).toBe('standard');
+    expect(l.under![1]).toEqual(['a']);
+    expect(l.cells[1]).toBe('b');
+  });
 });
+
+/** A save that owns exactly this gear */
+function save(list: [string, string, ItemInstance['rarity'], ItemInstance['exits']][]): SaveData {
+  const s = createInitialSave();
+  s.inventory = list.map(([uid, defId, rarity, exits]) => ({
+    uid,
+    defId,
+    rarity,
+    exits,
+    rerollCount: 0,
+  }));
+  return s;
+}
+
+/** A standard stacked board with the save's gear put on cells in order (later ones on top) */
+function put(s: SaveData, list: [string, number][]): Loadout {
+  const items = itemMap(s);
+  let l = emptyStackBoard('standard');
+  for (const [uid, cell] of list) l = stackPut(l, items, uid, cell).loadout;
+  return l;
+}

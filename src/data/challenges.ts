@@ -5,8 +5,8 @@ import type { Element, ItemKind, Rarity } from '../core/types';
 export interface ChallengeRules {
   /** 置ける装備のレアリティの上限（アーティファクトは置けない） */
   maxRarity: Rarity;
-  /** 起点の数の上限 */
-  maxOrigins?: number;
+  /** One item per cell: nothing stacked */
+  noStack?: boolean;
   /** 置ける攻撃装備の属性（省略時はすべて） */
   elements?: Element[];
   /** 置けない種類 */
@@ -32,11 +32,11 @@ export const CHALLENGES: readonly ChallengeDef[] = [
     rules: { maxRarity: 'rare' },
   },
   {
-    id: 'one_origin',
-    name: 'ひとすじの連鎖',
-    text: '起点はひとつだけ。長い一本の連鎖で城壁に挑む',
+    id: 'no_stack',
+    name: '重ねない連鎖',
+    text: '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む',
     regionId: 'rampart',
-    rules: { maxRarity: 'epic', maxOrigins: 1 },
+    rules: { maxRarity: 'epic', noStack: true },
   },
   {
     id: 'elements',

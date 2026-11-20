@@ -158,9 +158,6 @@ export const DATA: Dict = {
   レアの意地: 'Kebanggaan Langka',
   'レア以下の装備だけで、洞窟でどこまで削れるか':
     'Hanya perlengkapan Langka atau lebih rendah. Seberapa besar damage-mu di Gua?',
-  ひとすじの連鎖: 'Satu Rantai Panjang',
-  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
-    'Hanya satu Asal. Taklukkan Benteng dengan satu rantai panjang.',
   属性の試練: 'Ujian Elemen',
   '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
     'Hanya perlengkapan Api, Petir, Es, Air, dan Minyak. Bakar habis Gunung Berapi dengan kombo!',
@@ -537,4 +534,7 @@ export const DATA: Dict = {
   重: 'Tu',
   '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
     'Kombo +{v} tiap tumpukan penuh di baris/kolomnya menyerang',
+  重ねない連鎖: 'Rantai Datar',
+  '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
+    'Satu per petak. Tanpa tumpuk: taklukkan Benteng hanya dengan jalur panahmu.',
 };

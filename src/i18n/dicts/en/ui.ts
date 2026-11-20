@@ -6,7 +6,6 @@ export const UI: Dict = {
   // src/core/challenge.ts
   'レアリティは{rarity}まで（起点は問わない）': 'Rarity up to {rarity} (Origins: any)',
   アーティファクトは使えない: 'No Artifacts',
-  '起点は{n}つまで': 'Max Origins: {n}',
   '攻撃装備は {elements} だけ': 'Attack gear: {elements} only',
   '・|sep': ', ',
   防具は使えない: 'No armor',
@@ -15,7 +14,6 @@ export const UI: Dict = {
   '{rarity}より上の装備（{item}）がある': 'Gear above {rarity} ({item})',
   '使えない属性の装備（{item}）がある': 'Gear with a banned element ({item})',
   '使えない種類の装備（{item}）がある': 'Gear of a banned type ({item})',
-  '起点が{n}つある（{max}つまで）': 'Origins: {n} (max {max})',
   起点がない: 'No Origin',
 
   // src/core/cosmetics.ts
@@ -769,4 +767,6 @@ export const UI: Dict = {
   'アクセサリーを手に入れた！': 'Got an accessory!',
   'アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）':
     'Accessory case full: sold {n} (+{gold}G)',
+  '1マスに1つだけ（重ねない）': 'One item per cell (no stacking)',
+  重ねた装備がある: 'Stacked gear on the board',
 };

@@ -6,7 +6,6 @@ export const UI: Dict = {
   // src/core/challenge.ts
   'レアリティは{rarity}まで（起点は問わない）': 'Kelangkaan maks. {rarity} (Asal: bebas)',
   アーティファクトは使えない: 'Artefak dilarang',
-  '起点は{n}つまで': 'Asal maks. {n}',
   '攻撃装備は {elements} だけ': 'Perlengkapan serang: hanya {elements}',
   '・|sep': ', ',
   防具は使えない: 'Pelindung dilarang',
@@ -16,7 +15,6 @@ export const UI: Dict = {
   '{rarity}より上の装備（{item}）がある': 'Ada perlengkapan di atas {rarity} ({item})',
   '使えない属性の装備（{item}）がある': 'Ada perlengkapan dengan elemen terlarang ({item})',
   '使えない種類の装備（{item}）がある': 'Ada perlengkapan dengan jenis terlarang ({item})',
-  '起点が{n}つある（{max}つまで）': 'Asal: {n} (maks. {max})',
   起点がない: 'Tidak ada Asal',
 
   // src/core/cosmetics.ts
@@ -777,4 +775,6 @@ export const UI: Dict = {
   'アクセサリーを手に入れた！': 'Dapat aksesori!',
   'アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）':
     'Kotak aksesori penuh: {n} dijual (+{gold}G)',
+  '1マスに1つだけ（重ねない）': 'Satu per petak (tanpa tumpuk)',
+  重ねた装備がある: 'Ada perlengkapan bertumpuk',
 };

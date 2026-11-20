@@ -6,7 +6,6 @@ export const UI: Dict = {
   // src/core/challenge.ts
   'レアリティは{rarity}まで（起点は問わない）': "Rareté jusqu'à {rarity} (Origines : au choix)",
   アーティファクトは使えない: 'Artefacts interdits',
-  '起点は{n}つまで': 'Origines max : {n}',
   '攻撃装備は {elements} だけ': "Équipement d'attaque : {elements} uniquement",
   '・|sep': ', ',
   防具は使えない: 'Armures interdites',
@@ -16,7 +15,6 @@ export const UI: Dict = {
   '{rarity}より上の装備（{item}）がある': 'Objet au-dessus de {rarity} ({item})',
   '使えない属性の装備（{item}）がある': "Objet d'un élément interdit ({item})",
   '使えない種類の装備（{item}）がある': "Objet d'un type interdit ({item})",
-  '起点が{n}つある（{max}つまで）': 'Origines : {n} (max {max})',
   起点がない: 'Aucune Origine',
 
   // src/core/cosmetics.ts
@@ -784,4 +782,6 @@ export const UI: Dict = {
   'アクセサリーを手に入れた！': 'Accessoire obtenu !',
   'アクセサリー入れがいっぱいなので {n}個を売りました（+{gold}G）':
     'Écrin à accessoires plein : {n} vendu(s) (+{gold}G)',
+  '1マスに1つだけ（重ねない）': 'Un objet par case (pas d’empilement)',
+  重ねた装備がある: 'Équipement empilé sur le plateau',
 };

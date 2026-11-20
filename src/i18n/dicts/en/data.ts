@@ -157,9 +157,6 @@ export const DATA: Dict = {
   レアの意地: 'Rare Pride',
   'レア以下の装備だけで、洞窟でどこまで削れるか':
     'Rare or lower gear only. How much damage can you deal in the Cave?',
-  ひとすじの連鎖: 'One True Chain',
-  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
-    'Just one Origin. Take on the Ramparts with one long chain.',
   属性の試練: 'Elemental Trial',
   '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
     'Fire, Thunder, Ice, Water and Oil gear only. Burn down the Volcano with combos!',
@@ -530,4 +527,7 @@ export const DATA: Dict = {
   重: 'St',
   '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
     'Combo +{v} each time a full stack in its row/column fires',
+  重ねない連鎖: 'Flat Chain',
+  '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
+    'One item per cell. No stacking: take on the Ramparts with the path of your arrows alone.',
 };

@@ -157,9 +157,6 @@ export const DATA: Dict = {
   レアの意地: 'Seltener Stolz',
   'レア以下の装備だけで、洞窟でどこまで削れるか':
     'Nur Ausrüstung bis Selten. Wie viel Schaden schaffst du in der Höhle?',
-  ひとすじの連鎖: 'Eine einzige Kette',
-  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
-    'Nur ein Ursprung. Bezwinge den Burgwall mit einer langen Kette.',
   属性の試練: 'Probe der Elemente',
   '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
     'Nur Ausrüstung mit Feuer, Blitz, Eis, Wasser und Öl. Brenn den Vulkan mit Kombos nieder!',
@@ -538,4 +535,7 @@ export const DATA: Dict = {
   重: 'St',
   '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
     'Kombo +{v}, wenn ein voller Stapel seiner Zeile/Spalte auslöst',
+  重ねない連鎖: 'Flache Kette',
+  '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
+    'Ein Gegenstand pro Feld. Ohne Stapeln: Bezwinge den Burgwall nur mit dem Weg deiner Pfeile.',
 };

@@ -157,9 +157,6 @@ export const DATA: Dict = {
   レアの意地: 'Fierté du Rare',
   'レア以下の装備だけで、洞窟でどこまで削れるか':
     'Équipement Rare ou moins uniquement. Combien de dégâts infligeras-tu dans la Grotte ?',
-  ひとすじの連鎖: 'Chaîne solitaire',
-  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
-    'Une seule Origine. Affronte les Remparts avec une seule longue chaîne.',
   属性の試練: 'Épreuve des éléments',
   '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
     'Équipement Feu, Foudre, Glace, Eau et Huile uniquement. Embrase le Volcan à coups de combos !',
@@ -538,4 +535,7 @@ export const DATA: Dict = {
   重: 'Pi',
   '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
     "Combo +{v} chaque fois qu'une pile complète de sa ligne/colonne se déclenche",
+  重ねない連鎖: 'Chaîne à plat',
+  '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
+    'Un objet par case. Sans empiler : affronte les Remparts avec le seul chemin de tes flèches.',
 };

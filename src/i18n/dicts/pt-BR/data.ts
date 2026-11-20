@@ -158,9 +158,6 @@ export const DATA: Dict = {
   レアの意地: 'Orgulho Raro',
   'レア以下の装備だけで、洞窟でどこまで削れるか':
     'Só equipamento Raro ou inferior. Quanto dano você consegue causar na Caverna?',
-  ひとすじの連鎖: 'Uma Só Corrente',
-  '起点はひとつだけ。長い一本の連鎖で城壁に挑む':
-    'Só uma Origem. Encare as Muralhas com uma única corrente longa.',
   属性の試練: 'Prova dos Elementos',
   '炎・雷・氷・水・油の装備だけ。コンボで火山を焼き尽くせ':
     'Só equipamento de Fogo, Raio, Gelo, Água e Óleo. Queime o Vulcão com combos!',
@@ -535,4 +532,7 @@ export const DATA: Dict = {
   重: 'Pi',
   '付けた行・列のそろった重ねが撃つたびにコンボ +{v}':
     'Combo +{v} sempre que uma pilha completa da sua linha/coluna dispara',
+  重ねない連鎖: 'Corrente Plana',
+  '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
+    'Um item por casa. Sem empilhar: encare as Muralhas só com o caminho das suas setas.',
 };
