@@ -775,6 +775,12 @@ export const UI: Dict = {
   売れません: 'Não vende',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefatos não podem ser vendidos (um de cada)',
   '試作: アクセサリー {state}': 'Protótipo: Acessórios {state}',
+  '0から遊ぶ（今のセーブは残る）': 'Jogar do zero (seu save fica)',
+  元のセーブに戻る: 'Voltar ao seu save',
+  '0からやり直す': 'Zerar de novo',
+  '0のセーブを消して、最初から始めます。元のセーブはそのままです。':
+    'Apaga o save do zero e começa do início. Seu save real continua como está.',
+  やり直す: 'Recomeçar',
   'コンボ ×{m}': 'Combo ×{m}',
   外してから売れます: 'Retire-o antes de vender',
   アクセサリーはまだありません: 'Ainda não há acessórios',

@@ -35,6 +35,7 @@ import { REGIONS, getRegion } from '../data/regions';
 import { UNIT_SPRITES, animKey, iconKey, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { applySettings, getSave, persist } from '../platform/store';
+import { activeSlot, switchSlot } from '../platform/storage';
 import { ItemIcon } from '../ui/itemIcon';
 import { describeItem, showItemDetail, type DetailAction } from '../ui/itemInfo';
 import { ChestReveal } from '../ui/chestReveal';
@@ -601,6 +602,10 @@ export class BaseScene extends Phaser.Scene {
         );
       });
     }
+    // Debug: play from zero on a second save (the real one stays). Shown on the second save even
+    // with the debug setting off, so there is always a way back
+    if (debugMenuAllowed() && (save.settings.debug || activeSlot() === 'fresh'))
+      this.addSlotButtons(648);
 
     // 出撃
     const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {
@@ -2881,6 +2886,49 @@ export class BaseScene extends Phaser.Scene {
   }
 
   /** 拠点のプレミアムの案内: タップで中身を説明して、購入へ */
+  /** Debug: go to the save played from zero, or back to the real one / start the zero save over */
+  private addSlotButtons(y: number): void {
+    const save = getSave();
+    const opts = { height: 52, fontSize: 20 } as const;
+    if (activeSlot() === 'main') {
+      this.root.add(
+        new Button(
+          this,
+          W / 2,
+          y,
+          t('0から遊ぶ（今のセーブは残る）'),
+          () => void switchSlot('fresh', save),
+          { ...opts, width: 400, skin: 'gray' },
+        ),
+      );
+      return;
+    }
+    this.root.add(
+      new Button(this, W / 2 - 102, y, t('元のセーブに戻る'), () => void switchSlot('main', save), {
+        ...opts,
+        width: 196,
+        skin: 'gold',
+      }),
+    );
+    this.root.add(
+      new Button(
+        this,
+        W / 2 + 102,
+        y,
+        t('0からやり直す'),
+        () =>
+          confirmDialog(
+            this,
+            t('0からやり直す'),
+            t('0のセーブを消して、最初から始めます。元のセーブはそのままです。'),
+            t('やり直す'),
+            () => void switchSlot('fresh', save, true),
+          ),
+        { ...opts, width: 196, skin: 'red' },
+      ),
+    );
+  }
+
   private addPremiumBar(y: number): void {
     const prem = isPremium();
     const w = W - 60;

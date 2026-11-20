@@ -775,6 +775,12 @@ export const UI: Dict = {
   'アーティファクトは売れません（1種類につき1つ）':
     'Artefakte kann man nicht verkaufen (je eins pro Art)',
   '試作: アクセサリー {state}': 'Prototyp: Accessoires {state}',
+  '0から遊ぶ（今のセーブは残る）': 'Von null spielen (Spielstand bleibt)',
+  元のセーブに戻る: 'Zurück zum Spielstand',
+  '0からやり直す': 'Null neu starten',
+  '0のセーブを消して、最初から始めます。元のセーブはそのままです。':
+    'Löscht den Null-Spielstand und beginnt von vorn. Dein echter Spielstand bleibt erhalten.',
+  やり直す: 'Neu starten',
   'コンボ ×{m}': 'Kombo ×{m}',
   外してから売れます: 'Erst ablegen, dann verkaufen',
   アクセサリーはまだありません: 'Noch keine Accessoires',

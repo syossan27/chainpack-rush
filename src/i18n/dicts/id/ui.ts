@@ -775,6 +775,12 @@ export const UI: Dict = {
   売れません: 'Tak bisa dijual',
   'アーティファクトは売れません（1種類につき1つ）': 'Artefak tak bisa dijual (satu per jenis)',
   '試作: アクセサリー {state}': 'Prototipe: Aksesori {state}',
+  '0から遊ぶ（今のセーブは残る）': 'Main dari nol (save tetap ada)',
+  元のセーブに戻る: 'Kembali ke save-mu',
+  '0からやり直す': 'Ulang dari nol',
+  '0のセーブを消して、最初から始めます。元のセーブはそのままです。':
+    'Hapus save nol dan mulai dari awal. Save aslimu tetap seperti semula.',
+  やり直す: 'Ulangi',
   'コンボ ×{m}': 'Kombo ×{m}',
   外してから売れます: 'Lepas dulu sebelum dijual',
   アクセサリーはまだありません: 'Belum ada aksesori',

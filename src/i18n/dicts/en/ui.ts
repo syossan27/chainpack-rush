@@ -767,6 +767,12 @@ export const UI: Dict = {
   売れません: "Can't Sell",
   'アーティファクトは売れません（1種類につき1つ）': "Artifacts can't be sold (one of each)",
   '試作: アクセサリー {state}': 'Prototype: Accessories {state}',
+  '0から遊ぶ（今のセーブは残る）': 'Play from zero (your save stays)',
+  元のセーブに戻る: 'Back to your save',
+  '0からやり直す': 'Start zero over',
+  '0のセーブを消して、最初から始めます。元のセーブはそのままです。':
+    'Delete the zero save and start from the beginning. Your real save stays as it is.',
+  やり直す: 'Start over',
   'コンボ ×{m}': 'Combo ×{m}',
   外してから売れます: 'Take it off first to sell it',
   アクセサリーはまだありません: 'No accessories yet',

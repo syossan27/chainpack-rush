@@ -25,6 +25,18 @@ const REMOVED_ITEMS: Record<string, number> = {
 export const SAVE_KEY = 'bp30.save.v1';
 export const SAVE_VERSION = 1;
 
+/**
+ * Debug (development and trial builds): a second save to play from zero while the real one stays
+ * as it is. Which one is in use is stored under SAVE_SLOT_KEY
+ */
+export type SaveSlot = 'main' | 'fresh';
+export const FRESH_SAVE_KEY = 'bp30.save.v1.fresh';
+export const SAVE_SLOT_KEY = 'bp30.slot';
+
+export function saveKeyFor(slot: SaveSlot): string {
+  return slot === 'fresh' ? FRESH_SAVE_KEY : SAVE_KEY;
+}
+
 export interface SaveData {
   version: number;
   gold: number;
@@ -139,6 +151,13 @@ export function emptyLoadout(
     originOrder: [],
     consumables: [],
   };
+}
+
+/** Debug: a save from zero that keeps the player's settings (debug, trial switches, sound, …) */
+export function freshStartSave(from: SaveData): SaveData {
+  const save = createInitialSave();
+  save.settings = { ...from.settings };
+  return save;
 }
 
 export function createInitialSave(): SaveData {
