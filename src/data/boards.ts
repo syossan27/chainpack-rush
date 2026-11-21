@@ -1,8 +1,18 @@
 // The boards to arrange gear on. Each has a shape (cells outside it are holes)
 // and one trait. A region's reward board helps in the next region.
-import type { Element } from '../core/types';
+import type { Element, GimmickKind } from '../core/types';
 
-export type BoardId = 'standard' | 'gale' | 'small' | 'crystal' | 'flame' | 'lightning' | 'deep';
+export type BoardId =
+  | 'standard'
+  | 'gale'
+  | 'small'
+  | 'crystal'
+  | 'flame'
+  | 'lightning'
+  | 'deep'
+  | 'spin'
+  | 'turnout'
+  | 'link';
 
 export interface BoardDef {
   id: BoardId;
@@ -21,6 +31,10 @@ export interface BoardDef {
   wait?: number;
   /** Items per cell (3 when absent) */
   depth?: number;
+  /** Gimmick cells (trial): the gimmicks the player may put on cells of this board, in order */
+  gimmicks?: readonly GimmickKind[];
+  /** Trial: owned only with the debug setting on */
+  trial?: boolean;
 }
 
 // prettier-ignore
@@ -49,6 +63,19 @@ export const BOARDS: readonly BoardDef[] = [
   {
     id: 'deep', name: '深い盤面', reward: 'demon_castle', depth: 4,
     text: '1マスに{v}つまで重ねられる', mask: ['XXX', 'XXX', 'XXX'],
+  },
+  // Gimmick cells (trial, debug only): they change only where the chain goes
+  {
+    id: 'spin', name: '回る盤面', trial: true, gimmicks: ['rotate', 'rotate'],
+    text: '回転マスを2つ置ける', mask: ['XXXX', 'XXXX', 'XXXX'],
+  },
+  {
+    id: 'turnout', name: '切り替えの盤面', trial: true, gimmicks: ['switch', 'switch'],
+    text: '切り替えマスを2つ置ける', mask: ['XXXX', 'XXXX', 'XXXX'],
+  },
+  {
+    id: 'link', name: 'つなぐ盤面', trial: true, gimmicks: ['warp', 'warp', 'rotate'],
+    text: 'ワープ1組と回転マスを置ける', mask: ['XXXX', 'XXXX', 'XXXX'],
   },
 ];
 

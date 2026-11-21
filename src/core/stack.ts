@@ -2,7 +2,7 @@
 // cell is cells[i]; the items under it are under[i], bottom first. Pure: no Phaser.
 import { getBoard, type BoardId } from '../data/boards';
 import { getItemDef } from '../data/items';
-import { boardDepth, boardSize, isHole } from './boards';
+import { boardDepth, boardSize, fitGimmicks, isHole } from './boards';
 import type { ItemInstance, Loadout } from './types';
 
 /**
@@ -46,7 +46,7 @@ export function boardUids(l: Loadout): string[] {
 export function emptyStackBoard(board: BoardId = 'standard'): Loadout {
   const { width, height } = boardSize(getBoard(board));
   const n = width * height;
-  return {
+  const out: Loadout = {
     width,
     height,
     cells: new Array<string | null>(n).fill(null),
@@ -55,6 +55,8 @@ export function emptyStackBoard(board: BoardId = 'standard'): Loadout {
     consumables: [],
     board,
   };
+  fitGimmicks(out);
+  return out;
 }
 
 function clone(l: Loadout): Loadout {
@@ -64,6 +66,7 @@ function clone(l: Loadout): Loadout {
     under: l.cells.map((_, i) => (l.under?.[i] ?? []).slice()),
     originOrder: l.originOrder.slice(),
     consumables: l.consumables.slice(),
+    ...(l.gimmicks ? { gimmicks: l.gimmicks.slice() } : {}),
   };
 }
 
@@ -218,5 +221,10 @@ export function restoreStackBoard(
     })
     .slice(0, consumableSlots);
   if (rec.consumableAuto) out.consumableAuto = rec.consumableAuto.slice();
+  // Gimmick cells belong to the board: they stay where the player put them
+  if (rec.gimmicks) {
+    out.gimmicks = rec.gimmicks.slice();
+    fitGimmicks(out);
+  }
   return out;
 }

@@ -38,7 +38,7 @@ describe('盤面の種類: 一覧', () => {
     const rewards = BOARDS.filter((b) => b.reward).map((b) => b.reward);
     expect(new Set(rewards).size).toBe(rewards.length);
     expect(rewards.sort()).toEqual(REGIONS.map((r) => r.id).sort());
-    expect(BOARDS.filter((b) => !b.reward).map((b) => b.id)).toEqual(['standard']);
+    expect(BOARDS.filter((b) => !b.reward && !b.trial).map((b) => b.id)).toEqual(['standard']);
   });
 
   it('形の外は穴。知らない盤面は標準として扱う', () => {

@@ -765,4 +765,15 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Sua organização não segue as regras',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Cada vez que a barra aos pés do herói enche, a Origem dispara e começa uma corrente.',
+  'マスをタップして仕掛けを置く・外す（残り: {list}）':
+    'Toque numa casa para pôr ou tirar um mecanismo (restam: {list})',
+  '発火 {k}/{n} ▶': 'Disparo {k}/{n} ▶',
+  仕掛け中: 'Pondo',
+  仕掛け: 'Mecanismos',
+  'もう置ける仕掛けがありません（置いたマスをタップで外す）':
+    'Não há mais mecanismos (toque num já posto para tirar)',
+  回転マス: 'Giratória',
+  切り替えマス: 'Desvio',
+  ワープ: 'Portal',
+  '{n}回 {step}連鎖': '{n}× {step} Corrente',
 };

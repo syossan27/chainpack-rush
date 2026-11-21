@@ -83,6 +83,11 @@ export const CHAIN_RULES: ChainRules = {
  * A small board where a cell holds a stack of gear of one element. The
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
+/** Gimmick cells (trial): a cell rings at most this many times in one firing */
+export const GIMMICK = {
+  maxVisits: 4,
+} as const;
+
 export const STACK = {
   width: 4,
   height: 3,

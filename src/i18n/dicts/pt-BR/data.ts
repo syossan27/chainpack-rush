@@ -514,4 +514,10 @@ export const DATA: Dict = {
     'Um item por casa. Sem empilhar: encare as Muralhas só com o caminho das suas setas.',
   '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
     'Enquanto estiver no tabuleiro, você nunca fica desprotegido durante correntes e nunca cambaleia. +40 de Defesa.',
+  回る盤面: 'Tabuleiro Giratório',
+  回転マスを2つ置ける: 'Põe 2 Giratórias',
+  切り替えの盤面: 'Tabuleiro de Desvios',
+  切り替えマスを2つ置ける: 'Põe 2 Desvios',
+  つなぐ盤面: 'Tabuleiro de Ligação',
+  ワープ1組と回転マスを置ける: 'Põe um par de Portais e uma Giratória',
 };

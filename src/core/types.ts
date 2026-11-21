@@ -103,7 +103,18 @@ export interface Loadout {
   under?: string[][];
   /** Stacked board (trial): which board it is (data/boards.ts: shape, holes, trait) */
   board?: import('../data/boards').BoardId;
+  /** Gimmick cells (trial): the gimmick on each cell (same length as cells). Absent: none */
+  gimmicks?: (GimmickKind | null)[];
 }
+
+/**
+ * Gimmick cells (trial) change only where the chain goes:
+ * - rotate: the top item's arrows turn 90° clockwise each time the chain passes
+ * - switch: the top item's arrows are used one at a time, the next one on each pass
+ * - warp (a pair): after the cell rings, the chain also goes to the other warp cell
+ */
+export type GimmickKind = 'rotate' | 'switch' | 'warp';
+export const GIMMICK_KINDS: readonly GimmickKind[] = ['rotate', 'switch', 'warp'];
 
 export interface ChainStep {
   t: number; // 起点発火からの秒数
@@ -142,4 +153,6 @@ export interface ChainPlan {
   maxStep: number;
   /** 循環の環を通る発火: 連鎖倍率が ×1.2 ずつ伸びる上の値（通らなければなし） */
   riseTo?: number;
+  /** Gimmick cells: each cell's turn count after this firing (the next firing starts from it) */
+  gimmickEnd?: number[];
 }

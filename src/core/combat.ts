@@ -40,6 +40,7 @@ import {
   lineEffects,
   lineOrigin,
   originQuick,
+  planChain,
   simulateChain,
   waitFactor,
 } from './chain';
@@ -446,6 +447,8 @@ export class Combat {
   private readonly units: string[][];
   /** Each origin's chain (the layout does not change during a run) */
   private readonly plans = new Map<string, ChainPlan>();
+  /** Gimmick cells: each cell's turns so far (they carry over from firing to firing) */
+  private gimmickState: number[] | undefined;
   private events: CombatEvent[] = [];
   private readonly inputs: RunInput[] = [];
   private nextEnemyId = 1;
@@ -1096,6 +1099,12 @@ export class Combat {
     const originUid = unit[0]!;
     const originIndex = this.nextUnitIndex % this.units.length;
     this.nextUnitIndex = (this.nextUnitIndex + 1) % this.units.length;
+    // Gimmick cells turn as the chain passes, so each firing takes its own route
+    if (this.cfg.loadout.gimmicks) {
+      const next = planChain(this.cfg.loadout, this.cfg.items, originUid, this.gimmickState);
+      this.gimmickState = next.gimmickEnd;
+      this.plans.set(originUid, next);
+    }
     const plan = this.plans.get(originUid)!;
     const aim = this.targetOrder()[0] ?? null;
     this.chain = {

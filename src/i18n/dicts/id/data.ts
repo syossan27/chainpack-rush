@@ -516,4 +516,10 @@ export const DATA: Dict = {
     'Satu per petak. Tanpa tumpuk: taklukkan Benteng hanya dengan jalur panahmu.',
   '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
     'Selama ada di papanmu, kamu tak pernah lengah saat rantai berjalan dan tak pernah terhuyung. Pertahanan +40.',
+  回る盤面: 'Papan Putar',
+  回転マスを2つ置ける: 'Pasang 2 Petak Putar',
+  切り替えの盤面: 'Papan Wesel',
+  切り替えマスを2つ置ける: 'Pasang 2 Petak Wesel',
+  つなぐ盤面: 'Papan Tautan',
+  ワープ1組と回転マスを置ける: 'Pasang sepasang Warp dan Petak Putar',
 };

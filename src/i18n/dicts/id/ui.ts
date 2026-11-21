@@ -765,4 +765,15 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Susunanmu tidak memenuhi aturan',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Setiap kali bar di bawah pahlawan penuh, Asal terpicu dan rantai pun dimulai.',
+  'マスをタップして仕掛けを置く・外す（残り: {list}）':
+    'Ketuk petak untuk memasang atau melepas mekanisme (sisa: {list})',
+  '発火 {k}/{n} ▶': 'Tembakan {k}/{n} ▶',
+  仕掛け中: 'Memasang',
+  仕掛け: 'Mekanisme',
+  'もう置ける仕掛けがありません（置いたマスをタップで外す）':
+    'Mekanisme sudah habis (ketuk yang terpasang untuk melepasnya)',
+  回転マス: 'Petak Putar',
+  切り替えマス: 'Petak Wesel',
+  ワープ: 'Warp',
+  '{n}回 {step}連鎖': '{n}× {step} Rantai',
 };
