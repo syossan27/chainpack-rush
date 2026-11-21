@@ -90,8 +90,8 @@ export const UI: Dict = {
     '• Rearrange while watching the "~" numbers on the Loadout screen. Pick a route number to see that route\'s estimated damage alone.',
   '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
     '• Make combos. Link the matching element (Thunder, Fire, Blunt) after a status item (Water Dragon Flask, Raincloud Staff, Oil Flask, Ice Sword, Frost Staff). Statuses wear off after 5 seconds.',
-  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
-    '• Link Light and Dark in turn to keep the combos going: Purify (heals the hero) and Seal (slows enemy attacks). Wind stacks Poison on Poisoned enemies; at 5 layers, Venom Burst.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が少しのあいだ止まる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Link Light and Dark in turn to keep the combos going: Purify (heals the hero) and Seal (stops enemy attacks for a moment). Wind stacks Poison on Poisoned enemies; at 5 layers, Venom Burst.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Put your strongest gear late in the chain (link 6 and beyond). Use early links for light gear and status items.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':

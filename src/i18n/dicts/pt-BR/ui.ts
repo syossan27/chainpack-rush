@@ -92,8 +92,8 @@ export const UI: Dict = {
     '• Reorganize de olho nos números "~" da tela "Equipar". Escolha o número de uma rota para ver só o dano estimado dela.',
   '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
     '• Faça combos. Ligue o elemento certo (Raio, Fogo, Impacto) depois de um item de efeito (Frasco do Dragão de Água, Cajado da Chuva, Frasco de Óleo, Espada de Gelo, Cajado de Gelo). Os efeitos somem após 5 segundos.',
-  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
-    '• Alterne Luz e Sombra para manter os combos: Purificação (cura o herói) e Selo (deixa os ataques inimigos mais lentos). O Vento acumula Veneno em inimigos envenenados; com 5 camadas, Estouro Tóxico.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が少しのあいだ止まる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Alterne Luz e Sombra para manter os combos: Purificação (cura o herói) e Selo (para os ataques inimigos por um instante). O Vento acumula Veneno em inimigos envenenados; com 5 camadas, Estouro Tóxico.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Coloque seus itens mais fortes no fim da corrente (do 6º elo em diante). Use os primeiros elos para itens leves e itens de efeito.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':

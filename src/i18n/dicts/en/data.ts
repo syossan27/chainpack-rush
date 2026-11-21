@@ -266,7 +266,8 @@ export const DATA: Dict = {
   '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
     'Thunder on every enemy on screen (power ×0.4). Shocks Wet enemies.',
   氷の剣: 'Ice Sword',
-  '狙いを凍結させる。打撃で粉砕できる。': 'Freezes the target. Blunt attacks can Shatter it.',
+  '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    "Freezes the target (frozen enemies can't attack for a moment). Blunt attacks can Shatter it.",
   水竜の瓶: 'Water Dragon Flask',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Makes the target Wet, so Thunder can Shock it. Enemies with a status take ×1.2 damage.',
@@ -289,11 +290,11 @@ export const DATA: Dict = {
   '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
     'Light area attack. Applies Radiance, and Purifies enemies with Binding to heal the hero.',
   闇の剣: 'Dark Sword',
-  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
-    'Dark. Puts Binding on the target (lowers its Attack). Seals enemies with Radiance, slowing their attacks.',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。':
+    'Dark. Puts Binding on the target (lowers its Attack). Seals enemies with Radiance, stopping their attacks for a moment.',
   闇の杖: 'Dark Staff',
-  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
-    'Dark area attack. Applies Binding, and Seals enemies with Radiance to slow their attacks.',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。':
+    'Dark area attack. Applies Binding, and Seals enemies with Radiance to stop their attacks for a moment.',
   木の盾: 'Wooden Shield',
   '連鎖が通るたびに、その場で防御値+8。': '+8 Defense each time a chain passes through.',
   鎖帷子: 'Chainmail',
@@ -316,8 +317,8 @@ export const DATA: Dict = {
   '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
     'A Thunder thrust that also reaches 1 enemy behind the target. Shocks Wet enemies.',
   氷の杖: 'Frost Staff',
-  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
-    'Freezes the target and enemies around it. Blunt attacks can Shatter them.',
+  '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    "Freezes the target and enemies around it (frozen enemies can't attack for a moment). Blunt attacks can Shatter them.",
   革鎧: 'Leather Armor',
   '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
     '+6 Defense each time a chain passes through. Light: passes the chain on quickly.',
@@ -352,6 +353,10 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Applies Wet, Oil and Frozen to enemies it hits, all at once. Later Thunder, Fire and Blunt attacks all become combos.',
   不落の城門: 'Aegis Gate',
+  カウンターシールド: 'Counter Shield',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
+    'Stores the damage you take, and when a chain passes through, hits the front enemy with all of it (higher rarity hits back harder). +6 Defense.',
+  'カウンター！': 'Counter!',
   号令: 'Rally',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     "Instantly fills the gauge at the hero's feet and fires the next Origin right away. Can't be used during a chain.",

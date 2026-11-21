@@ -37,7 +37,7 @@ const STATUS_COLOR: Record<Status, number> = {
   bound: 0x8a50c8,
 };
 
-/** 封印（攻撃が遅い）あいだの敵の色と、状態の丸の色 */
+/** 封印（攻撃が止まる）あいだの敵の色と、状態の丸の色 */
 const SEALED = { tint: 0xb8a8ff, dot: 0x5a3aa8 } as const;
 
 interface EnemySlot {

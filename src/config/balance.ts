@@ -17,6 +17,8 @@ export const HERO = {
   speed: 160, // px/秒（改訂版の初期値、要確認）
   engageRange: 216, // 勇者の前方（改訂版の初期値、要確認）
   unguardedTakenMult: 1.5, // 無防備中の被ダメージ倍率
+  /** Defense can be stacked up to this share of max HP (0.7: armor builds a bit weaker, 2026-11-22, provisional) */
+  defenseCap: 0.7,
 } as const;
 
 // 距離・速度はすべて 720×1280 の論理px。判定は足元基準点（キャラクターの足元の x）で行う。
@@ -79,6 +81,13 @@ export const CHAIN_RULES: ChainRules = {
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
 /** Gimmick cells (trial): a cell rings at most this many times in one firing */
+/** カウンターシールド (trial, provisional): the stored damage is capped at this × max HP */
+export const COUNTER = {
+  storeCap: 3,
+  name: 'counter',
+  label: 'カウンター！',
+} as const;
+
 export const GIMMICK = {
   maxVisits: 4,
   /** The pace of a cell's relays on each pass (2nd pass rings twice as fast, …): loops speed up */
@@ -196,6 +205,12 @@ export const STATUS = {
   duration: 5,
   /** 状態がついた相手へのコンボ以外の攻撃は ×1.2（状態付与の装備にも単体で役目を持たせる） */
   exposedMult: 1.2,
+  /**
+   * A frozen enemy's attack gauge fills this much slower (0 = stops), only for frozenSlowSeconds from
+   * when it froze. 3 s or more lets short fast chains refreeze for ever, so 2.5 (2026-11-22, provisional)
+   */
+  frozenAttackPace: 0,
+  frozenSlowSeconds: 2.5,
 } as const;
 
 export interface ComboRule {
@@ -253,13 +268,14 @@ export const COMBOS: readonly ComboRule[] = [
 
 /**
  * 光と闇のコンボの追加効果（仮の値）。
- * 浄化: 勇者のHPを最大HPの purifyHeal 回復。封印: 敵の攻撃のたまり方を sealSlow 倍に（sealSeconds 秒）。
+ * 浄化: 勇者のHPを最大HPの purifyHeal 回復。封印: 敵の攻撃のたまり方を sealSlow 倍に（sealSeconds 秒、0 = 止まる）。
+ * 2026-11-22: 防具なしでも戦えるように、浄化15%・封印3.5秒止まる（仮の値）
  * 呪縛が付いている敵の攻撃力は boundAtkDown だけ下がる
  */
 export const LIGHT_DARK = {
-  purifyHeal: 0.01,
-  sealSlow: 0.7,
-  sealSeconds: 4,
+  purifyHeal: 0.15,
+  sealSlow: 0,
+  sealSeconds: 3.5,
   boundAtkDown: 0.2,
 } as const;
 

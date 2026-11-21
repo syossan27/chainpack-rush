@@ -5,6 +5,7 @@ import {
   BOSS,
   CHAIN_RULES,
   CHARM,
+  COUNTER,
   ELITES,
   LUCK,
   MASTERY,
@@ -20,6 +21,7 @@ import {
   STATUS,
   POISON,
   PROGRESS,
+  RARITY,
   RELIC,
   TIME_BONUS,
   TREASURE,
@@ -158,7 +160,7 @@ export interface EnemyState {
   poisonLayers: number;
   /** まだ表示していない毒のダメージ */
   poisonAcc: number;
-  /** 封印: この tick まで攻撃のたまり方が遅い */
+  /** 封印: この tick まで攻撃がたまらない（sealSlow） */
   slowUntil: number;
   /** 粉砕: この tick まで「一撃○○未満を無効」が効かない */
   guardBrokenUntil: number;
@@ -392,6 +394,8 @@ export class Combat {
   heroX = 0;
   hp: number;
   defense = 0;
+  /** Damage the hero took, kept for a カウンターシールド (capped at COUNTER.storeCap × max HP) */
+  counterStore = 0;
   /** 幸運の硬貨の効き目が切れる tick */
   private critUpUntil = -1;
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
@@ -755,7 +759,15 @@ export class Combat {
           continue;
         }
         if (this.canAttack(e)) {
-          e.attackTimer += dt * (this.tick < e.slowUntil ? LIGHT_DARK.sealSlow : 1);
+          const frozenUntil = e.statuses.get('frozen') ?? -1;
+          const frozen =
+            frozenUntil > this.tick &&
+            frozenUntil - this.tick >
+              secToTicks(STATUS.duration - Math.min(STATUS.duration, STATUS.frozenSlowSeconds));
+          e.attackTimer +=
+            dt *
+            (this.tick < e.slowUntil ? LIGHT_DARK.sealSlow : 1) *
+            (frozen ? STATUS.frozenAttackPace : 1);
           if (e.attackTimer >= e.interval) {
             e.attackTimer -= e.interval;
             this.damageHero(e);
@@ -981,10 +993,42 @@ export class Combat {
     this.emit({ type: 'relicSkipped', tick: this.tick });
   }
 
+  /** A カウンターシールド rang: the stored damage goes back to the front enemy, all at once */
+  private counterRelease(c: ActiveChain, inst: ItemInstance, mult: number): void {
+    const t = this.targetOrder()[0];
+    if (!t || this.counterStore <= 0) return;
+    const dmg = Math.round(this.counterStore * mult * RARITY[inst.rarity].mult * 100) / 100;
+    this.counterStore = 0;
+    this.emit({
+      type: 'combo',
+      tick: this.tick,
+      enemyId: t.id,
+      name: COUNTER.name,
+      label: COUNTER.label,
+    });
+    this.emit({
+      type: 'hit',
+      tick: this.tick,
+      enemyId: t.id,
+      itemUid: inst.uid,
+      damage: dmg,
+      combo: COUNTER.name,
+      nullified: false,
+      crit: false,
+      step: 0,
+    });
+    t.hp -= dmg;
+    c.totalDamage += dmg;
+    this.stats.totalDamage += dmg;
+    if (dmg > this.stats.maxDamage) this.stats.maxDamage = dmg;
+    if (t.hp <= 0) this.killEnemy(t);
+  }
+
   /** A cell with a 呼び戻しの笛 or a 守りの札 rang */
   private relicRing(c: ActiveChain, relic: RelicId | undefined): void {
     if (relic === 'whistle') c.recall = true;
-    if (relic === 'ward') this.defense = Math.min(this.maxHp, this.defense + RELIC.wardDefense);
+    if (relic === 'ward')
+      this.defense = Math.min(this.maxHp * HERO.defenseCap, this.defense + RELIC.wardDefense);
   }
 
   /** The step is the last ring of its cell (always, on an ordinary board) */
@@ -1208,10 +1252,11 @@ export class Combat {
         const gain = defenseValue(inst) * (s.stackMult ?? 1);
         const mend = affixValue(inst, 'mend');
         if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
-        this.defense = Math.min(this.maxHp, this.defense + gain);
+        this.defense = Math.min(this.maxHp * HERO.defenseCap, this.defense + gain);
         c.defenseGain += gain;
         c.defenseCells.push(s.cell);
         this.emit({ type: 'guardUp', tick: this.tick, cell: s.cell, gain });
+        if (def.counter) this.counterRelease(c, inst, def.counter * (s.stackMult ?? 1));
       }
       this.emit({
         type: 'step',
@@ -1534,7 +1579,7 @@ export class Combat {
     );
   }
 
-  /** コンボの追加効果（浄化は回復、封印は攻撃を遅く、粉砕は守りを崩す） */
+  /** コンボの追加効果（浄化は回復、封印は攻撃を止める、粉砕は守りを崩す） */
   private comboEffect(t: EnemyState, name: string): void {
     if (name === 'purify')
       this.hp = Math.min(this.maxHp, this.hp + this.maxHp * LIGHT_DARK.purifyHeal);
@@ -1718,6 +1763,7 @@ export class Combat {
       e.atk *
       (e.statuses.has('bound') ? 1 - LIGHT_DARK.boundAtkDown : 1) *
       (unguarded ? HERO.unguardedTakenMult : 1);
+    this.counterStore = Math.min(this.maxHp * COUNTER.storeCap, this.counterStore + dmg);
     const absorbed = Math.min(this.defense, dmg);
     this.defense -= absorbed;
     dmg -= absorbed;

@@ -269,8 +269,8 @@ export const DATA: Dict = {
   '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
     'Rayo sobre todos los enemigos en pantalla (poder ×0.4). Da una Descarga a los enemigos Mojados.',
   氷の剣: 'Espada de Hielo',
-  '狙いを凍結させる。打撃で粉砕できる。':
-    'Congela al objetivo. Los ataques contundentes pueden Destrozarlo.',
+  '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Congela al objetivo (los enemigos congelados no atacan por un momento). Los ataques contundentes pueden Destrozarlo.',
   水竜の瓶: 'Frasco del Dragón de Agua',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Moja al objetivo para que el Rayo le dé una Descarga. Los enemigos con estado reciben daño ×1.2.',
@@ -293,11 +293,11 @@ export const DATA: Dict = {
   '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
     'Ataque de Luz en área. Aplica Radiante, purifica a los enemigos Hechizados y cura al héroe.',
   闇の剣: 'Espada Oscura',
-  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
-    'Oscuridad. Aplica Hechizado al objetivo (baja su Ataque). Sella a los enemigos Radiantes y hace sus ataques más lentos.',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。':
+    'Oscuridad. Aplica Hechizado al objetivo (baja su Ataque). Sella a los enemigos Radiantes y detiene sus ataques por un momento.',
   闇の杖: 'Bastón Oscuro',
-  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
-    'Ataque de Oscuridad en área. Aplica Hechizado, sella a los enemigos Radiantes y hace sus ataques más lentos.',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。':
+    'Ataque de Oscuridad en área. Aplica Hechizado, sella a los enemigos Radiantes y detiene sus ataques por un momento.',
   木の盾: 'Escudo de Madera',
   '連鎖が通るたびに、その場で防御値+8。':
     'Defensa +8 al instante cada vez que una cadena pasa por aquí.',
@@ -323,8 +323,8 @@ export const DATA: Dict = {
   '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
     'Una estocada de Rayo que también alcanza a 1 enemigo detrás del objetivo. Da una Descarga a los enemigos Mojados.',
   氷の杖: 'Bastón de Hielo',
-  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
-    'Congela al objetivo y a los enemigos cercanos. Los ataques contundentes pueden Destrozarlos.',
+  '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Congela al objetivo y a los enemigos cercanos (los enemigos congelados no atacan por un momento). Los ataques contundentes pueden Destrozarlos.',
   革鎧: 'Armadura de Cuero',
   '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
     'Defensa +6 al instante cada vez que una cadena pasa por aquí. Ligera: pasa la cadena rápido.',
@@ -361,6 +361,10 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Aplica Mojado, Aceite y Congelado a la vez a los enemigos que golpea. Después, todos los ataques de Rayo, Fuego y contundentes hacen combo.',
   不落の城門: 'Portón Invicto',
+  カウンターシールド: 'Escudo de Contraataque',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
+    'Acumula el daño que recibes y, cuando una cadena pasa por aquí, se lo devuelve todo de golpe al enemigo de delante (más rareza, golpe más fuerte). Defensa +6.',
+  'カウンター！': '¡Contraataque!',
   号令: 'Grito de Guerra',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Llena al instante la barra a los pies del héroe y activa ya el siguiente Origen. No se puede usar durante una cadena.',

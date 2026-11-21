@@ -92,8 +92,8 @@ export const UI: Dict = {
     "• Réorganise en surveillant les nombres « ~ » de l'écran Équiper. Choisis un numéro de route pour voir les dégâts estimés de cette route seule.",
   '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
     "• Crée des combos. Relie l'élément associé (Foudre, Feu, Contondant) après un objet qui inflige une altération (Fiole du Dragon d’eau, Bâton de pluie, Fiole d'huile, Épée de glace, Bâton de givre). Les altérations disparaissent au bout de 5 secondes.",
-  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
-    '• Alterne Lumière et Ténèbres pour enchaîner les combos : Purification (soigne le héros) et Scellé (ralentit les attaques ennemies). Le Vent ajoute des couches de Poison aux ennemis empoisonnés ; à 5 couches, Venin explosif.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が少しのあいだ止まる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Alterne Lumière et Ténèbres pour enchaîner les combos : Purification (soigne le héros) et Scellé (stoppe les attaques ennemies un instant). Le Vent ajoute des couches de Poison aux ennemis empoisonnés ; à 5 couches, Venin explosif.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Place tes objets les plus forts en fin de chaîne (6e maillon et au-delà). Garde les premiers maillons pour les objets légers et ceux qui infligent des altérations.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':

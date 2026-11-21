@@ -268,7 +268,8 @@ export const DATA: Dict = {
   '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
     'Blitz auf alle Gegner im Bild (Stärke ×0.4). Schockt nasse Gegner.',
   氷の剣: 'Eisschwert',
-  '狙いを凍結させる。打撃で粉砕できる。': 'Friert das Ziel ein. Wucht kann es zertrümmern.',
+  '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Friert das Ziel ein (eingefrorene Gegner können kurz nicht angreifen). Wucht kann es zertrümmern.',
   水竜の瓶: 'Wasserdrachen-Flasche',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Macht das Ziel nass, damit Blitz es schocken kann. Gegner mit Status erleiden ×1.2 Schaden.',
@@ -291,11 +292,11 @@ export const DATA: Dict = {
   '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
     'Flächenangriff mit Licht. Belegt mit Strahlend, reinigt gebannte Gegner und heilt den Helden.',
   闇の剣: 'Schattenschwert',
-  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
-    'Schatten. Belegt das Ziel mit Gebannt (senkt seinen Angriff). Versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。':
+    'Schatten. Belegt das Ziel mit Gebannt (senkt seinen Angriff). Versiegelt strahlende Gegner und stoppt kurz ihre Angriffe.',
   闇の杖: 'Schattenstab',
-  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
-    'Flächenangriff mit Schatten. Belegt mit Gebannt, versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。':
+    'Flächenangriff mit Schatten. Belegt mit Gebannt, versiegelt strahlende Gegner und stoppt kurz ihre Angriffe.',
   木の盾: 'Holzschild',
   '連鎖が通るたびに、その場で防御値+8。':
     '+8 Verteidigung sofort, wann immer eine Kette hindurchläuft.',
@@ -321,8 +322,8 @@ export const DATA: Dict = {
   '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
     'Ein Blitzstoß, der auch 1 Gegner hinter dem Ziel trifft. Schockt nasse Gegner.',
   氷の杖: 'Froststab',
-  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
-    'Friert das Ziel und die Gegner um es herum ein. Wucht kann sie zertrümmern.',
+  '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Friert das Ziel und die Gegner um es herum ein (eingefrorene Gegner können kurz nicht angreifen). Wucht kann sie zertrümmern.',
   革鎧: 'Lederrüstung',
   '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
     '+6 Verteidigung sofort, wann immer eine Kette hindurchläuft. Leicht: gibt die Kette schnell weiter.',
@@ -360,6 +361,10 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Belegt getroffene Gegner auf einmal mit Nass, Öl und Gefroren. Spätere Angriffe mit Blitz, Feuer und Wucht werden alle zu Kombos.',
   不落の城門: 'Festungstor',
+  カウンターシールド: 'Konterschild',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
+    'Speichert den Schaden, den du erleidest, und gibt ihn dem vordersten Gegner auf einmal zurück, wenn eine Kette hindurchläuft (höhere Seltenheit schlägt härter zurück). +6 Verteidigung.',
+  'カウンター！': 'Konter!',
   号令: 'Schlachtruf',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Füllt sofort die Leiste unter dem Helden und zündet gleich den nächsten Ursprung. Nicht während einer Kette nutzbar.',

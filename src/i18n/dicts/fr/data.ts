@@ -269,8 +269,8 @@ export const DATA: Dict = {
   '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
     "Foudre sur tous les ennemis à l'écran (puissance ×0.4). Électrocute les ennemis Mouillés.",
   氷の剣: 'Épée de glace',
-  '狙いを凍結させる。打撃で粉砕できる。':
-    'Gèle la cible. Les attaques contondantes peuvent la fracasser.',
+  '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Gèle la cible (les ennemis gelés ne peuvent pas attaquer un instant). Les attaques contondantes peuvent la fracasser.',
   水竜の瓶: 'Fiole du Dragon d’eau',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     "Mouille la cible : la Foudre peut alors l'électrocuter. Les ennemis avec une altération subissent ×1.2 dégâts.",
@@ -293,11 +293,11 @@ export const DATA: Dict = {
   '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
     'Attaque de zone de Lumière. Éblouit, purifie les ennemis Envoûtés et soigne le héros.',
   闇の剣: 'Épée des ténèbres',
-  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
-    'Ténèbres. Rend la cible Envoûtée (baisse son Attaque). Scelle les ennemis Éblouis et ralentit leurs attaques.',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。':
+    'Ténèbres. Rend la cible Envoûtée (baisse son Attaque). Scelle les ennemis Éblouis et stoppe leurs attaques un instant.',
   闇の杖: 'Bâton des ténèbres',
-  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
-    'Attaque de zone de Ténèbres. Envoûte, scelle les ennemis Éblouis et ralentit leurs attaques.',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。':
+    'Attaque de zone de Ténèbres. Envoûte, scelle les ennemis Éblouis et stoppe leurs attaques un instant.',
   木の盾: 'Bouclier en bois',
   '連鎖が通るたびに、その場で防御値+8。':
     '+8 de Défense immédiatement, à chaque chaîne qui le traverse.',
@@ -322,8 +322,8 @@ export const DATA: Dict = {
   '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
     "Un coup d'estoc de Foudre qui touche aussi 1 ennemi derrière la cible. Électrocute les ennemis Mouillés.",
   氷の杖: 'Bâton de givre',
-  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
-    'Gèle la cible et les ennemis autour. Les attaques contondantes peuvent les fracasser.',
+  '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Gèle la cible et les ennemis autour (les ennemis gelés ne peuvent pas attaquer un instant). Les attaques contondantes peuvent les fracasser.',
   革鎧: 'Armure de cuir',
   '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
     '+6 de Défense immédiatement, à chaque chaîne qui la traverse. Légère : passe vite la chaîne.',
@@ -360,6 +360,10 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     "Applique Mouillé, Huile et Gelé d'un coup aux ennemis touchés. Les attaques de Foudre, de Feu et contondantes qui suivent deviennent toutes des combos.",
   不落の城門: 'Porte imprenable',
+  カウンターシールド: 'Bouclier de riposte',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
+    "Accumule les dégâts que tu subis et, quand une chaîne le traverse, les renvoie d'un coup à l'ennemi de devant (plus la rareté est haute, plus la riposte est forte). +6 de Défense.",
+  'カウンター！': 'Riposte !',
   号令: 'Ralliement',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Remplit aussitôt la jauge sous le héros et déclenche tout de suite la prochaine Origine. Inutilisable pendant une chaîne.',

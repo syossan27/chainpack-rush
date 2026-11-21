@@ -59,6 +59,7 @@ const COMBO_COLOR: Record<string, string> = {
   purify: '#fff4b0',
   seal: '#c0a0ff',
   venom: '#a8f060',
+  counter: '#ff7a5a',
 };
 const COMBO_TINT: Record<string, number> = {
   shock: 0xfff060,
@@ -67,6 +68,7 @@ const COMBO_TINT: Record<string, number> = {
   purify: 0xfff4b0,
   seal: 0xb080ff,
   venom: 0x8ae04a,
+  counter: 0xff6a4a,
 };
 
 /** 時間延長の表示位置（周回ゲージ y=140 の下、帯 y=250 の上） */

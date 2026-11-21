@@ -169,6 +169,7 @@ export function sfxCombo(name: string): void {
     purify: 'purify',
     seal: 'seal',
     venom: 'venom',
+    counter: 'explode',
   };
   sfx(map[name] ?? 'shatter');
 }

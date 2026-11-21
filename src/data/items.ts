@@ -175,7 +175,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'single',
     atk: 8,
     applies: 'frozen',
-    description: '狙いを凍結させる。打撃で粉砕できる。',
+    description: '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。',
   },
   {
     id: 'canteen',
@@ -268,7 +268,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'single',
     atk: 8,
     applies: 'bound',
-    description: '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。',
+    description:
+      '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。',
   },
   {
     id: 'dark_staff',
@@ -279,7 +280,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'splash',
     atk: 8,
     applies: 'bound',
-    description: '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。',
+    description: '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。',
   },
 
   {
@@ -384,7 +385,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     area: 'splash',
     atk: 6,
     applies: 'frozen',
-    description: '狙いの周りをまとめて凍結させる。打撃で粉砕できる。',
+    description:
+      '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。',
   },
 
   {
@@ -521,6 +523,17 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     artifact: { exits: ['right', 'down'] },
     description:
       '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。',
+  },
+  {
+    id: 'counter_shield',
+    rarities: ['rare', 'legendary'],
+    name: 'カウンターシールド',
+    kind: 'defense',
+    defense: 6,
+    // 2026-11-22 trial: an attacking shield (returns the damage the hero took). Values provisional
+    counter: 1,
+    description:
+      '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。',
   },
   {
     id: 'aegis_gate',

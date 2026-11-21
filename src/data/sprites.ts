@@ -2282,13 +2282,16 @@ export const ITEM_ICONS: Record<string, IconSpec> = {
   sky_hammer: { shape: 'hammer', A: 'y', S: 'u', L: 'W' },
   sage_stone: { shape: 'stone', A: 'r', S: 'm', L: 'y' },
   aegis_gate: { shape: 'kiteShield', A: 'y', S: 'o', L: 'W' },
+  counter_shield: { shape: 'kiteShield', A: 'r', S: 'R', L: 'W' },
 };
 
 /**
  * 本素材がまだない装備: 別の装備の本素材を、この色に塗り直して使う（例: `{ from: 'origin_stone', color: 0xff88c8 }`）。
  * 暗い輪郭は暗いまま、明るいハイライトは白のまま残る。本素材が入ったら外す（いまは全部本素材）
  */
-export const ICON_RECOLOR: Record<string, { from: string; color: number }> = {};
+export const ICON_RECOLOR: Record<string, { from: string; color: number }> = {
+  counter_shield: { from: 'tower_shield', color: 0xff6a4a },
+};
 
 export function iconPixels(defId: string): string[] {
   const spec = ITEM_ICONS[defId];

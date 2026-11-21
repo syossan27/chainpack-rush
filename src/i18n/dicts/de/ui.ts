@@ -91,8 +91,8 @@ export const UI: Dict = {
     '• Ordne um und achte dabei auf die „~“-Zahlen unter „Packen“. Wählst du die Nummer einer Route, siehst du den geschätzten Schaden nur dieser Route.',
   '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
     '• Bau Kombos: Hänge das passende Element (Blitz, Feuer, Wucht) hinter einen Status-Gegenstand (Wasserdrachen-Flasche, Regenstab, Ölflasche, Eisschwert, Froststab). Ein Status hält 5 Sekunden.',
-  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
-    '• Wechsle Licht und Schatten ab, dann reißen die Kombos nicht ab: Reinigen (heilt den Helden) und Versiegeln (verlangsamt gegnerische Angriffe). Wind stapelt Gift auf vergifteten Gegnern; bei 5-fach: Giftausbruch.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が少しのあいだ止まる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Wechsle Licht und Schatten ab, dann reißen die Kombos nicht ab: Reinigen (heilt den Helden) und Versiegeln (stoppt gegnerische Angriffe kurz). Wind stapelt Gift auf vergifteten Gegnern; bei 5-fach: Giftausbruch.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Setz deine stärkste Ausrüstung ans Ende der Kette (ab Glied 6). Nutze die ersten Glieder für leichte Ausrüstung und Status-Gegenstände.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':

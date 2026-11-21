@@ -91,8 +91,8 @@ export const UI: Dict = {
     '• Susun ulang sambil melihat angka "~" di layar Susun. Pilih nomor rute untuk melihat perkiraan damage rute itu saja.',
   '・コンボを作る。状態を付ける装備（水竜の瓶・雨雲の杖・油瓶・氷の剣・氷の杖）の後ろに、組む属性（雷・炎・打撃）をつなぐ。状態は5秒で消えます。':
     '• Buat kombo. Sambungkan elemen pasangannya (Petir, Api, Hantam) setelah item pemberi status (Botol Naga Air, Tongkat Mendung, Botol Minyak, Pedang Es, Tongkat Es). Efek status hilang setelah 5 detik.',
-  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が遅くなる）。風は毒の敵に毒を重ね、5重で毒爆。':
-    '• Sambungkan Cahaya dan Kegelapan berselang-seling agar kombo terus berlanjut: Penyucian (memulihkan HP pahlawan) dan Segel (serangan musuh jadi lambat). Angin menumpuk Racun pada musuh keracunan; di 5 lapis, Ledakan Racun.',
+  '・光と闇を交互につなぐと、コンボが続く。浄化（勇者のHP回復）と封印（敵の攻撃が少しのあいだ止まる）。風は毒の敵に毒を重ね、5重で毒爆。':
+    '• Sambungkan Cahaya dan Kegelapan berselang-seling agar kombo terus berlanjut: Penyucian (memulihkan HP pahlawan) dan Segel (serangan musuh berhenti sesaat). Angin menumpuk Racun pada musuh keracunan; di 5 lapis, Ledakan Racun.',
   '・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。':
     '• Taruh perlengkapan terkuatmu di akhir rantai (mata rantai ke-6 dan seterusnya). Pakai mata rantai awal untuk perlengkapan ringan dan item pemberi status.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':

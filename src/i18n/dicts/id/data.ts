@@ -270,8 +270,8 @@ export const DATA: Dict = {
   '画面内の全敵に雷（威力×0.4）。濡れた敵を感電させる。':
     'Petir ke semua musuh di layar (kekuatan ×0.4). Menyetrum musuh Basah.',
   氷の剣: 'Pedang Es',
-  '狙いを凍結させる。打撃で粉砕できる。':
-    'Membekukan target. Serangan Hantam bisa menghancurkannya.',
+  '狙いを凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Membekukan target (musuh beku tak bisa menyerang sesaat). Serangan Hantam bisa menghancurkannya.',
   水竜の瓶: 'Botol Naga Air',
   '狙いを濡らす。雷で感電させられる。状態がついた敵へのダメージ×1.2。':
     'Membuat target Basah, jadi Petir bisa menyetrumnya. Musuh yang terkena efek status menerima damage ×1.2.',
@@ -294,11 +294,11 @@ export const DATA: Dict = {
   '光の範囲攻撃。灼光をつけ、呪縛の敵を浄化して勇者のHPを回復する。':
     'Serangan area Cahaya. Memberi efek Silau, menyucikan musuh Terikat, dan memulihkan HP pahlawan.',
   闇の剣: 'Pedang Kegelapan',
-  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、攻撃を遅くする。':
-    'Kegelapan. Memberi efek Terikat ke target (Serangannya turun). Menyegel musuh Silau dan memperlambat serangannya.',
+  '闇。狙いに呪縛をつける（攻撃力ダウン）。灼光の敵を封印して、少しのあいだ攻撃を止める。':
+    'Kegelapan. Memberi efek Terikat ke target (Serangannya turun). Menyegel musuh Silau dan menghentikan serangannya sesaat.',
   闇の杖: 'Tongkat Kegelapan',
-  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
-    'Serangan area Kegelapan. Memberi efek Terikat, menyegel musuh Silau, dan memperlambat serangannya.',
+  '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して少しのあいだ攻撃を止める。':
+    'Serangan area Kegelapan. Memberi efek Terikat, menyegel musuh Silau, dan menghentikan serangannya sesaat.',
   木の盾: 'Perisai Kayu',
   '連鎖が通るたびに、その場で防御値+8。': 'Pertahanan +8 langsung setiap kali rantai melewatinya.',
   鎖帷子: 'Baju Rantai',
@@ -323,8 +323,8 @@ export const DATA: Dict = {
   '雷の突き。狙いの後ろ1体にも届く。濡れた敵を感電させる。':
     'Tusukan Petir yang juga mengenai 1 musuh di belakang target. Menyetrum musuh Basah.',
   氷の杖: 'Tongkat Es',
-  '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
-    'Membekukan target dan musuh di sekitarnya. Serangan Hantam bisa menghancurkan mereka.',
+  '狙いの周りをまとめて凍結させる（凍った敵は少しのあいだ攻撃できない）。打撃で粉砕できる。':
+    'Membekukan target dan musuh di sekitarnya (musuh beku tak bisa menyerang sesaat). Serangan Hantam bisa menghancurkan mereka.',
   革鎧: 'Zirah Kulit',
   '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
     'Pertahanan +6 langsung setiap kali rantai melewatinya. Ringan: cepat meneruskan rantai.',
@@ -361,6 +361,10 @@ export const DATA: Dict = {
   '当てた敵に濡れ・油・凍結をまとめて付ける。後ろの雷・炎・打撃がすべてコンボになる。':
     'Memberi efek Basah, Minyak, dan Beku sekaligus ke musuh yang terkena. Serangan Petir, Api, dan Hantam setelahnya semua jadi kombo.',
   不落の城門: 'Gerbang Kebal',
+  カウンターシールド: 'Perisai Balasan',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
+    'Menyimpan damage yang kamu terima, lalu saat rantai lewat, mengembalikan semuanya sekaligus ke musuh terdepan (makin tinggi kelangkaan, makin keras balasannya). Pertahanan +6.',
+  'カウンター！': 'Balasan!',
   号令: 'Seruan Perang',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
     'Langsung mengisi penuh bar di kaki pahlawan dan memicu Asal berikutnya saat itu juga. Tak bisa dipakai saat rantai berjalan.',
