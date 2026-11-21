@@ -148,8 +148,6 @@ export class BackpackView extends Phaser.GameObjects.Container {
         .setDisplaySize(this.cell - 2, this.cell - 2);
       this.cellImgs.push(img);
       this.cellLayer.add(img);
-      const gim = this.loadout.gimmicks?.[i];
-      if (gim) this.cellLayer.add(this.gimmickMark(gim, c.x, c.y));
     }
     this.highlightCell = -1;
     this.iconLayer.removeAll(true);
@@ -173,6 +171,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
         );
         this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
       });
+    });
+    // Gimmick cells: over the gear, so the sign shows on a full cell
+    this.loadout.gimmicks?.forEach((g, i) => {
+      if (!g) return;
+      const c = this.cellCenter(i);
+      this.iconLayer.add(this.gimmickMark(g, c.x, c.y));
     });
     this.lineG.clear();
     this.labelLayer.removeAll(true);
