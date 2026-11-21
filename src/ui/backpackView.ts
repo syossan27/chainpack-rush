@@ -56,6 +56,10 @@ export class BackpackView extends Phaser.GameObjects.Container {
   private flowSpan = 0;
   private flowColor = 0xffffff;
   private readonly glowG: Phaser.GameObjects.Graphics;
+  /** Run: effects that play on a cell as the chain rings it (CellFx), above the icons and lines */
+  readonly fxLayer: Phaser.GameObjects.Container;
+  /** Run: how hot the chain is (0 = none … 4), drawn as a glow round the board (chainHeat) */
+  private heat = 0;
   private readonly labelLayer: Phaser.GameObjects.Container;
   private icons = new Map<number, ItemIcon>();
   private glows: { cell: number; color: number; until: number }[] = [];
@@ -76,8 +80,17 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.lineG = scene.add.graphics();
     this.flowG = scene.add.graphics();
     this.glowG = scene.add.graphics();
+    this.fxLayer = scene.add.container(0, 0);
     this.labelLayer = scene.add.container(0, 0);
-    this.add([this.cellLayer, this.iconLayer, this.lineG, this.flowG, this.glowG, this.labelLayer]);
+    this.add([
+      this.cellLayer,
+      this.iconLayer,
+      this.lineG,
+      this.flowG,
+      this.glowG,
+      this.fxLayer,
+      this.labelLayer,
+    ]);
     scene.add.existing(this);
     this.rebuild();
   }
@@ -379,6 +392,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
     });
   }
 
+  /** Run: the chain's heat (0 = off). The board's frame glows hotter as the chain grows */
+  setHeat(level: number): void {
+    this.heat = level;
+  }
+
   /** Blink the origin that fires next */
   setBlinkOrigin(uids: string | readonly string[] | null): void {
     this.blinkUids = uids === null ? [] : typeof uids === 'string' ? [uids] : uids;
@@ -405,6 +423,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     }
     const g = this.glowG;
     g.clear();
+    if (this.heat > 0) this.drawHeat(g, now);
     this.glows = this.glows.filter((gl) => gl.until > now);
     for (const gl of this.glows) {
       const c = this.cellCenter(gl.cell);
@@ -429,6 +448,24 @@ export class BackpackView extends Phaser.GameObjects.Container {
     }
   }
 
+  /** The frame round the grid glows and pulses with the chain's heat (the top level cycles colours) */
+  private drawHeat(g: Phaser.GameObjects.Graphics, now: number): void {
+    const level = Math.min(HEAT_COLORS.length + 1, this.heat);
+    const color =
+      level > HEAT_COLORS.length
+        ? Phaser.Display.Color.HSVToRGB((((now / 600) % 1) + 1) % 1, 0.6, 1).color
+        : HEAT_COLORS[level - 1]!;
+    const pulse = 0.55 + 0.45 * Math.sin(now / (220 - level * 30));
+    const pad = BackpackView.FRAME_PAD - 6;
+    const x = this.left - pad;
+    const w = this.loadout.width * this.cell + pad * 2;
+    const h = this.gridHeight + pad * 2;
+    for (let k = 0; k < level + 1; k++) {
+      g.lineStyle(6 + k * 5, color, (0.85 * pulse) / (k + 1));
+      g.strokeRect(x - k * 3, -pad - k * 3, w + k * 6, h + k * 6);
+    }
+  }
+
   /** 防御装備のマス（鳴ったときの光の粒の出どころ） */
   isDefenseCell(cell: number): boolean {
     const uid = this.loadout.cells[cell];
@@ -437,8 +474,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
   }
 }
 
+/** The board frame's glow for each chain heat level (the last level cycles colours instead) */
+const HEAT_COLORS = [0xffffff, 0xffd25a, 0xff8a30];
+
 /** Gimmick cells (trial): each kind's colour on the board */
-const GIMMICK_COLOR: Record<GimmickKind, number> = {
+export const GIMMICK_COLOR: Record<GimmickKind, number> = {
   rotate: 0x5ad8ff,
   switch: 0xffb347,
   warp: 0xc58cff,
