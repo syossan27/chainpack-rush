@@ -354,8 +354,8 @@ export const DATA: Dict = {
     'Applies Wet, Oil and Frozen to enemies it hits, all at once. Later Thunder, Fire and Blunt attacks all become combos.',
   不落の城門: 'Aegis Gate',
   カウンターシールド: 'Counter Shield',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    'Stores the damage you take, and when a chain passes through, hits the front enemy with all of it (higher rarity hits back harder). +6 Defense.',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    'Stores the damage you take, and when a chain passes through, hits the front enemy with all of it (harder later in the chain and at higher rarity). +6 Defense.',
   'カウンター！': 'Counter!',
   号令: 'Rally',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':

@@ -362,8 +362,8 @@ export const DATA: Dict = {
     'Aplica Mojado, Aceite y Congelado a la vez a los enemigos que golpea. Después, todos los ataques de Rayo, Fuego y contundentes hacen combo.',
   不落の城門: 'Portón Invicto',
   カウンターシールド: 'Escudo de Contraataque',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    'Acumula el daño que recibes y, cuando una cadena pasa por aquí, se lo devuelve todo de golpe al enemigo de delante (más rareza, golpe más fuerte). Defensa +6.',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    'Acumula el daño que recibes y, cuando una cadena pasa por aquí, se lo devuelve todo de golpe al enemigo de delante (más fuerte al final de la cadena y con más rareza). Defensa +6.',
   'カウンター！': '¡Contraataque!',
   号令: 'Grito de Guerra',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':

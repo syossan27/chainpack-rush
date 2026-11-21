@@ -533,7 +533,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     // 2026-11-22 trial: an attacking shield (returns the damage the hero took). Values provisional
     counter: 1,
     description:
-      '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。',
+      '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。',
   },
   {
     id: 'aegis_gate',

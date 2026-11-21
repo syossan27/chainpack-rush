@@ -362,8 +362,8 @@ export const DATA: Dict = {
     'Memberi efek Basah, Minyak, dan Beku sekaligus ke musuh yang terkena. Serangan Petir, Api, dan Hantam setelahnya semua jadi kombo.',
   不落の城門: 'Gerbang Kebal',
   カウンターシールド: 'Perisai Balasan',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    'Menyimpan damage yang kamu terima, lalu saat rantai lewat, mengembalikan semuanya sekaligus ke musuh terdepan (makin tinggi kelangkaan, makin keras balasannya). Pertahanan +6.',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    'Menyimpan damage yang kamu terima, lalu saat rantai lewat, mengembalikan semuanya sekaligus ke musuh terdepan (makin kuat di ujung rantai dan makin tinggi kelangkaan). Pertahanan +6.',
   'カウンター！': 'Balasan!',
   号令: 'Seruan Perang',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { COUNTER, LIGHT_DARK, NO_LUCK, RARITY, STATUS } from '../src/config/balance';
+import { chainMultiplier } from '../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../src/core/combat';
 import { build } from './helpers';
 
 type Hit = (e: { id: number; atk: number; statuses: Map<string, number> }) => void;
-const hitHero = (c: Combat): Hit =>
-  (c as unknown as { damageHero: Hit }).damageHero.bind(c);
+const hitHero = (c: Combat): Hit => (c as unknown as { damageHero: Hit }).damageHero.bind(c);
 
 describe('カウンターシールド', () => {
   const row = () =>
@@ -37,6 +37,37 @@ describe('カウンターシールド', () => {
     const back = evs.find((e) => e.type === 'hit' && e.combo === COUNTER.name);
     expect(back?.type === 'hit' && back.damage).toBeCloseTo(10 * RARITY.rare.mult);
     expect(c.counterStore).toBe(0);
+  });
+
+  it('連鎖の後ろで鳴るほど、その段の連鎖倍率の分だけ強く返す', () => {
+    const { loadout, items } = build(5, 1, [
+      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+      { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
+      { uid: 'b', defId: 'sword', x: 2, y: 0, exits: ['right'] },
+      { uid: 'c', defId: 'sword', x: 3, y: 0, exits: ['right'] },
+      { uid: 'k', defId: 'counter_shield', x: 4, y: 0, exits: [], rarity: 'rare' },
+    ]);
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      luck: NO_LUCK,
+      mode: 'dummy',
+    });
+    hitHero(c)({ id: -1, atk: 10, statuses: new Map() });
+    c.fireNext();
+    const evs: CombatEvent[] = [];
+    while (c.chain) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    const back = evs.find((e) => e.type === 'hit' && e.combo === COUNTER.name);
+    expect(back?.type === 'hit' && back.step).toBe(3);
+    expect(back?.type === 'hit' && back.damage).toBeCloseTo(
+      10 * RARITY.rare.mult * chainMultiplier(3),
+    );
   });
 
   it('ためられるのは最大HPの COUNTER.storeCap 倍まで', () => {

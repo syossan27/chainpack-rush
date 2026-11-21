@@ -362,8 +362,8 @@ export const DATA: Dict = {
     'Belegt getroffene Gegner auf einmal mit Nass, Öl und Gefroren. Spätere Angriffe mit Blitz, Feuer und Wucht werden alle zu Kombos.',
   不落の城門: 'Festungstor',
   カウンターシールド: 'Konterschild',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    'Speichert den Schaden, den du erleidest, und gibt ihn dem vordersten Gegner auf einmal zurück, wenn eine Kette hindurchläuft (höhere Seltenheit schlägt härter zurück). +6 Verteidigung.',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    'Speichert den Schaden, den du erleidest, und gibt ihn dem vordersten Gegner auf einmal zurück, wenn eine Kette hindurchläuft (stärker weiter hinten in der Kette und bei höherer Seltenheit). +6 Verteidigung.',
   'カウンター！': 'Konter!',
   号令: 'Schlachtruf',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':

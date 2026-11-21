@@ -360,8 +360,8 @@ export const DATA: Dict = {
     'Aplica Molhado, Óleo e Congelado de uma vez nos inimigos atingidos. Ataques de Raio, Fogo e Impacto que vêm depois viram combos.',
   不落の城門: 'Portão Inabalável',
   カウンターシールド: 'Escudo de Contra-ataque',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    'Guarda o dano que você recebe e, quando uma corrente passa por aqui, devolve tudo de uma vez ao inimigo da frente (raridade maior devolve mais forte). +6 de Defesa.',
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    'Guarda o dano que você recebe e, quando uma corrente passa por aqui, devolve tudo de uma vez ao inimigo da frente (mais forte no fim da corrente e com raridade maior). +6 de Defesa.',
   'カウンター！': 'Contra-ataque!',
   号令: 'Grito de Guerra',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':

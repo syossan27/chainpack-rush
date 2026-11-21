@@ -993,8 +993,11 @@ export class Combat {
     this.emit({ type: 'relicSkipped', tick: this.tick });
   }
 
-  /** A カウンターシールド rang: the stored damage goes back to the front enemy, all at once */
-  private counterRelease(c: ActiveChain, inst: ItemInstance, mult: number): void {
+  /**
+   * A カウンターシールド rang: the stored damage goes back to the front enemy, all at once, × the
+   * chain multiplier where it rang (deeper in the chain hits back harder)
+   */
+  private counterRelease(c: ActiveChain, inst: ItemInstance, mult: number, step: number): void {
     const t = this.targetOrder()[0];
     if (!t || this.counterStore <= 0) return;
     const dmg = Math.round(this.counterStore * mult * RARITY[inst.rarity].mult * 100) / 100;
@@ -1015,7 +1018,7 @@ export class Combat {
       combo: COUNTER.name,
       nullified: false,
       crit: false,
-      step: 0,
+      step,
     });
     t.hp -= dmg;
     c.totalDamage += dmg;
@@ -1256,7 +1259,13 @@ export class Combat {
         c.defenseGain += gain;
         c.defenseCells.push(s.cell);
         this.emit({ type: 'guardUp', tick: this.tick, cell: s.cell, gain });
-        if (def.counter) this.counterRelease(c, inst, def.counter * (s.stackMult ?? 1));
+        if (def.counter)
+          this.counterRelease(
+            c,
+            inst,
+            def.counter * (s.stackMult ?? 1) * chainMultiplier(eff, c.plan.riseTo),
+            eff,
+          );
       }
       this.emit({
         type: 'step',

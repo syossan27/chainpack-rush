@@ -361,8 +361,8 @@ export const DATA: Dict = {
     "Applique Mouillé, Huile et Gelé d'un coup aux ennemis touchés. Les attaques de Foudre, de Feu et contondantes qui suivent deviennent toutes des combos.",
   不落の城門: 'Porte imprenable',
   カウンターシールド: 'Bouclier de riposte',
-  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（レア度が高いほど強く返す）。防御値+6。':
-    "Accumule les dégâts que tu subis et, quand une chaîne le traverse, les renvoie d'un coup à l'ennemi de devant (plus la rareté est haute, plus la riposte est forte). +6 de Défense.",
+  '受けたダメージをためておき、連鎖が通ると前の敵へまとめて返す（連鎖の後ろほど、レア度が高いほど強く返す）。防御値+6。':
+    "Accumule les dégâts que tu subis et, quand une chaîne le traverse, les renvoie d'un coup à l'ennemi de devant (plus fort en fin de chaîne et avec une rareté plus haute). +6 de Défense.",
   'カウンター！': 'Riposte !',
   号令: 'Ralliement',
   '足元のゲージを即満タンにし、次の起点を今すぐ発火。連鎖中は使えない。':
