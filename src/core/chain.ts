@@ -545,9 +545,17 @@ export function gimmickCycle(
   const keyOf = (st: readonly number[] | undefined): string =>
     (st ?? [])
       .map((n, i) => {
-        if (loadout.gimmicks?.[i] !== 'switch') return n;
+        const g = loadout.gimmicks?.[i];
         const top = loadout.cells[i] ? items.get(loadout.cells[i]!) : undefined;
-        return n % Math.max(1, top?.exits.length ?? 1);
+        if (!g || !top) return '';
+        if (g === 'switch') return n % Math.max(1, top.exits.length);
+        // A rotator whose arrows look the same after the turn is the same firing
+        return g === 'rotate'
+          ? rotateDirs(
+              DIRS.filter((d) => top.exits.includes(d)),
+              n,
+            ).join('')
+          : '';
       })
       .join(',');
   while (out.length < limit) {
