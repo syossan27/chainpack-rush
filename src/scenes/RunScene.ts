@@ -242,7 +242,7 @@ export class RunScene extends Phaser.Scene {
     this.consumableButtons = [];
     this.trackKey = '';
     this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
-    this.cellFx = new CellFx(this, this.view, this.effects);
+    this.cellFx = new CellFx(this, this.view, this.effects, () => this.shake);
     this.charmStrip = this.cfg.charms
       ? new CharmStrip(this, this.view, getBoard(loadout.board), this.cfg.charms, {
           compact: true,
@@ -726,18 +726,15 @@ export class RunScene extends Phaser.Scene {
   }
 
   /**
-   * The chain got hotter (5 / 10 / 20 / 40 steps): the board's frame glows hotter, with a flash on
-   * the board, a sound, and from 20 steps a small shake. It never cools within a chain
+   * The chain got hotter (5 / 10 / 20 / 40 steps): the board's frame glows hotter, the screen
+   * jolts (harder each level) and a sound plays. No flash (it strobed). It never cools within a chain
    */
   private heatUp(level: number): void {
     if (level <= this.heat) return;
     this.heat = level;
     this.view.setHeat(level);
-    const cx = W / 2;
-    const cy = RUN_LAYOUT.backpackTop + this.view.gridHeight / 2;
-    this.effects.flash(cx, cy, level >= 4 ? 0xffffff : 0xffd25a, 3 + level, 0.25);
     sfx(level >= 3 ? 'openEpic' : 'openRare');
-    if (this.shake && level >= 3) this.cameras.main.shake(140, 0.004 + 0.002 * (level - 3));
+    if (this.shake) this.cameras.main.shake(120 + level * 30, 0.003 + 0.0015 * level);
   }
 
   private showChainCount(step: number): void {
@@ -1051,10 +1048,8 @@ export class RunScene extends Phaser.Scene {
           hapticMedium();
           this.hitStop(JUICE.hitStopMs.combo);
           if (p) this.effects.flash(p.x, p.y, COMBO_TINT[ev.name] ?? 0xffffff, 4, 0.3);
-          if (this.shake) {
-            this.cameras.main.shake(120, 0.006);
-            this.cameras.main.flash(80, 255, 255, 255, false);
-          }
+          // A jolt, not a white flash (flashes strobed during long chains)
+          if (this.shake) this.cameras.main.shake(140, 0.007);
           break;
         }
         case 'enemyDeath': {

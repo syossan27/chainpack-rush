@@ -1,6 +1,7 @@
 // Effects on the board as the chain rings each cell: the element's art plays on the cell (the
-// special techniques' art, scaled to a cell), with small particles as accents. They grow with the
-// chain's heat (chainHeat). Drawing only: nothing is written back to core.
+// special techniques' art, scaled to a cell), the gear's icon pops, a coloured outline spreads, with
+// small particles as accents, and the board knocks a little. No flashes of light (they strobed in a
+// long chain, 2026-11-22). They grow with the chain's heat (chainHeat). Drawing only.
 import Phaser from 'phaser';
 import type { GimmickKind, ItemDef } from '../core/types';
 import { CELL_FX, cellFxKind, type CellFxKind } from '../core/cellFxRules';
@@ -45,11 +46,20 @@ export class CellFx {
   private windowStart = 0;
   private used = 0;
 
+  /** The board's resting position, while it knocks */
+  private readonly restX: number;
+  private readonly restY: number;
+
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly view: BackpackView,
     private readonly effects: Effects,
-  ) {}
+    /** The player's screen-shake setting (off: the board never knocks) */
+    private readonly shakeOn: () => boolean,
+  ) {
+    this.restX = view.x;
+    this.restY = view.y;
+  }
 
   /** A cell rang. heat: chainHeat of the chain so far */
   ring(cell: number, def: ItemDef, heat: number, now: number): void {
@@ -66,8 +76,8 @@ export class CellFx {
     const world = { x: this.view.x + local.x, y: this.view.y + local.y };
     const color = COLOR[kind];
     const art = ART[kind];
-    // Every ring lights the cell up in its colour first
-    this.effects.flash(world.x, world.y, color, 1.5 * size, 0.2);
+    this.pop(cell, heat);
+    this.knock(heat, kind === 'blunt' || kind === 'thunder' || (def.relayDelay ?? 0) >= 0.3);
     if (art && this.playArt(art, local, size)) {
       this.accent(kind, world, color, size);
       return;
@@ -75,7 +85,41 @@ export class CellFx {
     this.drawn(kind, local, world, color, size);
   }
 
-  /** The colour a piece of gear's effects use (the chain line leaving it, its cell's flash) */
+  /** The gear's icon pops up and settles back, tilted a little (as if struck) */
+  private pop(cell: number, heat: number): void {
+    const icon = this.view.iconAt(cell);
+    if (!icon) return;
+    this.scene.tweens.killTweensOf(icon);
+    icon.setScale(1).setAngle(0);
+    this.scene.tweens.add({
+      targets: icon,
+      scale: 1.22 + heat * 0.04,
+      angle: (Math.random() < 0.5 ? -1 : 1) * (6 + heat * 2),
+      duration: 70,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onComplete: () => icon.setScale(1).setAngle(0),
+    });
+  }
+
+  /** The board knocks: a small jolt, harder for heavy gear and as the chain heats up */
+  private knock(heat: number, heavy: boolean): void {
+    if (!this.shakeOn()) return;
+    const amp = (heavy ? 5 : 2) + heat * 1.2;
+    this.scene.tweens.killTweensOf(this.view);
+    this.view.setPosition(this.restX, this.restY);
+    this.scene.tweens.add({
+      targets: this.view,
+      x: this.restX + (Math.random() - 0.5) * amp,
+      y: this.restY + amp,
+      duration: 40,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onComplete: () => this.view.setPosition(this.restX, this.restY),
+    });
+  }
+
+  /** The colour a piece of gear's effects use (the chain line leaving it, its cell's outline) */
   colorOf(def: ItemDef | undefined): number {
     const kind = def ? cellFxKind(def) : null;
     return kind ? COLOR[kind] : 0xfff080;
@@ -88,7 +132,7 @@ export class CellFx {
     const halo = this.scene.add
       .image(a.x, a.y, SKIN.glow)
       .setTint(color)
-      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.8)
       .setScale(0.55);
     const core = this.scene.add.circle(a.x, a.y, 7, 0xffffff);
     this.view.fxLayer.add([halo, core]);
@@ -145,7 +189,7 @@ export class CellFx {
   }
 
   /**
-   * The chain came back round a loop to this cell (pass 2, 3, 4): the cells of the loop flash gold,
+   * The chain came back round a loop to this cell (pass 2, 3, 4): the cells of the loop light up gold,
    * and the cell shows "×n"
    */
   revisit(cell: number, pass: number, loop: readonly number[]): void {
@@ -216,12 +260,11 @@ export class CellFx {
     const n = Math.round(5 * size);
     if (kind === 'fire') this.effects.burst(w.x, w.y, color, n, 260);
     else if (kind === 'ice') this.effects.burst(w.x, w.y, color, n, 200);
-    else if (kind === 'thunder') this.effects.flash(w.x, w.y, color, 1.2 * size, 0.12);
+    else if (kind === 'thunder') this.effects.burst(w.x, w.y, color, n, 300);
     else if (kind === 'wind') this.effects.burst(w.x, w.y, color, n, 180);
-    else this.effects.slash(w.x, w.y, color, 0.5 * size);
   }
 
-  /** Kinds without art: light, rings and particles */
+  /** Kinds without art: outlines and particles */
   private drawn(
     kind: CellFxKind,
     local: { x: number; y: number },
@@ -233,7 +276,7 @@ export class CellFx {
     switch (kind) {
       case 'blunt':
         this.spread(local, color, size, 0.35);
-        this.effects.flash(w.x, w.y, color, 1.4 * size, 0.14);
+        this.spread(local, 0xffffff, size * 0.7, 0.25);
         break;
       case 'water':
         this.spread(local, color, size, 0.3);
@@ -244,21 +287,20 @@ export class CellFx {
         break;
       case 'light':
         this.beam(local, color, size);
-        this.effects.flash(w.x, w.y, color, 1.3 * size, 0.16);
+        this.effects.burst(w.x, w.y, color, n, 120);
         break;
       case 'dark':
         this.effects.absorb(w.x, w.y, w.x, w.y, color, n, 'px', 3);
-        this.effects.flash(w.x, w.y, color, 1.1 * size, 0.2);
+        this.spread(local, color, size, 0.3);
         break;
       case 'poison':
         this.effects.burst(w.x, w.y, color, n, 90);
         break;
       case 'guard':
         this.spread(local, color, size, 0.28);
-        this.effects.flash(w.x, w.y, color, 1.2 * size, 0.18);
         break;
       default:
-        this.effects.slash(w.x, w.y, color, 0.6 * size);
+        this.spread(local, color, size, 0.25);
     }
   }
 
@@ -284,13 +326,13 @@ export class CellFx {
       .image(at.x, at.y + cell * 0.4, SKIN.glow)
       .setOrigin(0.5, 1)
       .setTint(color)
-      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.7)
       .setScale(0.35 * size, 0.05);
     this.view.fxLayer.add(b);
     this.scene.tweens.add({
       targets: b,
       scaleY: 1.6 * size,
-      alpha: { from: 1, to: 0 },
+      alpha: { from: 0.7, to: 0 },
       duration: 300,
       ease: 'Quad.easeOut',
       onComplete: () => b.destroy(),
