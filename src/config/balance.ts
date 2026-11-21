@@ -1,5 +1,5 @@
 // 数値定数（仕様書 第4〜7章の初期値）。数値はここと src/data にのみ書く。
-import type { Rarity, Status, Element } from '../core/types';
+import type { Rarity, RarityWeights, Status, Element } from '../core/types';
 
 export const SIM = {
   fixedStep: 1 / 60, // 固定ステップ（秒）
@@ -419,7 +419,15 @@ export const RARITY: Record<
 
 export const LOOT = {
   kindWeights: { attack: 0.6, defense: 0.15, consumable: 0.15, origin: 0.1 },
-  commonShiftPerLoop: 0.1, // 1周ごとにコモンから10%分をレア以上へ
+  /**
+   * Each loop past the first moves this much of the common share up to the region's other rarities
+   * (in their proportions; a rarity the region never drops stays out). 0.05 was tried on
+   * 2026-11-22 and slowed regions opening too much
+   */
+  commonShiftPerLoop: 0.1,
+  /** Rarity weights where no region is given (tests, tools): the pre-2026-11-22 base rates */
+  baseRarity: [0.6, 0.3, 0.09, 0.01] as RarityWeights,
+  baseBossRarity: [0, 0.75, 0.225, 0.025] as RarityWeights,
   consumableSell: 3,
   bossDrops: 2, // ボスは戦利品を2個落とす（序盤の伸びを早める）
   /** アーティファクトが出る確率（1回のドロップごと。ボス・金ぴかの精鋭は rareOrBetter） */

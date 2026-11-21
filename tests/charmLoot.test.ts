@@ -5,6 +5,7 @@ import { rollCharmDrop, type CharmInstance } from '../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
 import { Rng } from '../src/core/rng';
 import { createInitialSave } from '../src/core/save';
+import { DEFAULT_LOOT } from '../src/core/loot';
 import { ENDLESS } from '../src/data/regions';
 import { build } from './helpers';
 
@@ -15,7 +16,7 @@ function fixed(v: number): Rng {
   return r;
 }
 
-const region = { rarityShift: 0, artifactMult: 1 };
+const region = DEFAULT_LOOT;
 
 /** A strong hero clearing grassland: origin → thunder bell (hits all) → sword; no charms worn */
 function runCfg(extra: Partial<RunConfig> = {}): RunConfig {
@@ -46,7 +47,7 @@ describe('アクセサリー: ドロップ', () => {
   });
 
   it('奥の地域でも確率は同じ（アーティファクトの倍率はかからない）', () => {
-    const deep = { rarityShift: 0.75, artifactMult: 10 };
+    const deep = { ...DEFAULT_LOOT, artifactMult: 10 };
     expect(rollCharmDrop(fixed(CHARM.dropChance + 0.001), 1, false, deep, false)).toBeNull();
     expect(rollCharmDrop(fixed(CHARM.dropChanceRare + 0.001), 1, true, deep, false)).toBeNull();
   });

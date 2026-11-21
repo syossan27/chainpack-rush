@@ -508,8 +508,8 @@ export const UI: Dict = {
   '「出撃！」を押して、冒険に出よう！': 'Ketuk "Berangkat!" untuk memulai petualanganmu!',
   '敵HP×{hp}〜 攻撃×{atk}〜\n装備・ゴールドは出ない':
     'HP Musuh ×{hp}+  Serangan ×{atk}+\nTanpa perlengkapan/emas',
-  '敵HP×{hp} 攻撃×{atk}\nレア以上 +{pct}%':
-    'HP Musuh ×{hp}  Serangan ×{atk}\nLangka ke atas +{pct}%',
+  '敵HP×{hp} 攻撃×{atk}\nレア以上 {pct}%・最高 {top}':
+    'HP Musuh ×{hp}  Serangan ×{atk}\nLangka ke atas {pct}% · Hingga {top}',
   '最高{n}周': 'Terbaik: Putaran {n}',
   記録なし: 'Belum ada rekor',
   '最高{n}周 {stars}': 'Terbaik: Putaran {n} {stars}',

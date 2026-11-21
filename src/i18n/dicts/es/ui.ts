@@ -508,7 +508,8 @@ export const UI: Dict = {
   '「出撃！」を押して、冒険に出よう！': 'Toca "¡Vamos!" para empezar tu aventura.',
   '敵HP×{hp}〜 攻撃×{atk}〜\n装備・ゴールドは出ない':
     'HP enemigo ×{hp}+  Atq. ×{atk}+\nSin equipo ni oro',
-  '敵HP×{hp} 攻撃×{atk}\nレア以上 +{pct}%': 'HP enemigo ×{hp}  Atq. ×{atk}\nRaro o mejor +{pct}%',
+  '敵HP×{hp} 攻撃×{atk}\nレア以上 {pct}%・最高 {top}':
+    'HP enemigo ×{hp}  Atq. ×{atk}\nRaro o mejor {pct}% · Hasta {top}',
   '最高{n}周': 'Récord: vuelta {n}',
   記録なし: 'Sin récord',
   '最高{n}周 {stars}': 'Récord: vuelta {n} {stars}',

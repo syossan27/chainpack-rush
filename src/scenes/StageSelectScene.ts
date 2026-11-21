@@ -5,7 +5,9 @@ import { endlessUnlocked, regionStars, sortieBlock } from '../core/economy';
 import { PROGRESS } from '../config/balance';
 import { sellOverflow } from './LoadoutScene';
 import { BOSS_TRAITS, getEnemyDef } from '../data/enemies';
+import { RARITY_NAMES } from '../data/items';
 import { ENDLESS, REGIONS, regionBosses, type RegionDef } from '../data/regions';
+import { RARITIES } from '../core/types';
 import { UNIT_SPRITES, stillOrigin } from '../data/sprites';
 import { sfx } from '../audio/sfx';
 import { session } from '../platform/session';
@@ -191,10 +193,10 @@ export class StageSelectScene extends Phaser.Scene {
                   hp: r.power.hp,
                   atk: r.power.atk,
                 })
-              : t('敵HP×{hp} 攻撃×{atk}\nレア以上 +{pct}%', {
+              : t('敵HP×{hp} 攻撃×{atk}\nレア以上 {pct}%・最高 {top}', {
                   hp: r.power.hp,
                   atk: r.power.atk,
-                  pct: Math.round(r.loot.rarityShift * 100),
+                  ...lootLabel(r),
                 }),
             {
               ...textStyle(15, COLORS.gold, false),
@@ -395,4 +397,12 @@ export class StageSelectScene extends Phaser.Scene {
     this.root.add(hero);
     if (acc.head) this.root.add(acc.head);
   }
+}
+
+/** A region card's loot line: the share of rare or better (loop 1) and the best rarity that drops */
+function lootLabel(r: RegionDef): { pct: number; top: string } {
+  const w = r.loot.rarity;
+  const total = w.reduce((a, b) => a + b, 0);
+  const top = RARITIES[w.reduce((best, x, i) => (x > 0 ? i : best), 0)]!;
+  return { pct: Math.round((1 - w[0] / total) * 100), top: t(RARITY_NAMES[top]!) };
 }

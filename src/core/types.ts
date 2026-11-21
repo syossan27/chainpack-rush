@@ -6,6 +6,8 @@ export type ItemKind = 'origin' | 'attack' | 'defense' | 'consumable';
 export type Element =
   'physical' | 'blunt' | 'fire' | 'thunder' | 'ice' | 'water' | 'oil' | 'wind' | 'light' | 'dark';
 export type Area = 'single' | 'sweep' | 'splash' | 'all';
+/** Weights of a drop's rarity: [common, rare, epic, legendary] (0: never) */
+export type RarityWeights = readonly [number, number, number, number];
 /** radiant: 灼光（光の装備）、bound: 呪縛（闇の装備。付いているあいだ敵の攻撃力ダウン） */
 export type Status = 'wet' | 'oil' | 'frozen' | 'poison' | 'radiant' | 'bound';
 export type ConsumableEffect =

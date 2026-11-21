@@ -3,38 +3,45 @@ import { LOOT, RARITY } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
 import type { Rng } from './rng';
 import { rollAffixes } from './affixes';
-import type { Dir, ItemDef, ItemInstance, ItemKind, Rarity } from './types';
+import type { Dir, ItemDef, ItemInstance, ItemKind, Rarity, RarityWeights } from './types';
 import { DIRS, RARITIES } from './types';
 
-/** 周回ごとにコモンの確率を下げ、その分をレア以上へ元の比率で振り分ける */
+/**
+ * The region's rarity weights (its boss table for bosses, golden elites and the goblin), with each
+ * loop past the first moving LOOT.commonShiftPerLoop of common up to the region's other rarities in
+ * their proportions. A rarity the region never drops (weight 0) stays out, so early regions have a
+ * ceiling. Below `floor` is cut; if nothing is left, the floor rarity itself
+ */
 export function rarityWeights(
   loop: number,
   rareOrBetter = false,
-  regionShift = 0,
+  region: Pick<RegionLoot, 'rarity' | 'bossRarity'> = DEFAULT_LOOT,
   /** Nothing below this rarity */
   floor: Rarity = 'common',
 ): [Rarity, number][] {
-  const shift = Math.min(
-    RARITY.common.baseRate,
-    LOOT.commonShiftPerLoop * Math.max(0, loop - 1) + regionShift,
-  );
-  const common = rareOrBetter ? 0 : RARITY.common.baseRate - shift;
-  const upperBase = 1 - RARITY.common.baseRate;
-  const scale = (upperBase + shift) / upperBase;
+  const base = rareOrBetter ? region.bossRarity : region.rarity;
+  const total = base.reduce((a, b) => a + b, 0);
+  const w = base.map((x) => x / total);
+  const shift = Math.min(w[0]!, LOOT.commonShiftPerLoop * Math.max(0, loop - 1));
+  const upper = 1 - w[0]!;
+  const scale = upper > 0 ? (upper + shift) / upper : 1;
   const below = RARITIES.indexOf(floor);
-  return RARITIES.map((r, i): [Rarity, number] =>
-    i < below ? [r, 0] : r === 'common' ? [r, common] : [r, RARITY[r].baseRate * scale],
+  const out = RARITIES.map((r, i): [Rarity, number] =>
+    i < below ? [r, 0] : [r, i === 0 ? w[0]! - shift : w[i]! * scale],
   );
+  if (out.every(([, x]) => x <= 0))
+    return RARITIES.map((r): [Rarity, number] => [r, r === floor ? 1 : 0]);
+  return out;
 }
 
 export function rollRarity(
   rng: Rng,
   loop: number,
   rareOrBetter = false,
-  regionShift = 0,
+  region: Pick<RegionLoot, 'rarity' | 'bossRarity'> = DEFAULT_LOOT,
   floor: Rarity = 'common',
 ): Rarity {
-  return rng.weighted(rarityWeights(loop, rareOrBetter, regionShift, floor));
+  return rng.weighted(rarityWeights(loop, rareOrBetter, region, floor));
 }
 
 // ---- 系統（装備ごとに出るレアリティの幅。革鎧はコモン〜レア、鋼の鎧はエピック〜レジェンダリー など） ----
@@ -141,18 +148,28 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
 
 export const ARTIFACT_DEFS = ITEM_DEFS.filter((d) => d.artifact);
 
-/** 地域ごとの戦利品の上乗せ（奥の地域ほどレア以上・アーティファクトが出やすい） */
+/** 地域ごとの戦利品（奥の地域ほど上のレアリティ・アーティファクトが出やすい） */
 export interface RegionLoot {
-  rarityShift: number;
+  /** Rarity weights of a drop here (a 0 is a rarity this region never drops) */
+  rarity: RarityWeights;
+  /** ...for bosses, golden elites and the treasure goblin (no common) */
+  bossRarity: RarityWeights;
   artifactMult: number;
 }
+
+/** Where no region is given (tests, tools) */
+export const DEFAULT_LOOT: RegionLoot = {
+  rarity: LOOT.baseRarity,
+  bossRarity: LOOT.baseBossRarity,
+  artifactMult: 1,
+};
 
 export function rollLoot(
   rng: Rng,
   loop: number,
   uid: string,
   rareOrBetter = false,
-  region: RegionLoot = { rarityShift: 0, artifactMult: 1 },
+  region: RegionLoot = DEFAULT_LOOT,
   /** Never a consumable (the first own run's promised drop goes into the backpack) */
   equipOnly = false,
   /** Nothing below this rarity (trial: the treasure goblin's first drop) */
@@ -171,7 +188,7 @@ export function rollLoot(
   // 消耗品にはレアリティがないので、レア以上確定のときは装備から選ぶ
   if ((rareOrBetter || equipOnly) && kind === 'consumable') kind = 'attack';
   // レアリティを先に決め、そのレアリティで出る装備から選ぶ（系統）
-  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift, floor);
+  const rarity = rollRarity(rng, loop, rareOrBetter, region, floor);
   const defs = ITEM_DEFS.filter(
     (d) => d.kind === kind && !d.artifact && (kind === 'consumable' || allowsRarity(d.id, rarity)),
   );

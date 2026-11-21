@@ -1,6 +1,7 @@
 // 地域ごとの雑魚の出方・ボスの候補（仕様書 第4章を、周回ごとに抽選する形へ広げた）
 // 群れの中身・数・間隔と、各周回のボスは出撃ごとに抽選する（src/core/layout.ts）。
 // 地域選択には「出てくる雑魚」と「周回ごとのボス候補」を見せる。
+import type { RegionLoot } from '../core/loot';
 import type { Element } from '../core/types';
 
 export interface MobEntry {
@@ -23,8 +24,12 @@ export interface RegionDef {
   bossPools: string[][];
   /** 敵の強さの倍率（周回の伸びに掛ける。奥の地域ほど一気に強い） */
   power: { hp: number; atk: number };
-  /** 戦利品: コモンからレア以上へ回す割合（周回の分に足す）と、アーティファクトの出やすさの倍率 */
-  loot: { rarityShift: number; artifactMult: number };
+  /**
+   * 戦利品: レアリティの重み（コモン・レア・エピック・レジェンダリー。0 はこの地域では出ない。ボス・金ぴかの
+   * 精鋭・黄金ゴブリンは bossRarity）と、アーティファクトの出やすさの倍率。2026-11-22: 地域ごとに上限を設けた
+   * （草原・洞窟はエピックまで、城壁からレジェンダリー。アーティファクトは城壁から、レジェンダリーよりまれ）。値は仮
+   */
+  loot: RegionLoot;
   /** Background colors (far to near). Without art, the backgrounds are drawn from these; [0] is also the sky above the art */
   bgColors: [number, number, number];
   groundColor: number;
@@ -58,7 +63,8 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     power: { hp: 1.6, atk: 1 },
     goldPerKill: 1,
-    loot: { rarityShift: 0, artifactMult: 1 },
+    // No legendary (a few epics), and no artifact
+    loot: { rarity: [0.6, 0.34, 0.06, 0], bossRarity: [0, 0.85, 0.15, 0], artifactMult: 0 },
     bgColors: [0xbadbee, 0x6ab070, 0x4a9050],
     groundColor: 0x6b4a2a,
   },
@@ -82,7 +88,8 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     power: { hp: 11, atk: 1.8 },
     goldPerKill: 2,
-    loot: { rarityShift: 0.2, artifactMult: 2 },
+    // Epic at most (a boss very rarely gives a legendary), and no artifact
+    loot: { rarity: [0.5, 0.38, 0.12, 0], bossRarity: [0, 0.7, 0.29, 0.01], artifactMult: 0 },
     bgColors: [0x2d2639, 0x2c2638, 0x3c3448],
     groundColor: 0x3a3040,
   },
@@ -108,7 +115,8 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     power: { hp: 21, atk: 2.7 },
     goldPerKill: 3,
-    loot: { rarityShift: 0.4, artifactMult: 4 },
+    // Legendaries start here, and artifacts (rarer than legendaries, 2026-11-22)
+    loot: { rarity: [0.4, 0.4, 0.18, 0.02], bossRarity: [0, 0.6, 0.34, 0.06], artifactMult: 1.5 },
     bgColors: [0xb2c5d5, 0x7a8090, 0x5a6070],
     groundColor: 0x6a6a70,
   },
@@ -132,7 +140,11 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     power: { hp: 41, atk: 4.2 },
     goldPerKill: 6,
-    loot: { rarityShift: 0.55, artifactMult: 6 },
+    loot: {
+      rarity: [0.35, 0.45, 0.17, 0.03],
+      bossRarity: [0, 0.55, 0.37, 0.08],
+      artifactMult: 2.5,
+    },
     bgColors: [0x4f2722, 0x6a2a1a, 0x8a3a1a],
     groundColor: 0x2a1a14,
   },
@@ -156,7 +168,7 @@ export const REGIONS: readonly RegionDef[] = [
     ],
     power: { hp: 50, atk: 5.5 },
     goldPerKill: 10,
-    loot: { rarityShift: 0.65, artifactMult: 8 },
+    loot: { rarity: [0.28, 0.45, 0.22, 0.05], bossRarity: [0, 0.5, 0.4, 0.1], artifactMult: 3.5 },
     bgColors: [0xcde5f3, 0xa0c8e0, 0x80a8c8],
     groundColor: 0xd8e4f0,
   },
@@ -175,7 +187,7 @@ export const REGIONS: readonly RegionDef[] = [
     bossPools: [['dark_knight', 'ice_queen'], ['dark_knight', 'mammoth'], ['demon_lord']],
     power: { hp: 60, atk: 7.5 },
     goldPerKill: 15,
-    loot: { rarityShift: 0.75, artifactMult: 10 },
+    loot: { rarity: [0.2, 0.45, 0.27, 0.08], bossRarity: [0, 0.45, 0.42, 0.13], artifactMult: 4.5 },
     bgColors: [0x25162f, 0x2a1830, 0x3a2040],
     groundColor: 0x2a2030,
   },
@@ -217,7 +229,7 @@ export const ENDLESS: RegionDef = {
   ],
   power: { hp: 60, atk: 7.5 },
   goldPerKill: 0,
-  loot: { rarityShift: 0, artifactMult: 0 },
+  loot: { rarity: [0.2, 0.45, 0.27, 0.08], bossRarity: [0, 0.45, 0.42, 0.13], artifactMult: 0 },
   bgColors: [0x140e24, 0x1a1030, 0x2a1848],
   groundColor: 0x1a1428,
 };

@@ -12,7 +12,7 @@ import {
   sellPrice,
   specifyExits,
 } from '../src/core/economy';
-import { ARTIFACT_DEFS, createItem, rollLoot } from '../src/core/loot';
+import { ARTIFACT_DEFS, DEFAULT_LOOT, createItem, rollLoot } from '../src/core/loot';
 import { Rng } from '../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
 import { getItemDef } from '../src/data/items';
@@ -208,7 +208,7 @@ describe('アーティファクトの付け直し', () => {
 });
 
 describe('アーティファクトは1種類につき1つ', () => {
-  const always = { rarityShift: 0, artifactMult: 1e9 };
+  const always = { ...DEFAULT_LOOT, artifactMult: 1e9 };
 
   it('持っている種類は出ない。全種類持っていれば、ふつうの装備が出る', () => {
     const rng = new Rng(9);

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { FIELD, NO_LUCK } from '../src/config/balance';
 import { rarityWeights } from '../src/core/loot';
 import { Combat } from '../src/core/combat';
-import { REGIONS, bossPoolForLoop } from '../src/data/regions';
+import { REGIONS, bossPoolForLoop, getRegion } from '../src/data/regions';
 import { groupSpan, rollLoop } from '../src/core/layout';
 import { Rng } from '../src/core/rng';
 import { ARCHETYPES, buildReference } from '../tools/referenceBoards';
@@ -81,8 +81,10 @@ describe('地域の強さと戦利品', () => {
       const b = REGIONS[i]!;
       expect(b.power.hp).toBeGreaterThan(a.power.hp);
       expect(b.power.atk).toBeGreaterThan(a.power.atk);
-      expect(b.loot.rarityShift).toBeGreaterThan(a.loot.rarityShift);
-      expect(b.loot.artifactMult).toBeGreaterThan(a.loot.artifactMult);
+      // Common goes down, legendary never down, deeper
+      expect(b.loot.rarity[0]).toBeLessThan(a.loot.rarity[0]);
+      expect(b.loot.rarity[3]).toBeGreaterThanOrEqual(a.loot.rarity[3]);
+      expect(b.loot.artifactMult).toBeGreaterThanOrEqual(a.loot.artifactMult);
     }
   });
 
@@ -107,17 +109,31 @@ describe('地域の強さと戦利品', () => {
     }
   });
 
-  it('奥の地域ほどコモンが減り、レア以上が増える', () => {
-    const common = (shift: number) =>
-      rarityWeights(1, false, shift).find(([r]) => r === 'common')![1];
-    const shifts = REGIONS.map((r) => r.loot.rarityShift);
-    for (let i = 1; i < shifts.length; i++)
-      // コモンが0になるまでは減り続ける（奥の地域ではコモンが出なくなる）
-      if (common(shifts[i - 1]!) > 0)
-        expect(common(shifts[i]!)).toBeLessThan(common(shifts[i - 1]!));
-      else expect(common(shifts[i]!)).toBe(0);
-    const total = rarityWeights(1, false, 0.4).reduce((s, [, w]) => s + w, 0);
-    expect(total).toBeCloseTo(1);
+  it('地域ごとにレアリティの上限がある: 草原・洞窟はエピックまで（洞窟のボスはまれにレジェンダリー）、城壁からレジェンダリー', () => {
+    const top = (id: string, boss = false) =>
+      rarityWeights(10, boss, getRegion(id).loot).reduce((b, [r, w]) => (w > 0 ? r : b), 'common');
+    expect(top('grassland')).toBe('epic');
+    expect(top('grassland', true)).toBe('epic');
+    expect(top('cave')).toBe('epic');
+    expect(top('cave', true)).toBe('legendary');
+    expect(top('rampart')).toBe('legendary');
+    // Loops move common up, but never past the ceiling; the weights add up to 1
+    const g = Object.fromEntries(rarityWeights(5, false, getRegion('grassland').loot));
+    expect(g.common).toBeLessThan(0.8);
+    expect(g.legendary).toBe(0);
+    for (const r of REGIONS)
+      expect(rarityWeights(3, false, r.loot).reduce((s, [, w]) => s + w, 0)).toBeCloseTo(1);
+  });
+
+  it('アーティファクトはレジェンダリーより厳しい: 草原・洞窟では出ない', () => {
+    expect(getRegion('grassland').loot.artifactMult).toBe(0);
+    expect(getRegion('cave').loot.artifactMult).toBe(0);
+    expect(getRegion('rampart').loot.artifactMult).toBeGreaterThan(0);
+  });
+
+  it('下限より上がない地域でも、下限のレアリティで出る（黄金ゴブリンの1個目は草原でもエピック）', () => {
+    const w = Object.fromEntries(rarityWeights(1, true, getRegion('grassland').loot, 'legendary'));
+    expect(w.legendary).toBe(1);
   });
 });
 

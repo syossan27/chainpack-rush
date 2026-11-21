@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { LOOT } from '../src/config/balance';
 import { Rng } from '../src/core/rng';
 import { createItem, rarityWeights, rollExits, rollLoot } from '../src/core/loot';
 
@@ -22,11 +23,11 @@ describe('rng / loot', () => {
     }
   });
 
-  it('周回ごとにコモンが10%ずつ減り、合計は1', () => {
+  it('周回ごとにコモンが LOOT.commonShiftPerLoop ずつ減り、合計は1', () => {
     const w1 = Object.fromEntries(rarityWeights(1));
     const w3 = Object.fromEntries(rarityWeights(3));
     expect(w1.common).toBeCloseTo(0.6);
-    expect(w3.common).toBeCloseTo(0.4);
+    expect(w3.common).toBeCloseTo(0.6 - 2 * LOOT.commonShiftPerLoop);
     expect(Object.values(w3).reduce((a, b) => a + b, 0)).toBeCloseTo(1);
     expect(w3.rare / w3.epic).toBeCloseTo(0.3 / 0.09);
   });

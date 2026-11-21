@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowsRarity, lineItemFor, rollLoot } from '../src/core/loot';
+import { DEFAULT_LOOT, allowsRarity, lineItemFor, rollLoot } from '../src/core/loot';
 import { Rng } from '../src/core/rng';
 import { ITEM_DEFS, getItemDef } from '../src/data/items';
 import { TECHNIQUES } from '../src/data/techniques';
@@ -11,10 +11,7 @@ describe('系統（装備ごとに出るレアリティの幅）', () => {
   it('戦利品は、その装備が出るレアリティでしか出ない', () => {
     const rng = new Rng(7);
     for (let i = 0; i < 4000; i++) {
-      const it = rollLoot(rng, 1 + (i % 10), `u${i}`, i % 3 === 0, {
-        rarityShift: 0.3,
-        artifactMult: 1,
-      });
+      const it = rollLoot(rng, 1 + (i % 10), `u${i}`, i % 3 === 0, DEFAULT_LOOT);
       expect(allowsRarity(it.defId, it.rarity)).toBe(true);
     }
   });

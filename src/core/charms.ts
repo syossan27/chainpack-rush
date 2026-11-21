@@ -175,6 +175,6 @@ export function rollCharmDrop(
   // Always drawn, so a sure drop does not shift what comes after it
   const roll = rng.next();
   if (!sure && roll >= chance) return null;
-  const rarity = rollRarity(rng, loop, rareOrBetter, region.rarityShift);
+  const rarity = rollRarity(rng, loop, rareOrBetter, region);
   return { uid: '', defId: rng.pick(CHARMS).id, rarity };
 }
