@@ -622,14 +622,21 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
 describe('撤退', () => {
   it('撤退するとその場で終わり、拾った戦利品は結果に残る。カカシでは撤退できない', () => {
     const save = createInitialSave();
-    const c = new Combat({
-      seed: 3,
-      regionId: 'grassland',
-      loadout: save.loadout,
-      items: itemMap(save),
-      hero: BASE_HERO_STATS,
-    });
-    while (!c.ended && c.drops.length === 0) c.step();
+    // A run that picks something up before it ends (some runs of a fresh save drop nothing)
+    const start = (seed: number) =>
+      new Combat({
+        seed,
+        regionId: 'grassland',
+        loadout: save.loadout,
+        items: itemMap(save),
+        hero: BASE_HERO_STATS,
+      });
+    let c = start(1);
+    for (let seed = 1; seed < 50; seed++) {
+      c = start(seed);
+      while (!c.ended && c.drops.length === 0) c.step();
+      if (!c.ended) break;
+    }
     expect(c.ended).toBeNull();
     const got = c.drops.length;
     c.retreat();

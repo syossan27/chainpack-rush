@@ -61,7 +61,8 @@ export const REGIONS: readonly RegionDef[] = [
       ['goblin_king', 'slime_mother'],
       ['iron_knight', 'golem'],
     ],
-    power: { hp: 1.6, atk: 1 },
+    // HP 2026-11-22: about −10% (grassland to volcano) to keep the pace with fewer drops
+    power: { hp: 1.4, atk: 1 },
     goldPerKill: 1,
     // No legendary (a few epics), and no artifact
     loot: { rarity: [0.6, 0.34, 0.06, 0], bossRarity: [0, 0.85, 0.15, 0], artifactMult: 0 },
@@ -86,7 +87,7 @@ export const REGIONS: readonly RegionDef[] = [
       ['goblin_king', 'lich'],
       ['lich', 'bat_queen', 'golem'],
     ],
-    power: { hp: 11, atk: 1.8 },
+    power: { hp: 9.5, atk: 1.8 },
     goldPerKill: 2,
     // Epic at most (a boss very rarely gives a legendary), and no artifact
     loot: { rarity: [0.5, 0.38, 0.12, 0], bossRarity: [0, 0.7, 0.29, 0.01], artifactMult: 0 },
@@ -113,7 +114,7 @@ export const REGIONS: readonly RegionDef[] = [
       ['iron_knight', 'golem'],
       ['iron_knight', 'golem', 'lich'],
     ],
-    power: { hp: 21, atk: 2.7 },
+    power: { hp: 18, atk: 2.7 },
     goldPerKill: 3,
     // Legendaries start here, and artifacts (rarer than legendaries, 2026-11-22)
     loot: { rarity: [0.4, 0.4, 0.18, 0.02], bossRarity: [0, 0.6, 0.34, 0.06], artifactMult: 1.5 },
@@ -138,7 +139,7 @@ export const REGIONS: readonly RegionDef[] = [
       ['fire_dragon', 'lava_giant'],
       ['fire_dragon', 'lava_giant', 'golem'],
     ],
-    power: { hp: 41, atk: 4.2 },
+    power: { hp: 36, atk: 4.2 },
     goldPerKill: 6,
     loot: {
       rarity: [0.35, 0.45, 0.17, 0.03],

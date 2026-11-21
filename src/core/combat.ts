@@ -1672,7 +1672,13 @@ export class Combat {
       const roll = this.rng.next();
       // The first own run never ends empty-handed (the roll is still drawn, as in any run)
       const promised = !!this.cfg.firstRun && this.drops.length === 0;
-      if (roll < e.def.dropRate || e.elite === 'golden' || promised || sureDrop || e.treasure) {
+      if (
+        roll < e.def.dropRate * (e.def.boss ? 1 : LOOT.dropMult) ||
+        e.elite === 'golden' ||
+        promised ||
+        sureDrop ||
+        e.treasure
+      ) {
         const count = e.def.boss
           ? LOOT.bossDrops
           : e.treasure
