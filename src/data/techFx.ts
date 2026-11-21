@@ -3,7 +3,7 @@
 //   charge: drawn at the sword tip while the hero winds up
 //   body:   an animated sprite released at the swing and sent to the target
 //   impact: the big effect at the target (ElementFx.technique)
-//   screen: a flash / shake / dim of the whole screen (off when the player turns screen shake off)
+//   screen: a shake / dim of the whole screen (off when the player turns screen shake off)
 // The body art lives in assets/sprites/fx/<file>; until it exists the game draws a stand-in in code.
 
 export type ChargeKind = 'flame' | 'spark' | 'frost' | 'shine' | 'wind' | 'drip';
@@ -40,7 +40,7 @@ export interface TechFx {
     burst?: boolean;
   };
   impact: TechImpactKind;
-  screen: { flash: number; shake: number; dim: boolean };
+  screen: { shake: number; dim: boolean };
 }
 
 const sheet = (
@@ -65,7 +65,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       gapMs: 0,
     },
     impact: 'crimson',
-    screen: { flash: 0xff8a30, shake: 0.009, dim: false },
+    screen: { shake: 0.009, dim: false },
   },
   thunder: {
     techId: 'thunder',
@@ -79,7 +79,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       gapMs: 80,
     },
     impact: 'thunder',
-    screen: { flash: 0xffffff, shake: 0.01, dim: true },
+    screen: { shake: 0.01, dim: true },
   },
   frost: {
     techId: 'frost',
@@ -93,7 +93,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       gapMs: 0,
     },
     impact: 'frost',
-    screen: { flash: 0xc8f0ff, shake: 0.008, dim: false },
+    screen: { shake: 0.008, dim: false },
   },
   triple: {
     techId: 'triple',
@@ -108,7 +108,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       gapMs: 0,
     },
     impact: 'triple',
-    screen: { flash: 0xffffff, shake: 0.008, dim: false },
+    screen: { shake: 0.008, dim: false },
   },
   whirl: {
     techId: 'whirl',
@@ -122,7 +122,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       gapMs: 0,
     },
     impact: 'whirl',
-    screen: { flash: 0xe0fff0, shake: 0.012, dim: false },
+    screen: { shake: 0.012, dim: false },
   },
   venom: {
     techId: 'venom',
@@ -139,7 +139,7 @@ export const TECH_FX: Readonly<Record<string, TechFx>> = {
       burst: true,
     },
     impact: 'venom',
-    screen: { flash: 0xb0ff70, shake: 0.009, dim: false },
+    screen: { shake: 0.009, dim: false },
   },
 };
 

@@ -1,7 +1,7 @@
 // Effects on the board as the chain rings each cell: the element's art plays on the cell (the
 // special techniques' art, scaled to a cell), the gear's icon pops, a coloured outline spreads, with
-// small particles as accents, and the board knocks a little. No flashes of light (they strobed in a
-// long chain, 2026-11-22). They grow with the chain's heat (chainHeat). Drawing only.
+// small particles and light as accents, and the board knocks a little. They grow with the chain's
+// heat (chainHeat). Drawing only: nothing is written back to core.
 import Phaser from 'phaser';
 import type { GimmickKind, ItemDef } from '../core/types';
 import { CELL_FX, cellFxKind, type CellFxKind } from '../core/cellFxRules';
@@ -78,6 +78,8 @@ export class CellFx {
     const art = ART[kind];
     this.pop(cell, heat);
     this.knock(heat, kind === 'blunt' || kind === 'thunder' || (def.relayDelay ?? 0) >= 0.3);
+    // Every ring lights the cell up in its colour
+    this.effects.flash(world.x, world.y, color, 1.5 * size, 0.2);
     if (art && this.playArt(art, local, size)) {
       this.accent(kind, world, color, size);
       return;
@@ -119,7 +121,7 @@ export class CellFx {
     });
   }
 
-  /** The colour a piece of gear's effects use (the chain line leaving it, its cell's outline) */
+  /** The colour a piece of gear's effects use (the chain line leaving it, its cell's light) */
   colorOf(def: ItemDef | undefined): number {
     const kind = def ? cellFxKind(def) : null;
     return kind ? COLOR[kind] : 0xfff080;
@@ -132,7 +134,7 @@ export class CellFx {
     const halo = this.scene.add
       .image(a.x, a.y, SKIN.glow)
       .setTint(color)
-      .setAlpha(0.8)
+      .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.55);
     const core = this.scene.add.circle(a.x, a.y, 7, 0xffffff);
     this.view.fxLayer.add([halo, core]);
@@ -260,11 +262,12 @@ export class CellFx {
     const n = Math.round(5 * size);
     if (kind === 'fire') this.effects.burst(w.x, w.y, color, n, 260);
     else if (kind === 'ice') this.effects.burst(w.x, w.y, color, n, 200);
-    else if (kind === 'thunder') this.effects.burst(w.x, w.y, color, n, 300);
+    else if (kind === 'thunder') this.effects.flash(w.x, w.y, color, 1.2 * size, 0.12);
     else if (kind === 'wind') this.effects.burst(w.x, w.y, color, n, 180);
+    else this.effects.slash(w.x, w.y, color, 0.5 * size);
   }
 
-  /** Kinds without art: outlines and particles */
+  /** Kinds without art: light, outlines and particles */
   private drawn(
     kind: CellFxKind,
     local: { x: number; y: number },
@@ -276,7 +279,7 @@ export class CellFx {
     switch (kind) {
       case 'blunt':
         this.spread(local, color, size, 0.35);
-        this.spread(local, 0xffffff, size * 0.7, 0.25);
+        this.effects.flash(w.x, w.y, color, 1.4 * size, 0.14);
         break;
       case 'water':
         this.spread(local, color, size, 0.3);
@@ -287,20 +290,21 @@ export class CellFx {
         break;
       case 'light':
         this.beam(local, color, size);
-        this.effects.burst(w.x, w.y, color, n, 120);
+        this.effects.flash(w.x, w.y, color, 1.3 * size, 0.16);
         break;
       case 'dark':
         this.effects.absorb(w.x, w.y, w.x, w.y, color, n, 'px', 3);
-        this.spread(local, color, size, 0.3);
+        this.effects.flash(w.x, w.y, color, 1.1 * size, 0.2);
         break;
       case 'poison':
         this.effects.burst(w.x, w.y, color, n, 90);
         break;
       case 'guard':
         this.spread(local, color, size, 0.28);
+        this.effects.flash(w.x, w.y, color, 1.2 * size, 0.18);
         break;
       default:
-        this.spread(local, color, size, 0.25);
+        this.effects.slash(w.x, w.y, color, 0.6 * size);
     }
   }
 
@@ -326,13 +330,13 @@ export class CellFx {
       .image(at.x, at.y + cell * 0.4, SKIN.glow)
       .setOrigin(0.5, 1)
       .setTint(color)
-      .setAlpha(0.7)
+      .setBlendMode(Phaser.BlendModes.ADD)
       .setScale(0.35 * size, 0.05);
     this.view.fxLayer.add(b);
     this.scene.tweens.add({
       targets: b,
       scaleY: 1.6 * size,
-      alpha: { from: 0.7, to: 0 },
+      alpha: { from: 1, to: 0 },
       duration: 300,
       ease: 'Quad.easeOut',
       onComplete: () => b.destroy(),

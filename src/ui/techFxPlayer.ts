@@ -1,5 +1,5 @@
 // Drawing a special technique's effect (src/data/techFx.ts): the charge at the sword tip, the body
-// sent to the target, and the screen flash. The big impact at the target is ElementFx.technique.
+// sent to the target, and the screen shake. The big impact at the target is ElementFx.technique.
 // Everything is made with scene.add / tweens / scene.time, so leaving the scene cleans it up.
 // The tweens and timers made here are kept so the scene can hold them while the game is paused.
 import Phaser from 'phaser';
@@ -135,10 +135,8 @@ export class TechFxPlayer {
   /** Flash, shake and (for some techniques) dim the screen. Off when screen shake is turned off */
   screen(fx: TechFx, enabled: boolean): void {
     if (!enabled) return;
-    const cam = this.scene.cameras.main;
-    const c = Phaser.Display.Color.IntegerToColor(fx.screen.flash);
-    cam.flash(120, c.red, c.green, c.blue);
-    cam.shake(140, fx.screen.shake);
+    // No whole-screen flash: it strobed during long chains (2026-11-22). The shake carries the hit
+    this.scene.cameras.main.shake(140, fx.screen.shake);
     if (fx.screen.dim) {
       const dim = this.scene.add
         .rectangle(0, 0, W, H, 0x000000, 0.35)
