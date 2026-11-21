@@ -430,11 +430,6 @@ export const LOOT = {
   baseBossRarity: [0, 0.75, 0.225, 0.025] as RarityWeights,
   consumableSell: 3,
   bossDrops: 2, // ボスは戦利品を2個落とす（序盤の伸びを早める）
-  /**
-   * Every ordinary enemy's dropRate × this (bosses, golden elites and the goblin always drop). 0.6
-   * since 2026-11-22: drops felt too many (about 7 a run instead of 9–10). Provisional
-   */
-  dropMult: 0.6,
   /** アーティファクトが出る確率（1回のドロップごと。ボス・金ぴかの精鋭は rareOrBetter） */
   artifactChance: 0.0005,
   artifactChanceRare: 0.002,

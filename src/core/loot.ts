@@ -154,6 +154,8 @@ export interface RegionLoot {
   rarity: RarityWeights;
   /** ...for bosses, golden elites and the treasure goblin (no common) */
   bossRarity: RarityWeights;
+  /** Every ordinary enemy's dropRate × this here (bosses always drop) */
+  dropMult: number;
   artifactMult: number;
 }
 
@@ -161,6 +163,7 @@ export interface RegionLoot {
 export const DEFAULT_LOOT: RegionLoot = {
   rarity: LOOT.baseRarity,
   bossRarity: LOOT.baseBossRarity,
+  dropMult: 1,
   artifactMult: 1,
 };
 

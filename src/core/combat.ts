@@ -1673,7 +1673,7 @@ export class Combat {
       // The first own run never ends empty-handed (the roll is still drawn, as in any run)
       const promised = !!this.cfg.firstRun && this.drops.length === 0;
       if (
-        roll < e.def.dropRate * (e.def.boss ? 1 : LOOT.dropMult) ||
+        roll < e.def.dropRate * (e.def.boss ? 1 : this.region.loot.dropMult) ||
         e.elite === 'golden' ||
         promised ||
         sureDrop ||
