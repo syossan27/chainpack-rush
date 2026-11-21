@@ -113,18 +113,9 @@ export function lineEffects(
   return out;
 }
 
-/**
- * A chain's guard and stagger under its origin stones (盾の起点石): the guard lasts `guardCells`
- * cells longer, and the chain staggers at the higher share of max HP
- */
-export function flowRules(
-  fx: readonly LineEffect[],
-  rules: ChainRules,
-): { guardSteps: number; staggerRatio: number } {
-  return {
-    guardSteps: fx.reduce((n, e) => n + (e.guardCells ?? 0), rules.guardSteps),
-    staggerRatio: Math.max(rules.staggerRatio, ...fx.map((e) => e.staggerRatio ?? 0)),
-  };
+/** A chain's guard under its origin stones (盾の起点石): the guard lasts `guardCells` cells longer */
+export function flowRules(fx: readonly LineEffect[], rules: ChainRules): { guardSteps: number } {
+  return { guardSteps: fx.reduce((n, e) => n + (e.guardCells ?? 0), rules.guardSteps) };
 }
 
 /** 次の装備へ伝わるまでの時間（ミリ秒）。速の起点石・重い起点石で変わる */
@@ -288,13 +279,16 @@ function spread(
     return base;
   };
   let passTurned = false;
+  /** Relays from a cell come faster on each pass back round a loop (the cell's current pass) */
+  const passPace = (cell: number): number =>
+    GIMMICK.passPace[Math.min((visits.get(cell) ?? 1) - 1, GIMMICK.passPace.length - 1)]!;
 
   const expand = (index: number, tMs: number): void => {
     const s = steps[index]!;
     const inst = items.get(s.uid);
     if (!inst) return;
     const def = getItemDef(inst.defId);
-    const delayMs = relayMs(def, effectsOf(lines[index]!));
+    const delayMs = Math.round(relayMs(def, effectsOf(lines[index]!)) * passPace(s.cell));
     const targets: number[] = [];
     for (const dir of passExits(s.cell, inst)) {
       const n = neighborCell(loadout, s.cell, dir);
@@ -366,7 +360,7 @@ function spread(
     let p = parent;
     let t = tMs;
     stack.forEach((uid, k) => {
-      if (k > 0) t += Math.round(STACK.ringRelay * MS);
+      if (k > 0) t += Math.round(STACK.ringRelay * MS * passPace(cell));
       p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1, flow);
     });
     if (t > lastMs) lastMs = t;

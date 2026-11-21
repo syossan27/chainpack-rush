@@ -229,8 +229,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Attacks deal +{v}% damage, but the chain passes on to the next cell {relay}s slower.',
   盾の起点石: 'Shield Origin Stone',
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    'Your guard lasts until cell {to} of a chain (normally {from}). You get Staggered only after taking {v}% of your Max HP in one chain (normally {base}%).',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    'Your guard lasts until cell {to} of a chain (normally {from}).',
   一番槍の起点石: 'Spearhead Origin Stone',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Attacks in the first {cells} cells to ring in a chain deal +{v}% damage (counted in cells; armor cells count too).',
@@ -295,12 +295,12 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Dark area attack. Applies Binding, and Seals enemies with Radiance to slow their attacks.',
   木の盾: 'Wooden Shield',
-  '連鎖が通ると、終了時に防御値+8。': '+8 Defense at the end of each chain that passes through.',
+  '連鎖が通るたびに、その場で防御値+8。': '+8 Defense each time a chain passes through.',
   鎖帷子: 'Chainmail',
-  '連鎖が通ると、終了時に防御値+12。': '+12 Defense at the end of each chain that passes through.',
+  '連鎖が通るたびに、その場で防御値+12。': '+12 Defense each time a chain passes through.',
   鋼の鎧: 'Steel Armor',
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    '+20 Defense at the end of each chain that passes through. A bit heavy: passes the chain on slowly.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    '+20 Defense each time a chain passes through. A bit heavy: passes the chain on slowly.',
   短剣: 'Dagger',
   '軽い一撃。次の装備へすぐ伝わる。': 'A light hit. Passes the chain to the next item quickly.',
   双剣: 'Twin Blades',
@@ -319,13 +319,13 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Freezes the target and enemies around it. Blunt attacks can Shatter them.',
   革鎧: 'Leather Armor',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    '+6 Defense at the end of each chain that passes through. Light: passes the chain on quickly.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    '+6 Defense each time a chain passes through. Light: passes the chain on quickly.',
   大盾: 'Tower Shield',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    '+26 Defense at the end of each chain that passes through. Heavy: passes the chain on slowly.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    '+26 Defense each time a chain passes through. Heavy: passes the chain on slowly.',
   鉄の盾: 'Iron Shield',
-  '連鎖が通ると、終了時に防御値+18。': '+18 Defense at the end of each chain that passes through.',
+  '連鎖が通るたびに、その場で防御値+18。': '+18 Defense each time a chain passes through.',
   循環の環: 'Ouroboros Ring',
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     'Spreads the chain in all four directions. Chains through this ring grow ×1.2 per link up to ×4.0, and keep growing a lot after that.',
@@ -507,8 +507,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Flat Chain',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'One item per cell. No stacking: take on the Ramparts with the path of your arrows alone.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    "While it's on your board, you're never unguarded during chains and never stagger. +40 Defense.",
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    "While it's on your board, you're never unguarded during chains. +40 Defense.",
   回る盤面: 'Spinning Board',
   回転マスを2つ置ける: 'Place 2 Spinners',
   切り替えの盤面: 'Switch Board',

@@ -585,7 +585,7 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
     for (const [next, ug] of seen) expect(ug).toBe(next > CHAIN_RULES.guardSteps);
   });
 
-  it('A: 無防備中に最大HPの一定割合を受けると、よろめいて残りの段が途切れる', () => {
+  it('無防備中に大きく被弾しても、連鎖は途切れない（よろめきは無くした）', () => {
     const { loadout, items } = long();
     const c = new Combat({
       seed: 1,
@@ -605,7 +605,7 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
     ).damageHero.bind(c);
     hit({
       id: -1,
-      atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1,
+      atk: (c.maxHp * 0.5) / HERO.unguardedTakenMult,
       statuses: new Map(),
     });
     const evs: CombatEvent[] = [];
@@ -614,8 +614,8 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
       evs.push(...c.drainEvents());
     }
     const end = evs.find((e) => e.type === 'chainEnd');
-    expect(end?.type === 'chainEnd' && end.staggered).toBe(true);
-    expect(evs.filter((e) => e.type === 'step')).toHaveLength(0);
+    expect(end?.type === 'chainEnd' && end.cut).toBe(false);
+    expect(evs.filter((e) => e.type === 'step').length).toBeGreaterThan(0);
   });
 });
 

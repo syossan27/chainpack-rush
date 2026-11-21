@@ -429,7 +429,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     }
   }
 
-  /** 防御装備のマス（連鎖終了時の光の粒の出どころ） */
+  /** 防御装備のマス（鳴ったときの光の粒の出どころ） */
   isDefenseCell(cell: number): boolean {
     const uid = this.loadout.cells[cell];
     const it = uid ? this.items.get(uid) : undefined;

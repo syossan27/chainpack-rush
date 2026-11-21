@@ -107,8 +107,8 @@ export const UI: Dict = {
     '• Die Wartezeit bis zur nächsten Zündung wächst mit der Zahl der Gegenstände, die in der letzten Kette ausgelöst haben (Rüstungen zählen mit). Kurze Ketten sind schnell wieder bereit, lange treffen hart.',
   '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
     '• Während einer Kette bist du ungeschützt (×1.5 erlittener Schaden), bleibst aber geschützt, bis die Kette nach dem Ursprung 3 Felder durchlaufen hat (Felder mit Rüstung zählen mit).',
-  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
-    '• Ein harter Treffer, während du ungeschützt bist, bringt dich ins Taumeln („Taumelt!“) und bricht den Rest der Kette ab. Halte mit Verteidigungsausrüstung durch oder platziere das Festungstor, um das zu verhindern.',
+  '・防具のマスは鳴った瞬間に防御値を足します。長い連鎖の途中に防具を通すと、無防備の間も耐えられます。':
+    '• Rüstungsfelder geben ihre Verteidigung sofort, wenn sie auslösen. Führe eine lange Kette über Rüstung, um ungeschützt durchzuhalten.',
   地域と敵: 'Gebiete & Gegner',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
     '• Von Grasland → Höhle → Burgwall werden die Gegner viel stärker, dafür gibt es auch öfter seltene Ausrüstung. Besiege den Boss in Runde 3, um das nächste Gebiet freizuschalten.',
@@ -490,7 +490,6 @@ export const UI: Dict = {
   無効: 'Geblockt',
   '激昂！': 'In Rage!',
   'アーティファクト！ {name}': 'Artefakt! {name}',
-  'よろめき！': 'Taumelt!',
   '一網打尽！': 'Gruppen-K.o.!',
   'ボス撃破！': 'Boss besiegt!',
   '復活！': 'Wiederbelebt!',
@@ -560,8 +559,8 @@ export const UI: Dict = {
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Verbraucht {status} für {combo} (×{x}, trifft eine Fläche)',
   '{status}を消費して{combo}（×{x}）': 'Verbraucht {status} für {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
-    'Verteidigung +{n} (wird am Ende einer durchlaufenden Kette addiert; zählt nicht als Glied)',
+  '防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）':
+    'Verteidigung +{n} (kommt sofort dazu, wann immer eine Kette hindurchläuft; zählt nicht als Glied)',
   '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     'Hier beginnt eine Kette. Greift nicht an und zählt nicht als Glied.',
   '付け直し {n}回': 'Umgeschmiedet: {n}×',
@@ -591,7 +590,7 @@ export const UI: Dict = {
   次への伝達: 'Weitergabe',
   '{s}秒': '{s}s',
   防御値: 'Verteidigung',
-  連鎖終了時に加算: 'Kommt am Kettenende dazu',
+  鳴るたびに加算: 'Kommt bei jedem Auslösen dazu',
   守り: 'Schutz',
   連鎖中も無防備にならない: 'In Ketten nie ungeschützt',
   この配置: 'Diese Anordnung',

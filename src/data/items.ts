@@ -29,10 +29,9 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     id: 'origin_shield',
     name: '盾の起点石',
     kind: 'origin',
-    // A flow stone since 2026-11-21: the guard lasts longer and the chain staggers less
-    line: { guardCells: 6, staggerRatio: 0.35 },
-    description:
-      '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。',
+    // A flow stone since 2026-11-21: the guard lasts longer
+    line: { guardCells: 6 },
+    description: '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。',
   },
   // Flow stones (2026-11-21): they change only how the chain flows; {…} in a text is filled by itemDescVars
   {
@@ -290,7 +289,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '木の盾',
     kind: 'defense',
     defense: 8,
-    description: '連鎖が通ると、終了時に防御値+8。',
+    description: '連鎖が通るたびに、その場で防御値+8。',
   },
   {
     id: 'chainmail',
@@ -299,7 +298,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '鎖帷子',
     kind: 'defense',
     defense: 12,
-    description: '連鎖が通ると、終了時に防御値+12。',
+    description: '連鎖が通るたびに、その場で防御値+12。',
   },
   {
     id: 'steel_armor',
@@ -308,7 +307,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'defense',
     defense: 20,
     relayDelay: 0.3,
-    description: '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。',
+    description: '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。',
   },
   {
     id: 'dagger',
@@ -396,7 +395,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'defense',
     defense: 6,
     relayDelay: 0.1,
-    description: '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。',
+    description: '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。',
   },
   {
     id: 'tower_shield',
@@ -405,7 +404,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     kind: 'defense',
     defense: 26,
     relayDelay: 0.4,
-    description: '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。',
+    description: '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。',
   },
   {
     id: 'iron_shield',
@@ -414,7 +413,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     name: '鉄の盾',
     kind: 'defense',
     defense: 18,
-    description: '連鎖が通ると、終了時に防御値+18。',
+    description: '連鎖が通るたびに、その場で防御値+18。',
   },
 
   // ---- アーティファクト（レジェンドの中のレジェンド） ----
@@ -427,7 +426,8 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     atk: 8,
     riseTo: 4,
     artifact: { exits: ['up', 'right', 'down', 'left'] },
-    description: '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。',
+    description:
+      '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。',
   },
   {
     id: 'dragon_fang',
@@ -529,7 +529,7 @@ export const ITEM_DEFS: readonly ItemDef[] = [
     defense: 40,
     guardAll: true,
     artifact: { exits: ['up', 'down'] },
-    description: '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。',
+    description: '盤面にある限り、連鎖中も無防備にならない。防御値+40。',
   },
 
   {
@@ -597,13 +597,8 @@ export function itemDescVars(def: ItemDef): Record<string, number> {
   const line = def.line;
   if (line?.lead) return { cells: line.lead.cells, v: line.lead.damage };
   if (line?.far !== undefined) return { v: line.far };
-  if (line?.guardCells !== undefined || line?.staggerRatio !== undefined)
-    return {
-      from: CHAIN_RULES.guardSteps,
-      to: CHAIN_RULES.guardSteps + (line.guardCells ?? 0),
-      v: Math.round((line.staggerRatio ?? CHAIN_RULES.staggerRatio) * 100),
-      base: Math.round(CHAIN_RULES.staggerRatio * 100),
-    };
+  if (line?.guardCells !== undefined)
+    return { from: CHAIN_RULES.guardSteps, to: CHAIN_RULES.guardSteps + line.guardCells };
   if (line?.relay !== undefined) return { relay: Math.abs(line.relay), v: line.damage ?? 0 };
   return {};
 }

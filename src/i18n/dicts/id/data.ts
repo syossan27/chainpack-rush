@@ -232,8 +232,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Serangan memberi damage +{v}%, tapi rantai diteruskan ke petak berikutnya {relay} detik lebih lambat.',
   盾の起点石: 'Batu Asal Perisai',
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    'Perlindunganmu bertahan sampai petak ke-{to} dalam rantai (biasanya {from}). Kamu baru terhuyung setelah menerima {v}% HP Maks dalam satu rantai (biasanya {base}%).',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    'Perlindunganmu bertahan sampai petak ke-{to} dalam rantai (biasanya {from}).',
   一番槍の起点石: 'Batu Asal Ujung Tombak',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Serangan di {cells} petak pertama yang berbunyi dalam rantai memberi damage +{v}% (dihitung per petak; petak pelindung juga dihitung).',
@@ -300,12 +300,13 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Serangan area Kegelapan. Memberi efek Terikat, menyegel musuh Silau, dan memperlambat serangannya.',
   木の盾: 'Perisai Kayu',
-  '連鎖が通ると、終了時に防御値+8。': 'Pertahanan +8 di akhir setiap rantai yang melewatinya.',
+  '連鎖が通るたびに、その場で防御値+8。': 'Pertahanan +8 langsung setiap kali rantai melewatinya.',
   鎖帷子: 'Baju Rantai',
-  '連鎖が通ると、終了時に防御値+12。': 'Pertahanan +12 di akhir setiap rantai yang melewatinya.',
+  '連鎖が通るたびに、その場で防御値+12。':
+    'Pertahanan +12 langsung setiap kali rantai melewatinya.',
   鋼の鎧: 'Zirah Baja',
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    'Pertahanan +20 di akhir setiap rantai yang melewatinya. Agak berat: lambat meneruskan rantai.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    'Pertahanan +20 langsung setiap kali rantai melewatinya. Agak berat: lambat meneruskan rantai.',
   短剣: 'Belati',
   '軽い一撃。次の装備へすぐ伝わる。':
     'Serangan ringan. Cepat meneruskan rantai ke item berikutnya.',
@@ -325,13 +326,14 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Membekukan target dan musuh di sekitarnya. Serangan Hantam bisa menghancurkan mereka.',
   革鎧: 'Zirah Kulit',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    'Pertahanan +6 di akhir setiap rantai yang melewatinya. Ringan: cepat meneruskan rantai.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    'Pertahanan +6 langsung setiap kali rantai melewatinya. Ringan: cepat meneruskan rantai.',
   大盾: 'Perisai Besar',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    'Pertahanan +26 di akhir setiap rantai yang melewatinya. Berat: lambat meneruskan rantai.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    'Pertahanan +26 langsung setiap kali rantai melewatinya. Berat: lambat meneruskan rantai.',
   鉄の盾: 'Perisai Besi',
-  '連鎖が通ると、終了時に防御値+18。': 'Pertahanan +18 di akhir setiap rantai yang melewatinya.',
+  '連鎖が通るたびに、その場で防御値+18。':
+    'Pertahanan +18 langsung setiap kali rantai melewatinya.',
   循環の環: 'Cincin Siklus',
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     'Menyebarkan rantai ke empat arah. Rantai yang lewat cincin ini naik ×1,2 per mata rantai sampai ×4,0, lalu terus naik banyak.',
@@ -514,8 +516,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Rantai Datar',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Satu per petak. Tanpa tumpuk: taklukkan Benteng hanya dengan jalur panahmu.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Selama ada di papanmu, kamu tak pernah lengah saat rantai berjalan dan tak pernah terhuyung. Pertahanan +40.',
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    'Selama ada di papanmu, kamu tak pernah lengah saat rantai berjalan. Pertahanan +40.',
   回る盤面: 'Papan Putar',
   回転マスを2つ置ける: 'Pasang 2 Petak Putar',
   切り替えの盤面: 'Papan Wesel',

@@ -231,8 +231,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Los ataques hacen +{v}% de daño, pero la cadena pasa a la siguiente casilla {relay} s más despacio.',
   盾の起点石: 'Piedra de Origen de Escudo',
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    'Tu guardia dura hasta la casilla {to} de la cadena (normalmente {from}). Solo te tambaleas tras recibir el {v}% de tu HP máximo en una cadena (normalmente {base}%).',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    'Tu guardia dura hasta la casilla {to} de la cadena (normalmente {from}).',
   一番槍の起点石: 'Piedra de Origen Punta de Lanza',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Los ataques de las primeras {cells} casillas que suenan en una cadena hacen +{v}% de daño (se cuenta por casillas; las casillas de armadura también cuentan).',
@@ -299,12 +299,14 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Ataque de Oscuridad en área. Aplica Hechizado, sella a los enemigos Radiantes y hace sus ataques más lentos.',
   木の盾: 'Escudo de Madera',
-  '連鎖が通ると、終了時に防御値+8。': 'Defensa +8 al final de cada cadena que pasa por aquí.',
+  '連鎖が通るたびに、その場で防御値+8。':
+    'Defensa +8 al instante cada vez que una cadena pasa por aquí.',
   鎖帷子: 'Cota de Malla',
-  '連鎖が通ると、終了時に防御値+12。': 'Defensa +12 al final de cada cadena que pasa por aquí.',
+  '連鎖が通るたびに、その場で防御値+12。':
+    'Defensa +12 al instante cada vez que una cadena pasa por aquí.',
   鋼の鎧: 'Armadura de Acero',
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    'Defensa +20 al final de cada cadena que pasa por aquí. Algo pesada: pasa la cadena despacio.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    'Defensa +20 al instante cada vez que una cadena pasa por aquí. Algo pesada: pasa la cadena despacio.',
   短剣: 'Daga',
   '軽い一撃。次の装備へすぐ伝わる。':
     'Un golpe ligero. Pasa la cadena al siguiente objeto rápidamente.',
@@ -324,13 +326,14 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Congela al objetivo y a los enemigos cercanos. Los ataques contundentes pueden Destrozarlos.',
   革鎧: 'Armadura de Cuero',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    'Defensa +6 al final de cada cadena que pasa por aquí. Ligera: pasa la cadena rápido.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    'Defensa +6 al instante cada vez que una cadena pasa por aquí. Ligera: pasa la cadena rápido.',
   大盾: 'Escudo Torre',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    'Defensa +26 al final de cada cadena que pasa por aquí. Pesado: pasa la cadena despacio.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    'Defensa +26 al instante cada vez que una cadena pasa por aquí. Pesado: pasa la cadena despacio.',
   鉄の盾: 'Escudo de Hierro',
-  '連鎖が通ると、終了時に防御値+18。': 'Defensa +18 al final de cada cadena que pasa por aquí.',
+  '連鎖が通るたびに、その場で防御値+18。':
+    'Defensa +18 al instante cada vez que una cadena pasa por aquí.',
   循環の環: 'Anillo Uróboros',
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     'Extiende la cadena en las cuatro direcciones. Las cadenas que pasan por este anillo crecen ×1.2 por eslabón hasta ×4.0 y después siguen creciendo mucho.',
@@ -514,8 +517,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Cadena plana',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Un objeto por casilla. Sin apilar: desafía la Muralla solo con el camino de tus flechas.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Mientras esté en tu tablero, nunca eres vulnerable durante las cadenas y no te tambaleas. Defensa +40.',
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    'Mientras esté en tu tablero, nunca eres vulnerable durante las cadenas. Defensa +40.',
   回る盤面: 'Tablero Giratorio',
   回転マスを2つ置ける: 'Pon 2 Giratorias',
   切り替えの盤面: 'Tablero de Desvíos',

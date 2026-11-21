@@ -30,8 +30,6 @@ export interface LineEffect {
   echo?: boolean;
   /** Cells added to the guard kept after the origin (ChainRules.guardSteps) */
   guardCells?: number;
-  /** Share of max HP taken in one chain that staggers it (instead of ChainRules.staggerRatio) */
-  staggerRatio?: number;
 }
 
 /** 線の効果を、その段の装備について掛け算にまとめたもの（1 は効果なし） */
@@ -58,7 +56,7 @@ export interface ItemDef {
   riseTo?: number;
   /** ボスへのダメージ倍率（竜牙の剣） */
   bossMult?: number;
-  /** バックパックに置いてあれば、連鎖中も無防備にならず、よろめかない（不落の城門） */
+  /** バックパックに置いてあれば、連鎖中も無防備にならない（不落の城門） */
   guardAll?: boolean;
   /** 当てた敵に濡れ・油・凍結をまとめて付ける（賢者の石） */
   appliesAll?: boolean;

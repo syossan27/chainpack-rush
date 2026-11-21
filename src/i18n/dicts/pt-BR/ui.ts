@@ -108,8 +108,8 @@ export const UI: Dict = {
     '• A espera até o próximo disparo cresce com o número de itens ativados na última corrente (armaduras também contam). Correntes curtas giram rápido; correntes longas batem forte.',
   '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
     '• Durante uma corrente você fica desprotegido (dano recebido ×1.5), mas continua protegido até a corrente passar por 3 casas depois da origem (casas de armadura também contam).',
-  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
-    '• Um golpe forte enquanto você está desprotegido faz você cambalear ("Cambaleou!") e corta o resto da corrente. Aguente com itens de defesa ou coloque o Portão Inabalável para evitar isso.',
+  '・防具のマスは鳴った瞬間に防御値を足します。長い連鎖の途中に防具を通すと、無防備の間も耐えられます。':
+    '• Casas de armadura somam Defesa no instante em que tocam. Passe uma corrente longa por armaduras para aguentar enquanto está desprotegido.',
   地域と敵: 'Regiões e Inimigos',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
     '• Os inimigos ficam bem mais fortes de Pradaria → Caverna → Muralhas, mas itens mais raros também caem com mais frequência. Derrote o chefe da volta 3 para desbloquear a próxima região.',
@@ -490,7 +490,6 @@ export const UI: Dict = {
   無効: 'Bloqueado',
   '激昂！': 'Enfurecido!',
   'アーティファクト！ {name}': 'Artefato! {name}',
-  'よろめき！': 'Cambaleou!',
   '一網打尽！': 'Faxina!',
   'ボス撃破！': 'Chefe Derrotado!',
   '復活！': 'Reviveu!',
@@ -562,8 +561,8 @@ export const UI: Dict = {
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Consome o efeito {status}: {combo} (×{x}, se espalha numa área)',
   '{status}を消費して{combo}（×{x}）': 'Consome o efeito {status}: {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
-    'Defesa +{n} (somada quando termina uma corrente que passa por aqui; não conta como elo)',
+  '防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）':
+    'Defesa +{n} (somada na hora, sempre que uma corrente passa por aqui; não conta como elo)',
   '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     'Começa uma corrente. Não ataca e não conta como elo.',
   '付け直し {n}回': 'Reforjado ×{n}',
@@ -593,7 +592,7 @@ export const UI: Dict = {
   次への伝達: 'Repasse',
   '{s}秒': '{s}s',
   防御値: 'Defesa',
-  連鎖終了時に加算: 'Somada no fim da corrente',
+  鳴るたびに加算: 'Somada a cada toque',
   守り: 'Guarda',
   連鎖中も無防備にならない: 'Nunca desprotegido nas correntes',
   この配置: 'Nesta Mochila',

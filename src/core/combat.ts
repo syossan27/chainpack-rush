@@ -252,9 +252,10 @@ export type CombatEvent =
       defenseCells: number[];
       totalDamage: number;
       duration: number;
-      cut: boolean; // 敵がいなくなった、またはよろめいて途中で打ち切った
-      staggered: boolean; // 被弾でよろめいて途切れた
+      cut: boolean; // 敵がいなくなって途中で打ち切った
     }
+  /** A defense item rang in a chain: its defense is added at once */
+  | { type: 'guardUp'; tick: number; cell: number; gain: number }
   | { type: 'bossDefeated'; tick: number; loop: number; bossId: string }
   | { type: 'consumable'; tick: number; uid: string; defId: string; effect: ConsumableEffect }
   | {
@@ -330,16 +331,16 @@ interface ActiveChain {
   exec: ExecInfo[];
   totalDamage: number;
   durationTicks: number;
-  cut: boolean; // 狙える敵がいなくなって打ち切った、またはよろめいた
-  staggered: boolean; // 被弾でよろめいて途切れた
-  taken: number; // この連鎖中に受けたダメージ（防御で吸った分は除く）
+  cut: boolean; // 狙える敵がいなくなって打ち切った
   /** The chain reached a 呼び戻しの笛, so the wait before the next is cut */
   recall: boolean;
   /** The combo multiplier (×1 at the start of every chain) */
   charmM: number;
-  /** Cells kept guarded after the origin, and the share of max HP that staggers (盾の起点石) */
+  /** Cells kept guarded after the origin (盾の起点石) */
   guardSteps: number;
-  staggerRatio: number;
+  /** Defense added so far by the defense items that rang */
+  defenseGain: number;
+  defenseCells: number[];
 }
 
 /** 手前から。同じ位置ならボスは後ろ（取り巻きが前に立つ） */
@@ -1115,10 +1116,10 @@ export class Combat {
       totalDamage: 0,
       durationTicks: secToTicks(plan.duration),
       cut: false,
-      staggered: false,
-      taken: 0,
       recall: false,
       charmM: 1,
+      defenseGain: 0,
+      defenseCells: [],
       ...flowRules(lineEffects(this.cfg.items, plan.originUids), this.rules),
     };
     this.atb = 0;
@@ -1152,36 +1153,17 @@ export class Combat {
       this.finishChain(c, elapsed);
   }
 
-  /** 連鎖の終了。打ち切ったときは、それまでに通った防御装備の分だけ防御値に加える */
+  /** 連鎖の終了（防御値は防具が鳴ったときに足し終えている） */
   private finishChain(c: ActiveChain, elapsed: number): void {
-    const passed = c.cut ? c.plan.steps.slice(0, c.next) : c.plan.steps;
-    const defenseSteps = passed.filter(
-      (s) => getItemDef(this.cfg.items.get(s.uid)!.defId).kind === 'defense',
-    );
-    // A cut chain counts only the defense items it reached (盾の起点石 included, per step)
-    const gain = c.cut
-      ? defenseSteps.reduce(
-          (sum, s) => sum + defenseValue(this.cfg.items.get(s.uid)!) * (s.stackMult ?? 1),
-          0,
-        )
-      : c.plan.defenseGain;
-    // 癒し: 通った防御装備の分だけ回復
-    const mend = defenseSteps.reduce(
-      (sum, s) => sum + affixValue(this.cfg.items.get(s.uid)!, 'mend'),
-      0,
-    );
-    if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
-    this.defense = Math.min(this.maxHp, this.defense + gain);
     this.emit({
       type: 'chainEnd',
       tick: this.tick,
       originUid: c.plan.originUid,
-      defenseGain: gain,
-      defenseCells: defenseSteps.map((s) => s.cell),
+      defenseGain: c.defenseGain,
+      defenseCells: c.defenseCells,
       totalDamage: c.totalDamage,
       duration: c.cut ? elapsed / SIM.ticksPerSecond : c.plan.duration,
       cut: c.cut,
-      staggered: c.staggered,
     });
     this.chain = null;
     // B: 次の発火までの待ちは、撃てた段数に比例（atb を負から始めることで待ちを伸ばす）
@@ -1220,6 +1202,17 @@ export class Combat {
       const eff = parent ? parent.eff : 0;
       c.exec[index] = { eff, aim, reset: parent?.reset ?? false };
       this.relicRing(c, relic);
+      // A defense item adds its defense (and 癒し heals) the moment it rings, so a loop back
+      // through armor keeps a long chain guarded
+      if (def.kind === 'defense') {
+        const gain = defenseValue(inst) * (s.stackMult ?? 1);
+        const mend = affixValue(inst, 'mend');
+        if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
+        this.defense = Math.min(this.maxHp, this.defense + gain);
+        c.defenseGain += gain;
+        c.defenseCells.push(s.cell);
+        this.emit({ type: 'guardUp', tick: this.tick, cell: s.cell, gain });
+      }
       this.emit({
         type: 'step',
         tick: this.tick,
@@ -1729,15 +1722,6 @@ export class Combat {
     this.defense -= absorbed;
     dmg -= absorbed;
     this.hp = Math.max(0, this.hp - dmg);
-    // A: 連鎖中に大きく被弾するとよろめき、残りの段が途切れる
-    const c = this.chain;
-    if (c && !c.cut && this.rules.stagger && unguarded) {
-      c.taken += dmg;
-      if (c.taken >= this.maxHp * c.staggerRatio) {
-        c.cut = true;
-        c.staggered = true;
-      }
-    }
     this.emit({
       type: 'heroHit',
       tick: this.tick,

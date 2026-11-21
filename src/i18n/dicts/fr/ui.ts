@@ -108,8 +108,8 @@ export const UI: Dict = {
     "• L'attente avant le prochain déclenchement dépend du nombre d'objets déclenchés dans la dernière chaîne (les armures comptent aussi). Les chaînes courtes tournent vite ; les longues frappent fort.",
   '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
     "• Pendant une chaîne, tu es à découvert (dégâts subis ×1.5), mais tu restes protégé jusqu'à ce que la chaîne ait traversé 3 cases après l'origine (les cases d'armure comptent aussi).",
-  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
-    "• Un gros coup reçu à découvert te laisse « Sonné ! » et coupe le reste de la chaîne. Tiens bon avec de l'équipement défensif, ou place la Porte imprenable pour l'éviter.",
+  '・防具のマスは鳴った瞬間に防御値を足します。長い連鎖の途中に防具を通すと、無防備の間も耐えられます。':
+    "• Les cases d'armure ajoutent leur Défense dès qu'elles sonnent. Fais passer une longue chaîne par de l'armure pour tenir à découvert.",
   地域と敵: 'Régions et ennemis',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
     "• Prairie → Grotte → Remparts : les ennemis deviennent bien plus coriaces, mais l'équipement rare tombe aussi plus souvent. Vaincs le boss du tour 3 pour débloquer la région suivante.",
@@ -496,7 +496,6 @@ export const UI: Dict = {
   無効: 'Bloqué',
   '激昂！': 'Enragé !',
   'アーティファクト！ {name}': 'Artefact ! {name}',
-  'よろめき！': 'Sonné !',
   '一網打尽！': 'Coup de filet !',
   'ボス撃破！': 'Boss vaincu !',
   '復活！': 'Ressuscité !',
@@ -567,8 +566,8 @@ export const UI: Dict = {
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     "Consomme {status} → {combo} (×{x}, s'étend à une zone)",
   '{status}を消費して{combo}（×{x}）': 'Consomme {status} → {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
-    'Défense +{n} (ajoutée à la fin de chaque chaîne qui le traverse ; ne compte pas comme maillon)',
+  '防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）':
+    'Défense +{n} (ajoutée immédiatement à chaque chaîne qui le traverse ; ne compte pas comme maillon)',
   '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     "Début de chaîne. N'attaque pas et ne compte pas comme maillon.",
   '付け直し {n}回': 'Reforgé ×{n}',
@@ -598,7 +597,7 @@ export const UI: Dict = {
   次への伝達: 'Relais',
   '{s}秒': '{s} s',
   防御値: 'Défense',
-  連鎖終了時に加算: 'Ajoutée à la fin de la chaîne',
+  鳴るたびに加算: 'Ajoutée à chaque déclenchement',
   守り: 'Protection',
   連鎖中も無防備にならない: 'Jamais à découvert en chaîne',
   この配置: 'Cette disposition',

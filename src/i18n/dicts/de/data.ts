@@ -231,8 +231,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Angriffe machen +{v}% Schaden, dafür wird die Kette {relay} s langsamer zum nächsten Feld weitergegeben.',
   盾の起点石: 'Schild-Ursprungsstein',
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    'Dein Schutz hält bis Feld {to} einer Kette (normalerweise {from}). Du taumelst erst, wenn du in einer Kette {v}% deiner Max. HP erleidest (normalerweise {base}%).',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    'Dein Schutz hält bis Feld {to} einer Kette (normalerweise {from}).',
   一番槍の起点石: 'Speerspitzen-Ursprungsstein',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Angriffe in den ersten {cells} Feldern, die in einer Kette erklingen, verursachen +{v}% Schaden (in Feldern gezählt; Felder mit Rüstung zählen mit).',
@@ -297,12 +297,14 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Flächenangriff mit Schatten. Belegt mit Gebannt, versiegelt strahlende Gegner und verlangsamt ihre Angriffe.',
   木の盾: 'Holzschild',
-  '連鎖が通ると、終了時に防御値+8。': '+8 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  '連鎖が通るたびに、その場で防御値+8。':
+    '+8 Verteidigung sofort, wann immer eine Kette hindurchläuft.',
   鎖帷子: 'Kettenhemd',
-  '連鎖が通ると、終了時に防御値+12。': '+12 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  '連鎖が通るたびに、その場で防御値+12。':
+    '+12 Verteidigung sofort, wann immer eine Kette hindurchläuft.',
   鋼の鎧: 'Stahlrüstung',
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    '+20 Verteidigung am Ende jeder Kette, die hindurchläuft. Etwas schwer: gibt die Kette langsamer weiter.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    '+20 Verteidigung sofort, wann immer eine Kette hindurchläuft. Etwas schwer: gibt die Kette langsamer weiter.',
   短剣: 'Dolch',
   '軽い一撃。次の装備へすぐ伝わる。':
     'Ein leichter Treffer. Gibt die Kette schnell an den nächsten Gegenstand weiter.',
@@ -322,13 +324,14 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Friert das Ziel und die Gegner um es herum ein. Wucht kann sie zertrümmern.',
   革鎧: 'Lederrüstung',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    '+6 Verteidigung am Ende jeder Kette, die hindurchläuft. Leicht: gibt die Kette schnell weiter.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    '+6 Verteidigung sofort, wann immer eine Kette hindurchläuft. Leicht: gibt die Kette schnell weiter.',
   大盾: 'Turmschild',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    '+26 Verteidigung am Ende jeder Kette, die hindurchläuft. Schwer: gibt die Kette langsam weiter.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    '+26 Verteidigung sofort, wann immer eine Kette hindurchläuft. Schwer: gibt die Kette langsam weiter.',
   鉄の盾: 'Eisenschild',
-  '連鎖が通ると、終了時に防御値+18。': '+18 Verteidigung am Ende jeder Kette, die hindurchläuft.',
+  '連鎖が通るたびに、その場で防御値+18。':
+    '+18 Verteidigung sofort, wann immer eine Kette hindurchläuft.',
   循環の環: 'Ouroboros-Ring',
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     'Verbreitet die Kette in alle vier Richtungen. Ketten durch diesen Ring wachsen ×1,2 pro Glied bis ×4,0 und danach weiter stark.',
@@ -515,8 +518,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Flache Kette',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Ein Gegenstand pro Feld. Ohne Stapeln: Bezwinge den Burgwall nur mit dem Weg deiner Pfeile.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Solange es auf dem Brett ist, bist du in Ketten nie ungeschützt und taumelst nie. +40 Verteidigung.',
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    'Solange es auf dem Brett ist, bist du in Ketten nie ungeschützt. +40 Verteidigung.',
   回る盤面: 'Drehbrett',
   回転マスを2つ置ける: '2 Drehfelder setzbar',
   切り替えの盤面: 'Weichenbrett',

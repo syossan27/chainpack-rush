@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN_RULES, HERO, NO_LUCK } from '../src/config/balance';
+import { CHAIN_RULES, NO_LUCK } from '../src/config/balance';
 import { firedPieces, planChain } from '../src/core/chain';
 import { charmContext, type CharmSlots } from '../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../src/core/combat';
@@ -254,34 +254,6 @@ describe('残響の起点石', () => {
     expect(peak(techRow('origin_echo', counted))).toBeCloseTo(plain);
   });
 
-  it('よろめいて途切れたら、もう一度は鳴らない', () => {
-    const c = new Combat({ ...techRow('origin_echo'), mode: 'dummy', hero: BASE_HERO_STATS });
-    c.fireNext();
-    const firstEcho = c.chain!.plan.steps.findIndex((s) => s.echo);
-    expect(firstEcho).toBeGreaterThan(0);
-    while (c.chain && c.chain.next < firstEcho) c.step();
-    c.drainEvents();
-    expect(c.unguarded).toBe(true);
-    const hit = (
-      c as unknown as {
-        damageHero(e: { id: number; atk: number; statuses: Map<string, number> }): void;
-      }
-    ).damageHero.bind(c);
-    hit({
-      id: -1,
-      atk: (c.maxHp * CHAIN_RULES.staggerRatio) / HERO.unguardedTakenMult + 1,
-      statuses: new Map(),
-    });
-    const evs: CombatEvent[] = [];
-    while (c.chain) {
-      c.step();
-      evs.push(...c.drainEvents());
-    }
-    const end = evs.find((e) => e.type === 'chainEnd');
-    expect(end?.type === 'chainEnd' && end.staggered).toBe(true);
-    expect(evs.filter((e) => e.type === 'step')).toHaveLength(0);
-  });
-
   it('残響の石で遊んだランは最後まで進み、記録を再生しても同じ結果', () => {
     const run = techRow('origin_echo', {
       hero: { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 30 },
@@ -295,7 +267,6 @@ describe('残響の起点石', () => {
 
 describe('盾の起点石', () => {
   const extra = getItemDef('origin_shield').line!.guardCells!;
-  const ratio = getItemDef('origin_shield').line!.staggerRatio!;
   /** o → swords two cells past the shield's guard, on a stacked row (the scarecrow unless `run`) */
   const swords = CHAIN_RULES.guardSteps + extra + 2;
   const longRow = (origin: string, run = false): RunConfig => {
@@ -339,22 +310,6 @@ describe('盾の起点石', () => {
     }
   });
 
-  it('よろめくのは、1回の連鎖で盾の石の割合を受けたとき（ふつうの割合+1 ではよろめかない）', () => {
-    const c = new Combat(longRow('origin_shield'));
-    c.fireNext();
-    while (c.chain && !c.unguarded) c.step();
-    const hit = (
-      c as unknown as {
-        damageHero(e: { id: number; atk: number; statuses: Map<string, number> }): void;
-      }
-    ).damageHero.bind(c);
-    const atk = (share: number) => (c.maxHp * share) / HERO.unguardedTakenMult + 1;
-    hit({ id: -1, atk: atk(CHAIN_RULES.staggerRatio), statuses: new Map() });
-    expect(c.chain?.staggered).toBe(false);
-    hit({ id: -1, atk: atk(ratio - CHAIN_RULES.staggerRatio), statuses: new Map() });
-    expect(c.chain?.staggered).toBe(true);
-  });
-
   it('盾の石で遊んだランは、記録を再生しても同じ結果', () => {
     const run = longRow('origin_shield', true);
     const r = new Combat(run).runToEnd();
@@ -366,8 +321,6 @@ describe('盾の起点石', () => {
     expect(itemDescVars(getItemDef('origin_shield'))).toEqual({
       from: CHAIN_RULES.guardSteps,
       to: CHAIN_RULES.guardSteps + extra,
-      v: Math.round(ratio * 100),
-      base: Math.round(CHAIN_RULES.staggerRatio * 100),
     });
   });
 });

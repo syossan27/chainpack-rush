@@ -50,7 +50,7 @@ export const CHAIN = {
 /**
  * 短い連鎖と長い連鎖の性格づけ（RunConfig.rules で切り替えられる）
  * B: 次の発火までの待ちは、直前の連鎖の段数に比例（短い連鎖は回転が速い）
- * A: 連鎖中に一定以上のダメージを受けると、よろめいて残りの段が途切れる（長い連鎖はリスクが大きい）
+ * 連鎖中は無防備（guardSteps まで守りが残る）。防具は鳴った瞬間に防御値を足す（長い連鎖の守り）
  */
 export interface ChainRules {
   atbPerStep: boolean;
@@ -59,9 +59,6 @@ export interface ChainRules {
   /** 待ちの倍率の下限・上限（atbTime に掛ける） */
   atbMinFactor: number;
   atbMaxFactor: number;
-  stagger: boolean;
-  /** 1回の連鎖中に受けたダメージ（防御で吸った分は除く）が最大HPのこの割合に達するとよろめく */
-  staggerRatio: number;
   /** 連鎖のこの段数までは無防備にならない（0 = 連鎖中はずっと無防備。短い連鎖を安全にする） */
   guardSteps: number;
   /** When the aimed enemy dies, the branch moves on to the next enemy and keeps counting */
@@ -73,8 +70,6 @@ export const CHAIN_RULES: ChainRules = {
   atbRefSteps: 6,
   atbMinFactor: 0.25,
   atbMaxFactor: 2,
-  stagger: true,
-  staggerRatio: 0.15,
   guardSteps: 3,
   keepCountOnKill: false,
 };
@@ -86,6 +81,8 @@ export const CHAIN_RULES: ChainRules = {
 /** Gimmick cells (trial): a cell rings at most this many times in one firing */
 export const GIMMICK = {
   maxVisits: 4,
+  /** The pace of a cell's relays on each pass (2nd pass rings twice as fast, …): loops speed up */
+  passPace: [1, 0.5, 0.35, 0.25],
 } as const;
 
 export const STACK = {
@@ -171,7 +168,6 @@ export const MASTERY = {
 export const CHAIN_RULES_OFF: ChainRules = {
   ...CHAIN_RULES,
   atbPerStep: false,
-  stagger: false,
   guardSteps: 0,
 };
 

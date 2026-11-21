@@ -106,8 +106,8 @@ export const UI: Dict = {
     '• The wait before the next firing grows with how many items went off in the last chain (armor counts too). Short chains cycle fast; long chains hit big.',
   '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
     "• You're unguarded during a chain (×1.5 damage taken), but you stay guarded until the chain has moved through 3 cells after the origin (armor cells count too).",
-  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
-    '• A big hit while unguarded leaves you "Staggered!" and cuts off the rest of the chain. Hold out with defense gear, or place the Aegis Gate to prevent it.',
+  '・防具のマスは鳴った瞬間に防御値を足します。長い連鎖の途中に防具を通すと、無防備の間も耐えられます。':
+    '• Armor cells add their Defense the moment they ring. Route a long chain through armor to hold out while unguarded.',
   地域と敵: 'Regions & Enemies',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
     '• Enemies get much tougher from Grassland → Cave → Ramparts, but rarer gear drops more often too. Defeat the loop 3 boss to unlock the next region.',
@@ -486,7 +486,6 @@ export const UI: Dict = {
   無効: 'Blocked',
   '激昂！': 'Enraged!',
   'アーティファクト！ {name}': 'Artifact! {name}',
-  'よろめき！': 'Staggered!',
   '一網打尽！': 'Wipeout!',
   'ボス撃破！': 'Boss Down!',
   '復活！': 'Revived!',
@@ -556,8 +555,8 @@ export const UI: Dict = {
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Uses up {status} for {combo} (×{x}, spreads to an area)',
   '{status}を消費して{combo}（×{x}）': 'Uses up {status} for {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
-    "Defense +{n} (added when a chain through it ends; doesn't count as a link)",
+  '防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）':
+    "Defense +{n} (added each time a chain passes through it; doesn't count as a link)",
   '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     "Starts a chain. Doesn't attack and doesn't count as a link.",
   '付け直し {n}回': 'Reforged ×{n}',
@@ -587,7 +586,7 @@ export const UI: Dict = {
   次への伝達: 'Relay Time',
   '{s}秒': '{s}s',
   防御値: 'Defense',
-  連鎖終了時に加算: 'Added when the chain ends',
+  鳴るたびに加算: 'Added each time it rings',
   守り: 'Guard',
   連鎖中も無防備にならない: 'Never unguarded in chains',
   この配置: 'This Layout',

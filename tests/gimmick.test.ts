@@ -204,3 +204,54 @@ describe('ギミックマス: 盤面と保存・戦闘', () => {
     ]);
   });
 });
+
+describe('長い連鎖の守り（よろめきの代わり）', () => {
+  it('輪で戻ってきたマスは速く鳴る（2周目から次へ伝わる時間が短い）', () => {
+    const { loadout, items } = board(3, 2, loop(['right']), { 1: 'rotate' });
+    const plan = planChain(loadout, items, 'o');
+    // a (pass 1) → b, and a (pass 2) → d: the second relay is shorter
+    const gapAfter = (i: number) => plan.steps[i + 1]!.t - plan.steps[i]!.t;
+    const a1 = plan.steps.findIndex((s) => s.uid === 'a');
+    const a2 = plan.steps.findIndex((s, i) => i > a1 && s.uid === 'a');
+    expect(gapAfter(a2)).toBeLessThan(gapAfter(a1));
+    expect(gapAfter(a2)).toBeCloseTo(gapAfter(a1) * GIMMICK.passPace[1], 2);
+  });
+
+  it('防具は鳴った瞬間に防御値を足す（連鎖の終わりを待たない）。輪で戻れば戻るたびに足す', () => {
+    const placed = loop(['right']);
+    // d comes round the loop more than once
+    placed[4] = { ...placed[4]!, defId: 'wood_shield' };
+    const { loadout, items } = board(3, 2, placed, { 1: 'rotate' });
+    const c = new Combat({
+      seed: 1,
+      regionId: 'grassland',
+      loadout,
+      items,
+      hero: BASE_HERO_STATS,
+      luck: NO_LUCK,
+      mode: 'dummy',
+    });
+    c.fireNext();
+    const dRings = c.chain!.plan.steps.filter((s) => s.uid === 'd').length;
+    expect(dRings).toBeGreaterThan(1);
+    const ups: number[] = [];
+    let endGain = -1;
+    let ended = false;
+    while (c.chain) {
+      c.step();
+      for (const e of c.drainEvents()) {
+        if (e.type === 'guardUp') {
+          ups.push(e.gain);
+          // Added before the chain ends
+          expect(ended).toBe(false);
+        }
+        if (e.type === 'chainEnd') {
+          ended = true;
+          endGain = e.defenseGain;
+        }
+      }
+    }
+    expect(ups).toHaveLength(dRings);
+    expect(endGain).toBe(ups.reduce((a, b) => a + b, 0));
+  });
+});

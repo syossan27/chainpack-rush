@@ -111,7 +111,9 @@ export function describeItem(it: ItemInstance): string[] {
     }
   } else if (def.kind === 'defense') {
     lines.push(
-      t('防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）', { n: (def.defense ?? 0) * r }),
+      t('防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）', {
+        n: (def.defense ?? 0) * r,
+      }),
     );
   } else if (def.kind === 'origin') {
     lines.push(t('連鎖の始まり。攻撃せず、連鎖数にも数えない'));
@@ -311,7 +313,7 @@ export function showItemDetail(
     if (def.appliesAll) rows.push([t('付与'), t('濡れ・油・凍結をまとめて')]);
     rows.push([t('次への伝達'), t('{s}秒', { s: def.relayDelay ?? CHAIN.relayDelay })]);
   } else if (def.kind === 'defense') {
-    rows.push([t('防御値'), `+${fmt((def.defense ?? 0) * r)}`, t('連鎖終了時に加算')]);
+    rows.push([t('防御値'), `+${fmt((def.defense ?? 0) * r)}`, t('鳴るたびに加算')]);
     if (def.guardAll) rows.push([t('守り'), t('連鎖中も無防備にならない'), t('盤面にある限り')]);
   }
   for (const a of it.affixes ?? []) rows.push([`✦ ${t(AFFIXES[a.id].name)}`, affixEffect(a)]);

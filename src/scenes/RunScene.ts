@@ -1064,26 +1064,21 @@ export class RunScene extends Phaser.Scene {
           this.field.aimId = null;
           this.endChainCount(ev.totalDamage);
           this.charmStrip?.hideMeter();
-          if (ev.staggered) {
-            this.showBanner(t('よろめき！'), COLORS.textWarn);
-            if (this.shake) this.cameras.main.shake(160, 0.008);
-          }
-          if (ev.defenseGain > 0) {
-            // 通過した防御装備から光の粒が飛んで防御値バーへ
-            for (const cell of ev.defenseCells) {
-              const cc = this.view.cellCenter(cell);
-              this.effects.absorb(
-                cc.x,
-                cc.y + RUN_LAYOUT.backpackTop,
-                20 + 220 * Math.min(1, c.defense / c.maxHp),
-                30,
-                COLORS.defense,
-                12,
-              );
-            }
-            sfx('defense');
-          }
           break;
+        case 'guardUp': {
+          // 鳴った防御装備から光の粒が飛んで防御値バーへ
+          const cc = this.view.cellCenter(ev.cell);
+          this.effects.absorb(
+            cc.x,
+            cc.y + RUN_LAYOUT.backpackTop,
+            20 + 220 * Math.min(1, c.defense / c.maxHp),
+            30,
+            COLORS.defense,
+            12,
+          );
+          sfx('defense');
+          break;
+        }
         case 'timeBonus':
           this.showTimeBonus(ev.seconds, ev.capped);
           if (ev.reason === 'sweep') this.showBanner(t('一網打尽！'), '#8be06a');

@@ -232,8 +232,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Os ataques causam +{v}% de dano, mas a corrente passa para a próxima casa {relay}s mais devagar.',
   盾の起点石: 'Pedra de Origem de Escudo',
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    'Sua proteção dura até a casa {to} da corrente (normalmente {from}). Você só cambaleia depois de sofrer {v}% do HP Máximo numa corrente (normalmente {base}%).',
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    'Sua proteção dura até a casa {to} da corrente (normalmente {from}).',
   一番槍の起点石: 'Pedra de Origem Ponta de Lança',
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     'Os ataques das primeiras {cells} casas que soam numa corrente causam +{v}% de dano (contado em casas; casas de armadura também contam).',
@@ -298,12 +298,14 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Ataque em área de Sombra. Aplica Amaldiçoado, sela inimigos Radiantes e deixa seus ataques mais lentos.',
   木の盾: 'Escudo de Madeira',
-  '連鎖が通ると、終了時に防御値+8。': '+8 de Defesa no fim de cada corrente que passa por aqui.',
+  '連鎖が通るたびに、その場で防御値+8。':
+    '+8 de Defesa na hora, sempre que uma corrente passa por aqui.',
   鎖帷子: 'Cota de Malha',
-  '連鎖が通ると、終了時に防御値+12。': '+12 de Defesa no fim de cada corrente que passa por aqui.',
+  '連鎖が通るたびに、その場で防御値+12。':
+    '+12 de Defesa na hora, sempre que uma corrente passa por aqui.',
   鋼の鎧: 'Armadura de Aço',
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    '+20 de Defesa no fim de cada corrente que passa por aqui. Um pouco pesada: passa a corrente adiante devagar.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    '+20 de Defesa na hora, sempre que uma corrente passa por aqui. Um pouco pesada: passa a corrente adiante devagar.',
   短剣: 'Adaga',
   '軽い一撃。次の装備へすぐ伝わる。': 'Um golpe leve. Passa a corrente rápido para o próximo item.',
   双剣: 'Lâminas Gêmeas',
@@ -322,13 +324,14 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Congela o alvo e os inimigos ao redor. Ataques de Impacto podem Estilhaçá-los.',
   革鎧: 'Armadura de Couro',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    '+6 de Defesa no fim de cada corrente que passa por aqui. Leve: passa a corrente adiante rápido.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    '+6 de Defesa na hora, sempre que uma corrente passa por aqui. Leve: passa a corrente adiante rápido.',
   大盾: 'Escudo Grande',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    '+26 de Defesa no fim de cada corrente que passa por aqui. Pesado: passa a corrente adiante devagar.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    '+26 de Defesa na hora, sempre que uma corrente passa por aqui. Pesado: passa a corrente adiante devagar.',
   鉄の盾: 'Escudo de Ferro',
-  '連鎖が通ると、終了時に防御値+18。': '+18 de Defesa no fim de cada corrente que passa por aqui.',
+  '連鎖が通るたびに、その場で防御値+18。':
+    '+18 de Defesa na hora, sempre que uma corrente passa por aqui.',
   循環の環: 'Anel Ouroboros',
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     'Espalha a corrente nas quatro direções. Correntes que passam por este anel crescem ×1,2 por elo até ×4,0 e depois continuam crescendo bastante.',
@@ -512,8 +515,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Corrente Plana',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Um item por casa. Sem empilhar: encare as Muralhas só com o caminho das suas setas.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    'Enquanto estiver no tabuleiro, você nunca fica desprotegido durante correntes e nunca cambaleia. +40 de Defesa.',
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    'Enquanto estiver no tabuleiro, você nunca fica desprotegido durante correntes. +40 de Defesa.',
   回る盤面: 'Tabuleiro Giratório',
   回転マスを2つ置ける: 'Põe 2 Giratórias',
   切り替えの盤面: 'Tabuleiro de Desvios',

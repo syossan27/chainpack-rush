@@ -231,8 +231,8 @@ export const DATA: Dict = {
   '攻撃はダメージ +{v}%。そのかわり、連鎖が次のマスへ伝わるのが{relay}秒遅い。':
     'Les attaques infligent +{v}% de dégâts, mais la chaîne passe à la case suivante {relay} s plus lentement.',
   盾の起点石: "Pierre d'origine de bouclier",
-  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。よろめくのは、1回の連鎖で最大HPの{v}%を受けたとき（ふつうは{base}%）。':
-    "Ta protection dure jusqu'à la case {to} d'une chaîne (normalement {from}). Tu n'es sonné qu'après avoir subi {v}% de tes HP max en une chaîne (normalement {base}%).",
+  '連鎖中の守りが{to}マス目まで残る（ふつうは{from}マス）。':
+    "Ta protection dure jusqu'à la case {to} d'une chaîne (normalement {from}).",
   一番槍の起点石: "Pierre d'origine fer de lance",
   '連鎖で最初に鳴る{cells}マスの攻撃は、ダメージ +{v}%（マスで数える。防具のマスも数える）。':
     "Les attaques des {cells} premières cases qui sonnent dans une chaîne infligent +{v}% de dégâts (compté en cases ; les cases d'armure comptent aussi).",
@@ -299,12 +299,14 @@ export const DATA: Dict = {
   '闇の範囲攻撃。呪縛をつけ、灼光の敵を封印して攻撃を遅くする。':
     'Attaque de zone de Ténèbres. Envoûte, scelle les ennemis Éblouis et ralentit leurs attaques.',
   木の盾: 'Bouclier en bois',
-  '連鎖が通ると、終了時に防御値+8。': '+8 de Défense à la fin de chaque chaîne qui le traverse.',
+  '連鎖が通るたびに、その場で防御値+8。':
+    '+8 de Défense immédiatement, à chaque chaîne qui le traverse.',
   鎖帷子: 'Cotte de mailles',
-  '連鎖が通ると、終了時に防御値+12。': '+12 de Défense à la fin de chaque chaîne qui la traverse.',
+  '連鎖が通るたびに、その場で防御値+12。':
+    '+12 de Défense immédiatement, à chaque chaîne qui la traverse.',
   鋼の鎧: "Armure d'acier",
-  '連鎖が通ると、終了時に防御値+20。少し重く、次へ伝わるのが遅め。':
-    '+20 de Défense à la fin de chaque chaîne qui la traverse. Un peu lourde : passe la chaîne lentement.',
+  '連鎖が通るたびに、その場で防御値+20。少し重く、次へ伝わるのが遅め。':
+    '+20 de Défense immédiatement, à chaque chaîne qui la traverse. Un peu lourde : passe la chaîne lentement.',
   短剣: 'Dague',
   '軽い一撃。次の装備へすぐ伝わる。': "Un coup léger. Passe vite la chaîne à l'objet suivant.",
   双剣: 'Lames jumelles',
@@ -323,13 +325,14 @@ export const DATA: Dict = {
   '狙いの周りをまとめて凍結させる。打撃で粉砕できる。':
     'Gèle la cible et les ennemis autour. Les attaques contondantes peuvent les fracasser.',
   革鎧: 'Armure de cuir',
-  '連鎖が通ると、終了時に防御値+6。軽く、次へすぐ伝わる。':
-    '+6 de Défense à la fin de chaque chaîne qui la traverse. Légère : passe vite la chaîne.',
+  '連鎖が通るたびに、その場で防御値+6。軽く、次へすぐ伝わる。':
+    '+6 de Défense immédiatement, à chaque chaîne qui la traverse. Légère : passe vite la chaîne.',
   大盾: 'Grand bouclier',
-  '連鎖が通ると、終了時に防御値+26。重く、次へ伝わるのが遅い。':
-    '+26 de Défense à la fin de chaque chaîne qui le traverse. Lourd : passe la chaîne lentement.',
+  '連鎖が通るたびに、その場で防御値+26。重く、次へ伝わるのが遅い。':
+    '+26 de Défense immédiatement, à chaque chaîne qui le traverse. Lourd : passe la chaîne lentement.',
   鉄の盾: 'Bouclier de fer',
-  '連鎖が通ると、終了時に防御値+18。': '+18 de Défense à la fin de chaque chaîne qui le traverse.',
+  '連鎖が通るたびに、その場で防御値+18。':
+    '+18 de Défense immédiatement, à chaque chaîne qui le traverse.',
   循環の環: "Anneau d'Ouroboros",
   '四方へ連鎖を広げる。この環を通る連鎖は、連鎖倍率が×4.0まで×1.2ずつ伸び、その先も大きく伸びる。':
     "Propage la chaîne dans les quatre directions. Les chaînes qui passent par cet anneau croissent de ×1,2 par maillon jusqu'à ×4,0, puis continuent de croître fortement.",
@@ -515,8 +518,8 @@ export const DATA: Dict = {
   重ねない連鎖: 'Chaîne à plat',
   '1マスに1つだけ。重ねずに、矢印の道筋で城壁に挑む':
     'Un objet par case. Sans empiler : affronte les Remparts avec le seul chemin de tes flèches.',
-  '盤面にある限り、連鎖中も無防備にならず、よろめかない。防御値+40。':
-    "Tant qu'elle est sur ton plateau, tu n'es jamais à découvert pendant les chaînes et jamais sonné. +40 de Défense.",
+  '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
+    "Tant qu'elle est sur ton plateau, tu n'es jamais à découvert pendant les chaînes. +40 de Défense.",
   回る盤面: 'Plateau Pivotant',
   回転マスを2つ置ける: 'Pose 2 Pivots',
   切り替えの盤面: "Plateau d'Aiguillage",

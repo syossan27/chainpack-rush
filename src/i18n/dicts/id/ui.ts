@@ -107,8 +107,8 @@ export const UI: Dict = {
     '• Jeda sebelum pemicuan berikutnya sebanding dengan jumlah item yang aktif di rantai sebelumnya (pelindung juga dihitung). Rantai pendek berputar cepat; rantai panjang menghantam keras.',
   '・連鎖中は無防備（被ダメージ×1.5）。ただし起点のあと、3マス動くまでは守りが残ります（防具のマスも数えます）。':
     '• Saat rantai berjalan, kamu lengah (damage yang diterima ×1.5), tapi tetap terlindungi sampai rantai melewati 3 petak setelah asal (petak pelindung juga dihitung).',
-  '・無防備中に大きく被弾すると「よろめき」、残りの連鎖が途切れます。防御装備で耐えるか、不落の城門を置くと防げます。':
-    '• Kena serangan besar saat lengah membuatmu "Terhuyung!" dan sisa rantai terputus. Bertahanlah dengan perlengkapan pertahanan, atau pasang Gerbang Kebal untuk mencegahnya.',
+  '・防具のマスは鳴った瞬間に防御値を足します。長い連鎖の途中に防具を通すと、無防備の間も耐えられます。':
+    '• Petak pelindung menambah Pertahanan saat berbunyi. Lewatkan rantai panjang melalui pelindung agar tetap bertahan saat lengah.',
   地域と敵: 'Wilayah & Musuh',
   '・草原 → 洞窟 → 城壁の順に敵が一気に強くなり、そのぶんレアな装備が出やすくなります。3周目のボスを倒すと次の地域が開きます。':
     '• Musuh jauh lebih kuat dari Padang Rumput → Gua → Benteng, tapi perlengkapan langka juga lebih sering jatuh. Kalahkan bos putaran 3 untuk membuka wilayah berikutnya.',
@@ -491,7 +491,6 @@ export const UI: Dict = {
   無効: 'Kebal',
   '激昂！': 'Mengamuk!',
   'アーティファクト！ {name}': 'Artefak! {name}',
-  'よろめき！': 'Terhuyung!',
   '一網打尽！': 'Sapu Bersih!',
   'ボス撃破！': 'Bos Tumbang!',
   '復活！': 'Bangkit!',
@@ -562,8 +561,8 @@ export const UI: Dict = {
   '{status}を消費して{combo}（×{x}、範囲に拡大）':
     'Menghabiskan {status} untuk {combo} (×{x}, menyebar ke area)',
   '{status}を消費して{combo}（×{x}）': 'Menghabiskan {status} untuk {combo} (×{x})',
-  '防御値 +{n}（連鎖が通ると終了時に加算、連鎖数に数えない）':
-    'Pertahanan +{n} (ditambahkan saat rantai yang lewat berakhir; tidak dihitung sebagai mata rantai)',
+  '防御値 +{n}（連鎖が通るたびにその場で加算、連鎖数に数えない）':
+    'Pertahanan +{n} (langsung ditambahkan setiap kali rantai lewat; tidak dihitung sebagai mata rantai)',
   '連鎖の始まり。攻撃せず、連鎖数にも数えない':
     'Awal rantai. Tidak menyerang dan tidak dihitung sebagai mata rantai.',
   '付け直し {n}回': 'Ditempa ulang ×{n}',
@@ -593,7 +592,7 @@ export const UI: Dict = {
   次への伝達: 'Waktu Oper',
   '{s}秒': '{s} dtk',
   防御値: 'Pertahanan',
-  連鎖終了時に加算: 'Ditambahkan saat rantai berakhir',
+  鳴るたびに加算: 'Ditambahkan setiap kali berbunyi',
   守り: 'Perlindungan',
   連鎖中も無防備にならない: 'Tak pernah lengah saat rantai berjalan',
   この配置: 'Susunan Ini',
