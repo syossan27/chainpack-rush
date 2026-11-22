@@ -123,10 +123,22 @@ describe('economy', () => {
     expect(rerollItem(s, it.uid, new Rng(3))).toBe(true);
     expect(it.exits).toHaveLength(1);
     expect(rerollCost(it, 'reroll')).toBe(15);
-    expect(specifyExits(s, it.uid, ['down'])).toBe(true);
-    expect(it.exits).toEqual(['down']);
+    const to = it.exits[0] === 'down' ? 'up' : 'down';
+    expect(specifyExits(s, it.uid, [to])).toBe(true);
+    expect(it.exits).toEqual([to]);
     expect(rerollCost(it, 'reroll')).toBe(Math.round(10 * 1.5 * 1.5));
     expect(specifyExits(s, it.uid, ['down', 'up'])).toBe(false);
+  });
+
+  it('付け直し: 今と同じ向きの指定はできず、お金も減らない', () => {
+    const s = createInitialSave();
+    s.gold = 10000;
+    const it = s.inventory.find((i) => i.defId === 'sword')!;
+    it.exits = ['right', 'down'];
+    expect(specifyExits(s, it.uid, ['down', 'right'])).toBe(false);
+    expect(s.gold).toBe(10000);
+    expect(it.rerollCount).toBe(0);
+    expect(specifyExits(s, it.uid, ['up', 'right'])).toBe(true);
   });
 
   it('永続強化: 費用の伸びと上限、効果', () => {

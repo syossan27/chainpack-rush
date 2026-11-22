@@ -14,6 +14,7 @@ import {
   recordAd,
   rerollCost,
   rerollItem,
+  sameExits,
   sellable,
   sellItems,
   sellPrice,
@@ -1179,6 +1180,7 @@ export class BaseScene extends Phaser.Scene {
       );
     });
     const ready = this.specify.length === it.exits.length;
+    const changed = !sameExits(this.specify, it.exits);
     this.root.add(
       new Button(
         this,
@@ -1199,7 +1201,7 @@ export class BaseScene extends Phaser.Scene {
           sfx('openRare');
           this.render();
         },
-        { width: 290, height: 80, skin: 'purple', disabled: save.gold < sc || !ready },
+        { width: 290, height: 80, skin: 'purple', disabled: save.gold < sc || !ready || !changed },
       ),
     );
   }

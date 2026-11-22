@@ -279,11 +279,18 @@ export function doubleLoot(
   return acceptLoot(save, drops);
 }
 
+/** Same set of directions, in any order */
+export function sameExits(a: readonly Dir[], b: readonly Dir[]): boolean {
+  return a.length === b.length && a.every((d) => b.includes(d));
+}
+
 export function specifyExits(save: SaveData, uid: string, exits: readonly Dir[]): boolean {
   const it = save.inventory.find((i) => i.uid === uid);
   if (!it || !canReorient(it)) return false;
   const uniq = Array.from(new Set(exits));
   if (uniq.length !== it.exits.length) return false;
+  // The same directions as now would only cost money
+  if (sameExits(uniq, it.exits)) return false;
   const cost = rerollCost(it, 'specify');
   if (save.gold < cost) return false;
   save.gold -= cost;
