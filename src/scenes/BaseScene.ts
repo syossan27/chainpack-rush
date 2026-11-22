@@ -336,6 +336,9 @@ const TECH_CSS: Partial<Record<string, string>> = {
 
 const RARITY_RANK: Record<Rarity, number> = { common: 0, rare: 1, epic: 2, legendary: 3 };
 
+/** Up to this many upgrade steps are drawn as pips; more as one gauge with the count */
+const UPGRADE_MAX_PIPS = 20;
+
 export class BaseScene extends Phaser.Scene {
   private page: Page = 'home';
   private root!: Phaser.GameObjects.Container;
@@ -1243,15 +1246,33 @@ export class BaseScene extends Phaser.Scene {
       this.root.add(
         fitText(this.add.text(140, y - 8, now[id], textStyle(18, COLORS.textDim)), textW),
       );
-      // 段階のつぶ
+      // 段階のつぶ（段が多いときは1本のゲージ）
       const pips = max;
-      const pw = Math.min(22, 300 / pips);
-      for (let k = 0; k < pips; k++) {
+      if (pips <= UPGRADE_MAX_PIPS) {
+        const pw = Math.min(22, 300 / pips);
+        for (let k = 0; k < pips; k++) {
+          this.root.add(
+            this.add
+              .rectangle(142 + k * pw, y + 30, pw - 4, 12, k < lv ? 0xffd25a : 0x2a2234)
+              .setOrigin(0, 0.5)
+              .setStrokeStyle(2, 0x0c0a12),
+          );
+        }
+      } else {
         this.root.add(
           this.add
-            .rectangle(142 + k * pw, y + 30, pw - 4, 12, k < lv ? 0xffd25a : 0x2a2234)
+            .rectangle(142, y + 30, 296, 12, 0x2a2234)
             .setOrigin(0, 0.5)
             .setStrokeStyle(2, 0x0c0a12),
+        );
+        if (lv > 0)
+          this.root.add(
+            this.add.rectangle(142, y + 30, 296 * Math.min(1, lv / pips), 12, 0xffd25a).setOrigin(0, 0.5),
+          );
+        this.root.add(
+          this.add
+            .text(442, y + 30, `${lv}/${pips}`, textStyle(16, COLORS.textDim))
+            .setOrigin(0, 0.5),
         );
       }
       this.root.add(

@@ -14,6 +14,7 @@ import {
   SIM,
   STATUS,
   TIME_BONUS,
+  UPGRADES,
 } from '../src/config/balance';
 import { createInitialSave } from '../src/core/save';
 import { getEnemyDef } from '../src/data/enemies';
@@ -427,11 +428,11 @@ describe('時間の延長', () => {
     expect(c.maxTicks - before).toBe(CONSUMABLE.timeSandSeconds * SIM.ticksPerSecond);
   });
 
-  it('永続強化「出撃時間」: +2秒×5、費用は 300G から2倍ずつ', () => {
+  it('永続強化「出撃時間」: +2秒×5、費用は2倍ずつ', () => {
     const s = createInitialSave();
     expect(heroStats(s).runTime).toBe(SIM.runDuration);
-    expect(upgradeCost('runTime', 0)).toBe(300);
-    expect(upgradeCost('runTime', 4)).toBe(4800);
+    expect(upgradeCost('runTime', 0)).toBe(UPGRADES.runTime.baseCost);
+    expect(upgradeCost('runTime', 4)).toBe(UPGRADES.runTime.baseCost * 16);
     s.gold = 1e9;
     for (let i = 0; i < 10; i++) buyUpgrade(s, 'runTime');
     expect(s.upgrades.runTime).toBe(5);

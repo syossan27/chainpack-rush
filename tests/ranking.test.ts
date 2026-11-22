@@ -83,7 +83,7 @@ function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number
       loadout = stackPut(loadout, items, it.uid, cell).loadout;
     }
   }
-  s.upgrades = { ...s.upgrades, maxHp: 25, atb: 10, attack: 50, runTime: 5 };
+  s.upgrades = { ...s.upgrades, maxHp: 50, atb: 20, attack: 100, runTime: 5 };
   const mastery: RunMastery = { levels: { physical: 30 }, learned: [] };
   const charms: CharmSlots = [
     { uid: 'c1', defId: 'combo_necklace', rarity: 'rare' },
@@ -158,7 +158,7 @@ describe('ランキングの記録の確認', () => {
 
   it('∞ の記録は、結果の画面が薬を減らし補充したあとに送っても通る（ランを始めたときの配置のまま）', () => {
     const s = createInitialSave();
-    s.upgrades = { ...s.upgrades, maxHp: 25, atb: 10, attack: 50, runTime: 5 };
+    s.upgrades = { ...s.upgrades, maxHp: 50, atb: 20, attack: 100, runTime: 5 };
     // A spare potion in storage, so the refill puts one back into the slot
     s.inventory.push({
       uid: 'spare',

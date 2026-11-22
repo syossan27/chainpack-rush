@@ -22,7 +22,7 @@ import { createInitialSave, deserializeSave, serializeSave } from '../src/core/s
 import { clearLoadout, placeItem, cycleOriginOrder, removeItem } from '../src/core/loadout';
 import { itemMap } from '../src/core/economy';
 import { Rng } from '../src/core/rng';
-import { SYNTH } from '../src/config/balance';
+import { SYNTH, UPGRADES } from '../src/config/balance';
 import type { ItemInstance } from '../src/core/types';
 import { getItemDef } from '../src/data/items';
 import type { RunResult } from '../src/core/combat';
@@ -45,8 +45,18 @@ describe('save', () => {
     s.gold = 123;
     expect(deserializeSave(serializeSave(s))).toEqual(s);
     expect(deserializeSave('{oops').gold).toBe(0);
-    expect(deserializeSave(JSON.stringify({ ...s, version: 4 })).gold).toBe(0);
-    expect(deserializeSave(null).version).toBe(3);
+    expect(deserializeSave(JSON.stringify({ ...s, version: 5 })).gold).toBe(0);
+    expect(deserializeSave(null).version).toBe(4);
+  });
+
+  it('版3のセーブ: 最大HP・攻撃間隔・攻撃倍率の段は2倍になる（1段の効き目が半分になったので、強さは同じ）', () => {
+    const s = createInitialSave();
+    s.upgrades = { ...s.upgrades, maxHp: 3, atb: 4, attack: 7, storage: 2 };
+    const old = JSON.parse(serializeSave(s)) as Record<string, unknown>;
+    const v3 = deserializeSave(JSON.stringify({ ...old, version: 3 }));
+    expect(v3.upgrades).toMatchObject({ maxHp: 6, atb: 8, attack: 14, storage: 2 });
+    // Read again as version 4: not doubled twice
+    expect(deserializeSave(serializeSave(v3)).upgrades.attack).toBe(14);
   });
 });
 
@@ -120,23 +130,26 @@ describe('economy', () => {
   });
 
   it('永続強化: 費用の伸びと上限、効果', () => {
-    expect(upgradeCost('maxHp', 0)).toBe(50);
-    expect(upgradeCost('maxHp', 1)).toBe(70);
-    expect(upgradeCost('maxHp', 10)).toBeNull();
+    expect(upgradeCost('maxHp', 0)).toBe(UPGRADES.maxHp.baseCost);
+    expect(upgradeCost('maxHp', 1)).toBe(Math.round(UPGRADES.maxHp.baseCost * UPGRADES.maxHp.growth));
+    expect(upgradeCost('maxHp', UPGRADES.maxHp.maxLevel)).toBeNull();
     // 後半の地域を開放すると、攻撃倍率と最大HPの上限が上がる（元の上限を超えた段は伸びが緩い）
-    expect(upgradeCost('attack', 20, 30)).toBe(Math.round(60 * Math.pow(1.3, 20)));
-    expect(upgradeCost('attack', 21, 30)).toBe(Math.round(60 * Math.pow(1.3, 20) * 1.12));
+    const top = UPGRADES.attack.maxLevel;
+    const g = UPGRADES.attack.growth;
+    const late = UPGRADES.attack.lateGrowth!;
+    expect(upgradeCost('attack', top, top + 10)).toBe(Math.round(UPGRADES.attack.baseCost * Math.pow(g, top)));
+    expect(upgradeCost('attack', top + 1, top + 10)).toBe(Math.round(UPGRADES.attack.baseCost * Math.pow(g, top) * late));
     const s = createInitialSave();
     s.gold = 1e9;
-    for (let i = 0; i < 20; i++) buyUpgrade(s, 'atb');
+    for (let i = 0; i < 40; i++) buyUpgrade(s, 'atb');
     expect(heroStats(s).atbTime).toBeCloseTo(1.0);
     for (let i = 0; i < 10; i++) buyUpgrade(s, 'storage');
     expect(storageCapacity(s)).toBe(100);
-    for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
-    expect(s.upgrades.attack).toBe(20);
+    for (let i = 0; i < 80; i++) buyUpgrade(s, 'attack');
+    expect(s.upgrades.attack).toBe(top);
     s.progress.unlocked.push('volcano', 'glacier');
-    for (let i = 0; i < 40; i++) buyUpgrade(s, 'attack');
-    expect(s.upgrades.attack).toBe(40);
+    for (let i = 0; i < 80; i++) buyUpgrade(s, 'attack');
+    expect(s.upgrades.attack).toBe(top + 2 * UPGRADES.attack.perRegionLevels!);
   });
 
   it('倉庫があふれても全部受け取るが、出撃はできない', () => {

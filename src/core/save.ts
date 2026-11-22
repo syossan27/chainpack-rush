@@ -42,7 +42,13 @@ const RENAMED_ITEMS: Record<string, string> = {
 };
 
 export const SAVE_KEY = 'bp30.save.v3';
-export const SAVE_VERSION = 3;
+/**
+ * 4 (2026-11-22): HP, attack interval and attack upgrades come in twice the steps at half the
+ * effect, so an older save's levels of those are doubled on load (the same power)
+ */
+export const SAVE_VERSION = 4;
+/** Upgrades whose steps were split in two in version 4 */
+const SPLIT_IN_V4: readonly UpgradeId[] = ['maxHp', 'atb', 'attack'];
 
 /**
  * Debug (development and trial builds): a second save to play from zero while the real one stays
@@ -382,7 +388,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
   if (!raw) return createInitialSave();
   try {
     const data: unknown = JSON.parse(raw);
-    if (!isObj(data) || ![1, 2, SAVE_VERSION].includes(data.version as number))
+    if (!isObj(data) || ![1, 2, 3, SAVE_VERSION].includes(data.version as number))
       return createInitialSave();
     // Version 1 (the bag, trials as switches) is read and then moved to version 2. Version 2 differs
     // only in the origin stones it may hold (renamed below, as for any version)
@@ -434,7 +440,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       upgrades: Object.fromEntries(
         (Object.keys(base.upgrades) as UpgradeId[]).map((id) => {
           const v = isObj(data.upgrades) ? data.upgrades[id] : undefined;
-          return [id, isNum(v) ? v : base.upgrades[id]];
+          const split = (data.version as number) < 4 && SPLIT_IN_V4.includes(id) ? 2 : 1;
+          return [id, isNum(v) ? v * split : base.upgrades[id]];
         }),
       ) as SaveData['upgrades'],
       progress: isObj(data.progress) ? (data.progress as SaveData['progress']) : base.progress,

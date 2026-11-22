@@ -497,37 +497,41 @@ export interface UpgradeDef {
 }
 
 export const UPGRADES: Record<UpgradeId, UpgradeDef> = {
+  // 2026-11-22: HP, attack interval and attack come in twice the steps at half the effect (the same
+  // power at the top, more room to grow); growth is the square root of the old one. Saves from
+  // before have these levels doubled (save version 4). Costs are 1.5x the old ones, and part of the
+  // HP / attack steps moved from the base cap to the late regions (same top after the castle)
   maxHp: {
     id: 'maxHp',
     name: '最大HP',
-    effect: 10,
-    baseCost: 50,
-    growth: 1.4,
-    maxLevel: 10,
-    perRegionLevels: 5,
-    lateGrowth: 1.12,
+    effect: 5,
+    baseCost: 75,
+    growth: 1.183,
+    maxLevel: 14,
+    perRegionLevels: 12,
+    lateGrowth: 1.058,
   },
-  atb: { id: 'atb', name: '攻撃間隔', effect: 0.05, baseCost: 80, growth: 1.6, maxLevel: 10 }, // 1.5→1.0秒
+  atb: { id: 'atb', name: '攻撃間隔', effect: 0.025, baseCost: 120, growth: 1.265, maxLevel: 20 }, // 1.5→1.0秒
   attack: {
     id: 'attack',
     name: '攻撃倍率',
-    effect: 0.05,
-    baseCost: 60,
-    growth: 1.3,
-    maxLevel: 20,
-    perRegionLevels: 10,
-    lateGrowth: 1.12,
+    effect: 0.025,
+    baseCost: 90,
+    growth: 1.14,
+    maxLevel: 28,
+    perRegionLevels: 24,
+    lateGrowth: 1.058,
   },
-  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 300, growth: 2.0, maxLevel: 5 }, // +2秒×5（300→600→…と倍々）
+  runTime: { id: 'runTime', name: '出撃時間', effect: 2, baseCost: 450, growth: 2.0, maxLevel: 5 }, // +2秒×5（450→900→…と倍々）
   consumableSlots: {
     id: 'consumableSlots',
     name: '消耗品枠',
     effect: 1,
-    baseCost: 400,
+    baseCost: 600,
     growth: 2.0,
     maxLevel: 2,
   }, // 3→5
-  storage: { id: 'storage', name: '倉庫容量', effect: 10, baseCost: 100, growth: 1.5, maxLevel: 6 }, // 40→100
+  storage: { id: 'storage', name: '倉庫容量', effect: 10, baseCost: 150, growth: 1.5, maxLevel: 6 }, // 40→100
 };
 
 export const STORAGE = {

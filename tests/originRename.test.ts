@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
+import { SAVE_VERSION, createInitialSave, deserializeSave, serializeSave } from '../src/core/save';
 import { boardUids } from '../src/core/stack';
 import type { ItemInstance } from '../src/core/types';
 import { getItemDef } from '../src/data/items';
@@ -66,7 +66,7 @@ describe('なくした起点石の置きかえ（セーブ版3）', () => {
     // The board is as it was (a reset would have laid out a new one)
     expect(s.loadout.cells).toEqual(cells);
     expect(boardUids(s.loadout)).toContain(originUid);
-    expect(s.version).toBe(3);
-    expect((JSON.parse(serializeSave(s)) as { version: number }).version).toBe(3);
+    expect(s.version).toBe(SAVE_VERSION);
+    expect((JSON.parse(serializeSave(s)) as { version: number }).version).toBe(SAVE_VERSION);
   });
 });

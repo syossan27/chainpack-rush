@@ -93,7 +93,7 @@ describe('セーブの移行（版1 → 版2）', () => {
   it('バッグだけの人: 標準の重ねる盤面が自動で作られ、装備は全部倉庫に残る', () => {
     const s = deserializeSave(v1());
     expect(s.version).toBe(SAVE_VERSION);
-    expect(SAVE_VERSION).toBe(3);
+    expect(SAVE_VERSION).toBe(4);
     expect(s.boards.active).toBe('standard');
     expect(s.loadout.board).toBe('standard');
     expect(s.inventory.map((i) => i.uid).sort()).toEqual(
@@ -229,7 +229,8 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(s.progress).toEqual({ unlocked: ['grassland', 'cave'], best: { grassland: 4 } });
     expect(s.endless).toEqual({ bestLoop: 3, bestDamage: 900 });
     expect(s.titles).toEqual(['t1']);
-    expect(s.upgrades).toMatchObject({ maxHp: 2, atb: 1, attack: 3, storage: 1 });
+    // Version 4 split the HP, interval and attack steps in two
+    expect(s.upgrades).toMatchObject({ maxHp: 4, atb: 2, attack: 6, storage: 1 });
     expect(s.settings.volume).toBe(0.5);
     expect(s.settings.debug).toBe(true);
     expect(Object.keys(s.settings).some((k) => k.startsWith('trial'))).toBe(false);
