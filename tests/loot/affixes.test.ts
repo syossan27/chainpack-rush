@@ -33,7 +33,9 @@ describe('追加効果', () => {
       const outside = made().filter(({ r, it }) => {
         const n = it.affixes?.length ?? 0;
         const cands = affixCandidates(def).length;
-        return n < Math.min(cands, AFFIX_COUNT[r].base) || n > Math.min(cands, AFFIX_COUNT[r].base + 1);
+        return (
+          n < Math.min(cands, AFFIX_COUNT[r].base) || n > Math.min(cands, AFFIX_COUNT[r].base + 1)
+        );
       });
       expect(outside).toEqual([]);
     });

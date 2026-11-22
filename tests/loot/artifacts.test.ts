@@ -12,7 +12,13 @@ import {
   sellPrice,
   specifyExits,
 } from '../../src/core/economy';
-import { ARTIFACT_DEFS, DEFAULT_LOOT, createItem, rarityWeights, rollLoot } from '../../src/core/loot';
+import {
+  ARTIFACT_DEFS,
+  DEFAULT_LOOT,
+  createItem,
+  rarityWeights,
+  rollLoot,
+} from '../../src/core/loot';
 import { Rng } from '../../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
 import { getItemDef } from '../../src/data/items';
@@ -121,10 +127,13 @@ describe('アーティファクト', () => {
 
   const dropping = REGIONS.map((r) => r.id)
     .filter((id) => id !== 'grassland' && id !== 'cave')
-    .flatMap((id) => [
-      [id, 'ふつうのドロップ', false],
-      [id, 'ボス', true],
-    ] as const);
+    .flatMap(
+      (id) =>
+        [
+          [id, 'ふつうのドロップ', false],
+          [id, 'ボス', true],
+        ] as const,
+    );
 
   it.each(dropping)('%s の%s: アーティファクトは出るが、レジェンダリーよりまれ', (id, _, boss) => {
     const region = getRegion(id);
@@ -382,7 +391,12 @@ describe('アーティファクトは1種類につき1つ', () => {
 
   it('古いセーブで2つ以上ある種類は、余りの分だけ売れる', () => {
     const { s, id } = owning();
-    expect(sellable(s, s.inventory.find((i) => i.uid === 'x1')!)).toBe(true);
+    expect(
+      sellable(
+        s,
+        s.inventory.find((i) => i.uid === 'x1')!,
+      ),
+    ).toBe(true);
     sellItems(s, ['x1', 'x2']);
     expect(s.inventory.filter((i) => i.defId === id)).toHaveLength(1);
   });

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { NO_LUCK, POISON } from '../../src/config/balance';
-import { charmContext, comboWeight, type CharmInstance, type CharmSlots } from '../../src/core/charms';
+import {
+  charmContext,
+  comboWeight,
+  type CharmInstance,
+  type CharmSlots,
+} from '../../src/core/charms';
 import { simulateChain } from '../../src/core/chain';
 import { estimateRoute } from '../../src/core/estimate';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../../src/core/combat';

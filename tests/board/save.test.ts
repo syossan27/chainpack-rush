@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { BASE_HERO_STATS } from '../../src/core/combat';
-import { createInitialSave, deserializeSave, serializeSave, type SaveData } from '../../src/core/save';
+import {
+  createInitialSave,
+  deserializeSave,
+  serializeSave,
+  type SaveData,
+} from '../../src/core/save';
 import { itemMap, overflowSellPlan, sellItems } from '../../src/core/economy';
 import { activeBoardId, otherBoardUse, switchBoard } from '../../src/core/boardSave';
 import {

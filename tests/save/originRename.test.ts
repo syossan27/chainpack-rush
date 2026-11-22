@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { SAVE_VERSION, createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
+import {
+  SAVE_VERSION,
+  createInitialSave,
+  deserializeSave,
+  serializeSave,
+} from '../../src/core/save';
 import { boardUids } from '../../src/core/stack';
 import type { ItemInstance } from '../../src/core/types';
 import { getItemDef } from '../../src/data/items';

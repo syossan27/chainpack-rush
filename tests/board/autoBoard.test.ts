@@ -72,7 +72,9 @@ describe('重ねる盤面の自動配置', () => {
       const inv = [item('o', 'origin_stone'), ...'abcdefgh'.split('').map((u) => item(u, 'axe'))];
       const l = autoBoard(inv, id);
       const def = getBoard(id);
-      const onHoles = l.cells.map((_, c) => c).filter((c) => isHole(def, c) && stackAt(l, c).length);
+      const onHoles = l.cells
+        .map((_, c) => c)
+        .filter((c) => isHole(def, c) && stackAt(l, c).length);
       expect(onHoles).toEqual([]);
       expect(l.originOrder).toEqual(['o']);
     },

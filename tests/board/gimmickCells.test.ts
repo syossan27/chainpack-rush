@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gimmickCycle, planChain } from '../../src/core/chain';
-import { BASE_HERO_STATS, Combat } from '../../src/core/combat';
+import { BASE_HERO_STATS, Combat, type CombatEvent } from '../../src/core/combat';
 import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
 import { switchBoard } from '../../src/core/boardSave';
 import { fitGimmicks, gimmicksLeft, ownedBoards } from '../../src/core/boards';
@@ -43,15 +43,23 @@ describe('ギミックマス: 連鎖の進み方', () => {
     expect(plan.maxStep).toBe(4);
   });
 
-  it('回転マスで向きが変わる輪は、もう一度鳴って連鎖数が伸びる。1マス4回まで', () => {
+  describe('回転マスのある輪', () => {
     const { loadout, items } = board(3, 2, loop(['right']), { 1: 'rotate' });
     const plan = planChain(loadout, items, 'o');
-    // a: right (→ b c d), then down (→ d), then left (→ the origin, which leads back to a), then up
-    expect(cellsOf(plan)).toEqual(['a', 'b', 'c', 'd', 'a', 'd', 'a', 'o', 'a']);
-    expect(plan.maxStep).toBe(8);
-    for (const n of ringsPer(plan).values()) expect(n).toBeLessThanOrEqual(GIMMICK.maxVisits);
-    // Turned four times: back where it started
-    expect(plan.gimmickEnd?.[1]).toBe(0);
+
+    it('向きが変わるたびにもう一度鳴り、連鎖数が伸びる', () => {
+      // a: right (→ b c d), then down (→ d), then left (→ the origin, which leads back to a), then up
+      expect(cellsOf(plan)).toEqual(['a', 'b', 'c', 'd', 'a', 'd', 'a', 'o', 'a']);
+      expect(plan.maxStep).toBe(8);
+    });
+
+    it('1マスが鳴るのは GIMMICK.maxVisits 回まで', () => {
+      expect(Math.max(...ringsPer(plan).values())).toBe(GIMMICK.maxVisits);
+    });
+
+    it('4回回ると、はじめの向きに戻って終わる', () => {
+      expect(plan.gimmickEnd?.[1]).toBe(0);
+    });
   });
 
   it('向きの回り方は次の発火へ引き継ぐ', () => {
@@ -65,7 +73,7 @@ describe('ギミックマス: 連鎖の進み方', () => {
   it('4方向の装備は回っても向きが変わらないので、輪にならない', () => {
     const { loadout, items } = board(3, 2, loop(['up', 'right', 'down', 'left']), { 1: 'rotate' });
     const plan = planChain(loadout, items, 'o');
-    for (const n of ringsPer(plan).values()) expect(n).toBe(1);
+    expect(Math.max(...ringsPer(plan).values())).toBe(1);
   });
 
   it('別の枝との合流は、ギミックを通っていても1回だけ', () => {
@@ -131,10 +139,14 @@ describe('ギミックマス: 連鎖の進み方', () => {
 });
 
 describe('ギミックマス: 盤面と保存・戦闘', () => {
-  it('試作の盤面は、デバッグ機能が ON のときだけ持てる', () => {
+  it('デバッグ機能が OFF なら、試作の盤面は持てず切り替えもできない', () => {
     const s = createInitialSave();
     expect(ownedBoards(s).some((b) => b.trial)).toBe(false);
     expect(switchBoard(s, 'spin')).toBe(false);
+  });
+
+  it('デバッグ機能が ON なら、試作の盤面（回転・切り替え・ワープ）を持てる', () => {
+    const s = createInitialSave();
     s.settings.debug = true;
     expect(
       ownedBoards(s)
@@ -143,31 +155,52 @@ describe('ギミックマス: 盤面と保存・戦闘', () => {
     ).toEqual(['spin', 'turnout', 'link']);
   });
 
-  it('置いたギミックは保存され、盤面を切り替えて戻っても残る。盤面の数より多くは置けない', () => {
-    const s = createInitialSave();
-    s.settings.debug = true;
-    expect(switchBoard(s, 'spin')).toBe(true);
-    expect(gimmicksLeft(s.loadout)).toEqual(['rotate', 'rotate']);
-    s.loadout.gimmicks![5] = 'rotate';
-    s.loadout.gimmicks![6] = 'rotate';
-    s.loadout.gimmicks![7] = 'rotate';
-    fitGimmicks(s.loadout);
-    expect(s.loadout.gimmicks!.filter(Boolean)).toHaveLength(2);
-    const back = deserializeSave(serializeSave(s));
-    expect(back.loadout.gimmicks?.[5]).toBe('rotate');
-    switchBoard(back, 'standard');
-    expect(back.loadout.gimmicks).toBeUndefined();
-    switchBoard(back, 'spin');
-    expect(back.loadout.gimmicks?.[5]).toBe('rotate');
-    expect(back.loadout.gimmicks?.[6]).toBe('rotate');
+  describe('置いたギミック', () => {
+    /** On the spin board (two rotators), with rotators put on cells 5 and 6 */
+    const placedOnSpin = () => {
+      const s = createInitialSave();
+      s.settings.debug = true;
+      switchBoard(s, 'spin');
+      s.loadout.gimmicks![5] = 'rotate';
+      s.loadout.gimmicks![6] = 'rotate';
+      return s;
+    };
+
+    it('盤面ごとに置けるギミックの数が決まっている（回転の盤面は回転2つ）', () => {
+      const s = createInitialSave();
+      s.settings.debug = true;
+      switchBoard(s, 'spin');
+      expect(gimmicksLeft(s.loadout)).toEqual(['rotate', 'rotate']);
+    });
+
+    it('盤面の数より多く置いても、盤面の数に減らされる', () => {
+      const s = placedOnSpin();
+      s.loadout.gimmicks![7] = 'rotate';
+      fitGimmicks(s.loadout);
+      expect(s.loadout.gimmicks!.filter(Boolean)).toHaveLength(2);
+    });
+
+    it('保存して読み直しても残る', () => {
+      const back = deserializeSave(serializeSave(placedOnSpin()));
+      expect(back.loadout.gimmicks?.[5]).toBe('rotate');
+    });
+
+    it('ギミックのない盤面へ切り替えると外れる', () => {
+      const s = placedOnSpin();
+      switchBoard(s, 'standard');
+      expect(s.loadout.gimmicks).toBeUndefined();
+    });
+
+    it('別の盤面へ切り替えて戻ると、置いた場所に残っている', () => {
+      const s = placedOnSpin();
+      switchBoard(s, 'standard');
+      switchBoard(s, 'spin');
+      expect([s.loadout.gimmicks?.[5], s.loadout.gimmicks?.[6]]).toEqual(['rotate', 'rotate']);
+    });
   });
 
-  it('戦闘では発火ごとに、回った向きから線を計算し直す', () => {
-    const { loadout, items } = board(3, 2, loop(['right']), { 1: 'rotate' });
-    const cycle = gimmickCycle(loadout, items, 'o');
-    // a ends each firing turned back to the start (4 passes), so every firing is the same here
-    expect(cycle.length).toBe(1);
-    // A switch with two arrows alternates: two different firings
+  describe('戦闘では発火ごとに、回った向きから線を計算し直す', () => {
+    // A switch with two arrows alternates between them
     const sw = board(
       3,
       2,
@@ -179,29 +212,39 @@ describe('ギミックマス: 盤面と保存・戦闘', () => {
       ],
       { 1: 'switch' },
     );
-    const plans = gimmickCycle(sw.loadout, sw.items, 'o');
-    expect(plans.map(cellsOf)).toEqual([
-      ['s', 'r'],
-      ['s', 'd'],
-    ]);
-    const c = new Combat({
-      seed: 1,
-      regionId: 'grassland',
-      loadout: sw.loadout,
-      items: sw.items,
-      hero: BASE_HERO_STATS,
-      luck: NO_LUCK,
+
+    it('発火のたびに同じ向きへ戻る輪は、発火の型が1つ', () => {
+      const { loadout, items } = board(3, 2, loop(['right']), { 1: 'rotate' });
+      expect(gimmickCycle(loadout, items, 'o')).toHaveLength(1);
     });
-    const routes: string[][] = [];
-    for (let i = 0; i < 60 * 30 && routes.length < 3 && !c.ended; i++) {
-      c.step();
-      for (const e of c.drainEvents()) if (e.type === 'chainStart') routes.push(cellsOf(e.plan));
-    }
-    expect(routes.slice(0, 3)).toEqual([
-      ['s', 'r'],
-      ['s', 'd'],
-      ['s', 'r'],
-    ]);
+
+    it('出口2本の切り替えマスは、発火の型が2つ交互', () => {
+      expect(gimmickCycle(sw.loadout, sw.items, 'o').map(cellsOf)).toEqual([
+        ['s', 'r'],
+        ['s', 'd'],
+      ]);
+    });
+
+    it('戦闘でも、切り替えマスの線が発火ごとに入れ替わる', () => {
+      const c = new Combat({
+        seed: 1,
+        regionId: 'grassland',
+        loadout: sw.loadout,
+        items: sw.items,
+        hero: BASE_HERO_STATS,
+        luck: NO_LUCK,
+      });
+      const routes: string[][] = [];
+      for (let i = 0; i < 60 * 30 && routes.length < 3 && !c.ended; i++) {
+        c.step();
+        for (const e of c.drainEvents()) if (e.type === 'chainStart') routes.push(cellsOf(e.plan));
+      }
+      expect(routes.slice(0, 3)).toEqual([
+        ['s', 'r'],
+        ['s', 'd'],
+        ['s', 'r'],
+      ]);
+    });
   });
 });
 
@@ -217,41 +260,54 @@ describe('長い連鎖の守り（よろめきの代わり）', () => {
     expect(gapAfter(a2)).toBeCloseTo(gapAfter(a1) * GIMMICK.passPace[1], 2);
   });
 
-  it('防具は鳴った瞬間に防御値を足す（連鎖の終わりを待たない）。輪で戻れば戻るたびに足す', () => {
-    const placed = loop(['right']);
-    // d comes round the loop more than once
-    placed[4] = { ...placed[4]!, defId: 'wood_shield' };
-    const { loadout, items } = board(3, 2, placed, { 1: 'rotate' });
-    const c = new Combat({
-      seed: 1,
-      regionId: 'grassland',
-      loadout,
-      items,
-      hero: BASE_HERO_STATS,
-      luck: NO_LUCK,
-      mode: 'dummy',
-    });
-    c.fireNext();
-    const dRings = c.chain!.plan.steps.filter((s) => s.uid === 'd').length;
-    expect(dRings).toBeGreaterThan(1);
-    const ups: number[] = [];
-    let endGain = -1;
-    let ended = false;
-    while (c.chain) {
-      c.step();
-      for (const e of c.drainEvents()) {
-        if (e.type === 'guardUp') {
-          ups.push(e.gain);
-          // Added before the chain ends
-          expect(ended).toBe(false);
-        }
-        if (e.type === 'chainEnd') {
-          ended = true;
-          endGain = e.defenseGain;
-        }
+  describe('防具は鳴った瞬間に防御値を足す（連鎖の終わりを待たない）', () => {
+    /** The rotator loop with a wooden shield on d, which comes round more than once */
+    const run = () => {
+      const placed = loop(['right']);
+      placed[4] = { ...placed[4]!, defId: 'wood_shield' };
+      const { loadout, items } = board(3, 2, placed, { 1: 'rotate' });
+      const c = new Combat({
+        seed: 1,
+        regionId: 'grassland',
+        loadout,
+        items,
+        hero: BASE_HERO_STATS,
+        luck: NO_LUCK,
+        mode: 'dummy',
+      });
+      c.fireNext();
+      const dRings = c.chain!.plan.steps.filter((s) => s.uid === 'd').length;
+      const events: CombatEvent[] = [];
+      while (c.chain) {
+        c.step();
+        events.push(...c.drainEvents());
       }
-    }
-    expect(ups).toHaveLength(dRings);
-    expect(endGain).toBe(ups.reduce((a, b) => a + b, 0));
+      const ups = events.flatMap((e) => (e.type === 'guardUp' ? [e.gain] : []));
+      const endAt = events.findIndex((e) => e.type === 'chainEnd');
+      const lastUpAt = events.map((e) => e.type).lastIndexOf('guardUp');
+      const end = events[endAt];
+      return {
+        dRings,
+        ups,
+        lastUpAt,
+        endAt,
+        endGain: end?.type === 'chainEnd' ? end.defenseGain : -1,
+      };
+    };
+    const r = run();
+
+    it('防御値が入るのは、連鎖が終わる前', () => {
+      expect(r.lastUpAt).toBeGreaterThanOrEqual(0);
+      expect(r.lastUpAt).toBeLessThan(r.endAt);
+    });
+
+    it('輪で戻れば、戻るたびに足す', () => {
+      expect(r.dRings).toBeGreaterThan(1);
+      expect(r.ups).toHaveLength(r.dRings);
+    });
+
+    it('連鎖の終わりに出る防御値は、足した分の合計', () => {
+      expect(r.endGain).toBe(r.ups.reduce((a, b) => a + b, 0));
+    });
   });
 });

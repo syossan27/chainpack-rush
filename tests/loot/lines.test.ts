@@ -19,9 +19,7 @@ describe('系統（装備ごとに出るレアリティの幅）', () => {
   it('次の装備は、つながっている（上限の次のレアリティを持つ）', () => {
     const rank = (r: string) => RARITIES.indexOf(r as never);
     // The next of a line topping at legendary is only used when stepping back down
-    const linked = ITEM_DEFS.filter(
-      (d) => d.next && rank(d.rarities![1]) < RARITIES.length - 1,
-    );
+    const linked = ITEM_DEFS.filter((d) => d.next && rank(d.rarities![1]) < RARITIES.length - 1);
     const broken = linked
       .filter((d) => !allowsRarity(getItemDef(d.next!).id, RARITIES[rank(d.rarities![1]) + 1]!))
       .map((d) => `${d.id} → ${d.next}`);

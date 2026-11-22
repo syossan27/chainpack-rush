@@ -6,7 +6,12 @@ import {
   equipCharm,
   sellCharm,
 } from '../../src/core/charmSave';
-import { createInitialSave, deserializeSave, serializeSave, type SaveData } from '../../src/core/save';
+import {
+  createInitialSave,
+  deserializeSave,
+  serializeSave,
+  type SaveData,
+} from '../../src/core/save';
 import { switchBoard } from '../../src/core/boardSave';
 import { runConfig } from '../../src/core/runConfig';
 import { boardSize } from '../../src/core/boards';

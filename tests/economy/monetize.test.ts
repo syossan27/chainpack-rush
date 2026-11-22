@@ -16,9 +16,7 @@ describe('報酬つき広告の回数', () => {
   };
 
   it('1日の回数まで見られる', () => {
-    expect(adRemaining(createInitialSave(), 'extraLoot', day1)).toBe(
-      MONETIZE.dailyCaps.extraLoot,
-    );
+    expect(adRemaining(createInitialSave(), 'extraLoot', day1)).toBe(MONETIZE.dailyCaps.extraLoot);
     expect(adRemaining(usedUp(), 'extraLoot', day1)).toBe(0);
   });
 

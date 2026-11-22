@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { FRESH_SAVE_KEY, SAVE_KEY, olderKeysFor, pickSaveRaw, saveKeyFor } from '../../src/core/save';
+import {
+  FRESH_SAVE_KEY,
+  SAVE_KEY,
+  olderKeysFor,
+  pickSaveRaw,
+  saveKeyFor,
+} from '../../src/core/save';
 
 describe('セーブの置き場所（版3は新しいキー）', () => {
   it('書き込むのは版3のキー（ふつうのセーブと、0から遊ぶセーブ）', () => {
