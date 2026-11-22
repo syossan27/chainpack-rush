@@ -52,15 +52,20 @@ describe('ランの種類ごとに何が有効か', () => {
       charms: 'equip',
     }));
 
-  it('ランの種類: 挑戦 > 体験 > ∞ > 普通', () => {
-    expect(runKindOf({ regionId: 'cave', challenge: true, demo: false })).toBe('challenge');
-    expect(runKindOf({ regionId: 'grassland', challenge: false, demo: true })).toBe('demo');
-    expect(runKindOf({ regionId: 'endless', challenge: false, demo: false })).toBe('endless');
-    expect(runKindOf({ regionId: 'cave', challenge: false, demo: false })).toBe('normal');
+  it.each([
+    ['挑戦は地域を問わず挑戦', { regionId: 'cave', challenge: true, demo: false }, 'challenge'],
+    ['体験は体験', { regionId: 'grassland', challenge: false, demo: true }, 'demo'],
+    ['∞ の地域は ∞', { regionId: 'endless', challenge: false, demo: false }, 'endless'],
+    ['それ以外は普通', { regionId: 'cave', challenge: false, demo: false }, 'normal'],
+  ] as const)('ランの種類（挑戦 > 体験 > ∞ > 普通）: %s', (_, run, kind) => {
+    expect(runKindOf(run)).toBe(kind);
   });
 
-  it('倒しても続くルール', () => {
+  it('倒しても続くランでは、そのルールを渡す', () => {
     expect(featureRules(runFeatures('normal'))).toEqual({ keepCountOnKill: true });
+  });
+
+  it('倒しても続かないランでは、ルールを渡さない', () => {
     expect(featureRules({ ...runFeatures('normal'), keepCount: false })).toBeUndefined();
   });
 });

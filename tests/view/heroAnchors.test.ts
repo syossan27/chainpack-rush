@@ -3,6 +3,11 @@ import { anchorAt, anchorToWorld, heroFrameOf, type AnchorTable } from '../../sr
 import { HERO_ANCHORS } from '../../src/data/heroAnchors';
 import { UNIT_SPRITES } from '../../src/data/sprites';
 
+/** The hero's animations with their frame data */
+const HERO_ANIMS = Object.entries(UNIT_SPRITES.hero!.anims!).map(
+  ([name, anim]) => [name, anim!] as const,
+);
+
 const table: AnchorTable = {
   knight: {
     special: {
@@ -17,13 +22,15 @@ describe('勇者の位置の表', () => {
     expect(anchorAt(table, 'knight', 'special', 2, 'tip')).toEqual([100, 60]);
   });
 
-  it('表で隠すコマ・範囲外のコマ・知らない衣装やアニメや種類は null', () => {
-    expect(anchorAt(table, 'knight', 'special', 1, 'tip')).toBeNull();
-    expect(anchorAt(table, 'knight', 'special', 3, 'tip')).toBeNull();
-    expect(anchorAt(table, 'knight', 'special', -1, 'tip')).toBeNull();
-    expect(anchorAt(table, 'dragon', 'special', 0, 'tip')).toBeNull();
-    expect(anchorAt(table, 'knight', 'idle', 0, 'tip')).toBeNull();
-    expect(anchorAt(table, 'knight', 'special', 0, 'head')).toBeNull();
+  it.each([
+    ['表で隠すコマ', 'knight', 'special', 1, 'tip'],
+    ['範囲外のコマ（後ろ）', 'knight', 'special', 3, 'tip'],
+    ['範囲外のコマ（負）', 'knight', 'special', -1, 'tip'],
+    ['知らない衣装', 'dragon', 'special', 0, 'tip'],
+    ['知らないアニメ', 'knight', 'idle', 0, 'tip'],
+    ['知らない種類', 'knight', 'special', 0, 'head'],
+  ] as const)('%sは null', (_, costume, anim, frame, kind) => {
+    expect(anchorAt(table, costume, anim, frame, kind)).toBeNull();
   });
 
   it('コマの中の位置を画面の位置にする（原点・倍率に合わせる）', () => {
@@ -55,7 +62,7 @@ describe('騎士の必殺の共通の動き', () => {
 
   it('共通の動きの剣先が全コマにある', () => {
     const tips = HERO_ANCHORS.knight!.special!.tip!;
-    expect(tips).toHaveLength(9);
+    expect(tips).toHaveLength(UNIT_SPRITES.hero!.anims!.special!.frames);
     expect(tips.every((p) => p !== null)).toBe(true);
   });
 
@@ -66,27 +73,32 @@ describe('騎士の必殺の共通の動き', () => {
 });
 
 describe('騎士の頭と背中の位置（小物の付け根）', () => {
-  it('勇者の全アニメの全コマに頭と背中がある（背中を隠すコマは null）。点はコマの中', () => {
-    const hero = UNIT_SPRITES.hero!;
-    for (const [name, anim] of Object.entries(hero.anims!)) {
+  it('勇者のどのアニメにも、頭と背中の位置の表がある', () => {
+    const missing = HERO_ANIMS.filter(([name]) => !HERO_ANCHORS.knight![name]);
+    expect(missing.map(([name]) => name)).toEqual([]);
+  });
+
+  it.each(HERO_ANIMS)(
+    '%s: 頭と背中の位置がコマ数ぶんある（背中を隠すコマは null）',
+    (name, anim) => {
       const a = HERO_ANCHORS.knight![name]!;
-      expect(a, name).toBeDefined();
-      expect(a.head, name).toHaveLength(anim!.frames);
-      expect(a.back, name).toHaveLength(anim!.frames);
-      expect(
-        a.head!.every((p) => p !== null),
-        name,
-      ).toBe(true);
-      const w = anim!.frameWidth ?? hero.frameWidth;
-      const h = anim!.frameHeight ?? hero.frameHeight;
-      for (const p of [...a.head!, ...a.back!]) {
-        if (!p) continue;
-        expect(p[0], name).toBeGreaterThanOrEqual(0);
-        expect(p[0], name).toBeLessThan(w);
-        expect(p[1], name).toBeGreaterThanOrEqual(0);
-        expect(p[1], name).toBeLessThan(h);
-      }
-    }
+      expect(a.head).toHaveLength(anim.frames);
+      expect(a.back).toHaveLength(anim.frames);
+    },
+  );
+
+  it.each(HERO_ANIMS)('%s: 頭はどのコマでも見える', (name) => {
+    expect(HERO_ANCHORS.knight![name]!.head!.every((p) => p !== null)).toBe(true);
+  });
+
+  it.each(HERO_ANIMS)('%s: 頭と背中の点はコマの中', (name, anim) => {
+    const a = HERO_ANCHORS.knight![name]!;
+    const w = anim.frameWidth ?? UNIT_SPRITES.hero!.frameWidth;
+    const h = anim.frameHeight ?? UNIT_SPRITES.hero!.frameHeight;
+    const outside = [...a.head!, ...a.back!].filter(
+      (p) => p && (p[0] < 0 || p[0] >= w || p[1] < 0 || p[1] >= h),
+    );
+    expect(outside).toEqual([]);
   });
 
   it('待機の1コマ目は頭も背中も見える（地域選択の小窓・拠点の静止画）', () => {
@@ -94,13 +106,15 @@ describe('騎士の頭と背中の位置（小物の付け根）', () => {
     expect(anchorAt(HERO_ANCHORS, 'knight', 'idle', 0, 'back')).not.toBeNull();
   });
 
-  it('勇者の絵の今のコマ: アニメのコマ・静止画は待機の1コマ目・それ以外は null', () => {
-    expect(heroFrameOf('hero', 'hero_run', 3)).toEqual({ anim: 'run', frame: 3 });
-    expect(heroFrameOf('hero', 'hero_run', '3')).toEqual({ anim: 'run', frame: 3 });
-    expect(heroFrameOf('hero', 'hero', '__BASE')).toEqual({ anim: 'idle', frame: 0 });
-    expect(heroFrameOf('hero', 'hero_look_hero_gold', '__BASE')).toBeNull();
-    expect(heroFrameOf('hero', 'slime_idle', 0)).toBeNull();
-    expect(heroFrameOf('hero', 'hero_run', -1)).toBeNull();
-    expect(heroFrameOf('hero', 'hero_run', 1.5)).toBeNull();
+  it.each([
+    ['アニメのコマ', 'hero_run', 3, { anim: 'run', frame: 3 }],
+    ['アニメのコマ（文字の番号）', 'hero_run', '3', { anim: 'run', frame: 3 }],
+    ['静止画は待機の1コマ目', 'hero', '__BASE', { anim: 'idle', frame: 0 }],
+    ['見た目を塗り替えた静止画', 'hero_look_hero_gold', '__BASE', null],
+    ['ほかのユニットの絵', 'slime_idle', 0, null],
+    ['負のコマ', 'hero_run', -1, null],
+    ['整数でないコマ', 'hero_run', 1.5, null],
+  ])('勇者の絵の今のコマ: %s', (_, texture, frame, expected) => {
+    expect(heroFrameOf('hero', texture, frame)).toEqual(expected);
   });
 });

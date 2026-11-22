@@ -10,22 +10,22 @@ import { synthPlan } from '../../src/core/economy';
 describe('系統（装備ごとに出るレアリティの幅）', () => {
   it('戦利品は、その装備が出るレアリティでしか出ない', () => {
     const rng = new Rng(7);
-    for (let i = 0; i < 4000; i++) {
-      const it = rollLoot(rng, 1 + (i % 10), `u${i}`, i % 3 === 0, DEFAULT_LOOT);
-      expect(allowsRarity(it.defId, it.rarity)).toBe(true);
-    }
+    const drops = Array.from({ length: 4000 }, (_, i) =>
+      rollLoot(rng, 1 + (i % 10), `u${i}`, i % 3 === 0, DEFAULT_LOOT),
+    );
+    expect(drops.filter((it) => !allowsRarity(it.defId, it.rarity))).toEqual([]);
   });
 
   it('次の装備は、つながっている（上限の次のレアリティを持つ）', () => {
     const rank = (r: string) => RARITIES.indexOf(r as never);
-    for (const d of ITEM_DEFS) {
-      if (!d.next) continue;
-      const n = getItemDef(d.next);
-      const hi = rank(d.rarities![1]);
-      // 上限がレジェンダリーの装備の next は、下のレアリティから戻るときだけに使う
-      if (hi >= RARITIES.length - 1) continue;
-      expect(allowsRarity(n.id, RARITIES[hi + 1]!), `${d.id} → ${n.id}`).toBe(true);
-    }
+    // The next of a line topping at legendary is only used when stepping back down
+    const linked = ITEM_DEFS.filter(
+      (d) => d.next && rank(d.rarities![1]) < RARITIES.length - 1,
+    );
+    const broken = linked
+      .filter((d) => !allowsRarity(getItemDef(d.next!).id, RARITIES[rank(d.rarities![1]) + 1]!))
+      .map((d) => `${d.id} → ${d.next}`);
+    expect(broken).toEqual([]);
   });
 
   it('すべてのレアリティで、どの種類の装備も出せる', () => {
@@ -45,10 +45,16 @@ describe('系統（装備ごとに出るレアリティの幅）', () => {
     }
   });
 
-  it('合成で幅を超えると、系統の次の装備になる（革鎧のレア → 鎖帷子のエピック）', () => {
+  it('幅より上のレアリティでは、系統の上の装備になる（革鎧 → 鎖帷子 → 鋼の鎧）', () => {
     expect(lineItemFor('leather_armor', 'epic')).toBe('chainmail');
     expect(lineItemFor('leather_armor', 'legendary')).toBe('steel_armor');
+  });
+
+  it('幅より下のレアリティでは、系統の前の装備になる（聖剣のコモン → 剣）', () => {
     expect(lineItemFor('holy_sword', 'common')).toBe('sword');
+  });
+
+  it('合成で幅を超えると、系統の次の装備になる（革鎧のレア → 鎖帷子のエピック）', () => {
     const s = createInitialSave();
     s.gold = 99999;
     for (let i = 0; i < 3; i++)

@@ -112,7 +112,7 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(s.inventory.find((i) => i.uid === 'i2')?.defId).toBe('origin_lead');
   });
 
-  it('バックパック拡張の返金: Lv0 → 0、Lv1 → 300、Lv3 → 2100。拡張の項目は消える', () => {
+  it('バックパック拡張の返金: Lv0 → 0、Lv1 → 300、Lv3 → 2100', () => {
     expect(BACKPACK_REFUND).toEqual([0, 300, 900, 2100]);
     const at = (backpack: number) =>
       deserializeSave(
@@ -131,7 +131,23 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(at(0).gold).toBe(100);
     expect(at(1).gold).toBe(400);
     expect(at(3).gold).toBe(2200);
-    expect('backpack' in at(3).upgrades).toBe(false);
+  });
+
+  it('バックパック拡張の項目は消える', () => {
+    const s = deserializeSave(
+      v1({
+        upgrades: {
+          maxHp: 0,
+          atb: 0,
+          attack: 0,
+          runTime: 0,
+          backpack: 3,
+          consumableSlots: 0,
+          storage: 0,
+        },
+      }),
+    );
+    expect('backpack' in s.upgrades).toBe(false);
   });
 
   it('試作の盤面を使っていた人は、その盤面と配置とアクセサリーが残る', () => {
@@ -229,13 +245,16 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(s.progress).toEqual({ unlocked: ['grassland', 'cave'], best: { grassland: 4 } });
     expect(s.endless).toEqual({ bestLoop: 3, bestDamage: 900 });
     expect(s.titles).toEqual(['t1']);
-    // Version 4 split the HP, interval and attack steps in two
-    expect(s.upgrades).toMatchObject({ maxHp: 4, atb: 2, attack: 6, storage: 1 });
     expect(s.settings.volume).toBe(0.5);
     expect(s.settings.debug).toBe(true);
     expect(Object.keys(s.settings).some((k) => k.startsWith('trial'))).toBe(false);
     expect('presets' in s).toBe(false);
     expect('activePreset' in s).toBe(false);
+  });
+
+  it('永続強化: 最大HP・攻撃間隔・攻撃倍率の段は2倍（版4で1段を半分に分けた）、ほかの強化はそのまま', () => {
+    const s = deserializeSave(v1());
+    expect(s.upgrades).toMatchObject({ maxHp: 4, atb: 2, attack: 6, storage: 1 });
   });
 
   it('挑戦用の配置は捨て、案内の merge と loadout は外す', () => {

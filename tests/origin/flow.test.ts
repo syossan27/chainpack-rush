@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN_RULES, NO_LUCK } from '../../src/config/balance';
+import { CHAIN, CHAIN_RULES, NO_LUCK, STACK } from '../../src/config/balance';
 import { firedPieces, planChain } from '../../src/core/chain';
 import { charmContext, type CharmSlots } from '../../src/core/charms';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../../src/core/combat';
@@ -52,15 +52,26 @@ describe('一番槍の起点石', () => {
       { a: 2 },
     );
 
-  it('最初に鳴る3マス（防具のマスも数え、起点は数えない）の攻撃だけ強い。重ねの全段に効く', () => {
+  it('最初に鳴るマスの攻撃が強い（防具のマスも数え、起点は数えない）', () => {
+    const { loadout, items } = line('origin_lead');
+    const plan = planChain(loadout, items, 'o');
+    // a, d (the shield, counted) and b are the first cells
+    expect(stepOf(plan, 'b').line?.damage).toBeCloseTo(up);
+  });
+
+  it('一番槍の数を過ぎたマスの攻撃は強くならない', () => {
+    const { loadout, items } = line('origin_lead');
+    const plan = planChain(loadout, items, 'o');
+    // The fourth cell is past the first ones
+    expect(stepOf(plan, 'c').line).toBeUndefined();
+  });
+
+  it('重ねたマスでは、重ねの全段に効く', () => {
     const { loadout, items } = line('origin_lead');
     const plan = planChain(loadout, items, 'o');
     const aRings = plan.steps.filter((s) => s.cell === 1);
     expect(aRings).toHaveLength(3);
-    for (const s of aRings) expect(s.line?.damage).toBeCloseTo(up);
-    expect(stepOf(plan, 'b').line?.damage).toBeCloseTo(up);
-    // The fourth cell is past the first three
-    expect(stepOf(plan, 'c').line).toBeUndefined();
+    expect(aRings.map((s) => s.line?.damage)).toEqual(aRings.map(() => up));
   });
 });
 
@@ -89,10 +100,15 @@ describe('彼方の起点石', () => {
     const { loadout, items } = fork('origin_far');
     const plan = planChain(loadout, items, 'o');
     expect(stepOf(plan, 'b').line?.damage).toBeCloseTo(1 + X * 2);
-    for (const s of plan.steps.filter((x) => x.cell === 3))
-      expect(s.line?.damage).toBeCloseTo(1 + X * 1);
+    const cRings = plan.steps.filter((x) => x.cell === 3);
+    expect(cRings.length).toBeGreaterThan(0);
+    for (const s of cRings) expect(s.line?.damage).toBeCloseTo(1 + X * 1);
     expect(stepOf(plan, 'e').line?.damage).toBeCloseTo(1 + X * 2);
-    // The estimate (and so the bot's layout score) reads it
+  });
+
+  it('見積もり（とボットの配置の点数）にも入る', () => {
+    const { loadout, items } = fork('origin_far');
+    const plan = planChain(loadout, items, 'o');
     const plain = fork('origin_stone');
     expect(estimateRoute(plan, items, 1).total).toBeGreaterThan(
       estimateRoute(planChain(plain.loadout, plain.items, 'o'), plain.items, 1).total,
@@ -145,45 +161,55 @@ describe('残響の起点石', () => {
       { b: 1 },
     );
 
-  it('最後に鳴った攻撃のマスが、重ね全体で同じ段・同じ倍率でもう一度鳴る。最大連鎖は増えない', () => {
+  const echoPlans = () => {
     const e = row('origin_echo');
     const p = row('origin_stone');
     const plan = planChain(e.loadout, e.items, 'o');
     const plain = planChain(p.loadout, p.items, 'o');
-    const echo = plan.steps.filter((s) => s.echo);
-    expect(echo.map((s) => s.uid)).toEqual(['b0', 'b']);
-    for (const s of echo) {
-      const orig = plan.steps[s.parentIndex]!;
-      expect(orig.uid).toBe(s.uid);
-      expect([s.step, s.mult, s.ring, s.stackMult, s.cell]).toEqual([
-        orig.step,
-        orig.mult,
-        orig.ring,
-        orig.stackMult,
-        orig.cell,
-      ]);
-      expect(s.tech).toBeUndefined();
-    }
+    return { plan, plain, echo: plan.steps.filter((s) => s.echo) };
+  };
+
+  it('最後に鳴った攻撃のマスが、重ね全体でもう一度鳴る', () => {
+    expect(echoPlans().echo.map((s) => s.uid)).toEqual(['b0', 'b']);
+  });
+
+  it('もう一度鳴る分は、元と同じ段・同じ倍率・同じマスで、必殺技は出ない', () => {
+    const { plan, echo } = echoPlans();
+    const pick = (s: (typeof echo)[number]) => [s.uid, s.step, s.mult, s.ring, s.stackMult, s.cell];
+    expect(echo.map(pick)).toEqual(echo.map((s) => pick(plan.steps[s.parentIndex]!)));
+    expect(echo.map((s) => s.tech)).toEqual(echo.map(() => undefined));
+  });
+
+  it('もう一度鳴っても、最大連鎖とふつうに鳴る数は増えない', () => {
+    const { plan, plain } = echoPlans();
     expect(plan.maxStep).toBe(plain.maxStep);
     expect(plan.steps.filter((s) => !s.echo)).toHaveLength(plain.steps.length);
-    // One relay (0.2 s) after the last ring, then 0.1 s apart inside the stack
+  });
+
+  it('最後に鳴ってから装備の伝わる時間のあとに鳴り、重ねの中は重ねの間隔で鳴る。そのぶん連鎖は長くなる', () => {
+    const { plan, plain, echo } = echoPlans();
+    const relay = getItemDef('sword').relayDelay ?? CHAIN.relayDelay;
     const lastT = Math.max(...plain.steps.map((s) => s.t));
-    expect(echo[0]!.t).toBeCloseTo(lastT + 0.2);
-    expect(echo[1]!.t).toBeCloseTo(lastT + 0.3);
+    expect(echo[0]!.t).toBeCloseTo(lastT + relay);
+    expect(echo[1]!.t - echo[0]!.t).toBeCloseTo(STACK.ringRelay);
     expect(plan.duration).toBeGreaterThan(plain.duration);
   });
 
-  it('最後に鳴るのが防具のマスなら、その前の攻撃のマスが鳴る。攻撃のマスがなければ何もしない', () => {
+  const echoOf = (b: ReturnType<typeof stacked>) =>
+    planChain(b.loadout, b.items, 'o')
+      .steps.filter((s) => s.echo)
+      .map((s) => s.uid);
+
+  it('最後に鳴るのが防具のマスなら、その前の攻撃のマスが鳴る', () => {
     const shieldLast = stacked(3, 1, [
       { uid: 'o', defId: 'origin_echo', x: 0, y: 0, exits: ['right'] },
       { uid: 'a', defId: 'sword', x: 1, y: 0, exits: ['right'] },
       { uid: 'd', defId: 'wood_shield', x: 2, y: 0, exits: [] },
     ]);
-    const echoOf = (b: ReturnType<typeof stacked>) =>
-      planChain(b.loadout, b.items, 'o')
-        .steps.filter((s) => s.echo)
-        .map((s) => s.uid);
     expect(echoOf(shieldLast)).toEqual(['a']);
+  });
+
+  it('攻撃のマスがなければ何もしない', () => {
     const shields = stacked(3, 1, [
       { uid: 'o', defId: 'origin_echo', x: 0, y: 0, exits: ['right'] },
       { uid: 'd1', defId: 'wood_shield', x: 1, y: 0, exits: ['right'] },
@@ -222,22 +248,37 @@ describe('残響の起点石', () => {
     mastery: { levels: {}, learned: ['triple'] },
   };
 
-  it('もう一度鳴る分は、段数・必殺技・アクセサリーのマスの数え・熟練に入らず、待ちも増えない', () => {
+  describe('もう一度鳴る分は、数えに入らない', () => {
     const echo = dummyChain(techRow('origin_echo', counted));
     const plain = dummyChain(techRow('origin_stone', counted));
     const count = (evs: CombatEvent[], type: CombatEvent['type']) =>
       evs.filter((e) => e.type === type).length;
     const hitsOf = (evs: CombatEvent[], uid: string) =>
       evs.filter((e) => e.type === 'hit' && e.itemUid === uid).length;
-    expect(hitsOf(echo.evs, 's3')).toBe(hitsOf(plain.evs, 's3') * 2);
-    expect(hitsOf(echo.evs, 's2')).toBe(hitsOf(plain.evs, 's2'));
-    expect(count(plain.evs, 'technique')).toBe(1);
-    expect(count(echo.evs, 'technique')).toBe(1);
-    expect(count(plain.evs, 'charm')).toBeGreaterThan(0);
-    expect(count(echo.evs, 'charm')).toBe(count(plain.evs, 'charm'));
-    expect(echo.c.stats.maxStep).toBe(plain.c.stats.maxStep);
-    expect(echo.c.stats.rings).toEqual(plain.c.stats.rings);
-    expect(echo.c.atb).toBeCloseTo(plain.c.atb);
+
+    it('最後のマスだけがもう一度当たる', () => {
+      expect(hitsOf(echo.evs, 's3')).toBe(hitsOf(plain.evs, 's3') * 2);
+      expect(hitsOf(echo.evs, 's2')).toBe(hitsOf(plain.evs, 's2'));
+    });
+
+    it('必殺技は1回だけ', () => {
+      expect(count(plain.evs, 'technique')).toBe(1);
+      expect(count(echo.evs, 'technique')).toBe(1);
+    });
+
+    it('アクセサリーのマスの数えに入らない', () => {
+      expect(count(plain.evs, 'charm')).toBeGreaterThan(0);
+      expect(count(echo.evs, 'charm')).toBe(count(plain.evs, 'charm'));
+    });
+
+    it('段数と熟練に入らない', () => {
+      expect(echo.c.stats.maxStep).toBe(plain.c.stats.maxStep);
+      expect(echo.c.stats.rings).toEqual(plain.c.stats.rings);
+    });
+
+    it('次の発火までの待ちも増えない', () => {
+      expect(echo.c.atb).toBeCloseTo(plain.c.atb);
+    });
   });
 
   it('見積もりのアクセサリーの数えにも、もう一度鳴る分は入らない', () => {
@@ -291,11 +332,12 @@ describe('盾の起点石', () => {
     };
   };
 
-  it('守りが盾の石の分だけ長く残り、その次のマスで無防備になる（重ねる盤面、マスで数える）', () => {
-    for (const [origin, guard] of [
-      ['origin_shield', CHAIN_RULES.guardSteps + extra],
-      ['origin_stone', CHAIN_RULES.guardSteps],
-    ] as const) {
+  it.each([
+    ['origin_shield', CHAIN_RULES.guardSteps + extra],
+    ['origin_stone', CHAIN_RULES.guardSteps],
+  ] as const)(
+    '%s: 守りが石の分だけ残り、そのマス数が鳴ると無防備になる（重ねる盤面、マスで数える）',
+    (origin, guard) => {
       const cfg = longRow(origin);
       const isOrigin = (u: string) => getItemDef(cfg.items.get(u)!.defId).kind === 'origin';
       const c = new Combat(cfg);
@@ -305,10 +347,10 @@ describe('盾の起点石', () => {
         seen.push([firedPieces(c.chain.plan.steps.slice(0, c.chain.next), isOrigin), c.unguarded]);
         c.step();
       }
-      for (const [cells, ug] of seen) expect(ug, `${origin} ${cells}`).toBe(cells >= guard);
       expect(seen.some(([, ug]) => ug)).toBe(true);
-    }
-  });
+      expect(seen.map(([, ug]) => ug)).toEqual(seen.map(([cells]) => cells >= guard));
+    },
+  );
 
   it('盾の石で遊んだランは、記録を再生しても同じ結果', () => {
     const run = longRow('origin_shield', true);

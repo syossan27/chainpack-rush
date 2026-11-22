@@ -1,28 +1,52 @@
 import { describe, expect, it } from 'vitest';
-import { planChain, simulateChain } from '../../src/core/chain';
+import { CHAIN, RARITY } from '../../src/config/balance';
+import { chainMultiplier, planChain, simulateChain } from '../../src/core/chain';
+import type { Rarity } from '../../src/core/types';
+import { getItemDef } from '../../src/data/items';
 import { build, specExample } from '../helpers';
 
 describe('planChain', () => {
-  it('第5章の例: 時刻・段数・倍率・持続時間1.2秒・防御値+8', () => {
-    const { loadout, items } = specExample();
-    const plan = planChain(loadout, items, 'o1');
-    const rows = plan.steps.map((s) => ({
-      t: s.t,
-      uid: s.uid,
-      step: s.step,
-      mult: Number(s.mult.toFixed(2)),
-    }));
-    expect(rows).toEqual([
-      { t: 0, uid: 'o1', step: null, mult: 1 },
-      { t: 0.2, uid: 'sword', step: 1, mult: 1 },
-      { t: 0.4, uid: 'canteen', step: 2, mult: 1.2 },
-      { t: 0.6, uid: 'thunder', step: 3, mult: 1.44 },
-      { t: 0.8, uid: 'shield', step: null, mult: 1 },
-      { t: 1.0, uid: 'axe', step: 4, mult: 1.73 },
-    ]);
-    expect(plan.duration).toBeCloseTo(1.2, 10);
-    expect(plan.defenseGain).toBe(8);
-    expect(plan.maxStep).toBe(4);
+  describe('第5章の例', () => {
+    const plan = () => {
+      const { loadout, items } = specExample();
+      return planChain(loadout, items, 'o1');
+    };
+
+    it('起点から1マスずつ伝わり、攻撃の装備だけが段数を数える（盾は数えない）', () => {
+      const p = plan();
+      expect(p.steps.map((s) => [s.uid, s.step])).toEqual([
+        ['o1', null],
+        ['sword', 1],
+        ['canteen', 2],
+        ['thunder', 3],
+        ['shield', null],
+        ['axe', 4],
+      ]);
+      expect(p.maxStep).toBe(4);
+    });
+
+    it('次のマスへは CHAIN.relayDelay ずつ遅れて伝わる', () => {
+      const ts = plan().steps.map((s) => s.t);
+      expect(ts[0]).toBe(0);
+      const gaps = ts.slice(1).map((t, i) => t - ts[i]!);
+      expect(gaps.every((g) => Math.abs(g - CHAIN.relayDelay) < 1e-9)).toBe(true);
+    });
+
+    it('各段の倍率はその段数の連鎖倍率で、段を数えない装備は ×1', () => {
+      const steps = plan().steps;
+      expect(steps.map((s) => s.mult)).toEqual(
+        steps.map((s) => (s.step === null ? 1 : chainMultiplier(s.step))),
+      );
+    });
+
+    it('連鎖の長さは最後の発動から CHAIN.tailDelay 後まで', () => {
+      const p = plan();
+      expect(p.duration).toBeCloseTo(p.steps.at(-1)!.t + CHAIN.tailDelay, 10);
+    });
+
+    it('通った盾の防御値が入る', () => {
+      expect(plan().defenseGain).toBe(getItemDef('wood_shield').defense);
+    });
   });
 
   it('入り口の制約はなく、どの辺からでも受け取る', () => {
@@ -36,24 +60,37 @@ describe('planChain', () => {
     expect(plan.steps.map((s) => s.uid)).toEqual(['o', 's', 'a']);
   });
 
-  it('分岐した枝は分かれた時点の段数から数え続け、並行して進む', () => {
+  describe('分岐', () => {
     // o → s1(右,下) → s2 / s3
-    const { loadout, items } = build(3, 2, [
-      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
-      { uid: 's1', defId: 'sword', x: 1, y: 0, exits: ['right', 'down'] },
-      { uid: 's2', defId: 'sword', x: 2, y: 0, exits: [] },
-      { uid: 's3', defId: 'sword', x: 1, y: 1, exits: [] },
-    ]);
-    const plan = planChain(loadout, items, 'o');
-    const byUid = new Map(plan.steps.map((s) => [s.uid, s]));
-    expect(byUid.get('s2')!.step).toBe(2);
-    expect(byUid.get('s3')!.step).toBe(2);
-    expect(byUid.get('s2')!.t).toBeCloseTo(0.4);
-    expect(byUid.get('s3')!.t).toBeCloseTo(0.4);
-    expect(byUid.get('s2')!.branch).not.toBe(byUid.get('s3')!.branch);
-    // 同時なら上→右→下→左の順に処理される
-    expect(plan.steps.map((s) => s.uid)).toEqual(['o', 's1', 's2', 's3']);
-    expect(plan.duration).toBeCloseTo(0.6);
+    const forked = () => {
+      const { loadout, items } = build(3, 2, [
+        { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+        { uid: 's1', defId: 'sword', x: 1, y: 0, exits: ['right', 'down'] },
+        { uid: 's2', defId: 'sword', x: 2, y: 0, exits: [] },
+        { uid: 's3', defId: 'sword', x: 1, y: 1, exits: [] },
+      ]);
+      const plan = planChain(loadout, items, 'o');
+      const byUid = new Map(plan.steps.map((s) => [s.uid, s]));
+      return { plan, s2: byUid.get('s2')!, s3: byUid.get('s3')! };
+    };
+
+    it('分岐した枝は分かれた時点の段数から数え続ける', () => {
+      const { s2, s3 } = forked();
+      expect(s2.step).toBe(2);
+      expect(s3.step).toBe(2);
+    });
+
+    it('分岐した枝は別の枝として並行して進み、同時に届く', () => {
+      const { plan, s2, s3 } = forked();
+      expect(s2.branch).not.toBe(s3.branch);
+      expect(s2.t).toBeCloseTo(s3.t);
+      expect(plan.duration).toBeCloseTo(s2.t + CHAIN.tailDelay);
+    });
+
+    it('同時に届いたら上→右→下→左の順に処理される', () => {
+      const { plan } = forked();
+      expect(plan.steps.map((s) => s.uid)).toEqual(['o', 's1', 's2', 's3']);
+    });
   });
 
   it('各アイテムは1回だけ発動し、ループしない', () => {
@@ -69,7 +106,7 @@ describe('planChain', () => {
   });
 
   it('先に届いた枝が優先される', () => {
-    // o(右,下) → 右: 大剣(0.4秒伝達) → x ; 下: 剣 → 剣 → x と同時刻なら上右下左の順で、早い方が勝つ
+    // o(右,下) → 右: 大剣(伝達が遅い) → x ; 下: 剣 → 剣 → 剣 → x。大剣の枝のほうが先に届く
     const { loadout, items } = build(3, 2, [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right', 'down'] },
       { uid: 'gs', defId: 'greatsword', x: 1, y: 0, exits: ['right'] },
@@ -79,31 +116,55 @@ describe('planChain', () => {
       { uid: 's3', defId: 'sword', x: 2, y: 1, exits: ['up'] },
     ]);
     const plan = planChain(loadout, items, 'o');
-    const x = plan.steps.find((s) => s.uid === 'x')!;
-    // 大剣経由: 0.2 + 0.4 = 0.6、剣経由: 0.2 + 0.2 + 0.2 + 0.2 = 0.8 → 大剣の枝が先
-    expect(x.t).toBeCloseTo(0.6);
+    const at = (uid: string) => plan.steps.find((s) => s.uid === uid)!;
+    const viaGreatsword = at('gs').t + getItemDef('greatsword').relayDelay!;
+    const viaSwords = at('s3').t + CHAIN.relayDelay;
+    expect(viaGreatsword).toBeLessThan(viaSwords);
+    const x = at('x');
+    expect(x.t).toBeCloseTo(viaGreatsword);
     expect(x.from).toBe('gs');
     expect(x.step).toBe(2);
   });
 
-  it('レアリティ倍率は防御値にも掛かる', () => {
-    const { loadout, items } = build(3, 1, [
-      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
-      { uid: 'm', defId: 'chainmail', x: 1, y: 0, exits: ['right'], rarity: 'epic' },
-      { uid: 'i', defId: 'iron_shield', x: 2, y: 0, exits: [] },
-    ]);
-    const plan = planChain(loadout, items, 'o');
-    expect(plan.defenseGain).toBe(12 * 2.5 + 18);
-    expect(plan.maxStep).toBe(0);
+  describe('防具', () => {
+    const armored = (rarity: Rarity) =>
+      build(3, 1, [
+        { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+        { uid: 'm', defId: 'chainmail', x: 1, y: 0, exits: ['right'], rarity },
+        { uid: 'i', defId: 'iron_shield', x: 2, y: 0, exits: [] },
+      ]);
+    const gain = (rarity: Rarity) => {
+      const { loadout, items } = armored(rarity);
+      return planChain(loadout, items, 'o').defenseGain;
+    };
+
+    it('通った防具の防御値は足し合わされる', () => {
+      expect(gain('common')).toBe(
+        getItemDef('chainmail').defense! + getItemDef('iron_shield').defense!,
+      );
+    });
+
+    it('レアリティ倍率は防御値にも掛かる', () => {
+      // Only the chainmail's rarity changes; the common iron shield's share stays the same
+      const shield = getItemDef('iron_shield').defense!;
+      expect((gain('epic') - shield) / (gain('common') - shield)).toBeCloseTo(
+        RARITY.epic.mult / RARITY.common.mult,
+      );
+    });
+
+    it('防具は段数を数えない', () => {
+      const { loadout, items } = armored('epic');
+      expect(planChain(loadout, items, 'o').maxStep).toBe(0);
+    });
   });
 
-  it('出口のない起点は即座に終わる', () => {
+  it('出口のない起点は CHAIN.tailDelay だけで終わる', () => {
     const { loadout, items } = build(2, 1, [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: [] },
     ]);
     const plan = planChain(loadout, items, 'o');
     expect(plan.steps).toHaveLength(1);
-    expect(plan.duration).toBeCloseTo(0.2);
+    expect(plan.duration).toBeCloseTo(CHAIN.tailDelay);
   });
 });
 
@@ -160,17 +221,21 @@ describe('シンクロはない（起点が1つの本編では起きないため
       { uid: 'g', defId: 'sword', x: 3, y: 1, exits: ['up'] },
     ]);
   }
-
-  it('2本の線が同じマスで出会っても、ボーナスは付かず、段数は自分の線のまま', () => {
+  const firstPlan = () => {
     const { loadout, items } = tJoin();
-    const [p1] = simulateChain(loadout, items).plans;
-    for (const s of p1!.steps) {
-      expect((s as unknown as Record<string, unknown>).mergeBonus).toBeUndefined();
-      expect((s as unknown as Record<string, unknown>).mergeArrived).toBeUndefined();
-    }
+    return simulateChain(loadout, items).plans[0]!;
+  };
+
+  it('2本の線が同じマスで出会っても、ボーナスは付かない', () => {
+    const steps = firstPlan().steps as unknown as Record<string, unknown>[];
+    expect(steps.filter((s) => s.mergeBonus !== undefined)).toEqual([]);
+    expect(steps.filter((s) => s.mergeArrived !== undefined)).toEqual([]);
+  });
+
+  it('2本の線が同じマスで出会っても、段数は自分の線のまま', () => {
     // Route ① reaches J as its 3rd step and goes on from there (no lift to the longer route)
-    const j = p1!.steps.find((s) => s.uid === 'J')!;
-    expect(j.step).toBe(3);
-    expect(p1!.steps.find((s) => s.uid === 'e')!.step).toBe(4);
+    const p1 = firstPlan();
+    expect(p1.steps.find((s) => s.uid === 'J')!.step).toBe(3);
+    expect(p1.steps.find((s) => s.uid === 'e')!.step).toBe(4);
   });
 });

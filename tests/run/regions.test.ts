@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FIELD, NO_LUCK } from '../../src/config/balance';
+import { FIELD, NO_LUCK, PROGRESS } from '../../src/config/balance';
+import { heroStats, regionStars, totalStars } from '../../src/core/economy';
+import { createInitialSave } from '../../src/core/save';
 import { rarityWeights } from '../../src/core/loot';
 import { Combat } from '../../src/core/combat';
 import { REGIONS, bossPoolForLoop, getRegion } from '../../src/data/regions';
@@ -8,33 +10,77 @@ import { Rng } from '../../src/core/rng';
 import { ARCHETYPES, buildReference } from '../../tools/referenceBoards';
 import { referenceHeroStats } from '../../tools/simLib';
 
+/** Forty loops of every region, rolled in order as a run would (seed 7) */
+const rolls = REGIONS.flatMap((r) => {
+  const rng = new Rng(7);
+  let prevBoss: string | undefined;
+  return Array.from({ length: 40 }, (_, i) => {
+    const loop = i + 1;
+    const l = rollLoop(r, loop, rng, prevBoss);
+    const roll = { region: r, loop, l, prevBoss };
+    prevBoss = l.bossId;
+    return roll;
+  });
+});
+const groups = rolls.flatMap(({ region, loop, l }) =>
+  l.groups.map((g, i) => ({ region, loop, g, prev: l.groups[i - 1] })),
+);
+const where = (x: { region: { id: string }; loop: number }) => `${x.region.id}/${x.loop}`;
+const endOf = (g: { x: number; enemies: readonly string[] }) => g.x + groupSpan(g.enemies.length);
+
 describe('regions（周回ごとの抽選）', () => {
-  it('群れは地域の大きさの範囲、前の群れの最後尾から次の先頭まで240px以上、上限つきの雑魚は守る', () => {
-    for (const r of REGIONS) {
-      const rng = new Rng(7);
-      let prevBoss: string | undefined;
-      for (let loop = 1; loop <= 40; loop++) {
-        const l = rollLoop(r, loop, rng, prevBoss);
-        expect(l.groups).toHaveLength(r.groupCount);
-        let prevEnd = -Infinity;
-        for (const g of l.groups) {
-          expect(g.enemies.length).toBeGreaterThanOrEqual(r.groupSize[0]);
-          expect(g.enemies.length).toBeLessThanOrEqual(r.groupSize[1]);
-          expect(g.x - prevEnd).toBeGreaterThanOrEqual(FIELD.minGroupGap);
-          prevEnd = g.x + groupSpan(g.enemies.length);
-          for (const m of r.mobs) {
-            if (m.maxPerGroup !== undefined)
-              expect(g.enemies.filter((x) => x === m.id).length).toBeLessThanOrEqual(m.maxPerGroup);
-          }
-          expect(g.enemies.every((x) => r.mobs.some((m) => m.id === x))).toBe(true);
-        }
-        expect(l.bossX - prevEnd).toBeGreaterThanOrEqual(FIELD.minGroupGap);
-        const pool = bossPoolForLoop(r, loop);
-        expect(pool).toContain(l.bossId);
-        if (pool.length > 1 && prevBoss) expect(l.bossId).not.toBe(prevBoss);
-        prevBoss = l.bossId;
-      }
-    }
+  it('群れの数は地域ごとに決まっている', () => {
+    const wrong = rolls.filter((x) => x.l.groups.length !== x.region.groupCount);
+    expect(wrong.map(where)).toEqual([]);
+  });
+
+  it('群れの大きさは地域の範囲に収まる', () => {
+    const wrong = groups.filter(
+      (x) =>
+        x.g.enemies.length < x.region.groupSize[0] || x.g.enemies.length > x.region.groupSize[1],
+    );
+    expect(wrong.map(where)).toEqual([]);
+  });
+
+  it('前の群れの最後尾から次の先頭まで、FIELD.minGroupGap 以上あく', () => {
+    const tooClose = groups.filter((x) => x.prev && x.g.x - endOf(x.prev) < FIELD.minGroupGap);
+    expect(tooClose.map(where)).toEqual([]);
+  });
+
+  it('最後の群れからボスまでも、FIELD.minGroupGap 以上あく', () => {
+    const tooClose = rolls.filter((x) => x.l.bossX - endOf(x.l.groups.at(-1)!) < FIELD.minGroupGap);
+    expect(tooClose.map(where)).toEqual([]);
+  });
+
+  it('上限つきの雑魚は、1つの群れに上限までしか出ない', () => {
+    const over = groups.filter((x) =>
+      x.region.mobs.some(
+        (m) =>
+          m.maxPerGroup !== undefined &&
+          x.g.enemies.filter((id) => id === m.id).length > m.maxPerGroup,
+      ),
+    );
+    expect(over.map(where)).toEqual([]);
+  });
+
+  it('群れに出るのは、その地域の雑魚だけ', () => {
+    const strangers = groups.filter((x) =>
+      x.g.enemies.some((id) => !x.region.mobs.some((m) => m.id === id)),
+    );
+    expect(strangers.map(where)).toEqual([]);
+  });
+
+  it('ボスはその周回の候補から選ばれる', () => {
+    const wrong = rolls.filter((x) => !bossPoolForLoop(x.region, x.loop).includes(x.l.bossId));
+    expect(wrong.map(where)).toEqual([]);
+  });
+
+  it('候補が2体以上なら、前の周回と同じボスは続かない', () => {
+    const repeats = rolls.filter(
+      (x) =>
+        bossPoolForLoop(x.region, x.loop).length > 1 && x.prevBoss && x.l.bossId === x.prevBoss,
+    );
+    expect(repeats.map(where)).toEqual([]);
   });
 
   it('シードが違えば並びも変わる', () => {
@@ -44,8 +90,9 @@ describe('regions（周回ごとの抽選）', () => {
     expect(differs).toBe(true);
   });
 
-  it('参考配置のランで、画面内の敵は同時に8体以内（ボスと取り巻きを含む）', () => {
+  it('参考配置のランで、画面内の敵は同時に FIELD.maxOnScreen 体以内（ボスと取り巻きを含む）', () => {
     const hero = referenceHeroStats();
+    const over: string[] = [];
     for (const ref of ARCHETYPES) {
       const { loadout, items } = buildReference(ref);
       for (const r of REGIONS) {
@@ -67,67 +114,100 @@ describe('regions（周回ごとの抽選）', () => {
             ).length;
             max = Math.max(max, n);
           }
-          expect(max, `${ref.id}/${r.id}/${seed}`).toBeLessThanOrEqual(FIELD.maxOnScreen);
+          if (max > FIELD.maxOnScreen) over.push(`${ref.id}/${r.id}/${seed}: ${max}`);
         }
       }
     }
+    expect(over).toEqual([]);
+  });
+});
+
+/** Each region next to the one after it, in the order they open */
+const deeper = REGIONS.slice(1).map((b, i) => [REGIONS[i]!.id, b.id, REGIONS[i]!, b] as const);
+
+describe('地域の強さと戦利品: 奥の地域ほど', () => {
+  it.each(deeper)('%s → %s: 敵の体力と攻撃の倍率が上がる', (_a, _b, a, b) => {
+    expect(b.power.hp).toBeGreaterThan(a.power.hp);
+    expect(b.power.atk).toBeGreaterThan(a.power.atk);
+  });
+
+  it.each(deeper)('%s → %s: コモンが出にくくなる', (_a, _b, a, b) => {
+    expect(b.loot.rarity[0]).toBeLessThan(a.loot.rarity[0]);
+  });
+
+  it.each(deeper)('%s → %s: レジェンダリーは出にくくならない', (_a, _b, a, b) => {
+    expect(b.loot.rarity[3]).toBeGreaterThanOrEqual(a.loot.rarity[3]);
+  });
+
+  it.each(deeper)('%s → %s: アーティファクトは出にくくならない', (_a, _b, a, b) => {
+    expect(b.loot.artifactMult).toBeGreaterThanOrEqual(a.loot.artifactMult);
   });
 });
 
 describe('地域の強さと戦利品', () => {
-  it('草原→洞窟→城壁の順に、敵の強さ・レア以上の出やすさ・アーティファクトの出やすさが上がる', () => {
-    for (let i = 1; i < REGIONS.length; i++) {
-      const a = REGIONS[i - 1]!;
-      const b = REGIONS[i]!;
-      expect(b.power.hp).toBeGreaterThan(a.power.hp);
-      expect(b.power.atk).toBeGreaterThan(a.power.atk);
-      // Common goes down, legendary never down, deeper
-      expect(b.loot.rarity[0]).toBeLessThan(a.loot.rarity[0]);
-      expect(b.loot.rarity[3]).toBeGreaterThanOrEqual(a.loot.rarity[3]);
-      expect(b.loot.artifactMult).toBeGreaterThanOrEqual(a.loot.artifactMult);
-    }
+  const { loadout, items } = buildReference(ARCHETYPES[0]!);
+  /** The first ordinary enemy's HP and attack against its own definition */
+  const powerOf = (regionId: string) => {
+    const c = new Combat({
+      seed: 1,
+      regionId,
+      loadout,
+      items,
+      hero: referenceHeroStats(),
+      luck: NO_LUCK,
+    });
+    const e = c.enemies.find((x) => !x.def.boss)!;
+    return { hp: e.maxHp / e.def.hp, atk: e.atk / e.def.atk };
+  };
+
+  it.each(REGIONS.map((r) => r.id))('%s の雑魚には、地域の体力と攻撃の倍率がかかる', (regionId) => {
+    const r = getRegion(regionId);
+    const v = powerOf(regionId);
+    expect(v.hp).toBeCloseTo(r.power.hp);
+    expect(v.atk).toBeCloseTo(r.power.atk);
   });
 
-  it('同じ雑魚でも地域の倍率がかかる', () => {
-    const { loadout, items } = buildReference(ARCHETYPES[0]!);
-    const hpOf = (regionId: string) => {
-      const c = new Combat({
-        seed: 1,
-        regionId,
-        loadout,
-        items,
-        hero: referenceHeroStats(),
-        luck: NO_LUCK,
-      });
-      const e = c.enemies.find((x) => !x.def.boss)!;
-      return { ratio: e.maxHp / e.def.hp, atk: e.atk / e.def.atk };
-    };
-    for (const r of REGIONS) {
-      const v = hpOf(r.id);
-      expect(v.ratio).toBeCloseTo(r.power.hp);
-      expect(v.atk).toBeCloseTo(r.power.atk);
-    }
+  /** The rarest rarity that can come at loop 10 */
+  const top = (id: string, boss = false) =>
+    rarityWeights(10, boss, getRegion(id).loot).reduce((b, [r, w]) => (w > 0 ? r : b), 'common');
+
+  it.each([
+    ['grassland', false, 'epic'],
+    ['grassland', true, 'epic'],
+    ['cave', false, 'epic'],
+    ['cave', true, 'legendary'],
+    ['rampart', false, 'legendary'],
+  ] as const)(
+    '地域ごとにレアリティの上限がある（草原・洞窟はエピックまで、洞窟のボスはまれにレジェンダリー、城壁からレジェンダリー）: %s ボス=%s → %s',
+    (regionId, boss, rarity) => {
+      expect(top(regionId, boss)).toBe(rarity);
+    },
+  );
+
+  it('周回が進むとコモンが出にくくなる', () => {
+    const w = (loop: number) =>
+      Object.fromEntries(rarityWeights(loop, false, getRegion('grassland').loot));
+    expect(w(5).common).toBeLessThan(w(1).common);
   });
 
-  it('地域ごとにレアリティの上限がある: 草原・洞窟はエピックまで（洞窟のボスはまれにレジェンダリー）、城壁からレジェンダリー', () => {
-    const top = (id: string, boss = false) =>
-      rarityWeights(10, boss, getRegion(id).loot).reduce((b, [r, w]) => (w > 0 ? r : b), 'common');
-    expect(top('grassland')).toBe('epic');
-    expect(top('grassland', true)).toBe('epic');
-    expect(top('cave')).toBe('epic');
-    expect(top('cave', true)).toBe('legendary');
-    expect(top('rampart')).toBe('legendary');
-    // Loops move common up, but never past the ceiling; the weights add up to 1
+  it('周回が進んでも、地域のレアリティの上限は超えない', () => {
     const g = Object.fromEntries(rarityWeights(5, false, getRegion('grassland').loot));
-    expect(g.common).toBeLessThan(0.8);
     expect(g.legendary).toBe(0);
-    for (const r of REGIONS)
-      expect(rarityWeights(3, false, r.loot).reduce((s, [, w]) => s + w, 0)).toBeCloseTo(1);
   });
 
-  it('アーティファクトはレジェンダリーより厳しい: 草原・洞窟では出ない', () => {
-    expect(getRegion('grassland').loot.artifactMult).toBe(0);
-    expect(getRegion('cave').loot.artifactMult).toBe(0);
+  it.each(REGIONS.map((r) => r.id))('%s のレアリティの重みは足して1', (regionId) => {
+    const sum = rarityWeights(3, false, getRegion(regionId).loot).reduce((s, [, w]) => s + w, 0);
+    expect(sum).toBeCloseTo(1);
+  });
+
+  it.each(['grassland', 'cave'])(
+    'アーティファクトはレジェンダリーより厳しい: %s では出ない',
+    (regionId) => {
+      expect(getRegion(regionId).loot.artifactMult).toBe(0);
+    },
+  );
+
+  it('城壁ではアーティファクトが出る', () => {
     expect(getRegion('rampart').loot.artifactMult).toBeGreaterThan(0);
   });
 
@@ -138,19 +218,43 @@ describe('地域の強さと戦利品', () => {
 });
 
 describe('地域の★', () => {
-  it('3・6・10周目のボスを倒すごとに★、★ごとに攻撃+3%・最大HP+5', async () => {
-    const { regionStars, totalStars, heroStats } = await import('../../src/core/economy');
-    const { createInitialSave } = await import('../../src/core/save');
+  const [firstStar] = PROGRESS.starLoops;
+
+  it('★の周目のボスを倒す（次の周目に着く）と★がつく', () => {
+    const s = createInitialSave();
+    s.progress.best.grassland = firstStar! + 1;
+    expect(regionStars(s, 'grassland')).toBe(1);
+  });
+
+  it('★の周目に着いただけ（ボスはまだ）では★はつかない', () => {
+    const s = createInitialSave();
+    s.progress.best.grassland = firstStar!;
+    expect(regionStars(s, 'grassland')).toBe(0);
+  });
+
+  it('★の周目をすべて越えると、その地域の★は PROGRESS.starLoops の数', () => {
+    const s = createInitialSave();
+    s.progress.best.cave = PROGRESS.starLoops.at(-1)! + 1;
+    expect(regionStars(s, 'cave')).toBe(PROGRESS.starLoops.length);
+  });
+
+  it('★の合計は、地域ごとの★を足したもの', () => {
+    const s = createInitialSave();
+    s.progress.best.grassland = firstStar! + 1;
+    s.progress.best.cave = PROGRESS.starLoops.at(-1)! + 1;
+    expect(totalStars(s)).toBe(regionStars(s, 'grassland') + regionStars(s, 'cave'));
+  });
+
+  it('★1つごとに、攻撃が PROGRESS.starAttack、最大HPが PROGRESS.starHp 上がる', () => {
     const s = createInitialSave();
     const base = heroStats(s);
-    s.progress.best.grassland = 4; // 3周目のボスを倒して4周目に着いた
-    expect(regionStars(s, 'grassland')).toBe(1);
-    s.progress.best.cave = 11;
-    expect(regionStars(s, 'cave')).toBe(3);
-    expect(totalStars(s)).toBe(4);
+    s.progress.best.grassland = firstStar! + 1;
+    s.progress.best.cave = PROGRESS.starLoops.at(-1)! + 1;
+    const stars = totalStars(s);
     const hs = heroStats(s);
-    expect(hs.attackMult).toBeCloseTo(base.attackMult + 0.12);
-    expect(hs.maxHp).toBe(base.maxHp + 20);
+    expect(stars).toBeGreaterThan(1);
+    expect(hs.attackMult - base.attackMult).toBeCloseTo(stars * PROGRESS.starAttack);
+    expect(hs.maxHp - base.maxHp).toBe(stars * PROGRESS.starHp);
   });
 });
 

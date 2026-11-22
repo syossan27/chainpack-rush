@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CHAIN } from '../../src/config/balance';
+import { CHAIN, LOOT } from '../../src/config/balance';
 import { planChain } from '../../src/core/chain';
 import type { ChainPlan } from '../../src/core/types';
 import { pickDef } from '../../src/core/loot';
@@ -55,19 +55,24 @@ describe('起点石の種類', () => {
     for (const o of ['o1', 'o2']) expect(dmg(planChain(loadout, items, o), 'J')).toBeCloseTo(H);
   });
 
-  it('速の起点石は伝わるのが速く、重い起点石は遅い。合流の先も、その発火の起点石の速さ', () => {
-    const fast = CHAIN.relayDelay + SWIFT.relay!;
-    const slow = CHAIN.relayDelay + HEAVY.relay!;
+  const fast = CHAIN.relayDelay + SWIFT.relay!;
+  const slow = CHAIN.relayDelay + HEAVY.relay!;
+
+  it('速の起点石は、その線が伝わるのが速い', () => {
     expect(fast).toBeLessThan(CHAIN.relayDelay);
-    expect(slow).toBeGreaterThan(CHAIN.relayDelay);
     const swift = yShape('origin_swift', 'origin_stone', 'sword');
     const p1 = planChain(swift.loadout, swift.items, 'o1');
     expect(stepOf(p1, 'a').t).toBeCloseTo(fast);
     expect(stepOf(p1, 'b').t).toBeCloseTo(fast * 2);
+  });
 
+  it('重い起点石は、その線が伝わるのが遅い', () => {
+    expect(slow).toBeGreaterThan(CHAIN.relayDelay);
     const heavy = yShape('origin_heavy', 'origin_stone', 'sword');
     expect(stepOf(planChain(heavy.loadout, heavy.items, 'o1'), 'a').t).toBeCloseTo(slow);
+  });
 
+  it('合流の先も、その発火の起点石の速さで伝わる', () => {
     // Swift and heavy routes meet at J: each firing keeps its own stone's speed after it
     const both = yShape('origin_swift', 'origin_heavy', 'sword');
     const s1 = planChain(both.loadout, both.items, 'o1');
@@ -78,24 +83,33 @@ describe('起点石の種類', () => {
     expect(dmg(s2, 'J')).toBeCloseTo(H);
   });
 
-  it('戦利品: 起点石が出るときは半分がふつうの起点石。ほかの装備の出やすさは変わらない', () => {
-    const origins = ITEM_DEFS.filter((d) => d.kind === 'origin' && !d.artifact);
-    const rng = new Rng(7);
-    let plain = 0;
-    const n = 4000;
-    for (let i = 0; i < n; i++) if (pickDef(rng, origins).id === 'origin_stone') plain++;
-    expect(plain / n).toBeGreaterThan(0.45);
-    expect(plain / n).toBeLessThan(0.55);
-    // Without origin stones in the pool, the pick is the same as a plain uniform pick
+  const origins = ITEM_DEFS.filter((d) => d.kind === 'origin' && !d.artifact);
+  /** Share of each origin stone over n picks among the origin stones */
+  const shares = (seed: number, n: number) => {
+    const rng = new Rng(seed);
+    const got = new Map<string, number>();
+    for (let i = 0; i < n; i++) {
+      const id = pickDef(rng, origins).id;
+      got.set(id, (got.get(id) ?? 0) + 1);
+    }
+    return (id: string) => (got.get(id) ?? 0) / n;
+  };
+
+  it('戦利品: 起点石が出るときは、決まった割合がふつうの起点石', () => {
+    const plain = shares(7, 4000)('origin_stone');
+    expect(plain).toBeGreaterThan(LOOT.plainOriginShare - 0.05);
+    expect(plain).toBeLessThan(LOOT.plainOriginShare + 0.05);
+  });
+
+  it('戦利品: 起点石がない候補では、ほかの装備の出やすさは変わらない（ふつうの等しい選び方と同じ）', () => {
     const swords = ITEM_DEFS.filter((d) => d.kind === 'attack' && !d.artifact);
     const a = new Rng(3);
     const b = new Rng(3);
-    for (let i = 0; i < 50; i++) expect(pickDef(a, swords)).toBe(b.pick(swords));
-    expect(getItemDef('origin_swift').kind).toBe('origin');
+    const picked = Array.from({ length: 50 }, () => pickDef(a, swords));
+    expect(picked).toEqual(Array.from({ length: 50 }, () => b.pick(swords)));
   });
 
-  it('種類つきは流れの石6種で、残りの半分を等分する', () => {
-    const origins = ITEM_DEFS.filter((d) => d.kind === 'origin' && !d.artifact);
+  it('種類つきは流れの石6種（どれも起点石）', () => {
     expect(
       origins
         .filter((d) => d.line)
@@ -111,16 +125,14 @@ describe('起点石の種類', () => {
         'origin_far',
       ].sort(),
     );
-    const rng = new Rng(11);
-    const got = new Map<string, number>();
-    const n = 6000;
-    for (let i = 0; i < n; i++) {
-      const id = pickDef(rng, origins).id;
-      got.set(id, (got.get(id) ?? 0) + 1);
-    }
-    for (const d of origins.filter((x) => x.line)) {
-      expect((got.get(d.id) ?? 0) / n, d.id).toBeGreaterThan(0.06);
-      expect((got.get(d.id) ?? 0) / n, d.id).toBeLessThan(0.11);
-    }
+    expect(getItemDef('origin_swift').kind).toBe('origin');
+  });
+
+  it('種類つきの石は、ふつうの起点石の残りを等分する', () => {
+    const share = shares(11, 6000);
+    const typed = origins.filter((x) => x.line).map((d) => share(d.id));
+    const mean = typed.reduce((a, b) => a + b, 0) / typed.length;
+    expect(1 - share('origin_stone')).toBeGreaterThan(1 - LOOT.plainOriginShare - 0.05);
+    expect(Math.max(...typed) - Math.min(...typed)).toBeLessThan(mean * 0.5);
   });
 });

@@ -76,7 +76,7 @@ describe('勇者の赤い羽飾りを消す（炎の羽飾りを着けている�
 
   it('頭より上に浮いて残った小さなかけら（2〜6点）も消す。体につながる物は残す', () => {
     // A 2-px piece of the plume's outline floats above the head line (y=3); the sword tip above
-    // the line reaches down to the body, and a 7-px piece is too big to be a leftover
+    // the line reaches down to the body
     const { data, width } = sheet(['.MM.S...', '....S.MM', '....S.MM', 'AAAAS.MM', 'AAAAAA.M']);
     erasePlume(data, width, 8, 5, [3]);
     expect(picture(data, width)).toEqual([
@@ -86,8 +86,12 @@ describe('勇者の赤い羽飾りを消す（炎の羽飾りを着けている�
       'AAAAS.MM',
       'AAAAAA.M',
     ]);
-    const { data: d2, width: w2 } = sheet(['MMMMMMM.', '........', '........', 'AAAAAAAA']);
-    erasePlume(d2, w2, 8, 4, [3]);
-    expect(picture(d2, w2)[0]).toBe('MMMMMMM.');
+  });
+
+  it('頭より上に浮いていても、7点以上のかけらは残す', () => {
+    // A 7-px piece is too big to be a leftover
+    const { data, width } = sheet(['MMMMMMM.', '........', '........', 'AAAAAAAA']);
+    erasePlume(data, width, 8, 4, [3]);
+    expect(picture(data, width)[0]).toBe('MMMMMMM.');
   });
 });

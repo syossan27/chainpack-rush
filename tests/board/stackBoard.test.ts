@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { STACK } from '../../src/config/balance';
+import { boardDepth, boardSize } from '../../src/core/boards';
 import {
   emptyStackBoard,
   restoreStackBoard,
@@ -10,6 +12,7 @@ import {
 } from '../../src/core/stack';
 import { clearLoadout, cycleOriginOrder, removeItem, setConsumable } from '../../src/core/loadout';
 import type { ItemInstance, Loadout } from '../../src/core/types';
+import { getBoard } from '../../src/data/boards';
 
 const item = (
   uid: string,
@@ -48,29 +51,45 @@ function put(l: Loadout, uid: string, cell: number): Loadout {
 }
 
 describe('重ねる盤面: 置き方', () => {
-  it('空きマスに置き、同じ装備なら上に重なる（レアリティは問わない、3つまで）', () => {
+  it('空の標準の盤面は、重ねる盤面の大きさで作る', () => {
+    const l = emptyStackBoard();
+    expect([l.width, l.height]).toEqual([STACK.width, STACK.height]);
+  });
+
+  it('同じ装備なら、レアリティが違っても上に重なる', () => {
     let l = emptyStackBoard();
-    expect([l.width, l.height]).toEqual([4, 3]);
     l = put(l, 's1', 1);
     l = put(l, 's5', 1);
     l = put(l, 's2', 1);
     expect(stackAt(l, 1)).toEqual(['s1', 's5', 's2']);
     expect(l.cells[1]).toBe('s2');
+  });
+
+  it('1マスに重ねられる数には上限がある', () => {
+    let l = emptyStackBoard();
+    for (const u of ['s1', 's5', 's2']) l = put(l, u, 1);
+    expect(stackAt(l, 1)).toHaveLength(STACK.max);
     expect(stackPut(l, items, 's6', 1).block).toBe('full');
   });
 
-  it('違う装備は同じ属性でも重ならない。防具も同じ物だけ。起点石は重ならない', () => {
-    let l = put(emptyStackBoard(), 's1', 1);
+  it('違う装備は同じ属性でも重ならない', () => {
+    const l = put(emptyStackBoard(), 's1', 1);
     expect(stackPut(l, items, 's3', 1).block).toBe('group');
     expect(stackPut(l, items, 's4', 1).block).toBe('group');
     expect(stackPut(l, items, 'f1', 1).block).toBe('group');
     expect(stackPut(l, items, 'd1', 1).block).toBe('group');
-    l = put(l, 'o1', 0);
-    expect(stackPut(l, items, 's2', 0).block).toBe('group');
-    l = put(l, 'd1', 2);
+  });
+
+  it('防具も同じ物だけ重なる', () => {
+    let l = put(emptyStackBoard(), 'd1', 2);
     expect(stackPut(l, items, 'd2', 2).block).toBe('group');
     l = put(l, 'd3', 2);
     expect(stackAt(l, 2)).toEqual(['d1', 'd3']);
+  });
+
+  it('起点石の上には重ならない', () => {
+    const l = put(emptyStackBoard(), 'o1', 0);
+    expect(stackPut(l, items, 's2', 0).block).toBe('group');
   });
 
   it('アーティファクトは重ねられない（同じものどうしでも、上にも下にも）。理由は別に知らせる', () => {
@@ -91,7 +110,7 @@ describe('重ねる盤面: 置き方', () => {
     expect(l.originOrder).toEqual(['o2']);
   });
 
-  it('外すと下の装備が一番上になる。重ねの中で上下を入れ替えられる', () => {
+  it('重ねの中で上下を入れ替えられる（一番上ならそれ以上動かない）', () => {
     let l = emptyStackBoard();
     for (const u of ['s1', 's2', 's5']) l = put(l, u, 5);
     l = stackShift(l, 's1', 1);
@@ -101,6 +120,11 @@ describe('重ねる盤面: 置き方', () => {
     expect(l.cells[5]).toBe('s1');
     // Already at the top: nothing moves
     expect(stackAt(stackShift(l, 's1', 1), 5)).toEqual(['s2', 's5', 's1']);
+  });
+
+  it('外すと下の装備が一番上になる', () => {
+    let l = emptyStackBoard();
+    for (const u of ['s2', 's5', 's1']) l = put(l, u, 5);
     l = stackTake(l, items, 's1');
     expect(stackAt(l, 5)).toEqual(['s2', 's5']);
     l = stackTake(l, items, 's2');
@@ -155,15 +179,18 @@ describe('重ねる盤面: 置き方', () => {
     const back = restoreStackBoard(JSON.parse(JSON.stringify(l)) as Loadout, owned, 3);
     expect(stackAt(back, 2)).toEqual(['s2']);
     expect(back.originOrder).toEqual(['o1']);
-    // Nothing stored yet, or a board of another size: an empty 4x3 board
-    expect(restoreStackBoard(null, owned, 3)).toEqual(emptyStackBoard());
+  });
+
+  it('保存された盤面がなければ、空の標準の盤面', () => {
+    expect(restoreStackBoard(null, items, 3)).toEqual(emptyStackBoard());
   });
 });
 
 describe('盤面の種類: 形と深さ', () => {
   it('空の盤面は、その盤面の大きさと種類で作る', () => {
     const l = emptyStackBoard('lightning');
-    expect([l.width, l.height]).toEqual([4, 5]);
+    const { width, height } = boardSize(getBoard('lightning'));
+    expect([l.width, l.height]).toEqual([width, height]);
     expect(l.board).toBe('lightning');
     expect(emptyStackBoard().board).toBe('standard');
   });
@@ -188,20 +215,23 @@ describe('盤面の種類: 形と深さ', () => {
     expect(stackAt(stackMove(l, 2, 7), 7)).toEqual(['s1']);
   });
 
-  it('深い盤面は1マスに4つまで重ねられる', () => {
+  it('深い盤面は、ふつうの盤面より多く、盤面の深さまで重ねられる', () => {
+    const depth = boardDepth(getBoard('deep'));
+    expect(depth).toBeGreaterThan(STACK.max);
     const more = new Map(items);
-    more.set('s7', item('s7', 'sword'));
+    const uids = Array.from({ length: depth + 1 }, (_, i) => `x${i}`);
+    for (const u of uids) more.set(u, item(u, 'sword'));
     let l = emptyStackBoard('deep');
-    for (const u of ['s1', 's2', 's5', 's6']) {
+    for (const u of uids.slice(0, depth)) {
       const r = stackPut(l, more, u, 4);
       expect(r.block).toBeNull();
       l = r.loadout;
     }
-    expect(stackAt(l, 4)).toHaveLength(4);
-    expect(stackPut(l, more, 's7', 4).block).toBe('full');
+    expect(stackAt(l, 4)).toHaveLength(depth);
+    expect(stackPut(l, more, uids[depth]!, 4).block).toBe('full');
   });
 
-  it('読み直すと、その盤面の形に合わせる（穴のマスの装備は外れる）。大きさが違えば空にする', () => {
+  it('読み直すと、その盤面の形に合わせる（穴のマスの装備は外れる）', () => {
     const rec: Loadout = {
       ...emptyStackBoard('crystal'),
       cells: ['s1', null, 's2', ...new Array<string | null>(17).fill(null)],
@@ -210,6 +240,13 @@ describe('盤面の種類: 形と深さ', () => {
     expect(back.cells[0]).toBeNull();
     expect(back.cells[2]).toBe('s2');
     expect(back.board).toBe('crystal');
+  });
+
+  it('読み直すと、大きさが違う盤面の配置は空にする', () => {
+    const rec: Loadout = {
+      ...emptyStackBoard('crystal'),
+      cells: ['s1', null, 's2', ...new Array<string | null>(17).fill(null)],
+    };
     expect(restoreStackBoard(rec, items, 3, 'standard')).toEqual(emptyStackBoard('standard'));
   });
 });

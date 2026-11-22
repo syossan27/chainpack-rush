@@ -1,21 +1,33 @@
 import { describe, expect, it, vi } from 'vitest';
+import { CHAIN } from '../../src/config/balance';
 import { chainMultiplier, simulateChain } from '../../src/core/chain';
+import { getItemDef } from '../../src/data/items';
 import { build } from '../helpers';
 
-const r2 = (x: number) => Math.round(x * 100) / 100;
+/** The ring's ceiling (循環の環) */
+const RING = getItemDef('ouroboros').riseTo!;
+
+/** Steps 2..n */
+const stepsUpTo = (n: number) => Array.from({ length: n - 1 }, (_, i) => i + 2);
 
 describe('連鎖倍率（上限なし）', () => {
-  it('1〜6段は今までと同じ（×1.2 ずつ）', () => {
-    expect([1, 2, 3, 4, 5, 6].map((n) => r2(chainMultiplier(n)))).toEqual([
-      1, 1.2, 1.44, 1.73, 2.07, 2.49,
-    ]);
+  it('1段目は ×1', () => {
+    expect(chainMultiplier(1)).toBe(1);
   });
 
-  it('7段から先は 2.49×(段/6)^0.5 で伸び続ける', () => {
-    expect([8, 10, 12, 15, 20, 25].map((n) => r2(chainMultiplier(n)))).toEqual([
-      2.87, 3.21, 3.52, 3.93, 4.54, 5.08,
-    ]);
-  });
+  it.each(stepsUpTo(CHAIN.riseSteps))(
+    'riseSteps 段目までは1段ごとに CHAIN.multBase 倍（%i段目）',
+    (n) => {
+      expect(chainMultiplier(n) / chainMultiplier(n - 1)).toBeCloseTo(CHAIN.multBase);
+    },
+  );
+
+  it.each([CHAIN.riseSteps, CHAIN.riseSteps + 2, CHAIN.riseSteps + 5])(
+    'riseSteps 段目から先は段数の平方根に比例して伸び続ける（%i段目の4倍の段で2倍）',
+    (n) => {
+      expect(chainMultiplier(4 * n) / chainMultiplier(n)).toBeCloseTo(2);
+    },
+  );
 
   it('100段まで単調に増え、有限', () => {
     for (let n = 2; n <= 100; n++) {
@@ -24,12 +36,30 @@ describe('連鎖倍率（上限なし）', () => {
     }
   });
 
-  it('循環の環: ×4.0 まで ×1.2 ずつ（9段目で ×4.0）、その先は 4.0×(段/9)^0.5', () => {
-    expect([6, 8, 9, 12, 20].map((n) => r2(chainMultiplier(n, 4)))).toEqual([
-      2.49, 3.58, 4, 4.62, 5.96,
-    ]);
-    for (let n = 2; n <= 60; n++)
-      expect(chainMultiplier(n, 4)).toBeGreaterThanOrEqual(chainMultiplier(n));
+  describe('循環の環', () => {
+    /** The first step whose multiplier reaches the ring's ceiling */
+    const knee = stepsUpTo(60).find((n) => chainMultiplier(n, RING) >= RING - 1e-9)!;
+
+    it('環の上限に届くまでは1段ごとに CHAIN.multBase 倍', () => {
+      const ratios = stepsUpTo(knee - 1).map(
+        (n) => chainMultiplier(n, RING) / chainMultiplier(n - 1, RING),
+      );
+      expect(ratios.length).toBeGreaterThan(0);
+      expect(ratios.every((r) => Math.abs(r - CHAIN.multBase) < 1e-9)).toBe(true);
+    });
+
+    it('上限に届いた段で、ちょうど環の上限の値になる', () => {
+      expect(chainMultiplier(knee, RING)).toBeCloseTo(RING);
+    });
+
+    it('上限に届いた段から先は段数の平方根に比例して伸び続ける', () => {
+      expect(chainMultiplier(4 * knee, RING) / chainMultiplier(knee, RING)).toBeCloseTo(2);
+    });
+
+    it('どの段でも、環なしの倍率を下回らない', () => {
+      for (let n = 2; n <= 60; n++)
+        expect(chainMultiplier(n, RING)).toBeGreaterThanOrEqual(chainMultiplier(n));
+    });
   });
 
   it('環を通る線と通らない線が同じ発火にあると、計画全体が環の伸び方', () => {
@@ -48,8 +78,9 @@ describe('連鎖倍率（上限なし）', () => {
       { uid: 't1', defId: 'sword', x: 1, y: 1, exits: [] },
     ]);
     const plan = simulateChain(loadout, items).plans[0]!;
-    for (const s of plan.steps)
-      if (s.step !== null) expect(s.mult).toBeCloseTo(chainMultiplier(s.step, 4));
+    const counted = plan.steps.filter((s) => s.step !== null);
+    expect(counted.length).toBeGreaterThan(0);
+    expect(counted.map((s) => s.mult)).toEqual(counted.map((s) => chainMultiplier(s.step!, RING)));
   });
 
   it('Math.pow を使わない（端末ごとに最後の桁がずれると、記録の再生が合わない）', () => {

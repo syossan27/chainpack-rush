@@ -19,10 +19,10 @@ function cfgOf(seed: number, regionId = 'cave'): RunConfig {
 }
 
 describe('ランの再生', () => {
-  it('操作を記録したランを、同じ設定で再生すると同じ結果になる', () => {
-    for (const seed of [1, 7, 42, 999]) {
-      const cfg = cfgOf(seed);
-      const c = new Combat(cfg);
+  it.each([1, 7, 42, 999])(
+    '操作を記録したランを、同じ設定で再生すると同じ結果になる（種 %i）',
+    (seed) => {
+      const c = new Combat(cfgOf(seed));
       const rng = new Rng(seed);
       while (!c.ended) {
         // ときどき消耗品を使う・ごくまれに撤退
@@ -35,25 +35,35 @@ describe('ランの再生', () => {
       const again = replayRun(cfgOf(seed), r.inputs ?? []);
       expect(again).not.toBeNull();
       expect(sameResult(r, again!)).toBe(true);
-    }
-  });
+    },
+  );
 
-  it('記録を書き換えると、結果が合わないか、再生できない', () => {
-    const cfg = cfgOf(5);
-    const c = new Combat(cfg);
+  /** A recorded run with seed 5 that uses a consumable once */
+  const recorded = () => {
+    const c = new Combat(cfgOf(5));
     while (!c.ended) {
       if (c.tick === 300) c.useConsumable(0);
       c.step();
     }
-    const r = c.result();
-    // ダメージを盛った申告
+    return c.result();
+  };
+
+  it('ダメージを盛った申告は、再生した結果と合わない', () => {
+    const r = recorded();
     const fake = { ...r, stats: { ...r.stats, totalDamage: r.stats.totalDamage * 2 } };
     expect(sameResult(fake, replayRun(cfgOf(5), r.inputs ?? [])!)).toBe(false);
-    // 持っていない枠の消耗品を使った記録
+  });
+
+  it('持っていない枠の消耗品を使った記録は、再生できない', () => {
     expect(replayRun(cfgOf(5), [{ t: 10, k: 'use', slot: 5 }])).toBeNull();
-    // 力尽きていないのに再開
+  });
+
+  it('力尽きていないのに再開した記録は、再生できない', () => {
     expect(replayRun(cfgOf(5), [{ t: 10, k: 'revive', s: 10 }])).toBeNull();
-    // 違う種で再生すると合わない
+  });
+
+  it('違う種で再生すると、結果が合わないか再生できない', () => {
+    const r = recorded();
     const other = replayRun(cfgOf(6), r.inputs ?? []);
     expect(other === null || !sameResult(r, other)).toBe(true);
   });

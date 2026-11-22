@@ -35,12 +35,12 @@ const REMOVED = [
 ];
 
 describe('なくした起点石の置きかえ（セーブ版3）', () => {
-  it('8種の起点石はもうない', () => {
-    for (const id of REMOVED) expect(() => getItemDef(id), id).toThrow();
+  it.each(REMOVED)('%s はもうない', (id) => {
+    expect(() => getItemDef(id)).toThrow();
   });
 
-  it('版2のセーブ: 表のとおりに置きかわり、uid・出口・追加効果・ロック・配置は残る', () => {
-    const { raw, originUid, cells } = v2('origin_fire', [
+  const fullV2 = () =>
+    v2('origin_fire', [
       ['t', 'origin_thunder'],
       ['b', 'origin_blunt'],
       ['w', 'origin_wind'],
@@ -50,6 +50,9 @@ describe('なくした起点石の置きかえ（セーブ版3）', () => {
       ['v', 'origin_vamp'],
       ['sh', 'origin_shield'],
     ]);
+
+  it('版2のセーブ: なくした起点石は表のとおりに置きかわり、残っている石はそのまま', () => {
+    const { raw, originUid } = fullV2();
     const s = deserializeSave(raw);
     const def = (uid: string) => s.inventory.find((i) => i.uid === uid)?.defId;
     // fire, thunder, blunt → echo; wind, light, dark → far; poison, vamp → lead
@@ -57,15 +60,28 @@ describe('なくした起点石の置きかえ（セーブ版3）', () => {
     expect([def('w'), def('l'), def('d')]).toEqual(new Array(3).fill('origin_far'));
     expect([def('p'), def('v')]).toEqual(new Array(2).fill('origin_lead'));
     expect(def('sh')).toBe('origin_shield');
+  });
+
+  it('置きかえても uid・出口・追加効果・ロックは残る', () => {
+    const { raw, originUid } = fullV2();
+    const s = deserializeSave(raw);
     expect(s.inventory.find((i) => i.uid === originUid)).toMatchObject({
       exits: ['up', 'right'],
       rarity: 'rare',
       locked: true,
       affixes: [{ id: 'quick', value: 10 }],
     });
-    // The board is as it was (a reset would have laid out a new one)
+  });
+
+  it('置きかえても盤面の配置は残る（作り直さない）', () => {
+    const { raw, originUid, cells } = fullV2();
+    const s = deserializeSave(raw);
     expect(s.loadout.cells).toEqual(cells);
     expect(boardUids(s.loadout)).toContain(originUid);
+  });
+
+  it('移したセーブは今の版になり、今の版で書き出す', () => {
+    const s = deserializeSave(fullV2().raw);
     expect(s.version).toBe(SAVE_VERSION);
     expect((JSON.parse(serializeSave(s)) as { version: number }).version).toBe(SAVE_VERSION);
   });

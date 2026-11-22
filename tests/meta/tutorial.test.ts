@@ -13,28 +13,36 @@ describe('初心者向けの案内', () => {
     expect(deserializeSave(serializeSave(s)).tutorialSeen).toEqual(['home', 'run']);
   });
 
-  it('配置画面の案内は board。前の版で loadout を見た人にも board は出る', () => {
+  it('配置画面の案内は board（前の版の loadout・merge はもうない）', () => {
     const keys: readonly string[] = TUTORIAL_KEYS;
     expect(keys).toContain('board');
     expect(keys).not.toContain('loadout');
     expect(keys).not.toContain('merge');
+  });
+
+  it('前の版で loadout を見た人にも board は出る', () => {
     const s = createInitialSave();
     s.tutorialSeen = ['home', 'loadout'];
     const again = deserializeSave(serializeSave(s));
     expect(again.tutorialSeen).not.toContain('board');
   });
 
-  it('案内を入れる前のセーブ: もう遊んだ人には出さず、まだの人には出す', () => {
-    const played = JSON.parse(serializeSave(createInitialSave()));
-    delete played.tutorialSeen;
-    played.stats.runs = 3;
-    expect(deserializeSave(JSON.stringify(played)).tutorialSeen).toContain('run');
-    expect(deserializeSave(JSON.stringify(played)).tutorialSeen).toContain('demo');
-    // Every guide, including the tab guides added later
-    for (const key of TUTORIAL_KEYS)
-      expect(deserializeSave(JSON.stringify(played)).tutorialSeen).toContain(key);
-    const fresh = JSON.parse(serializeSave(createInitialSave()));
-    delete fresh.tutorialSeen;
-    expect(deserializeSave(JSON.stringify(fresh)).tutorialSeen).toEqual([]);
+  describe('案内を入れる前のセーブ', () => {
+    const oldSave = (runs: number) => {
+      const data = JSON.parse(serializeSave(createInitialSave()));
+      delete data.tutorialSeen;
+      data.stats.runs = runs;
+      return deserializeSave(JSON.stringify(data));
+    };
+
+    it('もう遊んだ人には、体験ランもあとで足したタブの案内も含めて、どの案内も出さない', () => {
+      const seen = oldSave(3).tutorialSeen;
+      expect(seen).toContain('demo');
+      expect(seen).toEqual(expect.arrayContaining([...TUTORIAL_KEYS]));
+    });
+
+    it('まだ遊んでいない人には、案内を出す', () => {
+      expect(oldSave(0).tutorialSeen).toEqual([]);
+    });
   });
 });

@@ -2,22 +2,33 @@ import { describe, expect, it } from 'vitest';
 import { glintAt, GLINT_MS, pulseAt } from '../../src/core/accessoryMotion';
 
 describe('小物の動き', () => {
-  it('キラッは everyMs ごとに一瞬だけ（真ん中でいちばん強く、ほかは 0）', () => {
-    expect(glintAt(0, 2600)).toBe(0);
-    expect(glintAt(GLINT_MS / 2, 2600)).toBeCloseTo(1);
-    expect(glintAt(GLINT_MS + 1, 2600)).toBe(0);
-    expect(glintAt(2600 + GLINT_MS / 2, 2600)).toBeCloseTo(1);
+  const every = 2600;
+
+  it('キラッは光る時間の真ん中でいちばん強い', () => {
+    expect(glintAt(GLINT_MS / 2, every)).toBeCloseTo(1);
   });
 
-  it('明るさの波は 1 から始まり、半周期で min まで下がって戻る', () => {
-    const p = { min: 0.7, ms: 2000 };
-    expect(pulseAt(0, p)).toBeCloseTo(1);
-    expect(pulseAt(500, p)).toBeCloseTo(0.85);
-    expect(pulseAt(1000, p)).toBeCloseTo(0.7);
-    expect(pulseAt(2000, p)).toBeCloseTo(1);
-    for (let t = 0; t < 4000; t += 37) {
-      expect(pulseAt(t, p)).toBeGreaterThanOrEqual(0.7 - 1e-9);
-      expect(pulseAt(t, p)).toBeLessThanOrEqual(1 + 1e-9);
-    }
+  it('キラッは光る時間の外では 0', () => {
+    expect(glintAt(0, every)).toBe(0);
+    expect(glintAt(GLINT_MS + 1, every)).toBe(0);
+  });
+
+  it('キラッは everyMs ごとにくり返す', () => {
+    expect(glintAt(every + GLINT_MS / 2, every)).toBeCloseTo(1);
+  });
+
+  const pulse = { min: 0.7, ms: 2000 };
+
+  it('明るさの波は 1 から始まり、半周期で min まで下がって1周期で戻る', () => {
+    expect(pulseAt(0, pulse)).toBeCloseTo(1);
+    expect(pulseAt(500, pulse)).toBeCloseTo(0.85);
+    expect(pulseAt(1000, pulse)).toBeCloseTo(0.7);
+    expect(pulseAt(2000, pulse)).toBeCloseTo(1);
+  });
+
+  it('明るさの波は min と 1 のあいだから出ない', () => {
+    const values = Array.from({ length: 109 }, (_, i) => pulseAt(i * 37, pulse));
+    expect(Math.min(...values)).toBeGreaterThanOrEqual(pulse.min - 1e-9);
+    expect(Math.max(...values)).toBeLessThanOrEqual(1 + 1e-9);
   });
 });

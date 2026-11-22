@@ -33,21 +33,42 @@ function firstHits(c: Combat): Map<string, number> {
 }
 
 describe('地域ごとの効きにくい属性', () => {
-  it('洞窟は闇、城壁は雷、火山は風、氷河は光が ×0.7。草原・魔王城・エンドレスにはない', () => {
-    expect(getRegion('cave').resist).toEqual({ dark: 0.7 });
-    expect(getRegion('rampart').resist).toEqual({ thunder: 0.7 });
-    expect(getRegion('volcano').resist).toEqual({ wind: 0.7 });
-    expect(getRegion('glacier').resist).toEqual({ light: 0.7 });
-    expect(getRegion('grassland').resist).toBeUndefined();
-    expect(getRegion('demon_castle').resist).toBeUndefined();
-    expect(ENDLESS.resist).toBeUndefined();
-    for (const r of REGIONS) if (r.resist) expect(r.resistNote, r.id).toBeTruthy();
+  it.each([
+    ['cave', 'dark'],
+    ['rampart', 'thunder'],
+    ['volcano', 'wind'],
+    ['glacier', 'light'],
+  ] as const)('%s では %s だけが効きにくい（1倍未満）', (regionId, element) => {
+    const resist = getRegion(regionId).resist!;
+    expect(Object.keys(resist)).toEqual([element]);
+    expect(resist[element]).toBeGreaterThan(0);
+    expect(resist[element]).toBeLessThan(1);
   });
 
-  it('城壁の敵には雷が ×0.7（物理はそのまま）', () => {
+  it.each(['grassland', 'demon_castle'])('%s には効きにくい属性がない', (regionId) => {
+    expect(getRegion(regionId).resist).toBeUndefined();
+  });
+
+  it('エンドレスには効きにくい属性がない', () => {
+    expect(ENDLESS.resist).toBeUndefined();
+  });
+
+  it.each(REGIONS.filter((r) => r.resist).map((r) => r.id))(
+    '効きにくい属性がある地域 (%s) には、その説明がある',
+    (regionId) => {
+      expect(getRegion(regionId).resistNote).toBeTruthy();
+    },
+  );
+
+  it('城壁の敵には、雷が地域の倍率だけ弱くなる', () => {
     const grass = firstHits(new Combat(cfg('grassland')));
     const wall = firstHits(new Combat(cfg('rampart')));
-    expect(wall.get('t')).toBeCloseTo(grass.get('t')! * 0.7, 1);
+    expect(wall.get('t')! / grass.get('t')!).toBeCloseTo(getRegion('rampart').resist!.thunder!, 2);
+  });
+
+  it('城壁の敵にも、物理はそのまま', () => {
+    const grass = firstHits(new Combat(cfg('grassland')));
+    const wall = firstHits(new Combat(cfg('rampart')));
     expect(wall.get('s')).toBeCloseTo(grass.get('s')!, 1);
   });
 

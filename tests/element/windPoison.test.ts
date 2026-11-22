@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Combat } from '../../src/core/combat';
 import { planChain } from '../../src/core/chain';
 import type { ItemInstance, Loadout } from '../../src/core/types';
+import { getItemDef } from '../../src/data/items';
 
 const item = (uid: string, defId: string, exits: ItemInstance['exits']): ItemInstance => ({
   uid,
@@ -29,10 +30,20 @@ const line = (ids: string[]): { loadout: Loadout; items: Map<string, ItemInstanc
 const hero = { maxHp: 100, atbTime: 1.5, attackMult: 1, runTime: 30 };
 
 describe('新しい効果の装備', () => {
-  it('疾風の羽のあとは、段数が1つ多く数えられる', () => {
-    const { loadout, items } = line(['wind_feather', 'sword', 'sword']);
-    const p = planChain(loadout, items, 'o');
-    expect(p.steps.filter((s) => s.step !== null).map((s) => s.step)).toEqual([1, 3, 4]);
+  it('疾風の羽のあとに続く装備は、段数が羽の stepBoost だけ多く数えられる', () => {
+    const steps = (ids: string[]) => {
+      const { loadout, items } = line(ids);
+      return planChain(loadout, items, 'o')
+        .steps.filter((s) => s.step !== null)
+        .map((s) => s.step!);
+    };
+    const boost = getItemDef('wind_feather').stepBoost!;
+    const plain = steps(['sword', 'sword', 'sword']);
+    const fed = steps(['wind_feather', 'sword', 'sword']);
+    expect(boost).toBeGreaterThan(0);
+    expect(fed[0]).toBe(plain[0]);
+    expect(fed[1]).toBe(plain[1]! + boost);
+    expect(fed[2]).toBe(plain[2]! + boost);
   });
 
   it('毒: 当てたあとも、時間でじわじわダメージが入る', () => {

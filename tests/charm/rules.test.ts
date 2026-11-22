@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CHARM } from '../../src/config/balance';
+import { CHARM, COMBOS, POISON } from '../../src/config/balance';
+import { boardDepth } from '../../src/core/boards';
 import {
   applyCharmEvent,
   charmContext,
@@ -15,7 +16,7 @@ import {
 import { simulateChain } from '../../src/core/chain';
 import { estimateRoute } from '../../src/core/estimate';
 import type { Dir, ItemInstance, Loadout } from '../../src/core/types';
-import type { BoardDef, BoardId } from '../../src/data/boards';
+import { getBoard, type BoardDef, type BoardId } from '../../src/data/boards';
 import { getCharm, type CharmId } from '../../src/data/charms';
 import { build } from '../helpers';
 
@@ -89,11 +90,13 @@ describe('アクセサリー: スロットと判定', () => {
     expect(row(['torch', 'wood_shield']).matched.has(4)).toBe(false);
   });
 
-  it('そろった重ね: 標準は3つ、深い盤面は4つ', () => {
-    expect(stacked('standard', 4, 3, 3).full.has(0)).toBe(true);
-    expect(stacked('standard', 4, 3, 2).full.has(0)).toBe(false);
-    expect(stacked('deep', 3, 3, 3).full.has(0)).toBe(false);
-    expect(stacked('deep', 3, 3, 4).full.has(0)).toBe(true);
+  it.each([
+    ['standard', 4, 3],
+    ['deep', 3, 3],
+  ] as const)('そろった重ね（%s）: 盤面の深さまで重なったマスだけ', (id, w, h) => {
+    const depth = boardDepth(getBoard(id));
+    expect(stacked(id, w, h, depth).full.has(0)).toBe(true);
+    expect(stacked(id, w, h, depth - 1).full.has(0)).toBe(false);
   });
 
   it('列と行が同じ出来事に反応すると、列→行の順に2件', () => {
@@ -119,25 +122,36 @@ describe('アクセサリー: スロットと判定', () => {
     expect(r.fired).toEqual([{ slot: 0, op: '×', value: b, m: r.m }]);
   });
 
-  it('連鎖の首飾りの伸び幅はコンボの強さしだい（感電・毒爆で満額、浄化・封印は1/4）', () => {
-    expect(comboWeight('shock')).toBe(1);
-    expect(comboWeight('venom')).toBe(1);
-    expect(comboWeight('shatter')).toBeCloseTo(0.75, 10);
-    expect(comboWeight('explode')).toBeCloseTo(0.5, 10);
-    expect(comboWeight('purify')).toBeCloseTo(0.25, 10);
-    expect(comboWeight('seal')).toBeCloseTo(0.25, 10);
+  const strongest = COMBOS.reduce((a, b) => (b.mult > a.mult ? b : a));
+
+  it('連鎖の首飾りの伸び幅: 一番強いコンボ（感電）と毒爆で満額', () => {
+    expect(strongest.name).toBe('shock');
+    expect(comboWeight(strongest.name)).toBe(1);
+    expect(comboWeight(POISON.burstName)).toBe(1);
+  });
+
+  it('連鎖の首飾りの伸び幅: 弱いコンボほど小さい（コンボの倍率と同じ順。同じ倍率なら同じ）', () => {
+    const pairs = COMBOS.flatMap((x) => COMBOS.map((y) => [x, y] as const));
+    const multOrder = pairs.map(([x, y]) => Math.sign(x.mult - y.mult));
+    const weightOrder = pairs.map(([x, y]) => Math.sign(comboWeight(x.name) - comboWeight(y.name)));
+    expect(weightOrder).toEqual(multOrder);
+    expect(Math.min(...COMBOS.map((r) => comboWeight(r.name)))).toBeGreaterThan(0);
+  });
+
+  it('連鎖の首飾りの伸び幅: 光と闇のコンボ（浄化・封印）は同じで、満額より小さい', () => {
+    expect(comboWeight('purify')).toBeCloseTo(comboWeight('seal'), 10);
+    expect(comboWeight('seal')).toBeLessThan(1);
+  });
+
+  it('×型の伸び幅は、コンボの重みの分だけ小さくなる', () => {
     const b = getCharm('combo_necklace')!.values.epic;
-    const step = 1 + (b - 1) * 0.25;
-    const r = applyCharmEvent(
-      2,
-      'combo',
-      0,
-      ctx({ 0: charm('combo_necklace', 'epic') }),
-      comboWeight('seal'),
-    );
+    const w = comboWeight('seal');
+    const r = applyCharmEvent(2, 'combo', 0, ctx({ 0: charm('combo_necklace', 'epic') }), w);
+    const step = 1 + (b - 1) * w;
     expect(r.m).toBeCloseTo(2 * step, 10);
     expect(r.fired).toHaveLength(1);
     expect(r.fired[0]!.value).toBeCloseTo(step, 10);
+    expect(r.fired[0]!.value).toBeLessThan(b);
     expect(r.fired[0]!.m).toBeCloseTo(r.m, 10);
   });
 
@@ -151,27 +165,38 @@ describe('アクセサリー: スロットと判定', () => {
     expect(r.m).toBe(CHARM.cap);
   });
 
-  it('そろっていない線の指輪は反応しない。ほかの出来事にも反応しない', () => {
+  it('そろっていない線の指輪は反応しない', () => {
     const c = ctx({ 0: charm('match_ring') });
     expect(applyCharmEvent(1.5, 'cell', 0, c)).toEqual({ m: 1.5, fired: [] });
+  });
+
+  it('そろいの指輪は、マスが鳴ること以外には反応しない', () => {
     expect(applyCharmEvent(1.5, 'combo', 0, ctx({ 0: charm('match_ring') }, [0]))).toEqual({
       m: 1.5,
       fired: [],
     });
   });
 
-  it('配置画面で光る: そろいは線がそろったとき、重ねの護符は線にそろった重ねがあるとき', () => {
+  describe('配置画面で光る', () => {
     const c: CharmContext = {
       ...ctx({ 0: charm('match_ring'), 1: charm('stack_charm'), 2: charm('stack_charm') }, [0]),
       full: new Set([5]),
     };
-    expect(charmLit(0, c)).toBe(true);
-    // cell 5 is on column 1, not column 2
-    expect(charmLit(1, c)).toBe(true);
-    expect(charmLit(2, c)).toBe(false);
-    // other charms never glow, nor does an empty slot
-    expect(charmLit(3, { ...c, slots: slots(4, 3, { 3: charm('tech_bangle') }) })).toBe(false);
-    expect(charmLit(6, c)).toBe(false);
+
+    it('そろいの指輪は、線がそろったとき', () => {
+      expect(charmLit(0, c)).toBe(true);
+    });
+
+    it('重ねの護符は、線にそろった重ねがあるとき', () => {
+      // cell 5 is on column 1, not column 2
+      expect(charmLit(1, c)).toBe(true);
+      expect(charmLit(2, c)).toBe(false);
+    });
+
+    it('ほかのアクセサリーと空のスロットは光らない', () => {
+      expect(charmLit(3, { ...c, slots: slots(4, 3, { 3: charm('tech_bangle') }) })).toBe(false);
+      expect(charmLit(6, c)).toBe(false);
+    });
   });
 
   it('マスの線にないスロットは反応しない', () => {
@@ -214,13 +239,10 @@ describe('アクセサリー: 配置画面の予想', () => {
     expect(estimateRow(row).charmPeak).toBe(1);
   });
 
-  it('会心ととどめは予想に入れない', () => {
+  it.each(['crit_earring', 'finish_pin'] as const)('%s（会心・とどめ）は予想に入れない', (id) => {
     const row = ['torch', 'flame_staff', 'torch'];
-    const off = estimateRow(row).total;
-    for (const id of ['crit_earring', 'finish_pin'] as const) {
-      const est = estimateRow(row, [id]);
-      expect(est.total).toBeCloseTo(off, 6);
-      expect(est.charmPeak).toBe(1);
-    }
+    const est = estimateRow(row, [id]);
+    expect(est.total).toBeCloseTo(estimateRow(row).total, 6);
+    expect(est.charmPeak).toBe(1);
   });
 });

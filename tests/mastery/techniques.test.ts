@@ -4,6 +4,7 @@ import { planChain } from '../../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../../src/core/combat';
 import { TECHNIQUE_MULT, TECHNIQUES } from '../../src/data/techniques';
 import { getItemDef } from '../../src/data/items';
+import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
 import { build, type Placed } from '../helpers';
 
 const line = (ids: string[]): Placed[] => [
@@ -17,72 +18,99 @@ const line = (ids: string[]): Placed[] => [
   })),
 ];
 
+/** Techniques found on one straight line of these items */
+const techsOn = (ids: string[]) => {
+  const { loadout, items } = build(ids.length + 1, 1, line(ids));
+  return planChain(loadout, items, 'o')
+    .steps.filter((s) => s.tech)
+    .map((s) => s.tech);
+};
+
+/** The scarecrow's first chain on a straight line of these items */
+const fireAtDummy = (ids: string[]) => {
+  const { loadout, items } = build(ids.length + 1, 1, line(ids));
+  const c = new Combat({
+    seed: 1,
+    regionId: 'grassland',
+    loadout,
+    items,
+    hero: BASE_HERO_STATS,
+    mode: 'dummy',
+    luck: NO_LUCK,
+  });
+  c.fireNext();
+  const evs: CombatEvent[] = [];
+  while (c.chain) {
+    c.step();
+    evs.push(...c.drainEvents());
+  }
+  return evs;
+};
+
+const lastHitDamage = (evs: CombatEvent[]) => {
+  const hit = evs.filter((e) => e.type === 'hit').at(-1);
+  return hit?.type === 'hit' ? hit.damage : NaN;
+};
+
 describe('必殺技', () => {
-  it('定義の装備はすべて存在する', () => {
-    for (const t of TECHNIQUES)
-      for (const opts of t.seq) for (const d of opts) expect(getItemDef(d).kind).toBe('attack');
+  it.each(TECHNIQUES.map((t) => [t.id, t] as const))('%s の並びは、すべて攻撃の装備', (_, t) => {
+    expect(t.seq.flat().map((d) => getItemDef(d).kind)).toEqual(t.seq.flat().map(() => 'attack'));
   });
 
-  it('決まった並びの3つ目が必殺技になる。順番が違う・間に別の装備が入ると成立しない', () => {
-    const tech = (ids: string[]) => {
-      const { loadout, items } = build(ids.length + 1, 1, line(ids));
-      return planChain(loadout, items, 'o')
-        .steps.filter((s) => s.tech)
-        .map((s) => s.tech);
-    };
-    expect(tech(['oil_bottle', 'torch', 'flame_staff'])).toEqual(['crimson']);
-    expect(tech(['sword', 'oil_bottle', 'flame_staff', 'flame_staff'])).toEqual(['crimson']);
-    expect(tech(['flame_staff', 'torch', 'oil_bottle'])).toEqual([]);
-    expect(tech(['oil_bottle', 'wood_shield', 'torch', 'flame_staff'])).toEqual([]);
-    expect(tech(['sword', 'dagger', 'greatsword'])).toEqual(['triple']);
+  it.each([
+    ['決まった並び', ['oil_bottle', 'torch', 'flame_staff'], ['crimson']],
+    [
+      '前後に別の装備があっても並びの部分',
+      ['sword', 'oil_bottle', 'flame_staff', 'flame_staff'],
+      ['crimson'],
+    ],
+    ['別の候補の並び', ['sword', 'dagger', 'greatsword'], ['triple']],
+  ])('%sの3つ目が必殺技になる', (_, ids, expected) => {
+    expect(techsOn(ids)).toEqual(expected);
   });
 
-  it('必殺技の一撃はダメージ×TECHNIQUE_MULT、演出用のイベントも出る', () => {
-    const run = (ids: string[]) => {
-      const { loadout, items } = build(ids.length + 1, 1, line(ids));
-      const c = new Combat({
-        seed: 1,
-        regionId: 'grassland',
-        loadout,
-        items,
-        hero: BASE_HERO_STATS,
-        mode: 'dummy',
-        luck: NO_LUCK,
-      });
-      c.fireNext();
-      const evs: CombatEvent[] = [];
-      while (c.chain) {
-        c.step();
-        evs.push(...c.drainEvents());
-      }
-      return evs;
-    };
-    const withTech = run(['sword', 'sword', 'greatsword']);
-    const without = run(['sword', 'axe', 'greatsword']);
-    const last = (evs: CombatEvent[]) => evs.filter((e) => e.type === 'hit').at(-1);
-    const a = last(withTech);
-    const b = last(without);
-    expect(a?.type === 'hit' && b?.type === 'hit' && a.damage / b.damage).toBeCloseTo(
-      TECHNIQUE_MULT,
-    );
+  it.each([
+    ['順番が違う', ['flame_staff', 'torch', 'oil_bottle']],
+    ['間に別の装備が入る', ['oil_bottle', 'wood_shield', 'torch', 'flame_staff']],
+  ])('%sと必殺技は成立しない', (_, ids) => {
+    expect(techsOn(ids)).toEqual([]);
+  });
+
+  it('必殺技の一撃は、ふつうの一撃の TECHNIQUE_MULT 倍', () => {
+    const withTech = lastHitDamage(fireAtDummy(['sword', 'sword', 'greatsword']));
+    const without = lastHitDamage(fireAtDummy(['sword', 'axe', 'greatsword']));
+    expect(withTech / without).toBeCloseTo(TECHNIQUE_MULT);
+  });
+
+  it('必殺技が出ると、演出用のイベントが出る（出なければ出ない）', () => {
+    const withTech = fireAtDummy(['sword', 'sword', 'greatsword']);
+    const without = fireAtDummy(['sword', 'axe', 'greatsword']);
     expect(withTech.some((e) => e.type === 'technique' && e.id === 'triple')).toBe(true);
     expect(without.some((e) => e.type === 'technique')).toBe(false);
   });
 });
 
 describe('必殺技図鑑', () => {
-  it('図鑑は覚えた技（閃いた技）。セーブに残り、壊れた値は捨てる', async () => {
-    const { createInitialSave, serializeSave, deserializeSave } = await import('../../src/core/save');
+  it('はじめの図鑑（覚えた技）は空', () => {
+    expect(createInitialSave().mastery.learned).toEqual([]);
+  });
+
+  it('覚えた技はセーブに残る', () => {
     const s = createInitialSave();
-    expect(s.mastery.learned).toEqual([]);
     s.mastery.learned.push('crimson');
     expect(deserializeSave(serializeSave(s)).mastery.learned).toEqual(['crimson']);
-    const old = JSON.parse(serializeSave(s));
+  });
+
+  it('壊れた技の値は、読み直すときに捨てる', () => {
+    const old = JSON.parse(serializeSave(createInitialSave()));
     old.mastery.learned = ['frost', 3, null];
     expect(deserializeSave(JSON.stringify(old)).mastery.learned).toEqual(['frost']);
   });
 
-  it('すべての技に、見つける前のヒントがある', () => {
-    for (const t of TECHNIQUES) expect(t.teaser.length).toBeGreaterThan(0);
-  });
+  it.each(TECHNIQUES.map((t) => [t.id, t] as const))(
+    '%s には、見つける前のヒントがある',
+    (_, t) => {
+      expect(t.teaser.length).toBeGreaterThan(0);
+    },
+  );
 });

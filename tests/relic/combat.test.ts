@@ -59,6 +59,15 @@ function dummyChain(stuck: [number, RelicId][], over: Partial<RunConfig> = {}): 
   throw new Error('no chainEnd');
 }
 
+/** A run that has just been offered relics after the first boss */
+function offered(): Combat {
+  const c = new Combat(cfg({ hero: strong, relics: {} }));
+  until(c, 'relicOffer');
+  return c;
+}
+
+const pickTicks = RELIC.pickSeconds * SIM.ticksPerSecond;
+
 const hits = (evs: CombatEvent[], uid: string) =>
   evs.filter(
     (e): e is Extract<CombatEvent, { type: 'hit' }> => e.type === 'hit' && e.itemUid === uid,
@@ -75,40 +84,58 @@ describe('レリック: ボスを倒すと3つから選ぶ', () => {
     expect(c.drainEvents().some((e) => e.type === 'relicOffer')).toBe(false);
   });
 
-  it('ボスを倒すと必ず3つ出る。選ぶあいだは勇者も時計も止まり、8秒で取らずに進む', () => {
+  it('ボスを倒すと必ず RELIC.offer 個の選択肢が出る', () => {
     const c = new Combat(cfg({ hero: strong, relics: {} }));
     const evs = until(c, 'relicOffer');
     const offer = evs.find((e) => e.type === 'relicOffer') as { ids: RelicId[] };
     expect(offer.ids).toHaveLength(RELIC.offer);
     expect(c.relicOffer?.ids).toEqual(offer.ids);
+  });
+
+  it('選ぶあいだは、勇者も時計も止まる', () => {
+    const c = offered();
     const x = c.heroX;
     const clock = c.clock;
-    for (let i = 0; i < RELIC.pickSeconds * SIM.ticksPerSecond - 1; i++) c.step();
+    for (let i = 0; i < pickTicks - 1; i++) c.step();
     expect(c.heroX).toBe(x);
     expect(c.clock).toBe(clock);
     expect(c.relicOffer).not.toBeNull();
-    c.step();
+  });
+
+  it('RELIC.pickSeconds たっても選ばなければ、取らずに進む', () => {
+    const c = offered();
+    const x = c.heroX;
+    for (let i = 0; i < pickTicks; i++) c.step();
     expect(c.relicOffer).toBeNull();
     expect(c.drainEvents().some((e) => e.type === 'relicSkipped')).toBe(true);
     for (let i = 0; i < 30; i++) c.step();
     expect(c.heroX).toBeGreaterThan(x);
   });
 
-  it('「いらない」ですぐ進む。貼れないマスや出ていないレリックは貼れない', () => {
-    const skip = new Combat(cfg({ hero: strong, relics: {} }));
-    until(skip, 'relicOffer');
-    expect(skip.skipRelic()).toBe(true);
-    expect(skip.relicOffer).toBeNull();
-    expect(skip.skipRelic()).toBe(false);
+  it('「いらない」ですぐ選び終わる（二度は押せない）', () => {
+    const c = offered();
+    expect(c.skipRelic()).toBe(true);
+    expect(c.relicOffer).toBeNull();
+    expect(c.skipRelic()).toBe(false);
+  });
 
-    const c = new Combat(cfg({ hero: strong, relics: {} }));
-    until(c, 'relicOffer');
+  it('出ていないレリックは貼れない', () => {
+    const c = offered();
     const ids = c.relicOffer!.ids;
     const missing = (['bell', 'fist', 'whistle', 'ward'] as RelicId[]).find(
       (id) => !ids.includes(id),
     )!;
     expect(c.placeRelic(missing, 1)).toBe(false);
-    expect(c.placeRelic(ids[0]!, 9)).toBe(false);
+  });
+
+  it('貼れないマスには貼れない', () => {
+    const c = offered();
+    expect(c.placeRelic(c.relicOffer!.ids[0]!, 9)).toBe(false);
+  });
+
+  it('貼るとそのマスに残り、選び終わる（2つ目は貼れない）', () => {
+    const c = offered();
+    const ids = c.relicOffer!.ids;
     expect(c.placeRelic(ids[0]!, 1)).toBe(true);
     expect(c.relics.get(1)).toBe(ids[0]);
     expect(c.relicOffer).toBeNull();
@@ -146,7 +173,7 @@ describe('レリック: 貼ったマスの装備に効く', () => {
     expect(hits(evs, 'a')).toHaveLength(hits(plain, 'a').length);
   });
 
-  it('巨人の拳: ダメージが ×2.5', () => {
+  it('巨人の拳: ダメージが RELIC.fistMult 倍', () => {
     const plain = hits(dummyChain([]), 'b')[0]!.damage;
     expect(hits(dummyChain([[2, 'fist']]), 'b')[0]!.damage).toBeCloseTo(plain * RELIC.fistMult, 1);
   });
@@ -163,12 +190,12 @@ describe('レリック: 貼ったマスの装備に効く', () => {
     expect(others).toBe(0);
   });
 
-  it('加速の羽: このあとに続く装備の段数が +2', () => {
+  it('加速の羽: このあとに続く装備の段数が RELIC.featherSteps 増える', () => {
     const plain = hits(dummyChain([]), 'c')[0]!.step;
     expect(hits(dummyChain([[1, 'feather']]), 'c')[0]!.step).toBe(plain + RELIC.featherSteps);
   });
 
-  it('吸血の牙: 与えたダメージの10%を回復', () => {
+  it('吸血の牙: 与えたダメージの RELIC.fangHeal の割合を回復', () => {
     const c = new Combat(cfg({ mode: 'dummy', relics: { stuck: [[2, 'fang']] } }));
     c.hp = 10;
     c.fireNext();
@@ -182,7 +209,11 @@ describe('レリック: 貼ったマスの装備に効く', () => {
     expect(c.hp).toBeCloseTo(10 + dealt * RELIC.fangHeal, 1);
   });
 
-  it('守りの札: そのマスが鳴るたびに防御がつく', () => {
+  it('守りの札がなければ、防御は0から始まる', () => {
+    expect(new Combat(cfg({ mode: 'dummy' })).defense).toBe(0);
+  });
+
+  it('守りの札: そのマスが鳴るたびに RELIC.wardDefense の防御がつく', () => {
     const evs = dummyChain([[2, 'ward']]);
     const rings = evs.filter((e) => e.type === 'step' && e.cell === 2).length;
     expect(rings).toBeGreaterThan(0);
@@ -190,10 +221,9 @@ describe('レリック: 貼ったマスの装備に効く', () => {
     c.fireNext();
     for (let i = 0; i < 60 * 10; i++) c.step();
     expect(c.defense).toBe(rings * RELIC.wardDefense);
-    expect(new Combat(cfg({ mode: 'dummy' })).defense).toBe(0);
   });
 
-  it('呼び戻しの笛: ここまで届いた連鎖のあとは、次までの待ちが半分', () => {
+  it('呼び戻しの笛: ここまで届いた連鎖のあとは、次までの待ちが RELIC.whistleWait の割合に縮む', () => {
     // Ticks from the first chain's end to the next chain's start (the enemies stay alive)
     const gap = (stuck: [number, RelicId][]) => {
       const weak = { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 0.01 };
@@ -210,63 +240,76 @@ describe('レリック: 貼ったマスの装備に効く', () => {
     expect(gap([[3, 'whistle']])).toBeCloseTo(plain * RELIC.whistleWait, -1);
   });
 
-  it('薙ぎ払いの紋・貫きの矢じり: 1回の攻撃が群れの何体にも当たる', () => {
-    const targets = (stuck: [number, RelicId][]) => {
-      const c = new Combat(
-        cfg({ hero: { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 0.01 }, relics: { stuck } }),
-      );
-      const evs = until(c, 'chainEnd');
-      return new Set(hits(evs, 'a').map((h) => h.enemyId)).size;
-    };
+  /** Enemies the first sword hits in the first chain */
+  const targets = (stuck: [number, RelicId][]) => {
+    const c = new Combat(
+      cfg({ hero: { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 0.01 }, relics: { stuck } }),
+    );
+    const evs = until(c, 'chainEnd');
+    return new Set(hits(evs, 'a').map((h) => h.enemyId)).size;
+  };
+
+  it('レリックがなければ、1回の攻撃は群れの1体だけに当たる', () => {
     expect(targets([])).toBe(1);
-    expect(targets([[1, 'sweep']])).toBeGreaterThan(1);
-    expect(targets([[1, 'pierce']])).toBeGreaterThan(1);
+  });
+
+  it.each([
+    ['薙ぎ払いの紋', 'sweep'],
+    ['貫きの矢じり', 'pierce'],
+  ] as const)('%s: 1回の攻撃が群れの何体にも当たる', (_, id) => {
+    expect(targets([[1, id]])).toBeGreaterThan(1);
   });
 
   it('金の爪: その装備で倒した敵は必ず装備を落とす', () => {
     const c = new Combat(cfg({ relics: { stuck: [[3, 'claw']] } }));
     const last = new Map<number, string>();
-    let kills = 0;
+    // Enemies the clawed axe finished, and whether each dropped gear in the same step
+    const kills: { enemyId: number; dropped: boolean }[] = [];
     for (let i = 0; i < 60 * 25 && !c.ended; i++) {
       c.step();
       const evs = c.drainEvents();
       for (const e of evs) {
         if (e.type === 'hit') last.set(e.enemyId, e.itemUid);
-        if (e.type === 'enemyDeath' && !e.fled && !e.boss && last.get(e.enemyId) === 'c') {
-          kills++;
-          expect(evs.some((d) => d.type === 'drop' && d.enemyId === e.enemyId)).toBe(true);
-        }
+        if (e.type === 'enemyDeath' && !e.fled && !e.boss && last.get(e.enemyId) === 'c')
+          kills.push({
+            enemyId: e.enemyId,
+            dropped: evs.some((d) => d.type === 'drop' && d.enemyId === e.enemyId),
+          });
       }
     }
-    expect(kills).toBeGreaterThan(0);
+    expect(kills.length).toBeGreaterThan(0);
+    expect(kills.filter((k) => !k.dropped)).toEqual([]);
   });
 });
 
 describe('レリック: 重ねる盤面', () => {
-  it('加速の羽は、アーティファクト（ひとりで3回鳴る）のマスでも1回だけ、最後に効く', () => {
-    const b = build(3, 1, [
-      { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
-      { uid: 'art', defId: 'dragon_fang', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
-      { uid: 'next', defId: 'sword', x: 2, y: 0, exits: [] },
-    ]);
-    const loadout = { ...b.loadout, under: b.loadout.cells.map(() => []) };
-    const step = (stuck: [number, RelicId][]) => {
-      const c = new Combat(cfg({ loadout, items: b.items, mode: 'dummy', relics: { stuck } }));
-      c.fireNext();
-      const evs = c.drainEvents();
-      for (let i = 0; i < 60 * 5; i++) {
-        c.step();
-        evs.push(...c.drainEvents());
-      }
-      return {
-        art: hits(evs, 'art').map((h) => h.step),
-        next: hits(evs, 'next')[0]!.step,
-      };
+  const b = build(3, 1, [
+    { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
+    { uid: 'art', defId: 'dragon_fang', x: 1, y: 0, exits: ['right'], rarity: 'legendary' },
+    { uid: 'next', defId: 'sword', x: 2, y: 0, exits: [] },
+  ]);
+  const loadout = { ...b.loadout, under: b.loadout.cells.map(() => []) };
+  /** Steps of the artifact's three rings and of the gear after it */
+  const steps = (stuck: [number, RelicId][]) => {
+    const c = new Combat(cfg({ loadout, items: b.items, mode: 'dummy', relics: { stuck } }));
+    c.fireNext();
+    const evs = c.drainEvents();
+    for (let i = 0; i < 60 * 5; i++) {
+      c.step();
+      evs.push(...c.drainEvents());
+    }
+    return {
+      art: hits(evs, 'art').map((h) => h.step),
+      next: hits(evs, 'next')[0]!.step,
     };
-    const plain = step([]);
-    expect(plain.art).toEqual([1, 2, 3]);
-    const fed = step([[1, 'feather']]);
-    expect(fed.art).toEqual([1, 2, 3]);
-    expect(fed.next).toBe(plain.next + RELIC.featherSteps);
+  };
+
+  it('加速の羽は、アーティファクト（ひとりで3回鳴る）自身の段数を変えない', () => {
+    expect(steps([]).art).toEqual([1, 2, 3]);
+    expect(steps([[1, 'feather']]).art).toEqual([1, 2, 3]);
+  });
+
+  it('アーティファクトのマスの加速の羽は、最後に1回だけ効く', () => {
+    expect(steps([[1, 'feather']]).next).toBe(steps([]).next + RELIC.featherSteps);
   });
 });

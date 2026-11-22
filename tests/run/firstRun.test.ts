@@ -20,15 +20,22 @@ function firstRun(seed: number, firstRun: boolean) {
 }
 
 describe('最初の自分のラン', () => {
-  it('戦利品が必ず1つ以上あり、最初の1つは消耗品ではない', () => {
-    let emptyBefore = 0;
-    for (let seed = 1; seed <= 120; seed++) {
-      if (firstRun(seed, false).drops.length === 0) emptyBefore++;
-      const r = firstRun(seed, true);
-      expect(r.drops.length).toBeGreaterThanOrEqual(1);
-      expect(getItemDef(r.drops[0]!.defId).kind).not.toBe('consumable');
-    }
-    // Without the promise some first runs end with nothing (this is what the flag fixes)
-    expect(emptyBefore).toBeGreaterThan(0);
+  const seeds = Array.from({ length: 120 }, (_, i) => i + 1);
+  let promised: ReturnType<typeof firstRun>[] | undefined;
+  const promisedRuns = () => (promised ??= seeds.map((seed) => firstRun(seed, true)));
+
+  it('約束がなければ、何も出ずに終わる最初のランがある（約束が直すこと）', () => {
+    const empty = seeds.filter((seed) => firstRun(seed, false).drops.length === 0);
+    expect(empty.length).toBeGreaterThan(0);
+  });
+
+  it('戦利品が必ず1つ以上ある', () => {
+    const empty = promisedRuns().filter((r) => r.drops.length === 0);
+    expect(empty).toEqual([]);
+  });
+
+  it('最初の戦利品は消耗品ではない', () => {
+    const kinds = promisedRuns().map((r) => getItemDef(r.drops[0]!.defId).kind);
+    expect(kinds).not.toContain('consumable');
   });
 });

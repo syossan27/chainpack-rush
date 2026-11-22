@@ -68,15 +68,20 @@ describe('盤面の種類: 戦闘での特徴', () => {
     expect(small.get('f')).toBeCloseTo(plain.get('f')! * getBoard('small').damage!, 1);
   });
 
-  it('炎の盤面: 炎の攻撃だけ倍率がかかる', () => {
+  it('炎の盤面: 炎の攻撃に盤面の倍率がかかる', () => {
     const plain = firstHits(board(undefined));
     const flame = firstHits(board('flame'));
-    expect(flame.get('f')).toBeCloseTo(plain.get('f')! * getBoard('flame').elements!.fire!, 1);
     expect(getBoard('flame').elements!.fire).toBeGreaterThan(1);
+    expect(flame.get('f')).toBeCloseTo(plain.get('f')! * getBoard('flame').elements!.fire!, 1);
+  });
+
+  it('炎の盤面: 炎でない攻撃は変わらない', () => {
+    const plain = firstHits(board(undefined));
+    const flame = firstHits(board('flame'));
     expect(flame.get('s')).toBeCloseTo(plain.get('s')!, 1);
   });
 
-  it('疾風の盤面: 次の連鎖までの待ち ×0.7', () => {
+  it('疾風の盤面: 次の連鎖までの待ちが盤面の倍率で短くなる', () => {
     const plain = wait(board(undefined));
     expect(wait(board('gale'))).toBeCloseTo(plain * getBoard('gale').wait!, -1);
     expect(wait(board('gale'))).toBeLessThan(plain);
@@ -84,16 +89,23 @@ describe('盤面の種類: 戦闘での特徴', () => {
 });
 
 describe('盤面の種類: 配置画面の見積もり', () => {
-  it('見積もりにも盤面の倍率がかかる（小さな盤面は全部、炎の盤面は炎だけ）', () => {
-    const est = (id: BoardId | undefined) => {
-      const cfg = board(id);
-      const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
-      return estimateRoute(plan, cfg.items, 1, id);
-    };
-    const plain = est(undefined).total;
-    expect(est('standard').total).toBeCloseTo(plain, 6);
-    expect(est('small').total).toBeCloseTo(plain * getBoard('small').damage!, 6);
-    expect(est('flame').total).toBeGreaterThan(plain);
-    expect(est('flame').total).toBeLessThan(plain * getBoard('flame').elements!.fire!);
+  const est = (id: BoardId | undefined) => {
+    const cfg = board(id);
+    const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
+    return estimateRoute(plan, cfg.items, 1, id).total;
+  };
+
+  it('標準の盤面の見積もりは、盤面の指定がないときと同じ', () => {
+    expect(est('standard')).toBeCloseTo(est(undefined), 6);
+  });
+
+  it('小さな盤面の見積もりは、全部に盤面の倍率がかかる', () => {
+    expect(est('small')).toBeCloseTo(est(undefined) * getBoard('small').damage!, 6);
+  });
+
+  it('炎の盤面の見積もりは、炎の攻撃の分だけ上がる', () => {
+    const plain = est(undefined);
+    expect(est('flame')).toBeGreaterThan(plain);
+    expect(est('flame')).toBeLessThan(plain * getBoard('flame').elements!.fire!);
   });
 });

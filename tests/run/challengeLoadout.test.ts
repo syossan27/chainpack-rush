@@ -17,18 +17,34 @@ const rare = CHALLENGES.find((c) => c.id === 'rare_rush')!.rules;
 const noGuard = CHALLENGES.find((c) => c.id === 'no_guard')!.rules;
 
 describe('挑戦用の編成', () => {
-  it('編集の出入りで、ふだんの盤面は変わらず、挑戦用は別に残る', () => {
+  /** Enter the challenge editor, take the axe off, and leave */
+  const editOnce = () => {
     const s = createInitialSave();
     const normal = JSON.stringify([s.loadout.cells, s.loadout.under]);
     enterChallengeEdit(s, rare);
-    expect(s.loadout.board).toBe('standard');
-    // Take the axe off the challenge layout
+    const boardWhileEditing = s.loadout.board;
     const axe = s.inventory.find((i) => i.defId === 'axe')!.uid;
     s.loadout = stackTake(s.loadout, itemMap(s), axe);
     leaveChallengeEdit(s);
+    return { s, normal, axe, boardWhileEditing };
+  };
+
+  it('挑戦用の編集では、標準の盤面を使う', () => {
+    expect(editOnce().boardWhileEditing).toBe('standard');
+  });
+
+  it('編集の出入りで、ふだんの盤面は変わらない', () => {
+    const { s, normal } = editOnce();
     expect(JSON.stringify([s.loadout.cells, s.loadout.under])).toBe(normal);
+  });
+
+  it('編集した挑戦用の編成は、ふだんとは別に残る', () => {
+    const { s, axe } = editOnce();
     expect(boardUids(challengeLoadoutOf(s, rare))).not.toContain(axe);
-    expect(s.editingChallenge).toBeUndefined();
+  });
+
+  it('編集を出ると、編集中の印は消える', () => {
+    expect(editOnce().s.editingChallenge).toBeUndefined();
   });
 
   it('制限に合わせる: 一番上の代わりは、同じ装備で向きが同じもの', () => {
@@ -46,7 +62,19 @@ describe('挑戦用の編成', () => {
     const l = fitToRules(s, board, rare);
     expect(l.cells[1]).toBe('x1'); // 向きが同じものを選ぶ
     expect(checkRules(l, itemMap(s), rare)).toEqual([]);
-    // もとの配置はそのまま
+  });
+
+  it('制限に合わせても、もとの配置はそのまま', () => {
+    const s = save([
+      ['o', 'origin_stone', 'common', ['right']],
+      ['e', 'sword', 'epic', ['right']],
+      ['x1', 'sword', 'rare', ['right']],
+    ]);
+    const board = put(s, [
+      ['o', 0],
+      ['e', 1],
+    ]);
+    fitToRules(s, board, rare);
     expect(board.cells[1]).toBe('e');
   });
 

@@ -48,14 +48,23 @@ describe.each(TARGETS)('辞書 %s', (l) => {
     expect(stale).toEqual([]);
   });
 
-  it('差し込みの名前が元の文と同じで、空の訳がない', () => {
-    const bad: string[] = [];
-    for (const d of ['ui', 'data'] as Domain[])
-      for (const [k, v] of Object.entries(parts[d])) {
-        if (!v.trim()) bad.push(`empty: ${k}`);
-        else if (placeholders(v).join() !== placeholders(stripContext(k)).join())
-          bad.push(`${k} → ${v}`);
-      }
+  it('空の訳がない', () => {
+    const empty = (['ui', 'data'] as Domain[]).flatMap((d) =>
+      Object.entries(parts[d])
+        .filter(([, v]) => !v.trim())
+        .map(([k]) => `[${d}] ${k}`),
+    );
+    expect(empty).toEqual([]);
+  });
+
+  it('差し込みの名前が元の文と同じ', () => {
+    const bad = (['ui', 'data'] as Domain[]).flatMap((d) =>
+      Object.entries(parts[d])
+        .filter(
+          ([k, v]) => v.trim() && placeholders(v).join() !== placeholders(stripContext(k)).join(),
+        )
+        .map(([k, v]) => `${k} → ${v}`),
+    );
     expect(bad).toEqual([]);
   });
 
@@ -68,20 +77,23 @@ describe.each(TARGETS)('辞書 %s', (l) => {
 });
 
 describe('言語の選び方', () => {
-  it('端末の言語から選ぶ。中国語は繁体字、ポルトガル語はブラジル版、古いインドネシア語の符号も拾う', () => {
-    const all = LANGS;
-    expect(detectLang(['ja-JP'], all)).toBe('ja');
-    expect(detectLang(['zh-CN'], all)).toBe('zh-Hant');
-    expect(detectLang(['zh-TW'], all)).toBe('zh-Hant');
-    expect(detectLang(['ko-KR'], all)).toBe('ko');
-    expect(detectLang(['pt-PT'], all)).toBe('pt-BR');
-    expect(detectLang(['es-MX'], all)).toBe('es');
-    expect(detectLang(['de-AT'], all)).toBe('de');
-    expect(detectLang(['fr-CA'], all)).toBe('fr');
-    expect(detectLang(['in-ID'], all)).toBe('id');
-    expect(detectLang(['id'], all)).toBe('id');
-    // Unknown languages fall back to English; 'it' must not match 'id'
-    expect(detectLang(['it-IT', 'ru'], all)).toBe('en');
+  it.each([
+    ['ja-JP', 'ja', '日本語'],
+    ['zh-CN', 'zh-Hant', '中国語は繁体字'],
+    ['zh-TW', 'zh-Hant', '中国語は繁体字'],
+    ['ko-KR', 'ko', '韓国語'],
+    ['pt-PT', 'pt-BR', 'ポルトガル語はブラジル版'],
+    ['es-MX', 'es', '地域つきの符号は言語で'],
+    ['de-AT', 'de', '地域つきの符号は言語で'],
+    ['fr-CA', 'fr', '地域つきの符号は言語で'],
+    ['in-ID', 'id', '古いインドネシア語の符号'],
+    ['id', 'id', 'インドネシア語'],
+  ])('端末の言語 %s からは %s を選ぶ（%s）', (device, lang) => {
+    expect(detectLang([device], LANGS)).toBe(lang);
+  });
+
+  it('知らない言語は英語にする（it は id と取り違えない）', () => {
+    expect(detectLang(['it-IT', 'ru'], LANGS)).toBe('en');
   });
 
   it('まだ出していない言語は選ばない', () => {
@@ -91,10 +103,18 @@ describe('言語の選び方', () => {
 
   it('同じ日本語で意味が違うときの印（|）は、日本語では見せない', () => {
     expect(t('出撃|stat')).toBe('出撃');
+  });
+
+  it('印（|）の付いた文も、ほかの言語では訳を出す', () => {
     registerDict('en', { '出撃|stat': 'Runs' });
     setLang('en');
     expect(t('出撃|stat')).toBe('Runs');
-    expect(t('出撃 {n}回', { n: 3 })).toBe('出撃 3回'); // missing → Japanese
+  });
+
+  it('訳がない文は日本語で出す', () => {
+    registerDict('en', { '出撃|stat': 'Runs' });
+    setLang('en');
+    expect(t('出撃 {n}回', { n: 3 })).toBe('出撃 3回');
   });
 });
 

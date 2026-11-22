@@ -71,15 +71,19 @@ describe('熟練と閃き: 必殺技は閃くまで出ない', () => {
     expect(hitsOf(evs, 'g')[0]).toBeCloseTo(hitsOf(plain, 'g')[0]! / TECHNIQUE_MULT, 1);
   });
 
-  it('閃いたら、その一撃が必殺技になって覚える。次の連鎖からは閃きなしで出る', () => {
+  it('閃いたら、その一撃が必殺技になる', () => {
     const c = new Combat(cfg({ levels: { physical: sure }, learned: [] }));
     const first = firstChain(c);
     const spark = first.find((e) => e.type === 'spark') as { id: string; uid: string } | undefined;
-    expect(spark?.id).toBe('triple');
-    expect(spark?.uid).toBe('g');
+    expect(spark).toMatchObject({ id: 'triple', uid: 'g' });
     expect(first.some((e) => e.type === 'technique')).toBe(true);
-    expect(c.stats.sparks).toEqual(['triple']);
+  });
+
+  it('閃いた技はその出撃で覚え、次の連鎖からは閃きなしで出る', () => {
+    const c = new Combat(cfg({ levels: { physical: sure }, learned: [] }));
+    firstChain(c);
     const second = firstChain(c);
+    expect(c.stats.sparks).toEqual(['triple']);
     expect(second.some((e) => e.type === 'technique')).toBe(true);
     expect(second.some((e) => e.type === 'spark')).toBe(false);
   });
@@ -112,7 +116,7 @@ describe('熟練と閃き: 熟練がたまり、強くなる', () => {
     expect(c.stats.rings).toEqual({ physical: 4 });
   });
 
-  it('熟練レベル1ごとに、その属性のダメージが +3%', () => {
+  it('熟練レベル1ごとに、その属性のダメージが MASTERY.dmgPerLevel ずつ上がる', () => {
     const plain = firstChain(new Combat(cfg({ levels: {}, learned: ['triple'] })));
     const lv2 = firstChain(new Combat(cfg({ levels: { physical: 2 }, learned: ['triple'] })));
     expect(hitsOf(lv2, 'a')[0]).toBeCloseTo(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getBoard } from '../../src/data/boards';
 import { autoBoard, boardScore } from '../../src/core/autoBoard';
-import { isHole } from '../../src/core/boards';
+import { boardDepth, isHole } from '../../src/core/boards';
 import { simulateChain } from '../../src/core/chain';
 import { Rng } from '../../src/core/rng';
 import { boardUids, restoreStackBoard, stackAt } from '../../src/core/stack';
@@ -41,34 +41,42 @@ describe('重ねる盤面の自動配置', () => {
     expect(boardUids(l).sort()).toEqual(['ax', 'o', 's1', 's2', 'sh']);
   });
 
-  it('同じ装備は盤面の深さまでしか重ならず、違う装備は重ならない', () => {
+  describe('同じ装備が盤面の深さより多いとき', () => {
+    const depth = boardDepth(getBoard('standard'));
     const inv = [
       item('o', 'origin_stone'),
-      ...['a', 'b', 'c', 'd'].map((u) => item(u, 'sword')),
+      ...Array.from({ length: depth + 1 }, (_, i) => item(`s${i}`, 'sword')),
       item('x', 'axe'),
     ];
+    const byUid = map(inv);
     const l = autoBoard(inv, 'standard');
     const stacks = l.cells.map((_, c) => stackAt(l, c)).filter((s) => s.length > 0);
-    const byUid = map(inv);
-    for (const s of stacks) {
-      expect(s.length).toBeLessThanOrEqual(3);
-      expect(new Set(s.map((u) => byUid.get(u)!.defId)).size).toBe(1);
-    }
-    expect(stacks.some((s) => s.length === 3)).toBe(true);
-    expect(boardUids(l)).toHaveLength(inv.length);
+
+    it('盤面の深さまで重ね、それより多くは重ならない', () => {
+      expect(Math.max(...stacks.map((s) => s.length))).toBe(depth);
+    });
+
+    it('違う装備は重ならない', () => {
+      const kinds = stacks.map((s) => new Set(s.map((u) => byUid.get(u)!.defId)).size);
+      expect(kinds.every((n) => n === 1)).toBe(true);
+    });
+
+    it('置ききれない装備はない', () => {
+      expect(boardUids(l)).toHaveLength(inv.length);
+    });
   });
 
-  it('穴のマスには何も置かない', () => {
-    const inv = [item('o', 'origin_stone'), ...'abcdefgh'.split('').map((u) => item(u, 'axe'))];
-    for (const id of ['crystal', 'flame', 'lightning'] as const) {
+  it.each(['crystal', 'flame', 'lightning'] as const)(
+    '%s: 穴のマスには何も置かず、起点は1つ',
+    (id) => {
+      const inv = [item('o', 'origin_stone'), ...'abcdefgh'.split('').map((u) => item(u, 'axe'))];
       const l = autoBoard(inv, id);
       const def = getBoard(id);
-      l.cells.forEach((_, c) => {
-        if (isHole(def, c)) expect(stackAt(l, c)).toEqual([]);
-      });
+      const onHoles = l.cells.map((_, c) => c).filter((c) => isHole(def, c) && stackAt(l, c).length);
+      expect(onHoles).toEqual([]);
       expect(l.originOrder).toEqual(['o']);
-    }
-  });
+    },
+  );
 
   it('同じ持ち物なら、何度呼んでも同じ配置', () => {
     expect(autoBoard(starter(), 'standard')).toEqual(autoBoard(starter(), 'standard'));
@@ -100,9 +108,12 @@ describe('重ねる盤面の自動配置', () => {
     expect(l.board).toBe('standard');
   });
 
-  it('強さ: 線がない配置は 0、強い装備が増えると上がる', () => {
+  it('強さ: 線がない配置は 0', () => {
     const empty = autoBoard([item('s', 'sword')], 'standard');
     expect(boardScore(empty, map([item('s', 'sword')]))).toBe(0);
+  });
+
+  it('強さ: 強い装備が増えると上がる', () => {
     const inv = starter();
     const base = boardScore(autoBoard(inv, 'standard'), map(inv));
     expect(base).toBeGreaterThan(0);

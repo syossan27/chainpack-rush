@@ -15,9 +15,9 @@ describe('カウンターシールド', () => {
       { uid: 's', defId: 'sword', x: 2, y: 0, exits: [] },
     ]);
 
-  it('受けたダメージをためて、連鎖が鳴らしたときに前の敵へまとめて返す（返すと空になる）', () => {
+  const dummy = () => {
     const { loadout, items } = row();
-    const c = new Combat({
+    return new Combat({
       seed: 1,
       regionId: 'grassland',
       loadout,
@@ -26,16 +26,34 @@ describe('カウンターシールド', () => {
       luck: NO_LUCK,
       mode: 'dummy',
     });
+  };
+  /** Takes a 10-damage hit, then fires one chain; returns its events */
+  const hitThenFire = (c: Combat) => {
     hitHero(c)({ id: -1, atk: 10, statuses: new Map() });
-    expect(c.counterStore).toBe(10);
     c.fireNext();
     const evs: CombatEvent[] = [];
     while (c.chain) {
       c.step();
       evs.push(...c.drainEvents());
     }
+    return evs;
+  };
+
+  it('受けたダメージをためる', () => {
+    const c = dummy();
+    hitHero(c)({ id: -1, atk: 10, statuses: new Map() });
+    expect(c.counterStore).toBe(10);
+  });
+
+  it('連鎖が鳴らしたときに、ためた分を（レアリティ倍率込みで）前の敵へまとめて返す', () => {
+    const evs = hitThenFire(dummy());
     const back = evs.find((e) => e.type === 'hit' && e.combo === COUNTER.name);
     expect(back?.type === 'hit' && back.damage).toBeCloseTo(10 * RARITY.rare.mult);
+  });
+
+  it('返すと空になる', () => {
+    const c = dummy();
+    hitThenFire(c);
     expect(c.counterStore).toBe(0);
   });
 

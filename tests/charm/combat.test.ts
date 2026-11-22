@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { NO_LUCK } from '../../src/config/balance';
-import { charmContext, type CharmInstance, type CharmSlots } from '../../src/core/charms';
+import { NO_LUCK, POISON } from '../../src/config/balance';
+import { charmContext, comboWeight, type CharmInstance, type CharmSlots } from '../../src/core/charms';
 import { simulateChain } from '../../src/core/chain';
 import { estimateRoute } from '../../src/core/estimate';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../../src/core/combat';
@@ -96,6 +96,11 @@ describe('アクセサリー: 戦闘のコンボ倍率', () => {
     expect(ratios[0]).toBeCloseTo(1, 2);
     expect(ratios[1]).toBeCloseTo(1 + v, 2);
     expect(ratios[2]).toBeCloseTo(1 + 2 * v, 2);
+  });
+
+  it('そろいの指輪: そろった行のスロットから、鳴るたびに値を足す', () => {
+    const v = getCharm('match_ring')!.values.rare;
+    const on = dummyEvents(rowCfg(['torch', 'flame_staff', 'torch'], 'match_ring'));
     const ms = charmEvs(on).map((e) => e.m);
     expect(ms[0]).toBeCloseTo(1 + v, 10);
     expect(ms[1]).toBeCloseTo(1 + 2 * v, 10);
@@ -151,17 +156,12 @@ describe('アクセサリー: 戦闘のコンボ倍率', () => {
     const evs = runEvents(cfg, 60 * 60);
     expect(evs.some((e) => e.type === 'chainEnd' && e.cut)).toBe(true);
     // The first charm event of every chain is the first step up from ×1
-    let first = true;
-    let checked = 0;
-    for (const e of evs) {
-      if (e.type === 'chainStart') first = true;
-      else if (e.type === 'charm' && first) {
-        expect(e.m).toBeCloseTo(1 + v, 10);
-        first = false;
-        checked++;
-      }
-    }
-    expect(checked).toBeGreaterThan(2);
+    const firsts = evs
+      .filter((e) => e.type === 'chainStart' || e.type === 'charm')
+      .filter((e, i, all) => e.type === 'charm' && all[i - 1]?.type === 'chainStart')
+      .map((e) => (e as Extract<CombatEvent, { type: 'charm' }>).m);
+    expect(firsts.length).toBeGreaterThan(2);
+    expect(firsts.every((m) => Math.abs(m - (1 + v)) < 1e-10)).toBe(true);
   });
 
   it('双剣は2回とも会心のピアスが反応する', () => {
@@ -184,7 +184,7 @@ describe('アクセサリー: 戦闘のコンボ倍率', () => {
     }
     const multi = [...byTick.values()].filter((n) => n.combos >= 2);
     expect(multi.length).toBeGreaterThan(0);
-    for (const n of multi) expect(n.charms).toBe(1);
+    expect(multi.map((n) => n.charms)).toEqual(multi.map(() => 1));
   });
 
   it('とどめの髪飾りは倒した数だけ', () => {
@@ -200,23 +200,24 @@ describe('アクセサリー: 戦闘のコンボ倍率', () => {
       else n.kills++;
       byTick.set(e.tick, n);
     }
-    const multi = [...byTick.values()].filter((n) => n.kills >= 2);
-    expect(multi.length).toBeGreaterThan(0);
-    for (const n of byTick.values()) expect(n.charms).toBe(n.kills);
+    const all = [...byTick.values()];
+    expect(all.filter((n) => n.kills >= 2).length).toBeGreaterThan(0);
+    expect(all.map((n) => n.charms)).toEqual(all.map((n) => n.kills));
   });
 });
 
 describe('アクセサリー: 連鎖の首飾りはコンボの強さで伸びる', () => {
   const necklace = getCharm('combo_necklace')!.values.rare;
-  // poison, then wind until the poison is 5 layers deep, then one more wind: 毒爆
-  const venomRow = ['poison_dagger', ...new Array(5).fill('wind_sword')];
+  // poison, then wind until the poison is as deep as it goes, then one more wind: 毒爆
+  const venomRow = ['poison_dagger', ...new Array(POISON.maxLayers).fill('wind_sword')];
 
-  it('光↔闇（封印・浄化）は満額の1/4', () => {
+  it('光↔闇（封印・浄化）は弱いコンボなので、満額より小さく伸びる', () => {
     const evs = dummyEvents(rowCfg(['light_sword', 'dark_sword', 'light_sword'], 'combo_necklace'));
-    const step = 1 + (necklace - 1) * 0.25;
+    const step = 1 + (necklace - 1) * comboWeight('seal');
     const fired = charmEvs(evs);
     expect(fired).toHaveLength(2);
     expect(fired[0]!.value).toBeCloseTo(step, 10);
+    expect(fired[0]!.value).toBeLessThan(necklace);
     expect(fired[1]!.m).toBeCloseTo(step * step, 10);
   });
 
@@ -230,15 +231,16 @@ describe('アクセサリー: 連鎖の首飾りはコンボの強さで伸び�
     expect(fired[0]!.value).toBeCloseTo(necklace, 10);
   });
 
-  it('予想の最後の倍率も戦闘と同じ（光↔闇・毒爆）', () => {
-    for (const row of [['light_sword', 'dark_sword', 'light_sword', 'dark_sword'], venomRow]) {
-      const cfg = rowCfg(row, 'combo_necklace');
-      const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
-      const ctx = charmContext(cfg.charms!, cfg.loadout, cfg.items);
-      const est = estimateRoute(plan, cfg.items, 1, undefined, ctx);
-      expect(est.charmPeak).toBeGreaterThan(1);
-      expect(est.charmPeak).toBeCloseTo(charmEvs(dummyEvents(cfg)).at(-1)!.m, 10);
-    }
+  it.each([
+    ['光↔闇', ['light_sword', 'dark_sword', 'light_sword', 'dark_sword']],
+    ['毒爆', venomRow],
+  ])('予想の最後の倍率も戦闘と同じ（%s）', (_, row) => {
+    const cfg = rowCfg(row, 'combo_necklace');
+    const plan = simulateChain(cfg.loadout, cfg.items).plans[0]!;
+    const ctx = charmContext(cfg.charms!, cfg.loadout, cfg.items);
+    const est = estimateRoute(plan, cfg.items, 1, undefined, ctx);
+    expect(est.charmPeak).toBeGreaterThan(1);
+    expect(est.charmPeak).toBeCloseTo(charmEvs(dummyEvents(cfg)).at(-1)!.m, 10);
   });
 });
 

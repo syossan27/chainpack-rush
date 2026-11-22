@@ -7,7 +7,6 @@ import {
   type EnemyState,
   type RunConfig,
 } from '../../src/core/combat';
-import { getEnemyDef } from '../../src/data/enemies';
 import { getRegion } from '../../src/data/regions';
 import { build } from '../helpers';
 
@@ -47,6 +46,15 @@ function seedWithGoblinFirst(): number {
   throw new Error('no seed');
 }
 
+/** A seed where loop 1 also has an ordinary goblin to compare with */
+function seedWithPlainGoblin(): number {
+  for (let seed = 1; seed < 200; seed++) {
+    const c = new Combat(cfg({ seed }));
+    if (c.enemies.some((e) => e.defId === 'goblin' && !e.treasure)) return seed;
+  }
+  throw new Error('no seed');
+}
+
 function stepAll(c: Combat, ticks: number): CombatEvent[] {
   const out: CombatEvent[] = [];
   for (let i = 0; i < ticks && !c.ended; i++) {
@@ -63,18 +71,27 @@ describe('黄金ゴブリン: 出てくるとき', () => {
     expect(goblinOf(new Combat(plain))).toBeUndefined();
   });
 
-  it('群れ1つの代わりに1体だけで出る。出たことを知らせる', () => {
+  it('群れ1つの代わりに、ゴブリン1体だけで出る', () => {
     const c = new Combat(cfg());
     const g = goblinOf(c)!;
     expect(g.defId).toBe('goblin');
     expect(c.enemies.filter((e) => e.group === g.group)).toHaveLength(1);
+  });
+
+  it('出たことを知らせる', () => {
+    const c = new Combat(cfg());
     expect(c.drainEvents().some((e) => e.type === 'treasure' && e.phase === 'appear')).toBe(true);
   });
 
-  it('硬さは、同じ周回のゴブリンの TREASURE.hpMult 倍', () => {
+  it('硬さは、同じ周回のふつうのゴブリンの TREASURE.hpMult 倍', () => {
+    const c = new Combat(cfg({ seed: seedWithPlainGoblin() }));
+    const g = goblinOf(c)!;
+    const plain = c.enemies.find((e) => e.defId === 'goblin' && !e.treasure)!;
+    expect(g.maxHp / plain.maxHp).toBeCloseTo(TREASURE.hpMult, 6);
+  });
+
+  it('出てきたときは体力が満タン', () => {
     const g = goblinOf(new Combat(cfg()))!;
-    const plain = getEnemyDef('goblin').hp * getRegion('grassland').power.hp;
-    expect(g.maxHp).toBeCloseTo(plain * TREASURE.hpMult, 6);
     expect(g.hp).toBe(g.maxHp);
   });
 
@@ -91,45 +108,73 @@ describe('黄金ゴブリン: 出てくるとき', () => {
 });
 
 describe('黄金ゴブリン: 倒すか、逃げられるか', () => {
-  it('倒すと、レア以上の装備4個（1個目はエピック以上）と、ふつうの敵10体ぶんの金貨', () => {
+  /** Beat the goblin at once: the events and the gold gained in the step it is caught */
+  const catchIt = () => {
     const seed = seedWithGoblinFirst();
     const strong = { ...BASE_HERO_STATS, maxHp: 1e6, attackMult: 1e4 };
     const c = new Combat(cfg({ seed, hero: strong }));
     const id = goblinOf(c)!.id;
-    let goldBefore = 0;
-    let drops: CombatEvent[] = [];
     for (let i = 0; i < 60 * 30; i++) {
-      goldBefore = c.stats.gold ?? 0;
+      const goldBefore = c.stats.gold ?? 0;
       c.step();
       const evs = c.drainEvents();
       if (evs.some((e) => e.type === 'treasure' && e.phase === 'caught')) {
-        drops = evs.filter((e) => e.type === 'drop' && e.enemyId === id);
-        // Alone in its group, but not a sweep (its banner would hide the catch)
-        expect(evs.some((e) => e.type === 'timeBonus' && e.reason === 'sweep')).toBe(false);
-        break;
+        const drops = evs.filter(
+          (e): e is Extract<CombatEvent, { type: 'drop' }> => e.type === 'drop' && e.enemyId === id,
+        );
+        return { evs, drops, gold: (c.stats.gold ?? 0) - goldBefore };
       }
     }
-    expect(drops).toHaveLength(TREASURE.drops);
-    const rarities = drops.map((e) => (e as { item: { rarity: string } }).item.rarity);
-    expect(rarities.every((r) => r !== 'common')).toBe(true);
-    expect(['epic', 'legendary']).toContain(rarities[0]);
-    expect((c.stats.gold ?? 0) - goldBefore).toBe(
-      getRegion('grassland').goldPerKill * TREASURE.goldKills,
-    );
+    throw new Error('not caught');
+  };
+
+  it('倒すと、TREASURE.drops 個の装備を落とす', () => {
+    expect(catchIt().drops).toHaveLength(TREASURE.drops);
   });
 
-  it('前まで来てから6秒で逃げる。何も落とさず、攻撃もしてこない', () => {
+  it('倒して落ちる装備はすべてレア以上', () => {
+    const rarities = catchIt().drops.map((e) => e.item.rarity);
+    expect(rarities.filter((r) => r === 'common')).toEqual([]);
+  });
+
+  it('倒して落ちる装備の1個目はエピック以上', () => {
+    expect(['epic', 'legendary']).toContain(catchIt().drops[0]!.item.rarity);
+  });
+
+  it('倒すと、ふつうの敵 TREASURE.goldKills 体ぶんの金貨', () => {
+    expect(catchIt().gold).toBe(getRegion('grassland').goldPerKill * TREASURE.goldKills);
+  });
+
+  it('群れに1体だけだが、倒しても全滅ボーナスにはならない（倒した知らせが隠れない）', () => {
+    const { evs } = catchIt();
+    expect(evs.some((e) => e.type === 'timeBonus' && e.reason === 'sweep')).toBe(false);
+  });
+
+  /** Never hurt the goblin: the events until it has run off */
+  const letItGo = () => {
     const seed = seedWithGoblinFirst();
     const zero = { ...BASE_HERO_STATS, maxHp: 1000, attackMult: 0 };
     const c = new Combat(cfg({ seed, hero: zero }));
     const g = goblinOf(c)!;
     const evs = stepAll(c, 60 * 30);
-    const fled = evs.find((e) => e.type === 'treasure' && e.phase === 'fled');
-    expect(fled).toBeDefined();
+    return { g, evs };
+  };
+
+  it('倒せないと、前まで来てからしばらくで逃げていなくなる', () => {
+    const { g, evs } = letItGo();
+    expect(evs.find((e) => e.type === 'treasure' && e.phase === 'fled')).toBeDefined();
     expect(evs.some((e) => e.type === 'enemyDeath' && e.enemyId === g.id && e.fled)).toBe(true);
-    expect(evs.some((e) => e.type === 'drop' && e.enemyId === g.id)).toBe(false);
-    expect(evs.some((e) => e.type === 'heroHit' && e.enemyId === g.id)).toBe(false);
     expect(g.alive).toBe(false);
+  });
+
+  it('逃げたときは何も落とさない', () => {
+    const { g, evs } = letItGo();
+    expect(evs.some((e) => e.type === 'drop' && e.enemyId === g.id)).toBe(false);
+  });
+
+  it('黄金ゴブリンは攻撃してこない', () => {
+    const { g, evs } = letItGo();
+    expect(evs.some((e) => e.type === 'heroHit' && e.enemyId === g.id)).toBe(false);
   });
 
   it('時が止まっているあいだは、逃げるまでの時間も止まる', () => {
@@ -152,9 +197,10 @@ describe('黄金ゴブリン: 1個目はエピック以上', () => {
   it('どの乱数でも、下限つきの戦利品はエピックかレジェンダリー', async () => {
     const { rollLoot } = await import('../../src/core/loot');
     const { Rng } = await import('../../src/core/rng');
-    for (let seed = 1; seed <= 200; seed++) {
-      const it = rollLoot(new Rng(seed), 1, `x${seed}`, true, undefined, false, 'epic');
-      expect(['epic', 'legendary']).toContain(it.rarity);
-    }
+    const rarities = Array.from(
+      { length: 200 },
+      (_, i) => rollLoot(new Rng(i + 1), 1, `x${i + 1}`, true, undefined, false, 'epic').rarity,
+    );
+    expect(rarities.filter((r) => r !== 'epic' && r !== 'legendary')).toEqual([]);
   });
 });

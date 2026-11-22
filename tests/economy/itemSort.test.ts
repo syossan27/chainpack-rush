@@ -46,12 +46,20 @@ describe('倉庫の並び', () => {
 });
 
 describe('倉庫の並びの保存', () => {
-  it('初めはレア順。装備ごとは保存して読み直しても残り、壊れた値はレア順に戻る', () => {
+  it('初めはレア順', () => {
+    expect(createInitialSave().settings.itemSort).toBe('rarity');
+  });
+
+  it('装備ごとは、保存して読み直しても残る', () => {
     const s = createInitialSave();
-    expect(s.settings.itemSort).toBe('rarity');
     s.settings.itemSort = 'gear';
     expect(deserializeSave(serializeSave(s)).settings.itemSort).toBe('gear');
-    const data = JSON.parse(serializeSave(s)) as { settings: Record<string, unknown> };
+  });
+
+  it('壊れた値はレア順に戻る', () => {
+    const data = JSON.parse(serializeSave(createInitialSave())) as {
+      settings: Record<string, unknown>;
+    };
     data.settings.itemSort = 'name';
     expect(deserializeSave(JSON.stringify(data)).settings.itemSort).toBe('rarity');
   });

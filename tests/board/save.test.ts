@@ -9,10 +9,18 @@ import {
   rebuildChallengeLoadout,
 } from '../../src/core/challengeLoadout';
 import { runConfig } from '../../src/core/runConfig';
+import { boardSize } from '../../src/core/boards';
+import { getBoard } from '../../src/data/boards';
 import { boardUids, emptyStackBoard, stackAt, stackTake } from '../../src/core/stack';
 import { CHALLENGES } from '../../src/data/challenges';
 import { getSave, setSave } from '../../src/platform/store';
 import type { ItemInstance } from '../../src/core/types';
+
+/** Charm slots of the standard board: one per column and one per row */
+const STANDARD_SLOTS = (() => {
+  const { width, height } = boardSize(getBoard('standard'));
+  return width + height;
+})();
 
 const rare = CHALLENGES.find((c) => c.id === 'rare_rush')!.rules;
 
@@ -24,7 +32,7 @@ function grown(): SaveData {
 }
 
 describe('盤面ごとの配置', () => {
-  it('盤面ごとに配置を覚える。切り替えて戻っても残り、出撃はいま選んでいる盤面', () => {
+  it('盤面ごとに配置を覚え、切り替えて戻っても残る', () => {
     const s = grown();
     const standard = JSON.stringify([s.loadout.cells, s.loadout.under]);
     expect(switchBoard(s, 'small')).toBe(true);
@@ -38,14 +46,24 @@ describe('盤面ごとの配置', () => {
     expect(JSON.stringify([s.loadout.cells, s.loadout.under])).toBe(standard);
     switchBoard(s, 'small');
     expect(JSON.stringify([s.loadout.cells, s.loadout.under])).toBe(small);
+  });
+
+  it('出撃は、いま選んでいる盤面の配置で出る', () => {
+    const s = grown();
+    switchBoard(s, 'small');
     expect(runConfig(s, 'normal', 'grassland', 1).loadout).toBe(s.loadout);
   });
 
-  it('初めて切り替えた盤面は自動で組まれる。持っていない盤面には切り替えられない', () => {
+  it('初めて切り替えた盤面は自動で組まれる', () => {
     const s = grown();
     switchBoard(s, 'small');
     expect(boardUids(s.loadout).length).toBeGreaterThan(1);
     expect(s.loadout.originOrder).toHaveLength(1);
+  });
+
+  it('持っていない盤面には切り替えられない', () => {
+    const s = grown();
+    switchBoard(s, 'small');
     expect(switchBoard(s, 'flame')).toBe(false);
     expect(s.loadout.board).toBe('small');
   });
@@ -59,15 +77,12 @@ describe('盤面ごとの配置', () => {
     expect(s.loadout.consumableAuto).toEqual(before.a);
   });
 
-  it('ほかの盤面で使っている装備は、あふれた分の売却の候補に入らない。売ると、その盤面から外れる', () => {
+  /** The standard board's gear taken off the small board (so only used there), with storage overflowing */
+  function usedOnStandardOnly() {
     const s = grown();
     const onStandard = boardUids(s.loadout).filter((u) => u !== s.loadout.originOrder[0]);
     switchBoard(s, 'small');
-    // Take the standard board's gear off the small board, so it is only used there
     for (const u of onStandard) s.loadout = stackTake(s.loadout, itemMap(s), u);
-    const uses = otherBoardUse(s);
-    for (const u of onStandard) expect(uses.get(u)).toEqual(['standard']);
-    // Storage overflows with plenty of junk
     for (let i = 0; i < 60; i++)
       s.inventory.push({
         uid: `j${i}`,
@@ -76,10 +91,24 @@ describe('盤面ごとの配置', () => {
         exits: ['right'],
         rerollCount: 0,
       } as ItemInstance);
+    return { s, onStandard };
+  }
+
+  it('ほかの盤面で使っている装備は、どの盤面で使っているか分かる', () => {
+    const { s, onStandard } = usedOnStandardOnly();
+    const uses = otherBoardUse(s);
+    expect(onStandard.map((u) => uses.get(u))).toEqual(onStandard.map(() => ['standard']));
+  });
+
+  it('ほかの盤面で使っている装備は、あふれた分の売却の候補に入らない', () => {
+    const { s, onStandard } = usedOnStandardOnly();
     const plan = overflowSellPlan(s);
     expect(plan.uids.length).toBeGreaterThan(0);
-    for (const u of onStandard) expect(plan.uids).not.toContain(u);
-    // Sold from its details anyway: it leaves the standard board
+    expect(plan.uids.filter((u) => onStandard.includes(u))).toEqual([]);
+  });
+
+  it('ほかの盤面で使っている装備を売ると、その盤面から外れる', () => {
+    const { s, onStandard } = usedOnStandardOnly();
     sellItems(s, [onStandard[0]!]);
     switchBoard(s, 'standard');
     expect(boardUids(s.loadout)).not.toContain(onStandard[0]);
@@ -114,7 +143,7 @@ describe('挑戦用の配置', () => {
     s.challengeLoadout = { ...emptyStackBoard('standard'), consumables: [] };
     const l = rebuildChallengeLoadout(s, rare);
     expect(l.board).toBe('standard');
-    expect(l.width).toBe(4);
+    expect(l.width).toBe(boardSize(getBoard('standard')).width);
     expect(s.challengeLoadout).toBe(l);
     expect(boardUids(l).length).toBeGreaterThan(1);
     expect(s.loadout.board).toBe('small');
@@ -174,7 +203,7 @@ describe('ランの設定（runConfig）', () => {
     expect(cfg.mastery).toEqual({ levels: {}, learned: [] });
     expect(cfg.relics).toEqual({});
     expect(cfg.treasure).toBeDefined();
-    expect(cfg.charms).toHaveLength(7);
+    expect(cfg.charms).toHaveLength(STANDARD_SLOTS);
     expect(cfg.charmSure).toBe(true);
     expect(cfg.firstRun).toBe(true);
     expect(cfg.noLoot).toBeFalsy();
@@ -185,7 +214,7 @@ describe('ランの設定（runConfig）', () => {
     const cfg = runConfig(s, 'endless', 'endless', 5);
     expect(cfg.treasure).toBeUndefined();
     expect(cfg.charmSure).toBeFalsy();
-    expect(cfg.charms).toHaveLength(7);
+    expect(cfg.charms).toHaveLength(STANDARD_SLOTS);
     expect(cfg.relics).toEqual({});
     expect(cfg.mastery).toBeDefined();
   });
@@ -203,8 +232,10 @@ describe('ランの設定（runConfig）', () => {
 });
 
 describe('新しいセーブ', () => {
-  it('起点石1・剣2・斧・木の盾・薬。標準盤面の真ん中の行に 起点 → 剣2つ重ね → 斧 → 木の盾、薬は消耗品の枠', () => {
-    const s = createInitialSave();
+  const s = createInitialSave();
+  const def = (u: string | undefined) => s.inventory.find((i) => i.uid === u)?.defId;
+
+  it('持ち物は 起点石1・剣2・斧・木の盾・薬', () => {
     expect(s.inventory.map((i) => i.defId)).toEqual([
       'origin_stone',
       'sword',
@@ -213,14 +244,22 @@ describe('新しいセーブ', () => {
       'wood_shield',
       'potion',
     ]);
-    const def = (u: string | undefined) => s.inventory.find((i) => i.uid === u)?.defId;
+  });
+
+  it('標準盤面の真ん中の行に 起点 → 剣2つ重ね → 斧 → 木の盾', () => {
     expect(s.loadout.board).toBe('standard');
     expect(stackAt(s.loadout, 4).map(def)).toEqual(['origin_stone']);
     expect(stackAt(s.loadout, 5).map(def)).toEqual(['sword', 'sword']);
     expect(stackAt(s.loadout, 6).map(def)).toEqual(['axe']);
     expect(stackAt(s.loadout, 7).map(def)).toEqual(['wood_shield']);
+  });
+
+  it('薬は消耗品の枠に入り、自動で使う', () => {
     expect(s.loadout.consumables.map(def)).toEqual(['potion']);
     expect(s.loadout.consumableAuto).toEqual(['potion']);
+  });
+
+  it('ほかの盤面・アクセサリー・熟練は何もない', () => {
     expect(s.boards).toEqual({ active: 'standard', layouts: {}, charms: {} });
     expect(s.charms).toEqual([]);
     expect(s.mastery).toEqual({ points: {}, learned: [] });

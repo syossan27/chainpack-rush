@@ -122,6 +122,12 @@ function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number
   return { sub, sparks: r.stats.sparks ?? [], relics };
 }
 
+// Both runs are deterministic and every check works on a copy, so each is played once
+let challengeSub: ScoreSubmission | undefined;
+const challenge = () => (challengeSub ??= playChallenge());
+let endlessRun: ReturnType<typeof playEndless> | undefined;
+const endless = () => (endlessRun ??= playEndless());
+
 const verify = (sub: ScoreSubmission) =>
   verifySubmission(JSON.parse(JSON.stringify(sub)), NOW, START);
 const fake = (sub: ScoreSubmission, f: (x: ScoreSubmission) => void) => {
@@ -129,31 +135,50 @@ const fake = (sub: ScoreSubmission, f: (x: ScoreSubmission) => void) => {
   f(x);
   return verifySubmission(x, NOW, START);
 };
+/** A change made to a copy of a record before it is checked */
+type Tamper = (x: ScoreSubmission) => void;
+const add = (x: ScoreSubmission, it: Partial<ItemInstance> & { uid: string; defId: string }) =>
+  x.items.push({ rarity: 'common', exits: ['right'], rerollCount: 0, ...it } as ItemInstance);
+/** A cell (not the origin's) holding a single gear with nothing under it */
+const top = (x: ScoreSubmission) =>
+  x.loadout.cells.findIndex((u, i) => u && i > 0 && x.loadout.under![i]!.length === 0);
 
 describe('ランキングの記録の確認', () => {
-  it('v4: 挑戦の記録が確認を通る（重ねる標準盤面）。スコアは合計ダメージ', () => {
-    const sub = playChallenge();
+  it('v4: 挑戦の記録は重ねる標準盤面で、熟練とアクセサリーは付かない', () => {
+    const sub = challenge();
     expect(sub.v).toBe(4);
     expect(sub.loadout.board).toBe('standard');
     expect(sub.mastery).toBeNull();
     expect(sub.charms).toBeNull();
-    const v = verify(sub);
-    expect(v.ok).toBe(true);
-    if (v.ok) expect(v.score).toBe(Math.floor(sub.claim.totalDamage));
   });
 
-  it('結果を盛る・装備を強くする・期間や種を変えると、はじく', () => {
-    const sub = playChallenge();
-    expect(fake(sub, (x) => (x.claim.totalDamage *= 2))).toEqual({ ok: false, reason: 'mismatch' });
-    expect(fake(sub, (x) => (x.items[2]!.rarity = 'legendary'))).toMatchObject({ ok: false });
-    expect(fake(sub, (x) => (x.season = 5))).toEqual({ ok: false, reason: 'season' });
-    expect(fake(sub, (x) => (x.seed += 1))).toEqual({ ok: false, reason: 'challenge' });
-    expect(
-      fake(sub, (x) => (x.hero = { maxHp: 0, atb: 0, attack: 0, runTime: 0, stars: 0 })),
-    ).toEqual({ ok: false, reason: 'hero' });
-    expect(
-      fake(sub, (x) => (x.items[0]!.affixes = [{ id: 'sharp' as never, value: 999 }])),
-    ).toMatchObject({ ok: false });
+  it('挑戦の記録は確認を通り、スコアは合計ダメージ', () => {
+    const sub = challenge();
+    const v = verify(sub);
+    expect(v).toMatchObject({ ok: true, score: Math.floor(sub.claim.totalDamage) });
+  });
+
+  it.each<[string, Tamper, string]>([
+    ['結果を盛る', (x: ScoreSubmission) => (x.claim.totalDamage *= 2), 'mismatch'],
+    ['期間を変える', (x: ScoreSubmission) => (x.season = 5), 'season'],
+    ['種を変える', (x: ScoreSubmission) => (x.seed += 1), 'challenge'],
+    [
+      '勇者を変える',
+      (x: ScoreSubmission) => (x.hero = { maxHp: 0, atb: 0, attack: 0, runTime: 0, stars: 0 }),
+      'hero',
+    ],
+  ])('%s と、はじく', (_, f, reason) => {
+    expect(fake(challenge(), f)).toEqual({ ok: false, reason });
+  });
+
+  it.each<[string, Tamper]>([
+    ['装備を強くする', (x: ScoreSubmission) => (x.items[2]!.rarity = 'legendary')],
+    [
+      '装備の付加効果を盛る',
+      (x: ScoreSubmission) => (x.items[0]!.affixes = [{ id: 'sharp' as never, value: 999 }]),
+    ],
+  ])('%s と、はじく', (_, f) => {
+    expect(fake(challenge(), f)).toMatchObject({ ok: false });
   });
 
   it('∞ の記録は、結果の画面が薬を減らし補充したあとに送っても通る（ランを始めたときの配置のまま）', () => {
@@ -184,38 +209,45 @@ describe('ランキングの記録の確認', () => {
     expect(verify(sub)).toMatchObject({ ok: true });
   });
 
-  it('v2: ∞ の記録が通る。途中で閃き、遺物を選んだランでも一致する', () => {
-    const { sub, sparks, relics } = playEndless();
+  it('v2: 途中で閃き、遺物を選んだ ∞ の記録が確認を通る', () => {
+    const { sub, sparks, relics } = endless();
     expect(sparks).toContain('triple');
     expect(relics).toBeGreaterThanOrEqual(1);
-    // The run's start: the technique sparked mid-run is not in what was sent
-    expect(sub.mastery).toEqual({ levels: { physical: 30 }, learned: [] });
-    expect(sub.charms![0]).toMatchObject({ defId: 'combo_necklace' });
     expect(verify(sub).ok).toBe(true);
-    const cheat = JSON.parse(JSON.stringify(sub)) as ScoreSubmission;
+  });
+
+  it('∞ の記録の熟練は、ランを始めたときのもの（途中で閃いた技は入らない）', () => {
+    expect(endless().sub.mastery).toEqual({ levels: { physical: 30 }, learned: [] });
+  });
+
+  it('∞ の記録には、付けていたアクセサリーが入る', () => {
+    expect(endless().sub.charms![0]).toMatchObject({ defId: 'combo_necklace' });
+  });
+
+  it('∞ の記録で勇者を強くすると、はじく', () => {
+    const cheat = JSON.parse(JSON.stringify(endless().sub)) as ScoreSubmission;
     cheat.hero!.attack = 999;
     expect(verifySubmission(cheat, NOW, START)).toEqual({ ok: false, reason: 'hero' });
+  });
+
+  it('∞ のスコアは、ダメージより着いた周回が先', () => {
     expect(rankScore('endless', { reachedLoop: 3, totalDamage: 5 })).toBeGreaterThan(
       rankScore('endless', { reachedLoop: 2, totalDamage: 1e9 }),
     );
   });
 
-  it('おかしな盤面ははじく（違う装備を重ねる・深さ超え・起点2つ・穴・ない盤面）', () => {
-    const sub = playChallenge();
-    const add = (x: ScoreSubmission, it: Partial<ItemInstance> & { uid: string; defId: string }) =>
-      x.items.push({ rarity: 'common', exits: ['right'], rerollCount: 0, ...it } as ItemInstance);
-    const top = (x: ScoreSubmission) =>
-      x.loadout.cells.findIndex((u, i) => u && i > 0 && x.loadout.under![i]!.length === 0);
-    // Another kind of gear under a top
+  it('おかしな盤面ははじく: 違う装備を重ねる', () => {
     expect(
-      fake(sub, (x) => {
+      fake(challenge(), (x) => {
         add(x, { uid: 'zz', defId: 'greatsword', rarity: best('greatsword') });
         x.loadout.under![top(x)]!.push('zz');
       }),
     ).toEqual({ ok: false, reason: 'loadout' });
-    // Deeper than the board allows: four of the same gear
+  });
+
+  it('おかしな盤面ははじく: 盤面の深さを超えて重ねる（同じ装備4つ）', () => {
     expect(
-      fake(sub, (x) => {
+      fake(challenge(), (x) => {
         const i = top(x);
         const defId = x.items.find((it) => it.uid === x.loadout.cells[i])!.defId;
         for (const u of ['d1', 'd2', 'd3']) {
@@ -224,24 +256,29 @@ describe('ランキングの記録の確認', () => {
         }
       }),
     ).toEqual({ ok: false, reason: 'loadout' });
-    // A second origin stone
+  });
+
+  it('おかしな盤面ははじく: 起点が2つ', () => {
     expect(
-      fake(sub, (x) => {
+      fake(challenge(), (x) => {
         add(x, { uid: 'o2', defId: 'origin_stone' });
         const free = x.loadout.cells.indexOf(null);
         x.loadout.cells[free] = 'o2';
         x.loadout.originOrder.push('o2');
       }),
     ).toEqual({ ok: false, reason: 'loadout' });
-    // A board that does not exist
-    expect(fake(sub, (x) => (x.loadout.board = 'nope' as never))).toEqual({
+  });
+
+  it('おかしな盤面ははじく: ない盤面', () => {
+    expect(fake(challenge(), (x) => (x.loadout.board = 'nope' as never))).toEqual({
       ok: false,
       reason: 'loadout',
     });
-    // Gear in a hole: the crystal board (5×4) with the origin stone on its corner
-    const { sub: e } = playEndless();
+  });
+
+  it('おかしな盤面ははじく: 穴に装備がある（結晶の盤面の角に起点）', () => {
     expect(
-      fake(e, (x) => {
+      fake(endless().sub, (x) => {
         const l = emptyStackBoard('crystal');
         const o = x.items.find((it) => it.defId === 'origin_stone')!.uid;
         l.cells[0] = o;
@@ -253,9 +290,8 @@ describe('ランキングの記録の確認', () => {
   });
 
   it('挑戦で標準以外の盤面ははじく', () => {
-    const sub = playChallenge();
     expect(
-      fake(sub, (x) => {
+      fake(challenge(), (x) => {
         const l = emptyStackBoard('small');
         const o = x.items.find((it) => it.defId === 'origin_stone')!.uid;
         l.cells[0] = o;
@@ -266,73 +302,90 @@ describe('ランキングの記録の確認', () => {
     ).toEqual({ ok: false, reason: 'loadout' });
   });
 
-  it('熟練: 31 や負の数、知らない属性、知らない技、重複した技ははじく', () => {
-    const { sub } = playEndless();
-    for (const f of [
-      (x: ScoreSubmission) => (x.mastery!.levels.physical = 31),
-      (x: ScoreSubmission) => (x.mastery!.levels.physical = -1),
-      (x: ScoreSubmission) => (x.mastery!.levels.physical = 1.5),
+  it.each([
+    ['31', (x: ScoreSubmission) => (x.mastery!.levels.physical = 31)],
+    ['負の数', (x: ScoreSubmission) => (x.mastery!.levels.physical = -1)],
+    ['小数', (x: ScoreSubmission) => (x.mastery!.levels.physical = 1.5)],
+    [
+      '知らない属性',
       (x: ScoreSubmission) => ((x.mastery!.levels as Record<string, number>).nope = 1),
-      (x: ScoreSubmission) => (x.mastery!.learned = ['nope']),
-      (x: ScoreSubmission) => (x.mastery!.learned = ['triple', 'triple']),
-      (x: ScoreSubmission) => (x.mastery = null),
-    ])
-      expect(fake(sub, f)).toEqual({ ok: false, reason: 'mastery' });
+    ],
+    ['知らない技', (x: ScoreSubmission) => (x.mastery!.learned = ['nope'])],
+    ['重複した技', (x: ScoreSubmission) => (x.mastery!.learned = ['triple', 'triple'])],
+    ['熟練がない', (x: ScoreSubmission) => (x.mastery = null)],
+  ])('熟練: %s ははじく', (_, f) => {
+    expect(fake(endless().sub, f)).toEqual({ ok: false, reason: 'mastery' });
   });
 
-  it('アクセサリー: 知らないもの、二重の uid、スロット数の違いははじく', () => {
-    const { sub } = playEndless();
-    for (const f of [
+  it.each([
+    [
+      '知らないもの',
       (x: ScoreSubmission) =>
         ((x.charms as unknown[])[0] = { uid: 'c1', defId: 'nope', rarity: 'rare' }),
+    ],
+    [
+      '知らないレアリティ',
       (x: ScoreSubmission) =>
         ((x.charms as unknown[])[0] = { uid: 'c1', defId: 'combo_necklace', rarity: 'bad' }),
+    ],
+    [
+      '二重の uid',
       (x: ScoreSubmission) =>
         ((x.charms as unknown[])[1] = { uid: 'c1', defId: 'match_ring', rarity: 'rare' }),
-      (x: ScoreSubmission) => (x.charms = [...x.charms!, null]),
-      (x: ScoreSubmission) => (x.charms = null),
-    ])
-      expect(fake(sub, f)).toEqual({ ok: false, reason: 'charms' });
+    ],
+    ['スロット数の違い', (x: ScoreSubmission) => (x.charms = [...x.charms!, null])],
+    ['アクセサリーがない', (x: ScoreSubmission) => (x.charms = null)],
+  ])('アクセサリー: %s ははじく', (_, f) => {
+    expect(fake(endless().sub, f)).toEqual({ ok: false, reason: 'charms' });
   });
 
-  it('挑戦で熟練やアクセサリーが付いていたらはじく', () => {
-    const sub = playChallenge();
-    expect(fake(sub, (x) => (x.mastery = { levels: {}, learned: [] }))).toEqual({
+  it('挑戦で熟練が付いていたらはじく', () => {
+    expect(fake(challenge(), (x) => (x.mastery = { levels: {}, learned: [] }))).toEqual({
       ok: false,
       reason: 'mastery',
     });
-    expect(fake(sub, (x) => (x.charms = new Array(7).fill(null)))).toEqual({
+  });
+
+  it('挑戦でアクセサリーが付いていたらはじく', () => {
+    expect(fake(challenge(), (x) => (x.charms = new Array(7).fill(null)))).toEqual({
       ok: false,
       reason: 'charms',
     });
   });
 
-  it('版 1 は受け付けない', () => {
-    const sub = playChallenge();
-    expect(fake(sub, (x) => (x.v = 1))).toEqual({ ok: false, reason: 'version' });
+  it('記録の版は 4', () => {
+    expect(challenge().v).toBe(4);
   });
 
-  it('記録の版は 4。連鎖倍率に上限があった版 3 と、その前の版 2 は受け付けない', () => {
-    const sub = playChallenge();
-    expect(sub.v).toBe(4);
-    expect(fake(sub, (x) => (x.v = 3))).toEqual({ ok: false, reason: 'version' });
-    expect(fake(sub, (x) => (x.v = 2))).toEqual({ ok: false, reason: 'version' });
+  it.each([
+    [1, '最初の版'],
+    [2, '版 3 の前の版'],
+    [3, '連鎖倍率に上限があった版'],
+  ])('版 %i（%s）は受け付けない', (v) => {
+    expect(fake(challenge(), (x) => (x.v = v))).toEqual({ ok: false, reason: 'version' });
   });
 });
 
 describe('シーズンの呼び名と報酬', () => {
-  it('挑戦は回、エンドレスは年月', async () => {
-    const { seasonLabel, endlessSeason } = await import('../../src/core/ranking');
+  it('挑戦のシーズンは「第○回」', async () => {
+    const { seasonLabel } = await import('../../src/core/ranking');
     expect(seasonLabel('challenge-3')).toBe('挑戦 第4回');
+  });
+
+  it('エンドレスのシーズンは年月', async () => {
+    const { seasonLabel, endlessSeason } = await import('../../src/core/ranking');
     expect(seasonLabel(`endless-${endlessSeason(Date.UTC(2026, 11, 5))}`)).toBe(
       'エンドレス 2026年12月',
     );
   });
-  it('順位帯', async () => {
+
+  it.each([
+    [1, 'top1'],
+    [50, 'top10'],
+    [400, 'top50'],
+    [900, 'joined'],
+  ])('1000人中 %i 位の順位帯は %s', async (rank, band) => {
     const { rewardBand } = await import('../../src/core/names');
-    expect(rewardBand(1, 1000)).toBe('top1');
-    expect(rewardBand(50, 1000)).toBe('top10');
-    expect(rewardBand(400, 1000)).toBe('top50');
-    expect(rewardBand(900, 1000)).toBe('joined');
+    expect(rewardBand(rank, 1000)).toBe(band);
   });
 });

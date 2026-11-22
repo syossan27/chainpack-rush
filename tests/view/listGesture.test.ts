@@ -22,6 +22,9 @@ describe('倉庫の一覧: 押して動かしたときにドラッグかスク�
 
   it('装備のないところを押したら、スクロールできなくてもドラッグにしない', () => {
     expect(listGesture({ ...base, onItem: false, canScroll: false })).toBe('scroll');
+  });
+
+  it('装備のないところを押したら、長く押さえてもドラッグにしない', () => {
     expect(listGesture({ ...base, onItem: false, heldMs: 500 })).toBe('scroll');
   });
 });

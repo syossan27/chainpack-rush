@@ -12,11 +12,11 @@ import {
   sellPrice,
   specifyExits,
 } from '../../src/core/economy';
-import { ARTIFACT_DEFS, DEFAULT_LOOT, createItem, rollLoot } from '../../src/core/loot';
+import { ARTIFACT_DEFS, DEFAULT_LOOT, createItem, rarityWeights, rollLoot } from '../../src/core/loot';
 import { Rng } from '../../src/core/rng';
 import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
 import { getItemDef } from '../../src/data/items';
-import { getRegion } from '../../src/data/regions';
+import { REGIONS, getRegion, type RegionDef } from '../../src/data/regions';
 import { build, type Placed } from '../helpers';
 
 const dummy = (placed: Placed[], extra: Partial<ConstructorParameters<typeof Combat>[0]> = {}) => {
@@ -32,6 +32,20 @@ const dummy = (placed: Placed[], extra: Partial<ConstructorParameters<typeof Com
     ...extra,
   });
 };
+/** An Rng whose first next() is `first` (later draws come from the seed) */
+class FirstDraw extends Rng {
+  private pending: number | null;
+  constructor(first: number, seed = 1) {
+    super(seed);
+    this.pending = first;
+  }
+  override next(): number {
+    if (this.pending === null) return super.next();
+    const v = this.pending;
+    this.pending = null;
+    return v;
+  }
+}
 const fireOnce = (c: Combat): CombatEvent[] => {
   c.fireNext();
   const evs: CombatEvent[] = [];
@@ -43,37 +57,93 @@ const fireOnce = (c: Combat): CombatEvent[] => {
 };
 
 describe('アーティファクト', () => {
-  it('常にレジェンダリー、出口は決まった形、追加効果なし、売値は高い。鍛冶屋の料金はレジェンダリーの上', () => {
-    const rng = new Rng(2);
-    expect(ARTIFACT_DEFS.length).toBeGreaterThanOrEqual(5);
-    for (const d of ARTIFACT_DEFS) {
-      for (const r of ['common', 'rare', 'legendary'] as const) {
-        const it = createItem(rng, d.id, r, 'a');
-        expect(it.rarity).toBe('legendary');
-        expect(it.exits).toEqual(d.artifact!.exits);
-        expect(it.affixes).toBeUndefined();
-        expect(canReorient(it)).toBe(it.exits.length < 4);
-        expect(rerollCost(it, 'reroll')).toBe(ECONOMY.artifactReroll);
-        expect(rerollCost(it, 'specify')).toBe(ECONOMY.artifactReroll * ECONOMY.specifyCostMult);
-        expect(ECONOMY.artifactReroll).toBeGreaterThan(RARITY.legendary.reroll);
-        expect(sellPrice(it)).toBe(LOOT.artifactSell);
-      }
-    }
+  describe.each(ARTIFACT_DEFS.map((d) => [d.id, d] as const))('%s', (_, d) => {
+    const made = (['common', 'rare', 'legendary'] as const).map((r) =>
+      createItem(new Rng(2), d.id, r, 'a'),
+    );
+
+    it('どのレアリティで作っても、常にレジェンダリー', () => {
+      expect(made.map((it) => it.rarity)).toEqual(made.map(() => 'legendary'));
+    });
+
+    it('出口は決まった形', () => {
+      expect(made.map((it) => it.exits)).toEqual(made.map(() => d.artifact!.exits));
+    });
+
+    it('追加効果は付かない', () => {
+      expect(made.map((it) => it.affixes)).toEqual(made.map(() => undefined));
+    });
+
+    it('出口が4つでなければ向きを変えられる', () => {
+      expect(made.map(canReorient)).toEqual(made.map((it) => it.exits.length < 4));
+    });
+
+    it('鍛冶屋の料金はアーティファクトの料金（指定はその倍率）', () => {
+      expect(made.map((it) => rerollCost(it, 'reroll'))).toEqual(
+        made.map(() => ECONOMY.artifactReroll),
+      );
+      expect(made.map((it) => rerollCost(it, 'specify'))).toEqual(
+        made.map(() => ECONOMY.artifactReroll * ECONOMY.specifyCostMult),
+      );
+    });
+
+    it('売値はアーティファクトの売値', () => {
+      expect(made.map(sellPrice)).toEqual(made.map(() => LOOT.artifactSell));
+    });
   });
 
-  it('めったに出ない（通常のドロップで約0.05%、ボスで約0.2%）', () => {
-    const rng = new Rng(3);
-    const n = 400000;
-    let normal = 0;
-    let boss = 0;
-    for (let i = 0; i < n; i++) {
-      if (getItemDef(rollLoot(rng, 1, 'x').defId).artifact) normal++;
-      if (getItemDef(rollLoot(rng, 1, 'y', true).defId).artifact) boss++;
-    }
-    expect(normal / n).toBeCloseTo(LOOT.artifactChance, 3);
-    expect(normal).toBeGreaterThan(0);
-    expect(boss / n).toBeCloseTo(LOOT.artifactChanceRare, 3);
-  }, 20_000); // 40万回まわすので、ほかのテストと並ぶと遅くなる
+  it('アーティファクトは5種類以上ある', () => {
+    expect(ARTIFACT_DEFS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('鍛冶屋の料金はレジェンダリーより高い', () => {
+    expect(ECONOMY.artifactReroll).toBeGreaterThan(RARITY.legendary.reroll);
+  });
+
+  it('売値はレジェンダリーより高い', () => {
+    expect(LOOT.artifactSell).toBeGreaterThan(RARITY.legendary.sell);
+  });
+
+  /** Whether a drop is an artifact when the artifact roll (rollLoot's first draw) comes out `first` */
+  const artifactAt = (first: number, region: RegionDef, boss: boolean) =>
+    getItemDef(rollLoot(new FirstDraw(first), 1, 'x', boss, region.loot).defId).artifact !==
+    undefined;
+  /** The legendary share of a first-loop drop in the region */
+  const legendaryShare = (region: RegionDef, boss: boolean) =>
+    Object.fromEntries(rarityWeights(1, boss, region.loot)).legendary!;
+
+  it.each(['grassland', 'cave'])('%s ではアーティファクトは出ない', (id) => {
+    const region = getRegion(id);
+    expect(region.loot.artifactMult).toBe(0);
+    expect(artifactAt(0, region, false)).toBe(false);
+    expect(artifactAt(0, region, true)).toBe(false);
+  });
+
+  const dropping = REGIONS.map((r) => r.id)
+    .filter((id) => id !== 'grassland' && id !== 'cave')
+    .flatMap((id) => [
+      [id, 'ふつうのドロップ', false],
+      [id, 'ボス', true],
+    ] as const);
+
+  it.each(dropping)('%s の%s: アーティファクトは出るが、レジェンダリーよりまれ', (id, _, boss) => {
+    const region = getRegion(id);
+    const chance =
+      (boss ? LOOT.artifactChanceRare : LOOT.artifactChance) * region.loot.artifactMult;
+    expect(chance).toBeGreaterThan(0);
+    expect(chance).toBeLessThan(legendaryShare(region, boss));
+    // rollLoot gives an artifact right below that chance, and not at it
+    expect(artifactAt(chance * 0.99, region, boss)).toBe(true);
+    expect(artifactAt(chance, region, boss)).toBe(false);
+  });
+
+  it('ボス（レア以上確定）のほうが、ふつうのドロップよりアーティファクトが出やすい', () => {
+    expect(LOOT.artifactChanceRare).toBeGreaterThan(LOOT.artifactChance);
+    const rampart = getRegion('rampart');
+    const between = (LOOT.artifactChance + LOOT.artifactChanceRare) / 2;
+    expect(artifactAt(between * rampart.loot.artifactMult, rampart, true)).toBe(true);
+    expect(artifactAt(between * rampart.loot.artifactMult, rampart, false)).toBe(false);
+  });
 
   it('読み込み時に出口・レアリティを固定に戻し、追加効果を外す', () => {
     const s = createInitialSave();
@@ -91,7 +161,7 @@ describe('アーティファクト', () => {
     expect(it.affixes).toBeUndefined();
   });
 
-  it('循環の環: 通る連鎖は ×4.0 まで ×1.2 ずつ伸びる', () => {
+  it('循環の環: 通る連鎖は、倍率が環の伸び（riseTo まで速く）で伸びる', () => {
     const row = (withRing: boolean): Placed[] => [
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
       ...[1, 2, 3, 4, 5, 6].map((x) => ({
@@ -120,11 +190,11 @@ describe('アーティファクト', () => {
       );
     // 13 sword steps: no cap any more, and the ring grows faster up to ×4.0
     expect(maxMult(false)).toBeCloseTo(chainMultiplier(13));
-    expect(maxMult(true)).toBeCloseTo(chainMultiplier(13, 4));
+    expect(maxMult(true)).toBeCloseTo(chainMultiplier(13, getItemDef('ouroboros').riseTo!));
     expect(maxMult(true)).toBeGreaterThan(maxMult(false) + 1);
   });
 
-  it('竜牙の剣はボスに×2、賢者の石は3つの状態をまとめて付ける', () => {
+  it('賢者の石は3つの状態（凍結・油・濡れ）をまとめて付ける', () => {
     const c = dummy([
       { uid: 'o', defId: 'origin_stone', x: 0, y: 0, exits: ['right'] },
       { uid: 'g', defId: 'sage_stone', x: 1, y: 0, exits: [] },
@@ -136,7 +206,10 @@ describe('アーティファクト', () => {
         .map((e) => (e.type === 'statusApplied' ? e.status : '')),
     );
     expect([...st].sort()).toEqual(['frozen', 'oil', 'wet']);
-    expect(getItemDef('dragon_fang').bossMult).toBe(2);
+  });
+
+  it('竜牙の剣はボスに強い', () => {
+    expect(getItemDef('dragon_fang').bossMult).toBeGreaterThan(1);
   });
 
   it('不落の城門: 置いてあれば連鎖中も無防備にならない', () => {
@@ -164,6 +237,9 @@ describe('アーティファクト', () => {
     expect(
       seen([...placed, { uid: 'a', defId: 'aegis_gate', x: 6, y: 2, exits: ['up', 'down'] }]),
     ).toBe(false);
+  });
+
+  it('無防備のあいだは受けるダメージが増える', () => {
     expect(HERO.unguardedTakenMult).toBeGreaterThan(1);
   });
 });
@@ -210,17 +286,25 @@ describe('アーティファクトの付け直し', () => {
 describe('アーティファクトは1種類につき1つ', () => {
   const always = { ...DEFAULT_LOOT, artifactMult: 1e9 };
 
-  it('持っている種類は出ない。全種類持っていれば、ふつうの装備が出る', () => {
+  it('持っている種類は出ない', () => {
     const rng = new Rng(9);
     const keep = ARTIFACT_DEFS[0]!.id;
     const owned = new Set(ARTIFACT_DEFS.slice(1).map((d) => d.id));
-    for (let i = 0; i < 50; i++)
-      expect(rollLoot(rng, 1, 'a', false, always, false, undefined, owned).defId).toBe(keep);
+    const got = Array.from(
+      { length: 50 },
+      () => rollLoot(rng, 1, 'a', false, always, false, undefined, owned).defId,
+    );
+    expect(new Set(got)).toEqual(new Set([keep]));
+  });
+
+  it('全種類持っていれば、ふつうの装備が出る', () => {
+    const rng = new Rng(9);
     const all = new Set(ARTIFACT_DEFS.map((d) => d.id));
-    for (let i = 0; i < 50; i++)
-      expect(
-        getItemDef(rollLoot(rng, 1, 'b', false, always, false, undefined, all).defId).artifact,
-      ).toBeUndefined();
+    const got = Array.from(
+      { length: 50 },
+      () => rollLoot(rng, 1, 'b', false, always, false, undefined, all).defId,
+    );
+    expect(got.filter((id) => getItemDef(id).artifact)).toEqual([]);
   });
 
   it('ランの中でも、持っている種類と、そのランで出た種類は出ない', () => {
@@ -251,7 +335,7 @@ describe('アーティファクトは1種類につき1つ', () => {
         .filter((id) => getItemDef(id).artifact);
       expect(got.length).toBe(2);
       expect(new Set(got).size).toBe(2);
-      for (const id of got) expect(owned).not.toContain(id);
+      expect(got.filter((id) => owned.includes(id))).toEqual([]);
     } finally {
       (region as { loot: typeof before }).loot = before;
     }
@@ -275,7 +359,8 @@ describe('アーティファクトは1種類につき1つ', () => {
     }
   });
 
-  it('売れない（古いセーブで2つ以上ある種類は、余りの分だけ売れる）', () => {
+  /** One of artifact 1, and two of artifact 0 (an old save) */
+  const owning = () => {
     const s = createInitialSave();
     const rng = new Rng(6);
     const id = ARTIFACT_DEFS[0]!.id;
@@ -284,16 +369,20 @@ describe('アーティファクトは1種類につき1つ', () => {
       createItem(rng, id, 'legendary', 'x1'),
       createItem(rng, id, 'legendary', 'x2'),
     );
+    return { s, id };
+  };
+
+  it('売れない', () => {
+    const { s } = owning();
     const one = s.inventory.find((i) => i.uid === 'one')!;
     expect(sellable(s, one)).toBe(false);
     expect(sellItems(s, ['one'])).toBe(0);
     expect(s.inventory.some((i) => i.uid === 'one')).toBe(true);
-    expect(
-      sellable(
-        s,
-        s.inventory.find((i) => i.uid === 'x1')!,
-      ),
-    ).toBe(true);
+  });
+
+  it('古いセーブで2つ以上ある種類は、余りの分だけ売れる', () => {
+    const { s, id } = owning();
+    expect(sellable(s, s.inventory.find((i) => i.uid === 'x1')!)).toBe(true);
     sellItems(s, ['x1', 'x2']);
     expect(s.inventory.filter((i) => i.defId === id)).toHaveLength(1);
   });

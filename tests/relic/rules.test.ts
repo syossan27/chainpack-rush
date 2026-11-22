@@ -24,23 +24,41 @@ const loadout: Loadout = {
   consumables: [],
 };
 
-describe('レリック: 出てくる3つ', () => {
-  it('ボスを倒すたびに、重ならない3種類が出る', () => {
-    for (let seed = 1; seed <= 50; seed++) {
-      const offer = rollRelicOffer(new Rng(seed));
-      expect(offer).toHaveLength(RELIC.offer);
-      expect(new Set(offer).size).toBe(RELIC.offer);
-      for (const id of offer) expect(RELICS.some((r) => r.id === id)).toBe(true);
-    }
+describe('レリック: ボスのあとに出てくるもの', () => {
+  const offers = Array.from({ length: 50 }, (_, i) => rollRelicOffer(new Rng(i + 1)));
+
+  it('どの乱数でも、出てくる数は RELIC.offer', () => {
+    expect(offers.map((o) => o.length)).toEqual(offers.map(() => RELIC.offer));
   });
 
-  it('説明に入る値は RELIC の値（割合は % で）', () => {
-    expect(relicValue('fist')).toBe(RELIC.fistMult);
-    expect(relicValue('eye')).toBe(RELIC.eyeCrit * 100);
-    expect(relicValue('fang')).toBe(RELIC.fangHeal * 100);
-    expect(relicValue('pierce')).toBe(RELIC.pierce);
-    expect(relicValue('feather')).toBe(RELIC.featherSteps);
-    expect(relicValue('ward')).toBe(RELIC.wardDefense);
+  it('同じレリックが重ねて出ることはない', () => {
+    expect(offers.map((o) => new Set(o).size)).toEqual(offers.map(() => RELIC.offer));
+  });
+
+  it('出てくるのは定義にあるレリックだけ', () => {
+    const known = new Set(RELICS.map((r) => r.id));
+    expect(offers.flat().filter((id) => !known.has(id))).toEqual([]);
+  });
+});
+
+describe('レリック: 説明に入る値', () => {
+  it.each([
+    ['fist', RELIC.fistMult],
+    ['pierce', RELIC.pierce],
+    ['feather', RELIC.featherSteps],
+    ['ward', RELIC.wardDefense],
+  ] as const)('%s の説明には RELIC の値がそのまま入る', (id, value) => {
+    expect(relicValue(id)).toBe(value);
+  });
+
+  it.each([
+    ['eye', RELIC.eyeCrit],
+    ['fang', RELIC.fangHeal],
+  ] as const)('%s の説明には RELIC の割合が % で入る', (id, share) => {
+    expect(relicValue(id)).toBe(share * 100);
+  });
+
+  it('値のないレリックの説明には何も入らない', () => {
     expect(relicValue('bell')).toBeUndefined();
   });
 });
@@ -48,18 +66,33 @@ describe('レリック: 出てくる3つ', () => {
 describe('レリック: 貼れるマス', () => {
   const none = new Map<number, RelicId>();
 
-  it('攻撃用は攻撃装備のマスだけ。どれでも用は装備のあるマスならどこでも', () => {
+  it('攻撃用は攻撃装備のマスに貼れる', () => {
     expect(canStickRelic(loadout, items, none, 'fist', 1)).toBe(true);
-    expect(canStickRelic(loadout, items, none, 'fist', 0)).toBe(false);
-    expect(canStickRelic(loadout, items, none, 'fist', 2)).toBe(false);
-    expect(canStickRelic(loadout, items, none, 'whistle', 0)).toBe(true);
-    expect(canStickRelic(loadout, items, none, 'ward', 2)).toBe(true);
   });
 
-  it('空きマス・盤面の外・もう貼ってあるマスには貼れない', () => {
-    expect(canStickRelic(loadout, items, none, 'whistle', 3)).toBe(false);
-    expect(canStickRelic(loadout, items, none, 'whistle', -1)).toBe(false);
-    expect(canStickRelic(loadout, items, none, 'whistle', 9)).toBe(false);
+  it.each([
+    ['起点', 0],
+    ['防具', 2],
+  ])('攻撃用は%sのマスには貼れない', (_, cell) => {
+    expect(canStickRelic(loadout, items, none, 'fist', cell)).toBe(false);
+  });
+
+  it.each([
+    ['whistle', '起点', 0],
+    ['ward', '防具', 2],
+  ] as const)('どれでも用 (%s) は、装備のあるマスならどこでも貼れる（%s）', (id, _, cell) => {
+    expect(canStickRelic(loadout, items, none, id, cell)).toBe(true);
+  });
+
+  it.each([
+    ['空きマス', 3],
+    ['盤面の外（手前）', -1],
+    ['盤面の外（奥）', 9],
+  ])('%sには貼れない', (_, cell) => {
+    expect(canStickRelic(loadout, items, none, 'whistle', cell)).toBe(false);
+  });
+
+  it('もう貼ってあるマスには貼れない', () => {
     const stuck = new Map<number, RelicId>([[1, 'bell']]);
     expect(canStickRelic(loadout, items, stuck, 'fist', 1)).toBe(false);
   });

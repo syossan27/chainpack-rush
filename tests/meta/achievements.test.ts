@@ -23,35 +23,59 @@ const run = (p: Partial<RunResult['stats']> & { loop?: number }): RunResult => (
   },
 });
 
+/** The achievements of one threshold kind, in catalog order, with their threshold */
+function withThreshold(kind: 'maxStep' | 'maxDamage') {
+  return ACHIEVEMENTS.flatMap((a) => (a.check.kind === kind ? [{ ...a, n: a.check.n }] : []));
+}
+
 describe('実績', () => {
   it('id は重ならない', () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
   });
 
-  it('連鎖とダメージの実績は、説明の数字が基準と同じで、順に大きくなる', () => {
-    for (const kind of ['maxStep', 'maxDamage'] as const) {
-      const ns: number[] = [];
-      for (const a of ACHIEVEMENTS) {
-        if (a.check.kind !== kind) continue;
-        expect(a.desc).toContain(a.check.n.toLocaleString('en-US'));
-        ns.push(a.check.n);
-      }
-      expect(ns).toEqual([...ns].sort((x, y) => x - y));
-      expect(new Set(ns).size).toBe(ns.length);
-    }
+  describe.each(['maxStep', 'maxDamage'] as const)('%s の実績', (kind) => {
+    const list = withThreshold(kind);
+    const thresholds = list.map((a) => a.n);
+
+    it('説明の数字が基準と同じ', () => {
+      const wrong = list.filter((a) => !a.desc.includes(a.n.toLocaleString('en-US')));
+      expect(wrong.map((a) => a.id)).toEqual([]);
+    });
+
+    it('基準は順に大きくなり、同じ基準はない', () => {
+      expect(thresholds).toEqual([...thresholds].sort((x, y) => x - y));
+      expect(new Set(thresholds).size).toBe(thresholds.length);
+    });
   });
 
-  it('条件を満たすと1回だけ達成になり、報酬のゴールドが入る', () => {
-    const s = createInitialSave();
-    s.stats.runs = 1;
-    s.stats.maxStep = 10;
-    const g = s.gold;
-    const got = checkAchievements(s, run({ bossesDefeated: 1 })).map((a) => a.id);
-    expect(got).toEqual(expect.arrayContaining(['runs_1', 'step_6', 'step_10', 'boss_1']));
-    expect(got).not.toContain('step_14');
-    const reward = ACHIEVEMENTS.filter((a) => got.includes(a.id)).reduce((t, a) => t + a.reward, 0);
-    expect(s.gold).toBe(g + reward);
-    expect(checkAchievements(s, run({ bossesDefeated: 1 }))).toHaveLength(0);
+  describe('条件を満たしたとき', () => {
+    // The chain achievements in order: reach the second one exactly, not the third
+    const steps = withThreshold('maxStep');
+    const setup = () => {
+      const s = createInitialSave();
+      s.stats.runs = 1;
+      s.stats.maxStep = steps[1]!.n;
+      return s;
+    };
+
+    it('満たした条件の実績が達成になり、まだの段は達成にならない', () => {
+      const got = checkAchievements(setup(), run({ bossesDefeated: 1 })).map((a) => a.id);
+      expect(got).toEqual(expect.arrayContaining(['runs_1', steps[0]!.id, steps[1]!.id, 'boss_1']));
+      expect(got).not.toContain(steps[2]!.id);
+    });
+
+    it('達成した実績の報酬のゴールドが入る', () => {
+      const s = setup();
+      const g = s.gold;
+      const got = checkAchievements(s, run({ bossesDefeated: 1 }));
+      expect(s.gold).toBe(g + got.reduce((t, a) => t + a.reward, 0));
+    });
+
+    it('同じ実績は1回だけ達成になる', () => {
+      const s = setup();
+      checkAchievements(s, run({ bossesDefeated: 1 }));
+      expect(checkAchievements(s, run({ bossesDefeated: 1 }))).toHaveLength(0);
+    });
   });
 
   it('ランの中の条件（周目・一網打尽）は、そのランの結果があるときだけ', () => {

@@ -9,16 +9,18 @@ const row = (rarities: ('common' | 'rare' | 'epic' | 'legendary')[], extra: Plac
   ]);
 
 describe('勇者のオーラ', () => {
-  it('置いている装備のレアリティで段階が上がる（3つ以上で）', () => {
-    const t = (r: Parameters<typeof row>[0]) => {
-      const { loadout, items } = row(r);
-      return auraTier(loadout, items);
-    };
-    expect(t(['common', 'common', 'rare', 'rare'])).toBe('none');
-    expect(t(['rare', 'rare', 'epic'])).toBe('rare');
-    expect(t(['epic', 'epic', 'legendary'])).toBe('epic');
-    expect(t(['legendary', 'legendary', 'legendary'])).toBe('legendary');
-  });
+  it.each([
+    [['common', 'common', 'rare', 'rare'], 'none'],
+    [['rare', 'rare', 'epic'], 'rare'],
+    [['epic', 'epic', 'legendary'], 'epic'],
+    [['legendary', 'legendary', 'legendary'], 'legendary'],
+  ] as const)(
+    '置いている装備のレアリティで段階が上がる（3つ以上で）: %j → %s',
+    (rarities, tier) => {
+      const { loadout, items } = row([...rarities]);
+      expect(auraTier(loadout, items)).toBe(tier);
+    },
+  );
 
   it('アーティファクトを1つでも置けば虹色', () => {
     const { loadout, items } = row(

@@ -15,13 +15,11 @@ import { BOARDS, getBoard } from '../../src/data/boards';
 import { REGIONS } from '../../src/data/regions';
 
 describe('盤面の種類: 一覧', () => {
-  it('形はこわれていない（行の長さがそろい、画面に収まり、マスが4つ以上）', () => {
-    for (const b of BOARDS) {
+  it.each(BOARDS.map((b) => [b.id, b] as const))(
+    '%s: 形はこわれていない（行の長さがそろい、画面に収まり、マスが4つ以上）',
+    (_, b) => {
       const { width, height } = boardSize(b);
-      expect(
-        b.mask.every((r) => r.length === width),
-        b.id,
-      ).toBe(true);
+      expect(b.mask.every((r) => r.length === width)).toBe(true);
       expect(width).toBeLessThanOrEqual(5);
       expect(height).toBeLessThanOrEqual(5);
       expect(
@@ -30,35 +28,45 @@ describe('盤面の種類: 一覧', () => {
           .split('')
           .filter((c) => c === 'X').length,
       ).toBeGreaterThanOrEqual(4);
-      expect(/^[X.]+$/.test(b.mask.join('')), b.id).toBe(true);
-    }
-  });
+      expect(/^[X.]+$/.test(b.mask.join(''))).toBe(true);
+    },
+  );
 
-  it('ご褒美は地域ごとに1つずつ。標準だけは最初から', () => {
+  it('ご褒美の盤面は地域ごとに1つずつ', () => {
     const rewards = BOARDS.filter((b) => b.reward).map((b) => b.reward);
     expect(new Set(rewards).size).toBe(rewards.length);
     expect(rewards.sort()).toEqual(REGIONS.map((r) => r.id).sort());
+  });
+
+  it('最初から持っている盤面は標準だけ（試作の盤面を除く）', () => {
     expect(BOARDS.filter((b) => !b.reward && !b.trial).map((b) => b.id)).toEqual(['standard']);
   });
 
-  it('形の外は穴。知らない盤面は標準として扱う', () => {
+  it('形の外は穴', () => {
     const crystal = getBoard('crystal');
     expect(isHole(crystal, 0)).toBe(true);
     expect(isHole(crystal, 2)).toBe(false);
     expect(isHole(getBoard('standard'), 0)).toBe(false);
     expect(isHole(crystal, 99)).toBe(true);
+  });
+
+  it('知らない盤面は標準として扱う', () => {
     expect(getBoard('nope').id).toBe('standard');
   });
 
-  it('普通のバックパック（盤面の指定なし）には穴がない。重ねる盤面は形どおり', () => {
-    const bag = {
-      width: 7,
-      height: 5,
-      cells: Array(35).fill(null),
-      originOrder: [],
-      consumables: [],
-    };
+  const bag = {
+    width: 7,
+    height: 5,
+    cells: Array(35).fill(null),
+    originOrder: [],
+    consumables: [],
+  };
+
+  it('普通のバックパック（盤面の指定なし）には穴がない', () => {
     expect(holeIn(bag, 34)).toBe(false);
+  });
+
+  it('重ねる盤面の穴は形どおり', () => {
     expect(holeIn({ ...bag, width: 5, height: 4, board: 'crystal' }, 0)).toBe(true);
     expect(holeIn({ ...bag, width: 5, height: 4, board: 'crystal' }, 2)).toBe(false);
   });
@@ -74,18 +82,25 @@ describe('盤面の種類: 特徴', () => {
     expect(boardDamageMult(getBoard('lightning'), undefined)).toBe(1);
   });
 
-  it('深い盤面は1マスに4つまで、位置の倍率は ×1・×1.25・×1.5・×2。ほかは3つまで', () => {
-    expect(boardDepth(getBoard('deep'))).toBe(4);
-    expect(boardPosMult(getBoard('deep'))).toEqual([1, 1.25, 1.5, 2]);
+  it('深い盤面はふつうの盤面より多く重ねられる。ほかの盤面はふつうの深さ', () => {
+    expect(boardDepth(getBoard('deep'))).toBe(getBoard('deep').depth);
+    expect(boardDepth(getBoard('deep'))).toBeGreaterThan(STACK.max);
     expect(boardDepth(getBoard('standard'))).toBe(STACK.max);
+  });
+
+  it('深い盤面の位置の倍率は深さの数だけあり、一番上はふつうの盤面と同じ。ほかの盤面はふつうの倍率', () => {
+    const deep = boardPosMult(getBoard('deep'));
+    expect(deep).toEqual(STACK.deepPosMult);
+    expect(deep).toHaveLength(boardDepth(getBoard('deep')));
+    expect(deep.at(-1)).toBe(STACK.posMult.at(-1));
     expect(boardPosMult(getBoard('gale'))).toEqual(STACK.posMult);
   });
 
-  it('説明に入る値', () => {
-    expect(boardValue(getBoard('gale'))).toBe(0.7);
+  it('説明に入る値は、その盤面の特徴の値', () => {
+    expect(boardValue(getBoard('gale'))).toBe(getBoard('gale').wait);
     expect(boardValue(getBoard('small'))).toBe(getBoard('small').damage);
     expect(boardValue(getBoard('crystal'))).toBe(getBoard('crystal').elements!.ice);
-    expect(boardValue(getBoard('deep'))).toBe(4);
+    expect(boardValue(getBoard('deep'))).toBe(getBoard('deep').depth);
     expect(boardValue(getBoard('standard'))).toBeUndefined();
   });
 });

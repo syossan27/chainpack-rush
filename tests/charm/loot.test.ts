@@ -37,12 +37,22 @@ function runCfg(extra: Partial<RunConfig> = {}): RunConfig {
 }
 
 describe('アクセサリー: ドロップ', () => {
-  it('確率で出る。ボスなどは出やすい', () => {
+  it('ドロップ1つごとに、決まった確率で出る', () => {
     expect(rollCharmDrop(fixed(CHARM.dropChance - 0.001), 1, false, region, false)).not.toBeNull();
     expect(rollCharmDrop(fixed(CHARM.dropChance + 0.001), 1, false, region, false)).toBeNull();
+  });
+
+  it('ボスなど（レア以上のドロップ）は出やすい', () => {
+    expect(CHARM.dropChanceRare).toBeGreaterThan(CHARM.dropChance);
+    const between = (CHARM.dropChance + CHARM.dropChanceRare) / 2;
+    expect(rollCharmDrop(fixed(between), 1, false, region, false)).toBeNull();
+    expect(rollCharmDrop(fixed(between), 1, true, region, false)).not.toBeNull();
     expect(
       rollCharmDrop(fixed(CHARM.dropChanceRare - 0.001), 1, true, region, false),
     ).not.toBeNull();
+  });
+
+  it('確定のときは、抽選の値によらず出る', () => {
     expect(rollCharmDrop(fixed(0.99), 1, false, region, true)).not.toBeNull();
   });
 
@@ -98,11 +108,15 @@ describe('アクセサリー: ドロップ', () => {
     expect(r.charms ?? []).toEqual([]);
   });
 
-  it('noLoot・体験ラン・カカシでは出ない', () => {
-    for (const extra of [{ noLoot: true }, { demo: true }] as const) {
-      const r = new Combat(runCfg({ ...extra, charmSure: true })).runToEnd();
-      expect(r.charms ?? []).toEqual([]);
-    }
+  it.each([
+    ['noLoot', { noLoot: true }],
+    ['体験ラン', { demo: true }],
+  ] as const)('%s では出ない', (_, extra) => {
+    const r = new Combat(runCfg({ ...extra, charmSure: true })).runToEnd();
+    expect(r.charms ?? []).toEqual([]);
+  });
+
+  it('カカシでは出ない', () => {
     const d = new Combat({ ...runCfg({ charmSure: true }), mode: 'dummy' });
     d.fireNext();
     for (let i = 0; i < 600; i++) d.step();
