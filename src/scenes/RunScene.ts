@@ -462,19 +462,14 @@ export class RunScene extends Phaser.Scene {
 
   private buildConsumables(): void {
     const slots = this.combat.consumables;
-    // Left of the "next chain" panel (left edge at W - 330)
-    fitText(
-      this.add
-        .text(30, RUN_LAYOUT.middleTop + 18, t('消耗品|slots'), textStyle(18, COLORS.textDim))
-        .setDepth(70),
-      W - 330 - 30 - 10,
-    );
+    // One column beside the board, on the side the player chose (easier to reach than the
+    // middle band). x clears the frame and charm slots of the widest (5-column) board
+    const x = getSave().settings.consumableSide === 'left' ? 56 : W - 56;
     slots.forEach((uid, i) => {
-      const x = 74 + i * 96;
-      const y = RUN_LAYOUT.middleTop + 96;
+      const y = RUN_LAYOUT.backpackTop + 40 + i * 90;
       const it = uid ? this.items.get(uid) : undefined;
       const img = it ? this.add.image(0, 0, iconKey(it.defId)).setScale(4) : null;
-      const btn = new RoundButton(this, x, y, 88, img, null, () => {
+      const btn = new RoundButton(this, x, y, 80, img, null, () => {
         if (this.paused || this.ending) return;
         if (this.combat.useConsumable(i)) {
           this.consumableButtons[i]!.icon?.destroy();

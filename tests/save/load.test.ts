@@ -109,3 +109,24 @@ describe('設定: ゲームスピード', () => {
     expect(withSpeed(2)).toBe(2);
   });
 });
+
+describe('設定: 消耗品ボタンの位置', () => {
+  const withSide = (consumableSide: unknown) => {
+    const s = createInitialSave();
+    return deserializeSave(JSON.stringify({ ...s, settings: { ...s.settings, consumableSide } }))
+      .settings.consumableSide;
+  };
+
+  it('既定は右', () => {
+    expect(createInitialSave().settings.consumableSide).toBe('right');
+  });
+
+  it('左を選んだら、読み直しても左', () => {
+    expect(withSide('left')).toBe('left');
+  });
+
+  it('位置が欠けた・壊れたセーブは右で読み込む', () => {
+    expect(withSide(undefined)).toBe('right');
+    expect(withSide('up')).toBe('right');
+  });
+});

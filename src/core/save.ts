@@ -138,6 +138,8 @@ export interface SaveData {
     autoSellKeepAffix: boolean;
     /** Display language ('auto' follows the device) */
     lang: Lang | 'auto';
+    /** Which side of the board the run's consumable buttons sit on */
+    consumableSide: 'left' | 'right';
     /**
      * Debug: every look in the wardrobe can be worn (only in development and trial builds; the
      * looks really owned stay as they are)
@@ -217,6 +219,7 @@ export function createInitialSave(): SaveData {
       autoSell: 'off',
       autoSellKeepAffix: true,
       lang: 'auto',
+      consumableSide: 'right',
       debug: false,
       itemSort: 'rarity',
     },
@@ -535,6 +538,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       save.settings.autoSell = 'off';
     if (typeof save.settings.autoSellKeepAffix !== 'boolean')
       save.settings.autoSellKeepAffix = true;
+    if (save.settings.consumableSide !== 'left') save.settings.consumableSide = 'right';
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
     if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
     const sp = save.settings.gameSpeed;

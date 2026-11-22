@@ -224,6 +224,7 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Das Tutorial erscheint auf jedem Bildschirm erneut',
   振動: 'Vibration',
   '画面揺れ・光': 'Bildwackeln & Blitze',
+  消耗品ボタンの位置: 'Seite der Item-Knöpfe',
   '重ね（下から順に鳴る）': 'Stapel (löst von unten nach oben aus)',
   '一番上 ×{m}（矢印はこの装備）': 'Oben ×{m} (seine Pfeile führen weiter)',
   '×{m}': '×{m}',

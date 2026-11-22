@@ -223,6 +223,7 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': "Each screen's tutorial will show again",
   振動: 'Vibration',
   '画面揺れ・光': 'Screen Shake & Flash',
+  消耗品ボタンの位置: 'Item Buttons Side',
   '重ね（下から順に鳴る）': 'Stack (rings from the bottom up)',
   '一番上 ×{m}（矢印はこの装備）': 'Top ×{m} (its arrows lead on)',
   '×{m}': '×{m}',

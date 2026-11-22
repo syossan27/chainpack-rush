@@ -1269,7 +1269,9 @@ export class BaseScene extends Phaser.Scene {
         );
         if (lv > 0)
           this.root.add(
-            this.add.rectangle(142, y + 30, 296 * Math.min(1, lv / pips), 12, 0xffd25a).setOrigin(0, 0.5),
+            this.add
+              .rectangle(142, y + 30, 296 * Math.min(1, lv / pips), 12, 0xffd25a)
+              .setOrigin(0, 0.5),
           );
         this.root.add(
           this.add
@@ -1340,34 +1342,36 @@ export class BaseScene extends Phaser.Scene {
   private renderSettings(): void {
     const save = getSave();
     const st = save.settings;
-    // Development and trial builds get a debug row; the rows then sit 110 px apart instead of 130
+    // Development and trial builds get a debug row; the rows then sit 95 px apart instead of 110
     const dbg = debugMenuAllowed();
     const L = dbg
       ? {
-          panelY: 560,
-          panelH: 700,
-          volume: 285,
-          haptics: 395,
-          shake: 505,
-          debug: 615,
-          speed: 725,
-          note: 790,
-          lang: 855,
-          help: 975,
-          premium: 1065,
+          panelY: 575,
+          panelH: 730,
+          volume: 280,
+          haptics: 375,
+          shake: 470,
+          debug: 565,
+          speed: 660,
+          note: 720,
+          side: 795,
+          lang: 890,
+          help: 1000,
+          premium: 1085,
         }
       : {
-          panelY: 545,
-          panelH: 670,
-          volume: 300,
-          haptics: 430,
-          shake: 560,
+          panelY: 575,
+          panelH: 730,
+          volume: 290,
+          haptics: 400,
+          shake: 510,
           debug: 0,
-          speed: 690,
-          note: 760,
-          lang: 830,
-          help: 960,
-          premium: 1050,
+          speed: 620,
+          note: 685,
+          side: 770,
+          lang: 880,
+          help: 1000,
+          premium: 1085,
         };
     this.root.add(ribbon(this, W / 2, CONTENT_TOP + 40, t('設定')));
     this.root.add(panel(this, W / 2, L.panelY, W - 40, L.panelH, 'paper'));
@@ -1377,6 +1381,7 @@ export class BaseScene extends Phaser.Scene {
       value: string,
       onMinus: (() => void) | null,
       onPlus: () => void,
+      skin?: 'blue',
     ) => {
       const valueText = ink(this, W - 250, y, value, 30, '#7a3c10').setOrigin(0.5);
       // The label ends before the − button, or before the value when there is none
@@ -1391,7 +1396,7 @@ export class BaseScene extends Phaser.Scene {
         new Button(this, W - 120, y, onMinus ? '+' : t('切替'), onPlus, {
           width: onMinus ? 74 : 140,
           height: 70,
-          skin: onMinus ? 'blue' : value === 'ON' ? 'green' : 'gray',
+          skin: onMinus ? 'blue' : (skin ?? (value === 'ON' ? 'green' : 'gray')),
         }),
       );
     };
@@ -1434,6 +1439,18 @@ export class BaseScene extends Phaser.Scene {
         ink(this, 70, L.note, t('検証用。×2 なら30秒のランが15秒で終わります'), 18, '#7a5a30'),
         W - 140,
       ),
+    );
+    // Consumable buttons in a run: beside the board, on the side the thumb reaches
+    row(
+      L.side,
+      t('消耗品ボタンの位置'),
+      t(st.consumableSide === 'left' ? '左' : '右'),
+      null,
+      () => {
+        st.consumableSide = st.consumableSide === 'left' ? 'right' : 'left';
+        changed();
+      },
+      'blue',
     );
     // プレミアム（買い切り）: 広告を見なくても、広告のご褒美を受け取れる
     const prem = isPremium();

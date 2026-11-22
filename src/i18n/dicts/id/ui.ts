@@ -225,6 +225,7 @@ export const UI: Dict = {
   '各画面で、案内がもう一度出ます': 'Tutorial di tiap layar akan muncul lagi',
   振動: 'Getaran',
   '画面揺れ・光': 'Guncangan & Kilatan Layar',
+  消耗品ボタンの位置: 'Sisi Tombol Item',
   '重ね（下から順に鳴る）': 'Tumpukan (berbunyi dari bawah ke atas)',
   '一番上 ×{m}（矢印はこの装備）': 'Teratas ×{m} (panahnya dari item ini)',
   '×{m}': '×{m}',
