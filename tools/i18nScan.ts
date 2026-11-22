@@ -1,6 +1,6 @@
 // Find every translatable string in src and every Japanese string that is not yet translatable.
 //
-// Rules (checked by tests/i18n.test.ts):
+// Rules (checked by tests/meta/i18n.test.ts):
 // - Game data files (DATA_FILES): every Japanese string literal is a key ('data' domain).
 //   The display code passes those values through t() where they are drawn.
 // - Everywhere else a Japanese string literal must be the first argument of t() or k()
