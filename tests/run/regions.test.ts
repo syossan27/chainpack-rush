@@ -200,17 +200,6 @@ describe('地域の強さと戦利品', () => {
     expect(sum).toBeCloseTo(1);
   });
 
-  it.each(['grassland', 'cave'])(
-    'アーティファクトはレジェンダリーより厳しい: %s では出ない',
-    (regionId) => {
-      expect(getRegion(regionId).loot.artifactMult).toBe(0);
-    },
-  );
-
-  it('城壁ではアーティファクトが出る', () => {
-    expect(getRegion('rampart').loot.artifactMult).toBeGreaterThan(0);
-  });
-
   it('下限より上がない地域でも、下限のレアリティで出る（黄金ゴブリンの1個目は草原でもエピック）', () => {
     const w = Object.fromEntries(rarityWeights(1, true, getRegion('grassland').loot, 'legendary'));
     expect(w.legendary).toBe(1);

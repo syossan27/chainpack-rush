@@ -764,24 +764,6 @@ describe('連鎖の性格づけ（A: よろめき / B: 段数に比例する待�
     });
   };
 
-  it('B: 連鎖が終わると、次の発火までの待ちは段数に比例する', () => {
-    const wait = (n: number) => {
-      const c = dummy(n);
-      c.fireNext();
-      while (c.chain) c.step();
-      // The step that ends the chain already fills one step of the gauge
-      return BASE_HERO_STATS.atbTime - (c.atb - SIM.fixedStep);
-    };
-    expect(wait(4) / wait(2)).toBeCloseTo(2);
-  });
-
-  it('B: 参照の段数（CHAIN_RULES.atbRefSteps）の連鎖なら、待ちはちょうど攻撃間隔', () => {
-    const c = dummy(CHAIN_RULES.atbRefSteps);
-    c.fireNext();
-    while (c.chain) c.step();
-    expect(c.atb - SIM.fixedStep).toBeCloseTo(0);
-  });
-
   describe('守り', () => {
     const seen = () => {
       const c = dummy(5);

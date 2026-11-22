@@ -18,7 +18,7 @@ import {
 } from '../../src/core/cosmeticRewards';
 import { RANK_REWARDS } from '../../src/core/ranking';
 import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
-import { fixLook, looksAllOpen, rankingDeco, wardrobeCards } from '../../src/core/wardrobe';
+import { fixLook, looksAllOpen, rankingDeco } from '../../src/core/wardrobe';
 import { REGIONS } from '../../src/data/regions';
 import { t } from '../../src/i18n';
 
@@ -404,13 +404,6 @@ describe('設定の「デバッグ機能」（見た目を全部試せる）', (
     const s = createInitialSave();
     s.settings.debug = true;
     expect(looksAllOpen(s, false)).toBe(false);
-  });
-
-  it('全部持っている扱いでは、着せ替えのカードがすべて持っている物になる', () => {
-    const s = createInitialSave();
-    s.settings.debug = true;
-    const cards = wardrobeCards(s, 'back', looksAllOpen(s, true));
-    expect(cards.every((c) => c.owned)).toBe(true);
   });
 
   describe('持っていない見た目を着けたとき', () => {

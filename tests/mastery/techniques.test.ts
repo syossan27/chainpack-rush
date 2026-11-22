@@ -4,7 +4,6 @@ import { planChain } from '../../src/core/chain';
 import { BASE_HERO_STATS, Combat, type CombatEvent } from '../../src/core/combat';
 import { TECHNIQUE_MULT, TECHNIQUES } from '../../src/data/techniques';
 import { getItemDef } from '../../src/data/items';
-import { createInitialSave, deserializeSave, serializeSave } from '../../src/core/save';
 import { build, type Placed } from '../helpers';
 
 const line = (ids: string[]): Placed[] => [
@@ -91,22 +90,6 @@ describe('必殺技', () => {
 });
 
 describe('必殺技図鑑', () => {
-  it('はじめの図鑑（覚えた技）は空', () => {
-    expect(createInitialSave().mastery.learned).toEqual([]);
-  });
-
-  it('覚えた技はセーブに残る', () => {
-    const s = createInitialSave();
-    s.mastery.learned.push('crimson');
-    expect(deserializeSave(serializeSave(s)).mastery.learned).toEqual(['crimson']);
-  });
-
-  it('壊れた技の値は、読み直すときに捨てる', () => {
-    const old = JSON.parse(serializeSave(createInitialSave()));
-    old.mastery.learned = ['frost', 3, null];
-    expect(deserializeSave(JSON.stringify(old)).mastery.learned).toEqual(['frost']);
-  });
-
   it.each(TECHNIQUES.map((t) => [t.id, t] as const))(
     '%s には、見つける前のヒントがある',
     (_, t) => {

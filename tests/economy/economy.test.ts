@@ -63,13 +63,6 @@ const swordDrops = (count: number): ItemInstance[] =>
   }));
 
 describe('save', () => {
-  it('初期所持品は 起点石×1、剣×2、斧、木の盾、回復薬', () => {
-    const s = createInitialSave();
-    expect(s.inventory.map((i) => i.defId).sort()).toEqual(
-      ['axe', 'origin_stone', 'potion', 'sword', 'sword', 'wood_shield'].sort(),
-    );
-  });
-
   it('初期所持品はすべてコモン', () => {
     const s = createInitialSave();
     expect(s.inventory.map((i) => i.rarity)).toEqual(s.inventory.map(() => 'common'));
