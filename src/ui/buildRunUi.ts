@@ -6,7 +6,8 @@ import { sfx } from '../audio/sfx';
 import { BUILD_RUN } from '../config/balance';
 import { addToHand, startHand, type Hand } from '../core/buildRun';
 import type { Combat } from '../core/combat';
-import { putShaped, shapeOf, takeShaped, type ShapeBlock } from '../core/shapes';
+import { putShaped, shapeOffsets, shapeSize, takeShaped, type ShapeBlock } from '../core/shapes';
+import { ShapedIcon, shapeMark } from './shapedIcon';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { k, t } from '../i18n';
@@ -46,7 +47,7 @@ type Drag = {
   item: ItemInstance;
   /** A hand slot, or the board */
   from: number | 'board';
-  ghost: ItemIcon | null;
+  ghost: ShapedIcon | null;
   x: number;
   y: number;
 };
@@ -218,14 +219,14 @@ export class BuildRunUi {
       const it = this.hand[i];
       if (!it) return;
       this.handLayer.add(new ItemIcon(scene, x, y, it, SLOT - 6));
-      // A piece bigger than a cell shows its size
-      const { w, h } = shapeOf(it.defId);
-      if (w * h > 1)
+      // A piece bigger than a cell shows its shape at the corner
+      if (shapeOffsets(it.defId).length > 1) {
+        const { w, h } = shapeSize(it.defId);
+        const unit = 6;
         this.handLayer.add(
-          scene.add
-            .text(x + SLOT / 2 - 2, y + SLOT / 2 - 2, `${w}×${h}`, textStyle(14, '#fff2c0'))
-            .setOrigin(1, 1),
+          shapeMark(scene, x + SLOT / 2 - w * unit, y + SLOT / 2 - h * unit, it.defId, unit),
         );
+      }
     });
   }
 
@@ -255,10 +256,8 @@ export class BuildRunUi {
     if (!d) return;
     if (!d.ghost) {
       if (Math.hypot(p.x - d.x, p.y - d.y) < DRAG_THRESHOLD) return;
-      // The ghost has the piece's size on the board
-      const { w, h } = shapeOf(d.item.defId);
-      const cell = this.host.view.cell;
-      d.ghost = new ItemIcon(this.host.scene, p.x, p.y - LIFT, d.item, w * cell, h * cell);
+      // The ghost has the piece's shape and size on the board
+      d.ghost = new ShapedIcon(this.host.scene, p.x, p.y - LIFT, d.item, this.host.view.cell);
       d.ghost.setDepth(500).setAlpha(0.85);
     }
     d.ghost.setPosition(p.x, p.y - LIFT);
@@ -281,7 +280,7 @@ export class BuildRunUi {
 
   /** The cell under the ghost's top-left cell (a shaped piece is placed from its top-left) */
   private dropCell(item: ItemInstance, p: Phaser.Input.Pointer): number {
-    const { w, h } = shapeOf(item.defId);
+    const { w, h } = shapeSize(item.defId);
     const cell = this.host.view.cell;
     return this.host.view.cellAt(p.x - ((w - 1) * cell) / 2, p.y - LIFT - ((h - 1) * cell) / 2);
   }

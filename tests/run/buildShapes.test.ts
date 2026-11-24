@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { planChain } from '../../src/core/chain';
 import {
+  allShapes,
   anchorFor,
   coverCells,
   emptyShapeBoard,
   putShaped,
-  shapeOf,
+  shapeOffsets,
+  shapeSize,
   takeShaped,
 } from '../../src/core/shapes';
 import type { Dir, ItemInstance, Loadout } from '../../src/core/types';
@@ -26,30 +28,61 @@ function place(items: ItemInstance[], at: [string, number][]): Loadout {
   return at.reduce((l, [uid, cell]) => putShaped(l, map, uid, cell).loadout, board());
 }
 
-describe('拾って組む: 装備の大きさ', () => {
+describe('拾って組む: 装備の形', () => {
   it('ふつうの装備は1マス', () => {
-    expect(shapeOf('sword')).toEqual({ w: 1, h: 1 });
+    expect(shapeOffsets('sword')).toEqual([[0, 0]]);
   });
 
   it('大剣は横2マス', () => {
-    expect(shapeOf('greatsword')).toEqual({ w: 2, h: 1 });
+    expect(shapeSize('greatsword')).toEqual({ w: 2, h: 1 });
   });
 
-  it('槍は縦2マス', () => {
-    expect(shapeOf('spear')).toEqual({ w: 1, h: 2 });
+  it('槍は縦3マス', () => {
+    expect(shapeSize('spear')).toEqual({ w: 1, h: 3 });
   });
 
-  it('大盾は2×2', () => {
-    expect(shapeOf('tower_shield')).toEqual({ w: 2, h: 2 });
+  it('戦斧はL字（右下が欠ける）', () => {
+    expect(shapeOffsets('war_axe')).toEqual([
+      [0, 0],
+      [1, 0],
+      [0, 1],
+    ]);
   });
 
-  it('置いたマスを左上にして、大きさの分のマスをふさぐ', () => {
+  it('大槌はT字', () => {
+    expect(shapeOffsets('hammer')).toEqual([
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [1, 1],
+    ]);
+  });
+
+  it.each(allShapes().map((sh) => [sh.mask.join('/'), sh] as const))(
+    '%s: どの向きの矢印も、形の外へ出る',
+    (_, sh) => {
+      const cells: [number, number][] = [];
+      sh.mask.forEach((row, y) => [...row].forEach((c, x) => c === 'X' && cells.push([x, y])));
+      const step = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] } as const;
+      for (const [d, k] of Object.entries(sh.ports)) {
+        const [x, y] = cells[k]!;
+        const [dx, dy] = step[d as Dir];
+        expect(cells.some(([cx, cy]) => cx === x + dx && cy === y + dy)).toBe(false);
+      }
+    },
+  );
+
+  it('L字は欠けたマスをふさがない', () => {
+    expect(coverCells(board(), 'war_axe', 1)).toEqual([1, 2, 5]);
+  });
+
+  it('置いたマスを形の左上にして、形のマスをふさぐ', () => {
     expect(coverCells(board(), 'tower_shield', 1)).toEqual([1, 2, 5, 6]);
   });
 
   it('はみ出すときは、盤面の内側へ寄せる', () => {
     expect(anchorFor(board(), 'greatsword', 3)).toBe(2);
-    expect(anchorFor(board(), 'spear', 9)).toBe(5);
+    expect(anchorFor(board(), 'spear', 9)).toBe(1);
   });
 });
 
@@ -103,7 +136,7 @@ describe('拾って組む: 大きい装備の連鎖', () => {
     expect(plan.steps.map((x) => x.uid)).toEqual(['o', 'g', 's']);
   });
 
-  it('矢印は装備の辺全体から出る（横2マスの下向きは、下の2マスへ伝わる）', () => {
+  it('矢印は決まったマスから出る（大剣の下向きは、先端の右のマスの下へだけ伝わる）', () => {
     const items = [
       item('o', 'origin_stone', ['right']),
       item('g', 'greatsword', ['down']),
@@ -117,7 +150,23 @@ describe('拾って組む: 大きい装備の連鎖', () => {
       ['b', 6],
     ]);
     const plan = planChain(l, new Map(items.map((i) => [i.uid, i])), 'o');
-    expect(plan.steps.map((x) => x.uid).sort()).toEqual(['a', 'b', 'g', 'o']);
+    expect(plan.steps.map((x) => x.uid)).toEqual(['o', 'g', 'b']);
+  });
+
+  it('大槌の下向きは、柄のマスから出る', () => {
+    // o (3) → left into the head's right end (2); the hammer covers 0, 1, 2 and its handle 5
+    const items = [
+      item('o', 'origin_stone', ['left']),
+      item('h', 'hammer', ['down']),
+      item('s', 'sword', []),
+    ];
+    const l = place(items, [
+      ['o', 3],
+      ['h', 0],
+      ['s', 9],
+    ]);
+    const plan = planChain(l, new Map(items.map((i) => [i.uid, i])), 'o');
+    expect(plan.steps.map((x) => x.uid)).toEqual(['o', 'h', 's']);
   });
 
   it('どのマスに届いても鳴る（縦2マスの下側から入っても鳴る）', () => {

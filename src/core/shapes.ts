@@ -1,45 +1,93 @@
-// Trial 「拾って組む」: gear with a size. A piece covers w × h cells of a plain board (its uid is
-// written in each one); the chain rings it once and leads on from its whole outline. Only the
-// trial's board uses this — every other board keeps one piece per cell. Pure: no Phaser.
+// Trial 「拾って組む」: gear with a shape. A piece covers the X cells of its mask on a plain board
+// (its uid is written in each one); the chain rings it once. Each arrow leaves from one set cell of
+// the piece (its port for that direction), so where an arrow comes out is part of the piece. Only
+// the trial's board uses this — every other board keeps one piece per cell. Pure: no Phaser.
 import { getItemDef } from '../data/items';
-import type { ItemInstance, Loadout } from './types';
+import type { Dir, ItemInstance, Loadout } from './types';
 
-export interface Shape {
-  w: number;
-  h: number;
+export interface ShapeDef {
+  /** Rows: X is a cell of the piece, . is not */
+  mask: readonly string[];
+  /** For each direction, the piece's cell the arrow leaves from (index among its X cells, row by row) */
+  ports: Readonly<Record<Dir, number>>;
 }
 
-/** Most pieces are one cell; long weapons and staffs two; the big shields and armor 2 × 2 */
-const SHAPES: Record<string, Shape> = {
-  // Wide (2 × 1)
-  greatsword: { w: 2, h: 1 },
-  war_axe: { w: 2, h: 1 },
-  hammer: { w: 2, h: 1 },
-  sky_hammer: { w: 2, h: 1 },
-  holy_sword: { w: 2, h: 1 },
-  twin_blades: { w: 2, h: 1 },
-  // Tall (1 × 2)
-  spear: { w: 1, h: 2 },
-  thunder_spear: { w: 1, h: 2 },
-  bow: { w: 1, h: 2 },
-  flame_staff: { w: 1, h: 2 },
-  thunder_staff: { w: 1, h: 2 },
-  storm_staff: { w: 1, h: 2 },
-  sun_staff: { w: 1, h: 2 },
-  dark_staff: { w: 1, h: 2 },
-  frost_staff: { w: 1, h: 2 },
-  venom_staff: { w: 1, h: 2 },
-  raincloud_staff: { w: 1, h: 2 },
-  chainmail: { w: 1, h: 2 },
-  // Big (2 × 2)
-  tower_shield: { w: 2, h: 2 },
-  steel_armor: { w: 2, h: 2 },
+/** The shapes (cells are numbered row by row; ports point outside the piece) */
+const SHAPE: Record<string, ShapeDef> = {
+  one: { mask: ['X'], ports: { up: 0, right: 0, down: 0, left: 0 } },
+  // ■■ : arrows up and down from the tip (right cell)
+  bar2: { mask: ['XX'], ports: { up: 1, right: 1, down: 1, left: 0 } },
+  // ■■ : up from the left cell, down from the right cell
+  twin: { mask: ['XX'], ports: { up: 0, right: 1, down: 1, left: 0 } },
+  // ■■■ : a long blade, sideways arrows from the tip
+  bar3: { mask: ['XXX'], ports: { up: 2, right: 2, down: 2, left: 0 } },
+  // a staff: the head on top gives the side arrows
+  staff: { mask: ['X', 'X'], ports: { up: 0, right: 0, down: 1, left: 0 } },
+  // a bow: left from the top, right from the bottom
+  bow: { mask: ['X', 'X'], ports: { up: 0, right: 1, down: 1, left: 0 } },
+  // a spear: three tall, everything but down from the point
+  spear: { mask: ['X', 'X', 'X'], ports: { up: 0, right: 0, down: 2, left: 0 } },
+  // ■■ / ■. : an axe head
+  axe: { mask: ['XX', 'X.'], ports: { up: 1, right: 1, down: 2, left: 0 } },
+  // ■. / ■■ : a ball on a chain
+  ball: { mask: ['X.', 'XX'], ports: { up: 0, right: 2, down: 2, left: 1 } },
+  // ■■■ / .■. : a hammer head on its handle
+  hammer: { mask: ['XXX', '.X.'], ports: { up: 1, right: 2, down: 3, left: 0 } },
+  // 2 × 2 : one arrow from each corner, going round
+  block: { mask: ['XX', 'XX'], ports: { up: 0, right: 1, down: 3, left: 2 } },
+  // ■■ / ■■ / .. : armor (2 wide, 2 tall) with the head on top
+  vest: { mask: ['XX', 'XX'], ports: { up: 1, right: 3, down: 2, left: 0 } },
 };
 
-const ONE: Shape = { w: 1, h: 1 };
+/** Which shape each piece has (absent: one cell) */
+const BY_DEF: Record<string, keyof typeof SHAPE> = {
+  greatsword: 'bar2',
+  twin_blades: 'twin',
+  holy_sword: 'bar3',
+  war_axe: 'axe',
+  hammer: 'hammer',
+  sky_hammer: 'hammer',
+  iron_ball: 'ball',
+  spear: 'spear',
+  thunder_spear: 'spear',
+  bow: 'bow',
+  flame_staff: 'staff',
+  thunder_staff: 'staff',
+  storm_staff: 'staff',
+  sun_staff: 'staff',
+  dark_staff: 'staff',
+  frost_staff: 'staff',
+  venom_staff: 'staff',
+  raincloud_staff: 'staff',
+  chainmail: 'staff',
+  tower_shield: 'block',
+  steel_armor: 'vest',
+};
 
-export function shapeOf(defId: string): Shape {
-  return SHAPES[defId] ?? ONE;
+export function shapeOf(defId: string): ShapeDef {
+  return SHAPE[BY_DEF[defId] ?? 'one']!;
+}
+
+/** Every shape in use (for checks) */
+export function allShapes(): ShapeDef[] {
+  return Object.values(SHAPE);
+}
+
+/** The piece's bounding box */
+export function shapeSize(defId: string): { w: number; h: number } {
+  const { mask } = shapeOf(defId);
+  return { w: mask[0]!.length, h: mask.length };
+}
+
+/** The piece's cells as [dx, dy] from its top-left, row by row */
+export function shapeOffsets(defId: string): [number, number][] {
+  const out: [number, number][] = [];
+  shapeOf(defId).mask.forEach((row, dy) =>
+    [...row].forEach((ch, dx) => {
+      if (ch === 'X') out.push([dx, dy]);
+    }),
+  );
+  return out;
 }
 
 /** An empty plain board (no stacks, no holes) of the given size */
@@ -53,15 +101,13 @@ export function emptyShapeBoard(width: number, height: number): Loadout {
   };
 }
 
-/** The cells a piece covers when its top-left is at `cell` (null: it would stick out) */
+/** The cells a piece covers when its top-left (of its box) is at `cell` (null: it would stick out) */
 export function coverCells(l: Loadout, defId: string, cell: number): number[] | null {
-  const { w, h } = shapeOf(defId);
+  const { w, h } = shapeSize(defId);
   const x = cell % l.width;
   const y = Math.floor(cell / l.width);
   if (cell < 0 || x + w > l.width || y + h > l.height) return null;
-  const out: number[] = [];
-  for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push(cell + dy * l.width + dx);
-  return out;
+  return shapeOffsets(defId).map(([dx, dy]) => cell + dy * l.width + dx);
 }
 
 /**
@@ -69,7 +115,7 @@ export function coverCells(l: Loadout, defId: string, cell: number): number[] | 
  * inside the board when it would stick out to the right or bottom
  */
 export function anchorFor(l: Loadout, defId: string, cell: number): number {
-  const { w, h } = shapeOf(defId);
+  const { w, h } = shapeSize(defId);
   const x = Math.min(cell % l.width, l.width - w);
   const y = Math.min(Math.floor(cell / l.width), l.height - h);
   return y * l.width + x;
@@ -140,4 +186,9 @@ export function footprints(l: Loadout): Map<string, number[]> | null {
     } else m.set(u, [i]);
   });
   return multi ? m : null;
+}
+
+/** The cell an arrow leaves a piece from: its port for that direction (cells as on the board) */
+export function portCell(defId: string, cells: readonly number[], dir: Dir): number {
+  return cells[shapeOf(defId).ports[dir]] ?? cells[0]!;
 }

@@ -1,5 +1,6 @@
 // バックパックの描画（配置画面・ラン・カカシで共用）
 // レイヤー: マス → アイコン（出口矢印・レアリティ枠つき）→ 連鎖の線 → 光 → 段数・倍率・起点番号
+import { ShapedIcon } from './shapedIcon';
 import { footprints } from '../core/shapes';
 import Phaser from 'phaser';
 import { holeIn } from '../core/boards';
@@ -62,7 +63,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
   /** Run: how hot the chain is (0 = none … 4), drawn as a glow round the board (chainHeat) */
   private heat = 0;
   private readonly labelLayer: Phaser.GameObjects.Container;
-  private icons = new Map<number, ItemIcon>();
+  private icons = new Map<number, ItemIcon | ShapedIcon>();
   private glows: { cell: number; color: number; until: number }[] = [];
   private blinkUids: readonly string[] = [];
   private highlightCell = -1;
@@ -131,7 +132,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     return cy * this.loadout.width + cx;
   }
 
-  iconAt(cell: number): ItemIcon | undefined {
+  iconAt(cell: number): ItemIcon | ShapedIcon | undefined {
     return this.icons.get(cell);
   }
 
@@ -181,15 +182,12 @@ export class BackpackView extends Phaser.GameObjects.Container {
         const pts = cells.map((k) => this.cellCenter(k));
         const xs = pts.map((p) => p.x);
         const ys = pts.map((p) => p.y);
-        const w = Math.max(...xs) - Math.min(...xs) + this.cell;
-        const h = Math.max(...ys) - Math.min(...ys) + this.cell;
-        const big = new ItemIcon(
+        const big = new ShapedIcon(
           this.scene,
           (Math.max(...xs) + Math.min(...xs)) / 2,
           (Math.max(...ys) + Math.min(...ys)) / 2,
           it,
-          w,
-          h,
+          this.cell,
         );
         this.iconLayer.add(big);
         for (const k of cells) this.icons.set(k, big);

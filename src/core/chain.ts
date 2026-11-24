@@ -1,5 +1,5 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
-import { footprints } from './shapes';
+import { footprints, portCell } from './shapes';
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
@@ -284,7 +284,7 @@ function spread(
   const passPace = (cell: number): number =>
     GIMMICK.passPace[Math.min((visits.get(cell) ?? 1) - 1, GIMMICK.passPace.length - 1)]!;
 
-  // Shaped pieces (build trial): a piece on several cells rings once and leads on from its outline
+  // Shaped pieces (build trial): a piece on several cells rings once; each arrow leaves its port
   const foot = footprints(loadout);
   const cellsOf = (uid: string, cell: number): number[] => foot?.get(uid) ?? [cell];
 
@@ -295,12 +295,12 @@ function spread(
     const def = getItemDef(inst.defId);
     const delayMs = Math.round(relayMs(def, effectsOf(lines[index]!)) * passPace(s.cell));
     const targets: number[] = [];
+    // A shaped piece's arrow leaves from its port cell for that direction
     const from = cellsOf(s.uid, s.cell);
     for (const dir of passExits(s.cell, inst)) {
-      for (const c of from) {
-        const n = neighborCell(loadout, c, dir);
-        if (n !== null && !from.includes(n) && !targets.includes(n)) targets.push(n);
-      }
+      const c = from.length > 1 ? portCell(inst.defId, from, dir) : s.cell;
+      const n = neighborCell(loadout, c, dir);
+      if (n !== null && !from.includes(n) && !targets.includes(n)) targets.push(n);
     }
     turned[index] = passTurned;
     // ワープ: the chain also goes on to the other warp cell
