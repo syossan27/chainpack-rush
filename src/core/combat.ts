@@ -125,6 +125,12 @@ export interface RunConfig {
   charms?: CharmSlots;
   /** The player has none yet, so the first boss beaten surely drops one */
   charmSure?: boolean;
+  /**
+   * Trial (拾って組む): the board is built during the run from gear picked up. More groups, a
+   * fixed drop chance for normal enemies (gear only), no time limit, and a calm stop after each
+   * boss to rearrange the board
+   */
+  build?: { groupMult: number; dropChance: number };
 }
 
 /** What a run starts with (see core/mastery.ts) */
@@ -401,7 +407,7 @@ export class Combat {
   atb = 0; // 秒（B の待ちが長いときは負から始まる）
   readonly rules: ChainRules;
   readonly luck: LuckRules;
-  private readonly guardAll: boolean;
+  private guardAll = false;
   private readonly layoutRng: Rng;
   /** 今の周回の並び（地域選択・進み具合の表示用） */
   layout: LoopLayout | null = null;
@@ -429,6 +435,8 @@ export class Combat {
 
   /** The relics offered now (the run waits until `until`), or null */
   relicOffer: { ids: RelicId[]; until: number } | null = null;
+  /** Build trial: the run waits after a boss while the player rearranges the board (resume()) */
+  arranging = false;
   /** The relic stuck on each cell (cell → relic) */
   readonly relics = new Map<number, RelicId>();
   /** The goblin came already (once per run) */
@@ -441,16 +449,16 @@ export class Combat {
   /** Which board the gear sits on (its trait works in combat) */
   private readonly board: BoardDef;
   /** What the edge charms react to (null: no charms, nothing changes) */
-  private readonly charms: CharmContext | null;
+  private charms: CharmContext | null = null;
   /** Charm drops draw from here, so every other drop stays as it was */
   private readonly charmRng: Rng | null;
   private readonly charmDrops: CharmInstance[] = [];
   /** Techniques known in this run (null: every technique fires as usual) */
   private readonly learned: Set<string> | null;
-  private readonly origins: string[];
+  private origins: string[] = [];
   /** 1回の発火で撃つ単位（起点は1つずつ。発火順） */
-  private readonly units: string[][];
-  /** Each origin's chain (the layout does not change during a run) */
+  private units: string[][] = [];
+  /** Each origin's chain (fixed for a run, except when the build trial changes the board) */
   private readonly plans = new Map<string, ChainPlan>();
   /** Gimmick cells: each cell's turns so far (they carry over from firing to firing) */
   private gimmickState: number[] | undefined;
@@ -467,9 +475,6 @@ export class Combat {
     this.cfg = cfg;
     this.artifactsOwned = new Set(cfg.ownedArtifacts);
     this.board = getBoard(cfg.loadout.board);
-    this.charms = cfg.charms?.some((c) => c !== null)
-      ? charmContext(cfg.charms, cfg.loadout, cfg.items)
-      : null;
     this.charmRng = cfg.charms ? new Rng((cfg.seed ^ CHARM.rngSalt) >>> 0) : null;
     this.learned = cfg.mastery ? new Set(cfg.mastery.learned) : null;
     if (cfg.mastery) {
@@ -478,10 +483,6 @@ export class Combat {
     }
     this.rules = { ...CHAIN_RULES, ...cfg.rules };
     this.luck = { ...LUCK, ...cfg.luck };
-    // 不落の城門: バックパックに置いてあれば常に守られる
-    this.guardAll = cfg.loadout.cells.some(
-      (u) => !!u && !!cfg.items.get(u) && !!getItemDef(cfg.items.get(u)!.defId).guardAll,
-    );
     // 敵の並びは戦利品の抽選と別の乱数列にする（拾い方で並びが変わらないように）
     this.layoutRng = new Rng((cfg.seed ^ 0x9e3779b9) >>> 0);
     this.mode = cfg.mode ?? 'run';
@@ -489,13 +490,10 @@ export class Combat {
     this.region = getRegion(cfg.regionId);
     this.hp = cfg.hero.maxHp;
     this.maxTicks =
-      this.mode === 'dummy'
+      this.mode === 'dummy' || cfg.build
         ? Number.POSITIVE_INFINITY
         : secToTicks(Math.min(TIME_BONUS.maxRunTime, cfg.hero.runTime ?? SIM.runDuration));
-    this.origins = cfg.loadout.originOrder.filter((u) => cfg.loadout.cells.includes(u));
-    // Origins fire one at a time, even when their routes sync
-    this.units = this.origins.map((o) => [o]);
-    for (const p of simulateChain(cfg.loadout, cfg.items).plans) this.plans.set(p.originUid, p);
+    this.readBoard();
     for (const [cell, id] of cfg.relics?.stuck ?? []) this.relics.set(cell, id);
     const slots = cfg.consumableSlots ?? CONSUMABLE.baseSlots;
     this.consumables = cfg.loadout.consumables
@@ -516,6 +514,47 @@ export class Combat {
   }
 
   // ---- 公開 API ----
+
+  /** The board's charms, origins, firing order and chains (and whether 不落の城門 is on it) */
+  private readBoard(): void {
+    const { loadout, items, charms } = this.cfg;
+    this.charms = charms?.some((c) => c !== null) ? charmContext(charms, loadout, items) : null;
+    // 不落の城門: バックパックに置いてあれば常に守られる
+    this.guardAll = loadout.cells.some(
+      (u) => !!u && !!items.get(u) && !!getItemDef(items.get(u)!.defId).guardAll,
+    );
+    this.origins = loadout.originOrder.filter((u) => loadout.cells.includes(u));
+    // Origins fire one at a time, even when their routes sync
+    this.units = this.origins.map((o) => [o]);
+    this.plans.clear();
+    for (const p of simulateChain(loadout, items).plans) this.plans.set(p.originUid, p);
+  }
+
+  /**
+   * Build trial: take a new board layout (it replaces the run's loadout in place, so every holder
+   * of it sees the change). Only between chains: false while a chain runs, so try again later.
+   * Not for ranked or replayed runs (board edits are not recorded inputs)
+   */
+  applyLoadout(next: Loadout): boolean {
+    if (!this.cfg.build || this.chain || this.ended) return false;
+    Object.assign(this.cfg.loadout, next);
+    this.readBoard();
+    this.nextUnitIndex = this.units.length > 0 ? this.nextUnitIndex % this.units.length : 0;
+    return true;
+  }
+
+  /** Build trial: a picked-up item joins the run's items, so the board can use it */
+  adopt(item: ItemInstance): void {
+    if (!this.cfg.build) return;
+    (this.cfg.items as Map<string, ItemInstance>).set(item.uid, item);
+  }
+
+  /** Build trial: go on after rearranging (the relic choice, if any, must be done first) */
+  resume(): boolean {
+    if (!this.arranging || this.relicOffer || this.ended) return false;
+    this.arranging = false;
+    return true;
+  }
 
   get time(): number {
     return this.tick / SIM.ticksPerSecond;
@@ -722,6 +761,8 @@ export class Combat {
       }
       this.closeRelicOffer();
     }
+    // Build trial: the run waits while the board is rearranged
+    if (this.arranging) return;
 
     // 1. 連鎖の進行
     if (this.chain) this.advanceChain();
@@ -845,7 +886,13 @@ export class Combat {
   }
 
   private startLoop(): void {
-    const layout = rollLoop(this.region, this.loop, this.layoutRng, this.layout?.bossId);
+    const layout = rollLoop(
+      this.region,
+      this.loop,
+      this.layoutRng,
+      this.layout?.bossId,
+      this.region.groupCount * (this.cfg.build?.groupMult ?? 1),
+    );
     this.layout = layout;
     const bossId = layout.bossId;
     this.emit({ type: 'loopStart', tick: this.tick, loop: this.loop, bossId });
@@ -984,7 +1031,11 @@ export class Combat {
   /** A beaten boss offers relics; the run waits for a choice */
   private openRelicOffer(): void {
     const ids = rollRelicOffer(this.rng);
-    this.relicOffer = { ids, until: this.tick + secToTicks(RELIC.pickSeconds) };
+    // Build trial: no hurry, the run waits for the choice
+    const until = this.cfg.build
+      ? Number.POSITIVE_INFINITY
+      : this.tick + secToTicks(RELIC.pickSeconds);
+    this.relicOffer = { ids, until };
     this.emit({ type: 'relicOffer', tick: this.tick, ids });
   }
 
@@ -1672,13 +1723,12 @@ export class Combat {
       const roll = this.rng.next();
       // The first own run never ends empty-handed (the roll is still drawn, as in any run)
       const promised = !!this.cfg.firstRun && this.drops.length === 0;
-      if (
-        roll < e.def.dropRate * (e.def.boss ? 1 : this.region.loot.dropMult) ||
-        e.elite === 'golden' ||
-        promised ||
-        sureDrop ||
-        e.treasure
-      ) {
+      const build = this.cfg.build;
+      const chance =
+        build && !e.def.boss
+          ? build.dropChance
+          : e.def.dropRate * (e.def.boss ? 1 : this.region.loot.dropMult);
+      if (roll < chance || e.elite === 'golden' || promised || sureDrop || e.treasure) {
         const count = e.def.boss
           ? LOOT.bossDrops
           : e.treasure
@@ -1694,7 +1744,8 @@ export class Combat {
             `drop-${this.nextDropId++}`,
             rareOrBetter,
             this.region.loot,
-            promised,
+            // Build trial: only gear (it goes on the board)
+            promised || !!build,
             // The first of the goblin's drops is epic or better
             e.treasure && k === 0 ? 'epic' : undefined,
             this.artifactsOwned,
@@ -1741,6 +1792,7 @@ export class Combat {
       this.enemies = this.enemies.filter((x) => x.alive);
       this.startLoop();
       if (this.cfg.relics && this.mode === 'run') this.openRelicOffer();
+      if (this.cfg.build) this.arranging = true;
     }
   }
 

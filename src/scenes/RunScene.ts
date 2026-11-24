@@ -1,7 +1,7 @@
 // 出撃（最大30秒）。core の Combat を固定ステップで進め、出てきたイベントを描画するだけ
 import { demoPending, runTutorial } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { MONETIZE, RARITY, RELIC, SIM } from '../config/balance';
+import { BUILD_RUN, MONETIZE, RARITY, RELIC, SIM } from '../config/balance';
 import { addPet } from '../ui/cosmeticsView';
 import { Combat, type CombatEvent, type RunConfig } from '../core/combat';
 import { buildSubmission, endlessSeason } from '../core/ranking';
@@ -9,6 +9,8 @@ import { ownedArtifactIds, refillConsumables, totalStars } from '../core/economy
 import { randomSeed } from '../core/rng';
 import { featureRules, runFeatures, runKindOf } from '../core/runRules';
 import { runConfig } from '../core/runConfig';
+import { buildRunConfig } from '../core/buildRun';
+import { BuildRunUi } from '../ui/buildRunUi';
 import { challengeOfPeriod } from '../core/challenge';
 import { canStickRelic } from '../core/relics';
 import { getRelic, type RelicId } from '../data/relics';
@@ -95,6 +97,9 @@ export class RunScene extends Phaser.Scene {
   private demo = false;
   /** 挑戦の出撃（なければ null） */
   private challenge: ChallengeSortie | null = null;
+  /** Trial 「拾って組む」: what was brought (null: an ordinary run) and its hand and arrange UI */
+  private brought: ItemInstance[] | null = null;
+  private build: BuildRunUi | null = null;
   private cfg!: RunConfig;
   private season = 0;
   /** 警報を出したボス（敵の id） */
@@ -157,7 +162,10 @@ export class RunScene extends Phaser.Scene {
     // 挑戦: 地域と乱数の種は全員同じ。強化と★は使わず、装備とゴールドは出ない
     this.challenge = session.challenge;
     session.challenge = null;
-    this.demo = !this.challenge && demoPending();
+    this.brought = this.challenge ? null : session.build;
+    session.build = null;
+    this.build = null;
+    this.demo = !this.challenge && !this.brought && demoPending();
     // 出撃前に、使い切った消耗品の枠を倉庫から入れ直す
     // 挑戦は挑戦用の配置で（消耗品の入れ直しも挑戦用の配置に）
     const challengeRules = this.challenge
@@ -168,7 +176,7 @@ export class RunScene extends Phaser.Scene {
       refillConsumables(save);
       leaveChallengeEdit(save);
       persist();
-    } else if (!this.demo && refillConsumables(save).length > 0) persist();
+    } else if (!this.demo && !this.brought && refillConsumables(save).length > 0) persist();
     this.warned = new Set();
     this.recordShown = new Set();
     this.bestBefore =
@@ -177,9 +185,11 @@ export class RunScene extends Phaser.Scene {
         : { step: save.stats.maxStep, damage: save.stats.maxDamage };
     this.regionId = this.challenge
       ? this.challenge.regionId
-      : this.demo
-        ? DEMO_REGION
-        : (session.regionId ?? save.progress.unlocked[0]!);
+      : this.brought
+        ? BUILD_RUN.regionId
+        : this.demo
+          ? DEMO_REGION
+          : (session.regionId ?? save.progress.unlocked[0]!);
     this.seed = this.challenge ? this.challenge.seed : (debugSeed() ?? randomSeed());
     // 体験ランは、伝説の装備と、強化しきった勇者で（倉庫・記録には残らない）
     const kind = runKindOf({
@@ -201,13 +211,14 @@ export class RunScene extends Phaser.Scene {
         ownedArtifacts: ownedArtifactIds(save),
         ...(rules ? { rules } : {}),
       };
-    } else this.cfg = runConfig(save, kind, this.regionId, this.seed, challengeRules);
+    } else if (this.brought) this.cfg = buildRunConfig(save, this.seed, this.brought);
+    else this.cfg = runConfig(save, kind, this.regionId, this.seed, challengeRules);
     const loadout = this.cfg.loadout;
     this.loadout = loadout;
     this.items = this.cfg.items;
     this.shake = save.settings.shake;
     // Mastery grows from this run's rings and sparks (ordinary and endless runs)
-    this.mastery = runFeatures(kind).mastery === 'grow';
+    this.mastery = !this.brought && runFeatures(kind).mastery === 'grow';
     this.picker = null;
     this.combat = new Combat(this.cfg);
     // ランキングのシーズン（出撃した時点で決める）
@@ -273,6 +284,24 @@ export class RunScene extends Phaser.Scene {
       setAudioSuspended(false);
     });
     this.handleEvents(this.combat.drainEvents());
+    if (this.brought) {
+      // The run starts in the arrange time: the brought pieces wait in the hand
+      this.combat.arranging = true;
+      const items = this.cfg.items;
+      this.build = new BuildRunUi(
+        {
+          scene: this,
+          view: this.view,
+          combat: this.combat,
+          loadout,
+          items,
+          halted: () => this.paused || this.inspecting || this.ending,
+          say: (text, color) => this.showBanner(text, color ?? COLORS.text),
+        },
+        this.brought.map((b) => items.get(b.uid)!),
+      );
+      return;
+    }
     // 初めての出撃（体験ラン）: 止めて、しくみを案内する
     runTutorial(
       this,
@@ -436,7 +465,9 @@ export class RunScene extends Phaser.Scene {
           .text(
             W / 2,
             H / 2 + 162,
-            t('ここまでの戦利品を持ち帰ります'),
+            this.brought
+              ? t('試作のランは何も持ち帰りません')
+              : t('ここまでの戦利品を持ち帰ります'),
             textStyle(18, COLORS.textDim),
           )
           .setOrigin(0.5),
@@ -493,7 +524,8 @@ export class RunScene extends Phaser.Scene {
       groupIds.add(e.group);
       if (e.alive) alive.add(e.group);
     }
-    const n = getRegion(this.regionId).groupCount;
+    // The loop's own count (the build trial has more groups than the region)
+    const n = c.layout?.groups.length ?? getRegion(this.regionId).groupCount;
     const cleared = groupIds.size - alive.size;
     const key = `${c.loop}:${cleared}`;
     if (key === this.trackKey) return;
@@ -535,6 +567,8 @@ export class RunScene extends Phaser.Scene {
     zone.on('pointerup', (p: Phaser.Input.Pointer) => {
       if (this.paused || this.ending || this.inspecting) return;
       if (Math.hypot(p.x - p.downX, p.y - p.downY) > 16) return;
+      // Build trial: no item card mid-fight (nothing may stop the fight but the arrange time)
+      if (this.build && !this.combat.arranging && !this.picker) return;
       // While relics are offered, a tap on a cell sticks the chosen one
       if (this.picker) {
         this.picker.tapCell(this.view.cellAt(p.x, p.y));
@@ -608,6 +642,7 @@ export class RunScene extends Phaser.Scene {
     // A special on screen holds while paused or while an item card is open
     this.field.techFx.setHalted(halted);
     this.checkBossApproach();
+    this.build?.update();
     this.view.tick(now);
     this.numbers.update(dt);
     this.effects.update(dt);
@@ -619,7 +654,9 @@ export class RunScene extends Phaser.Scene {
     const r = c.remaining;
     const sec = Math.floor(r);
     const cs = Math.floor((r - sec) * 100);
-    this.hud.timer.setText(`${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}`);
+    this.hud.timer.setText(
+      Number.isFinite(r) ? `${String(sec).padStart(2, '0')}'${String(cs).padStart(2, '0')}` : '∞',
+    );
     this.hud.timer.setColor(r < 5 ? COLORS.textWarn : COLORS.text);
     // 走っているあいだは出撃時間が止まっている: タイマーを薄く
     this.hud.timer.setAlpha(c.running ? 0.45 : 1);
@@ -1069,6 +1106,7 @@ export class RunScene extends Phaser.Scene {
           break;
         }
         case 'drop': {
+          this.build?.addDrop(ev.item);
           const p = this.enemyPos(ev.enemyId);
           if (p)
             this.numbers.showText(
@@ -1158,6 +1196,10 @@ export class RunScene extends Phaser.Scene {
           sfx('openRare');
           break;
         case 'runEnd':
+          if (this.build) {
+            this.endBuild();
+            break;
+          }
           // 力尽きたら、1ランに1回だけ「広告を見て再開」を選べる
           // 挑戦は全員同じ条件で競うので、再開はなし
           if (
@@ -1296,6 +1338,65 @@ export class RunScene extends Phaser.Scene {
   private giveUp(): void {
     this.inspecting = false;
     this.finish();
+  }
+
+  /** Build trial: a short summary over the screen (nothing is kept), then again or home */
+  private endBuild(): void {
+    if (this.ending) return;
+    this.ending = true;
+    sfx('runEnd');
+    const r = this.combat.result();
+    const layer = this.add.container(0, 0).setDepth(3000);
+    layer.add(this.add.rectangle(0, 0, W, H, 0x000000, 0.7).setOrigin(0, 0).setInteractive());
+    layer.add(panel(this, W / 2, H / 2, 520, 500, 'panel'));
+    layer.add(
+      fitText(
+        this.add
+          .text(
+            W / 2,
+            H / 2 - 180,
+            t(r.reason === 'dead' ? '力尽きた…' : '撤退！'),
+            textStyle(44, '#ffe27a'),
+          )
+          .setOrigin(0.5),
+        460,
+      ),
+    );
+    const lines = [
+      t('到達 {loop}周目', { loop: r.reachedLoop }),
+      t('最大連鎖 {n}', { n: r.stats.maxStep }),
+      t('最大ダメージ {n}', { n: num(r.stats.maxDamage) }),
+      t('拾った装備 {n}', { n: r.drops.length }),
+    ];
+    layer.add(
+      this.add
+        .text(W / 2, H / 2 - 30, lines.join('\n'), textStyle(26))
+        .setOrigin(0.5)
+        .setAlign('center')
+        .setLineSpacing(8),
+    );
+    const brought = this.brought;
+    layer.add(
+      new Button(
+        this,
+        W / 2,
+        H / 2 + 120,
+        t('もう一度'),
+        () => {
+          session.build = brought;
+          this.scene.start('BuildPick');
+        },
+        { width: 300, height: 80, skin: 'gold' },
+      ),
+    );
+    layer.add(
+      new Button(this, W / 2, H / 2 + 210, t('拠点へ'), () => this.scene.start('Base'), {
+        width: 300,
+        height: 70,
+        fontSize: 24,
+        skin: 'gray',
+      }),
+    );
   }
 
   private finish(): void {

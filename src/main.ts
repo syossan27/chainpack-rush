@@ -13,6 +13,7 @@ import { BootScene } from './scenes/BootScene';
 import { DummyScene } from './scenes/DummyScene';
 import { LoadoutScene } from './scenes/LoadoutScene';
 import { ResultScene } from './scenes/ResultScene';
+import { BuildPickScene } from './scenes/BuildPickScene';
 import { RunScene } from './scenes/RunScene';
 import { StageSelectScene } from './scenes/StageSelectScene';
 import { COLORS, H, W } from './ui/theme';
@@ -67,7 +68,16 @@ const game = new Phaser.Game({
   physics: { default: 'arcade' },
   fps: { target: 60 },
   input: { activePointers: 2 },
-  scene: [BootScene, BaseScene, StageSelectScene, LoadoutScene, DummyScene, RunScene, ResultScene],
+  scene: [
+    BootScene,
+    BaseScene,
+    StageSelectScene,
+    LoadoutScene,
+    DummyScene,
+    RunScene,
+    ResultScene,
+    BuildPickScene,
+  ],
 });
 
 // デバッグ用（ブラウザのコンソールから参照できるように）
