@@ -788,8 +788,5 @@ export const UI: Dict = {
   配置タイム: 'Hora de Arrumar',
   '手札から盤面へ。並べ替えもできる': 'Da mão para o tabuleiro. Dá para reorganizar também',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Lixeira (arraste aqui para jogar fora)',
-  同じ種類の装備にしか重ねられない: 'Só equipamento do mesmo tipo empilha',
-  アーティファクトは重ねられない: 'Artefatos não empilham',
-  これ以上重ねられない: 'Não dá para empilhar mais',
-  そのマスには置けない: 'Não dá para colocar nessa casa',
+  そこには入らない: 'Não cabe aí',
 };

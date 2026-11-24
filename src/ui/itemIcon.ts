@@ -23,12 +23,23 @@ export class ItemIcon extends Phaser.GameObjects.Container {
   private readonly frame: Phaser.GameObjects.NineSlice;
   private readonly img: Phaser.GameObjects.Image;
   private readonly arrows: Phaser.GameObjects.Graphics;
+  /** Width (and height, unless `tall` is given) */
   readonly size: number;
+  /** Height of a shaped piece (build trial: a tile over several cells) */
+  readonly tall: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, item: ItemInstance, size: number) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    item: ItemInstance,
+    size: number,
+    tall: number = size,
+  ) {
     super(scene, x, y);
     this.item = item;
     this.size = size;
+    this.tall = tall;
     const def = getItemDef(item.defId);
     const m = SLICE.tile;
     this.frame = scene.add.nineslice(
@@ -37,14 +48,17 @@ export class ItemIcon extends Phaser.GameObjects.Container {
       itemTileKey(item),
       undefined,
       size - 4,
-      size - 4,
+      tall - 4,
       m,
       m,
       m,
       m,
     );
     // 原画16×16を整数倍（基本×4 = 64px）で表示。小さい枠では×3/×2に落とす
-    const scale = Math.max(2, Math.min(ICON_SCALE, Math.floor((size - 20) / ICON_SIZE)));
+    const scale = Math.max(
+      2,
+      Math.min(ICON_SCALE, Math.floor((Math.min(size, tall) - 20) / ICON_SIZE)),
+    );
     this.img = scene.add.image(0, 0, iconKey(def.id)).setScale(scale);
     this.arrows = scene.add.graphics();
     this.drawArrows();
@@ -93,18 +107,19 @@ export class ItemIcon extends Phaser.GameObjects.Container {
         .setOrigin(0, 1);
       this.add(star);
     }
-    this.setSize(size, size);
+    this.setSize(size, tall);
     scene.add.existing(this);
   }
 
   drawArrows(): void {
     const g = this.arrows;
     g.clear();
-    const r = this.size / 2 - 5;
+    const rx = this.size / 2 - 5;
+    const ry = this.tall / 2 - 5;
     for (const d of this.item.exits) {
       const a = ARROW[d];
-      const cx = a.dx * r;
-      const cy = a.dy * r;
+      const cx = a.dx * rx;
+      const cy = a.dy * ry;
       const len = Math.max(8, this.size * 0.14);
       // 三角の矢印（外向き）
       const tip = { x: cx + a.dx * 4, y: cy + a.dy * 4 };

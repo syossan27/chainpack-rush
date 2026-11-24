@@ -252,7 +252,13 @@ export class RunScene extends Phaser.Scene {
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
     this.consumableButtons = [];
     this.trackKey = '';
-    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
+    this.view = new BackpackView(
+      this,
+      RUN_LAYOUT.backpackTop,
+      loadout,
+      this.items,
+      this.brought ? BUILD_RUN.board.cell : undefined,
+    ).setDepth(41);
     this.cellFx = new CellFx(this, this.view, this.effects, () => this.shake);
     this.charmStrip = this.cfg.charms
       ? new CharmStrip(this, this.view, getBoard(loadout.board), this.cfg.charms, {

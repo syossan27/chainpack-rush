@@ -7,7 +7,7 @@ import type { RunConfig } from './combat';
 import { heroStats } from './economy';
 import { runMastery } from './mastery';
 import type { SaveData } from './save';
-import { emptyStackBoard } from './stack';
+import { emptyShapeBoard } from './shapes';
 import type { ItemInstance } from './types';
 
 const kindOf = (it: ItemInstance) => getItemDef(it.defId).kind;
@@ -32,7 +32,7 @@ export function canSetOut(picked: readonly ItemInstance[]): boolean {
 }
 
 /**
- * The run's settings: an empty standard board (filled in the first arrange), copies of the
+ * The run's settings: the trial's empty plain board (filled in the first arrange), copies of the
  * brought items (the save is never touched), the hero's upgrades, the mastery as it is
  */
 export function buildRunConfig(
@@ -43,7 +43,7 @@ export function buildRunConfig(
   return {
     seed,
     regionId: BUILD_RUN.regionId,
-    loadout: emptyStackBoard('standard'),
+    loadout: emptyShapeBoard(BUILD_RUN.board.width, BUILD_RUN.board.height),
     items: new Map(picked.map((it) => [it.uid, structuredClone(it)])),
     hero: heroStats(save),
     consumableSlots: 0,

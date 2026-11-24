@@ -788,8 +788,5 @@ export const UI: Dict = {
   配置タイム: 'Waktu Atur',
   '手札から盤面へ。並べ替えもできる': 'Dari tangan ke papan. Bisa diatur ulang juga',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Tempat Sampah (seret ke sini untuk buang)',
-  同じ種類の装備にしか重ねられない: 'Hanya perlengkapan sejenis yang bisa ditumpuk',
-  アーティファクトは重ねられない: 'Artefak tidak bisa ditumpuk',
-  これ以上重ねられない: 'Tidak bisa ditumpuk lebih tinggi',
-  そのマスには置けない: 'Tidak bisa ditaruh di petak itu',
+  そこには入らない: 'Tidak muat di sana',
 };

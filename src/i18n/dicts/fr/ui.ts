@@ -795,8 +795,5 @@ export const UI: Dict = {
   配置タイム: 'Temps de placement',
   '手札から盤面へ。並べ替えもできる': 'De la main au plateau. Vous pouvez aussi réorganiser',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Poubelle (glissez ici pour jeter)',
-  同じ種類の装備にしか重ねられない: 'Seul le même équipement peut s’empiler',
-  アーティファクトは重ねられない: 'Les artefacts ne s’empilent pas',
-  これ以上重ねられない: 'Impossible d’empiler plus haut',
-  そのマスには置けない: 'Impossible de placer sur cette case',
+  そこには入らない: 'Ça ne rentre pas ici',
 };

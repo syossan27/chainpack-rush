@@ -789,8 +789,5 @@ export const UI: Dict = {
   配置タイム: 'Aufstellzeit',
   '手札から盤面へ。並べ替えもできる': 'Von der Hand aufs Brett. Umstellen geht auch',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Mülleimer (hierher ziehen zum Wegwerfen)',
-  同じ種類の装備にしか重ねられない: 'Nur gleiche Ausrüstung lässt sich stapeln',
-  アーティファクトは重ねられない: 'Artefakte lassen sich nicht stapeln',
-  これ以上重ねられない: 'Höher geht es nicht',
-  そのマスには置けない: 'Dieses Feld geht nicht',
+  そこには入らない: 'Passt dort nicht hin',
 };

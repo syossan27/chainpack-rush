@@ -852,7 +852,10 @@ export class Combat {
   revived = false;
 
   /** Stick an offered relic on a cell (false: not offered, or the cell won't take it) */
-  placeRelic(id: RelicId, cell: number): boolean {
+  placeRelic(id: RelicId, at: number): boolean {
+    // A shaped piece (build trial) rings at its top-left cell, so its relic sits there
+    const uid = this.cfg.loadout.cells[at];
+    const cell = uid ? this.cfg.loadout.cells.indexOf(uid) : at;
     const offer = this.relicOffer;
     if (!offer || this.ended || !offer.ids.includes(id)) return false;
     if (!canStickRelic(this.cfg.loadout, this.cfg.items, this.relics, id, cell)) return false;

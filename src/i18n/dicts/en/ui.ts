@@ -783,8 +783,5 @@ export const UI: Dict = {
   配置タイム: 'Arrange Time',
   '手札から盤面へ。並べ替えもできる': 'Hand to board. You can rearrange too',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Trash (drag here to throw away)',
-  同じ種類の装備にしか重ねられない: 'Only the same kind of gear can stack',
-  アーティファクトは重ねられない: 'Artifacts can’t stack',
-  これ以上重ねられない: 'Can’t stack any higher',
-  そのマスには置けない: 'Can’t place on that cell',
+  そこには入らない: 'It doesn’t fit there',
 };

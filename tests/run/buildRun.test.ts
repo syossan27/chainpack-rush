@@ -9,7 +9,7 @@ import {
 } from '../../src/core/buildRun';
 import { BASE_HERO_STATS, Combat, type CombatEvent, type RunConfig } from '../../src/core/combat';
 import { createInitialSave } from '../../src/core/save';
-import { stackPut } from '../../src/core/stack';
+import { putShaped } from '../../src/core/shapes';
 import type { ItemInstance } from '../../src/core/types';
 import { getItemDef } from '../../src/data/items';
 import { getRegion } from '../../src/data/regions';
@@ -83,8 +83,8 @@ describe('拾って組む: 手札', () => {
 /** The build trial's run with origin → sword placed, and a hero that beats everything at once */
 function setup(over: Partial<RunConfig> = {}) {
   const base = buildRunConfig(createInitialSave(), 7, [origin, swords[0]!]);
-  let l = stackPut(base.loadout, base.items, 'o', 4).loadout;
-  l = stackPut(l, base.items, 's1', 5).loadout;
+  let l = putShaped(base.loadout, base.items, 'o', 6).loadout;
+  l = putShaped(l, base.items, 's1', 7).loadout;
   const cfg: RunConfig = {
     ...base,
     loadout: l,
@@ -162,7 +162,7 @@ describe('拾って組む: 戦闘', () => {
     it('連鎖の合間なら、次の発火から新しい盤面で撃つ', () => {
       const { c, cfg } = setup();
       c.adopt(swords[1]!);
-      expect(c.applyLoadout(stackPut(cfg.loadout, cfg.items, 's2', 6).loadout)).toBe(true);
+      expect(c.applyLoadout(putShaped(cfg.loadout, cfg.items, 's2', 8).loadout)).toBe(true);
       const start = until(c, 'chainStart').find(
         (e): e is Extract<CombatEvent, { type: 'chainStart' }> => e.type === 'chainStart',
       )!;

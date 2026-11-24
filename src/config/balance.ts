@@ -125,6 +125,8 @@ export const BUILD_RUN = {
   handSize: 18,
   /** Gear brought from the collection, besides one origin stone */
   bringGear: 3,
+  /** The trial's own plain board (no stacks; gear has a size, see core/shapes.ts) */
+  board: { width: 6, height: 5, cell: 64 },
 };
 
 export const RELIC = {

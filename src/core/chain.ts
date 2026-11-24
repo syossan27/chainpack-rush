@@ -1,4 +1,5 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
+import { footprints } from './shapes';
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
@@ -283,6 +284,10 @@ function spread(
   const passPace = (cell: number): number =>
     GIMMICK.passPace[Math.min((visits.get(cell) ?? 1) - 1, GIMMICK.passPace.length - 1)]!;
 
+  // Shaped pieces (build trial): a piece on several cells rings once and leads on from its outline
+  const foot = footprints(loadout);
+  const cellsOf = (uid: string, cell: number): number[] => foot?.get(uid) ?? [cell];
+
   const expand = (index: number, tMs: number): void => {
     const s = steps[index]!;
     const inst = items.get(s.uid);
@@ -290,9 +295,12 @@ function spread(
     const def = getItemDef(inst.defId);
     const delayMs = Math.round(relayMs(def, effectsOf(lines[index]!)) * passPace(s.cell));
     const targets: number[] = [];
+    const from = cellsOf(s.uid, s.cell);
     for (const dir of passExits(s.cell, inst)) {
-      const n = neighborCell(loadout, s.cell, dir);
-      if (n !== null) targets.push(n);
+      for (const c of from) {
+        const n = neighborCell(loadout, c, dir);
+        if (n !== null && !from.includes(n) && !targets.includes(n)) targets.push(n);
+      }
     }
     turned[index] = passTurned;
     // ワープ: the chain also goes on to the other warp cell
@@ -349,7 +357,11 @@ function spread(
   // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
   const stackedBoard = loadout.under !== undefined;
   const posMult = boardPosMult(getBoard(loadout.board));
-  const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
+  const fire = (reached: number, tMs: number, parent: number, branch: number): void => {
+    // A shaped piece rings at its top-left cell, whichever of its cells the chain reached
+    const covered = cellsOf(loadout.cells[reached]!, reached);
+    const cell = covered[0]!;
+    for (const c of covered) visited.add(c);
     visited.add(cell);
     visits.set(cell, (visits.get(cell) ?? 0) + 1);
     visitSeq++;
