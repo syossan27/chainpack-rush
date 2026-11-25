@@ -766,15 +766,4 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Deine Aufstellung erfüllt die Regeln nicht',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zündet der Ursprung und eine Kette beginnt.',
-  'マスをタップして仕掛けを置く・外す（残り: {list}）':
-    'Tippe ein Feld, um eine Mechanik zu setzen oder zu entfernen (übrig: {list})',
-  '発火 {k}/{n} ▶': 'Auslösung {k}/{n} ▶',
-  仕掛け中: 'Setzen',
-  仕掛け: 'Mechaniken',
-  'もう置ける仕掛けがありません（置いたマスをタップで外す）':
-    'Keine Mechanik mehr übrig (Tippe eine gesetzte an, um sie zu entfernen)',
-  回転マス: 'Drehfeld',
-  切り替えマス: 'Weiche',
-  ワープ: 'Portal',
-  '{n}回 {step}連鎖': '{n}× {step}er-Kette',
 };

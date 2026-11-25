@@ -76,11 +76,6 @@ export const CHAIN_RULES: ChainRules = {
   keepCountOnKill: false,
 };
 
-/**
- * A small board where a cell holds a stack of gear of one element. The
- * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
- */
-/** Gimmick cells (trial): a cell rings at most this many times in one firing */
 /** カウンターシールド (trial, provisional): the stored damage is capped at this × max HP */
 export const COUNTER = {
   storeCap: 3,
@@ -88,12 +83,10 @@ export const COUNTER = {
   label: 'カウンター！',
 } as const;
 
-export const GIMMICK = {
-  maxVisits: 4,
-  /** The pace of a cell's relays on each pass (2nd pass rings twice as fast, …): loops speed up */
-  passPace: [1, 0.5, 0.35, 0.25],
-} as const;
-
+/**
+ * A small board where a cell holds a stack of gear of one element. The
+ * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
+ */
 export const STACK = {
   width: 4,
   height: 3,

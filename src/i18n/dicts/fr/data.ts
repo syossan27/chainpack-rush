@@ -524,10 +524,4 @@ export const DATA: Dict = {
     'Un objet par case. Sans empiler : affronte les Remparts avec le seul chemin de tes flèches.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     "Tant qu'elle est sur ton plateau, tu n'es jamais à découvert pendant les chaînes. +40 de Défense.",
-  回る盤面: 'Plateau Pivotant',
-  回転マスを2つ置ける: 'Pose 2 Pivots',
-  切り替えの盤面: "Plateau d'Aiguillage",
-  切り替えマスを2つ置ける: 'Pose 2 Aiguillages',
-  つなぐ盤面: 'Plateau de Liaison',
-  ワープ1組と回転マスを置ける: 'Pose une paire de Portails et un Pivot',
 };

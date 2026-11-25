@@ -38,8 +38,8 @@ describe('盤面の種類: 一覧', () => {
     expect(rewards.sort()).toEqual(REGIONS.map((r) => r.id).sort());
   });
 
-  it('最初から持っている盤面は標準だけ（試作の盤面を除く）', () => {
-    expect(BOARDS.filter((b) => !b.reward && !b.trial).map((b) => b.id)).toEqual(['standard']);
+  it('最初から持っている盤面は標準だけ', () => {
+    expect(BOARDS.filter((b) => !b.reward).map((b) => b.id)).toEqual(['standard']);
   });
 
   it('形の外は穴', () => {

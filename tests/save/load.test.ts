@@ -23,6 +23,24 @@ describe('セーブの読み書き', () => {
     expect(deserializeSave(serializeSave(s))).toEqual(s);
   });
 
+  it('消したギミックの盤面を使っていたセーブは、仕掛けなしの標準の盤面で読み込む', () => {
+    const data = JSON.parse(serializeSave(createInitialSave())) as {
+      boards: { active: string; layouts: Record<string, unknown> };
+      loadout: { board?: string; cells: unknown[]; gimmicks?: string[] };
+    };
+    data.boards.active = 'spin';
+    data.loadout.board = 'spin';
+    data.loadout.gimmicks = data.loadout.cells.map(() => 'rotate');
+    data.boards.layouts.spin = data.loadout;
+    const s = deserializeSave(JSON.stringify(data));
+    expect([s.boards.active, s.loadout.board, 'gimmicks' in s.loadout, s.boards.layouts]).toEqual([
+      'standard',
+      'standard',
+      false,
+      {},
+    ]);
+  });
+
   it('壊れたデータは初期値で読み込む', () => {
     expect(deserializeSave('{oops').gold).toBe(0);
   });

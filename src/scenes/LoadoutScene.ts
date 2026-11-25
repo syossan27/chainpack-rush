@@ -1,7 +1,7 @@
 // 配置画面: 上半分に盤面、下半分に倉庫。ドラッグで置き、盤面の外へドラッグで外す
 import { runTutorial, type CoachStep } from '../ui/tutorial';
 import Phaser from 'phaser';
-import { hasGimmicks, simulateChain, simulateFiring, type ChainPreview } from '../core/chain';
+import { simulateChain, type ChainPreview } from '../core/chain';
 import { chainCycle, estimateRoute, routeRate } from '../core/estimate';
 import { getTechnique, TECHNIQUES } from '../data/techniques';
 import { otherBoardUse, switchBoard } from '../core/boardSave';
@@ -26,14 +26,7 @@ import { charmContext, charmLit, type CharmContext, type CharmInstance } from '.
 import { getCharm } from '../data/charms';
 import { CharmStrip } from '../ui/charmStrip';
 import { CharmList, charmText } from '../ui/charmList';
-import {
-  boardDepth,
-  boardPosMult,
-  fitGimmicks,
-  gimmicksLeft,
-  holeIn,
-  ownedBoards,
-} from '../core/boards';
+import { boardDepth, boardPosMult, ownedBoards } from '../core/boards';
 import { BOARDS, getBoard, type BoardId } from '../data/boards';
 import { boardMark, boardTraitText } from '../ui/boardText';
 import {
@@ -57,7 +50,7 @@ import {
   sortieBlock,
 } from '../core/economy';
 import { clearLoadout, cycleOriginOrder, removeItem, setConsumable } from '../core/loadout';
-import type { ChainPlan, GimmickKind, ItemInstance, Loadout } from '../core/types';
+import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { sfx } from '../audio/sfx';
 import { getSave, persist } from '../platform/store';
@@ -115,11 +108,6 @@ export class LoadoutScene extends Phaser.Scene {
   private undoBtn!: Button;
   private warn!: Phaser.GameObjects.Text;
   private drag: DragState | null = null;
-  /** Gimmick cells (trial): which firing's routes are shown, and that firing's cycle */
-  private firing = 0;
-  private cycle: ChainPlan[] = [];
-  /** Gimmick cells (trial): taps on the board put and take gimmicks */
-  private gimmickMode = false;
   private selected: ItemInstance | null = null;
   /** 挑戦用の配置を編集中（その挑戦） */
   private challenge: ChallengeNow | null = null;
@@ -139,8 +127,6 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     this.drag = null;
     this.selected = null;
-    this.firing = 0;
-    this.gimmickMode = false;
     // Charms: made again below (a restart keeps old fields)
     this.charmStrip = null;
     this.charmList = null;
@@ -348,20 +334,13 @@ export class LoadoutScene extends Phaser.Scene {
         new Set(slots.flatMap((c) => (c ? [c.uid] : []))),
       );
     }
-    const { preview, cycle } = simulateFiring(save.loadout, items, this.firing);
-    this.cycle = cycle;
+    const preview = simulateChain(save.loadout, items);
     if (this.focus !== null && this.focus >= preview.plans.length) this.focus = null;
     if (save.settings.showRoutes)
       this.view.showPreview(preview, this.focus, new Set(this.knownTechs()));
     else this.view.showPlain(preview);
     this.buildRouteBar(preview);
-    this.info.setText(
-      this.gimmickMode
-        ? t('マスをタップして仕掛けを置く・外す（残り: {list}）', {
-            list: gimmicksLeft(save.loadout).map(gimmickName).join(t('・|sep')) || t('なし'),
-          })
-        : t('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）'),
-    );
+    this.info.setText(t('「約」の数字は敵1体に撃ったときの推定ダメージ（コンボ・会心込み）'));
     // 消耗品枠を手で変えたら、その中身を覚える（使い切ったら倉庫から自動で入れ直す）
     const cons = JSON.stringify(save.loadout.consumables);
     if (cons !== this.lastCons) {
@@ -493,28 +472,6 @@ export class LoadoutScene extends Phaser.Scene {
       ),
     );
     x += 82;
-    // Gimmick cells: the route changes from firing to firing; tap to see the next one
-    const firings = this.cycle.length;
-    if (shown && firings > 1 && hasGimmicks(getSave().loadout)) {
-      chip(x, 96, false, () => {
-        this.firing = (this.firing + 1) % firings;
-        this.refresh();
-      });
-      bar.add(
-        fitText(
-          this.add
-            .text(
-              x + 48,
-              -2,
-              t('発火 {k}/{n} ▶', { k: (this.firing % firings) + 1, n: firings }),
-              textStyle(15, COLORS.text),
-            )
-            .setOrigin(0.5),
-          88,
-        ),
-      );
-      x += 102;
-    }
     // 推定ダメージ（ふつうの敵1体に撃ったときの期待値。コンボ・追加効果・会心込み）
     const save = getSave();
     const items = itemMap(save);
@@ -564,16 +521,7 @@ export class LoadoutScene extends Phaser.Scene {
         total: est[k]!.total,
         cycle: chainCycle(p, items, atbFull),
       }));
-      // Gimmick cells: per second over every firing of the cycle
-      const rate =
-        this.cycle.length > 1
-          ? routeRate(
-              this.cycle.map((p) => ({
-                total: estimateRoute(p, items, u, save.loadout.board, this.charmCtx).total,
-                cycle: chainCycle(p, items, atbFull),
-              })),
-            )
-          : routeRate(this.focus === null ? rates : [rates[this.focus]!]);
+      const rate = routeRate(this.focus === null ? rates : [rates[this.focus]!]);
       summary.text = t('{route}・毎秒 約{d}', { route: summary.text, d: num(rate) });
     }
     this.routeText = this.add
@@ -625,29 +573,7 @@ export class LoadoutScene extends Phaser.Scene {
     );
     // Up to the undo button
     const left = 24;
-    let right = W - 206 - 53 - 8;
-    // Gimmick cells (trial): a toggle for putting gimmicks on cells
-    if (def.gimmicks && !this.challenge) {
-      bar.add(
-        new Button(
-          this,
-          right - 50,
-          0,
-          t(this.gimmickMode ? '仕掛け中' : '仕掛け'),
-          () => {
-            sfx('click');
-            this.gimmickMode = !this.gimmickMode;
-            // Rebuilt after this tap: the bar holds the button being tapped
-            this.time.delayedCall(0, () => {
-              this.buildBoardBar();
-              this.refresh();
-            });
-          },
-          { width: 96, height: 52, fontSize: 18, skin: this.gimmickMode ? 'gold' : 'purple' },
-        ),
-      );
-      right -= 104;
-    }
+    const right = W - 206 - 53 - 8;
     const many = owned.length > 1;
     const step = (d: number) => {
       const next = owned[(at + d + owned.length) % owned.length]!;
@@ -665,9 +591,7 @@ export class LoadoutScene extends Phaser.Scene {
     const room = right - left - (many ? 2 * 56 : 0);
     const sub =
       boardTraitText(def) ??
-      (owned.length < BOARDS.filter((b) => !b.trial).length
-        ? t('地域を抜けると、新しい盤面がもらえます')
-        : '');
+      (owned.length < BOARDS.length ? t('地域を抜けると、新しい盤面がもらえます') : '');
     const name = this.add
       .text(mid, sub ? -13 : -2, t(def.name), textStyle(22, '#ffe27a'))
       .setOrigin(0.5);
@@ -1140,10 +1064,6 @@ export class LoadoutScene extends Phaser.Scene {
       const save = getSave();
       const cell = this.view.cellAt(p.x, p.y);
       if (cell < 0) return;
-      if (this.gimmickMode) {
-        this.tapGimmick(cell);
-        return;
-      }
       // The selected item goes on the cell (an occupied cell stacks it on top)
       const sel = this.selected;
       if (sel && getItemDef(sel.defId).kind !== 'consumable') {
@@ -1161,28 +1081,6 @@ export class LoadoutScene extends Phaser.Scene {
       this.view.setHighlightCell(this.view.cellAt(p.x, p.y - 40));
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => this.endDrag(p));
-  }
-
-  /** Gimmick cells (trial): a tap takes the cell's gimmick off, or puts the next one left on it */
-  private tapGimmick(cell: number): void {
-    const save = getSave();
-    const l = save.loadout;
-    if (holeIn(l, cell)) return;
-    fitGimmicks(l);
-    if (!l.gimmicks) return;
-    if (l.gimmicks[cell]) l.gimmicks[cell] = null;
-    else {
-      const next = gimmicksLeft(l)[0];
-      if (!next) {
-        this.showToastLine(t('もう置ける仕掛けがありません（置いたマスをタップで外す）'));
-        return;
-      }
-      l.gimmicks[cell] = next;
-    }
-    sfx('click');
-    this.firing = 0;
-    persist();
-    this.refresh();
   }
 
   private pressGrid(it: ItemInstance, cell: number, slot: number, p: Phaser.Input.Pointer): void {
@@ -1300,9 +1198,4 @@ function stackBlockText(b: StackBlock, depth: number): string {
         : b === 'hole'
           ? t('ここは盤面の外です')
           : t('起点石は盤面に1つだけ');
-}
-
-/** Gimmick cells (trial): a gimmick's name on the board screen */
-function gimmickName(k: GimmickKind): string {
-  return k === 'rotate' ? t('回転マス') : k === 'switch' ? t('切り替えマス') : t('ワープ');
 }

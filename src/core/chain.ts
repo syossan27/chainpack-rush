@@ -2,7 +2,7 @@
 import { ipow } from './rng';
 import { affixValue } from './affixes';
 import { TECHNIQUES } from '../data/techniques';
-import { CHAIN, CHAIN_RULES, GIMMICK, RARITY, STACK, type ChainRules } from '../config/balance';
+import { CHAIN, CHAIN_RULES, RARITY, STACK, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
 import type {
   ChainPlan,
@@ -171,7 +171,6 @@ export function neighborCell(loadout: Loadout, cell: number, dir: Dir): number |
  * 起点から連鎖を展開する。
  * - 出口の先のマスへ relayDelay 後に伝わる（入り口の制約なし）
  * - 1回の連鎖で各アイテムは1回だけ発動。先に届いた枝が優先、同時なら上→右→下→左
- *   (gimmick cells: a loop whose arrows a gimmick changed rings its cells again; see mayReturn)
  * - 攻撃装備で段数+1、防御装備は通すが数えない
  * - 起点同士がつながっている場合、後ろの起点は「通すだけ」のマスとして扱う
  * - Origins fire one at a time; each route counts its own steps
@@ -180,7 +179,6 @@ export function planChain(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
   originUid: string,
-  gimmickState?: readonly number[],
 ): ChainPlan {
   if (loadout.cells.indexOf(originUid) < 0)
     return {
@@ -191,17 +189,7 @@ export function planChain(
       defenseGain: 0,
       maxStep: 0,
     };
-  return spread(loadout, items, originUid, gimmickState);
-}
-
-/** Arrows turned `k` quarter turns clockwise, in DIRS order */
-function rotateDirs(dirs: readonly Dir[], k: number): Dir[] {
-  const out = new Set(dirs.map((d) => DIRS[(DIRS.indexOf(d) + k) % 4]!));
-  return DIRS.filter((d) => out.has(d));
-}
-
-function sameDirs(a: readonly Dir[], b: readonly Dir[]): boolean {
-  return a.length === b.length && a.every((d) => b.includes(d));
+  return spread(loadout, items, originUid);
 }
 
 /** その段がどの起点の線か（発火した起点） */
@@ -224,7 +212,6 @@ function spread(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
   originUid: string,
-  gimmickState?: readonly number[],
 ): ChainPlan {
   const steps: ChainStep[] = [];
   const lines: string[][] = []; // origin stones on the line up to each step
@@ -232,14 +219,6 @@ function spread(
   const dists: number[] = []; // cells from the origin to each step's cell
   let cellOrder = 0; // cells that started ringing so far (origin cells not counted)
   const visited = new Set<number>();
-  // Gimmick cells: turn counts (kept across firings), passes per cell, and for each step whether
-  // its cell's arrows changed on that pass (only a cell's last ring of a pass can be true)
-  const gim = loadout.gimmicks;
-  const turns = loadout.cells.map((_, i) => gimmickState?.[i] ?? 0);
-  const visits = new Map<number, number>();
-  const turned: boolean[] = [];
-  const visitOf: number[] = []; // which pass of a cell each step belongs to
-  let visitSeq = 0;
   const queue: Pending[] = [];
   let seq = 0;
   let nextBranch = 0;
@@ -258,47 +237,16 @@ function spread(
     return fx;
   };
 
-  /** The arrows the chain leaves a cell by on this pass; a gimmick turns them afterwards */
-  const passExits = (cell: number, inst: ItemInstance): Dir[] => {
-    const base = DIRS.filter((d) => inst.exits.includes(d));
-    const kind = gim?.[cell] ?? null;
-    if (kind === 'rotate') {
-      const now = rotateDirs(base, turns[cell]!);
-      turns[cell] = (turns[cell]! + 1) % 4;
-      passTurned = !sameDirs(now, rotateDirs(base, turns[cell]!));
-      return now;
-    }
-    if (kind === 'switch' && base.length > 1) {
-      const now = [base[turns[cell]! % base.length]!];
-      // 12: a multiple of every arrow count, so the count never needs resetting
-      turns[cell] = (turns[cell]! + 1) % 12;
-      passTurned = true;
-      return now;
-    }
-    passTurned = false;
-    return base;
-  };
-  let passTurned = false;
-  /** Relays from a cell come faster on each pass back round a loop (the cell's current pass) */
-  const passPace = (cell: number): number =>
-    GIMMICK.passPace[Math.min((visits.get(cell) ?? 1) - 1, GIMMICK.passPace.length - 1)]!;
-
   const expand = (index: number, tMs: number): void => {
     const s = steps[index]!;
     const inst = items.get(s.uid);
     if (!inst) return;
     const def = getItemDef(inst.defId);
-    const delayMs = Math.round(relayMs(def, effectsOf(lines[index]!)) * passPace(s.cell));
+    const delayMs = relayMs(def, effectsOf(lines[index]!));
     const targets: number[] = [];
-    for (const dir of passExits(s.cell, inst)) {
+    for (const dir of DIRS.filter((d) => inst.exits.includes(d))) {
       const n = neighborCell(loadout, s.cell, dir);
       if (n !== null) targets.push(n);
-    }
-    turned[index] = passTurned;
-    // ワープ: the chain also goes on to the other warp cell
-    if (gim?.[s.cell] === 'warp') {
-      const other = gim.findIndex((g, i) => g === 'warp' && i !== s.cell);
-      if (other >= 0) targets.push(other);
     }
     let first = true;
     for (const n of targets) {
@@ -310,24 +258,8 @@ function spread(
     }
   };
 
-  /**
-   * A cell that already rang rings again only when the chain comes back round a loop (the cell is
-   * on this branch's way back to the origin) and a gimmick on that loop changed its arrows since:
-   * a plain loop stops after one lap, as does a branch meeting another. At most maxVisits a firing
-   */
-  const mayReturn = (cell: number, parent: number): boolean => {
-    if ((visits.get(cell) ?? 0) >= GIMMICK.maxVisits) return false;
-    let changed = false;
-    for (let j = parent; j >= 0; j = steps[j]!.parentIndex) {
-      changed ||= turned[j] === true;
-      if (steps[j]!.cell === cell) return changed;
-    }
-    return false;
-  };
-
   const originCell = loadout.cells.indexOf(originUid);
   visited.add(originCell);
-  visits.set(originCell, 1);
   steps.push({
     t: 0,
     uid: originUid,
@@ -342,8 +274,6 @@ function spread(
   lines.push([originUid]);
   counts.push(0);
   dists.push(0);
-  turned.push(false);
-  visitOf.push(visitSeq++);
   expand(0, 0);
 
   // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
@@ -351,8 +281,6 @@ function spread(
   const posMult = boardPosMult(getBoard(loadout.board));
   const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
     visited.add(cell);
-    visits.set(cell, (visits.get(cell) ?? 0) + 1);
-    visitSeq++;
     const stack = stackedBoard ? cellRings(loadout, items, cell) : [loadout.cells[cell]!];
     // Counted like the guard: a cell once, origin stones not at all
     if (getItemDef(items.get(loadout.cells[cell]!)!.defId).kind !== 'origin') cellOrder++;
@@ -360,7 +288,7 @@ function spread(
     let p = parent;
     let t = tMs;
     stack.forEach((uid, k) => {
-      if (k > 0) t += Math.round(STACK.ringRelay * MS * passPace(cell));
+      if (k > 0) t += Math.round(STACK.ringRelay * MS);
       p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1, flow);
     });
     if (t > lastMs) lastMs = t;
@@ -422,8 +350,6 @@ function spread(
     lines.push(myLines);
     counts.push(count + (isStep ? (def.stepBoost ?? 0) : 0));
     dists.push(flow.dist);
-    turned.push(false);
-    visitOf.push(visitSeq);
     const meIndex = steps.length - 1;
     // 必殺技: 3つの並びで判定する（重ねる盤面では、道で続く3マスの一番上どうし）
     if (isStep && isTop) {
@@ -450,7 +376,7 @@ function spread(
       if (a.tMs < b.tMs || (a.tMs === b.tMs && a.seq < b.seq)) best = i;
     }
     const p = queue.splice(best, 1)[0]!;
-    if (visited.has(p.cell) && !mayReturn(p.cell, p.parentIndex)) continue;
+    if (visited.has(p.cell)) continue;
     fire(p.cell, p.tMs, p.parentIndex, p.branch);
   }
 
@@ -461,8 +387,8 @@ function spread(
       if (s.step !== null && (last < 0 || s.t >= steps[last]!.t)) last = i;
     });
     if (last >= 0) {
-      // The rings of that cell's last pass (a gimmick can bring the chain back to a cell)
-      const rings = steps.flatMap((_, i) => (visitOf[i] === visitOf[last] ? [i] : []));
+      // That cell's rings (its stack)
+      const rings = steps.flatMap((x, i) => (x.cell === steps[last]!.cell ? [i] : []));
       const top = rings[rings.length - 1]!;
       const start =
         lastMs + relayMs(getItemDef(items.get(steps[top]!.uid)!.defId), effectsOf(lines[top]!));
@@ -474,8 +400,6 @@ function spread(
         lines.push(lines[i]!);
         counts.push(counts[i]!);
         dists.push(dists[i]!);
-        turned.push(false);
-        visitOf.push(visitOf[i]!);
         if (tMs > lastMs) lastMs = tMs;
       });
     }
@@ -494,7 +418,6 @@ function spread(
     defenseGain,
     maxStep,
     ...(riseTo !== undefined ? { riseTo } : {}),
-    ...(gim ? { gimmickEnd: turns } : {}),
   };
 }
 
@@ -509,10 +432,9 @@ export interface ChainPreview {
 export function simulateChain(
   loadout: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
-  gimmickState?: readonly number[],
 ): ChainPreview {
   const origins = loadout.originOrder.filter((uid) => loadout.cells.includes(uid));
-  const plans = origins.map((o) => spread(loadout, items, o, gimmickState));
+  const plans = origins.map((o) => spread(loadout, items, o));
   const reachable = new Set<number>();
   for (const p of plans) for (const s of p.steps) reachable.add(s.cell);
   const unreachable = new Set<number>();
@@ -520,76 +442,4 @@ export function simulateChain(
     if (uid && !reachable.has(i)) unreachable.add(i);
   });
   return { plans, reachable, unreachable };
-}
-
-/**
- * Gimmick cells: the firings in order from the battle's start until the gimmicks' turns repeat
- * (at most `limit`). Without gimmicks, the one plan
- */
-export function gimmickCycle(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  originUid: string,
-  limit = 16,
-): ChainPlan[] {
-  const out: ChainPlan[] = [];
-  const seen = new Set<string>();
-  let state: number[] | undefined = loadout.gimmicks ? loadout.cells.map(() => 0) : undefined;
-  // The same arrows on every gimmick cell: the same firing (a switch counts past its arrows)
-  const keyOf = (st: readonly number[] | undefined): string =>
-    (st ?? [])
-      .map((n, i) => {
-        const g = loadout.gimmicks?.[i];
-        const top = loadout.cells[i] ? items.get(loadout.cells[i]!) : undefined;
-        if (!g || !top) return '';
-        if (g === 'switch') return n % Math.max(1, top.exits.length);
-        // A rotator whose arrows look the same after the turn is the same firing
-        return g === 'rotate'
-          ? rotateDirs(
-              DIRS.filter((d) => top.exits.includes(d)),
-              n,
-            ).join('')
-          : '';
-      })
-      .join(',');
-  while (out.length < limit) {
-    const key = keyOf(state);
-    if (seen.has(key)) break;
-    seen.add(key);
-    const p = planChain(loadout, items, originUid, state);
-    out.push(p);
-    if (!p.gimmickEnd) break;
-    state = p.gimmickEnd;
-  }
-  return out;
-}
-
-/** Whether a layout has any gimmick cell in use */
-export function hasGimmicks(loadout: Loadout): boolean {
-  return loadout.gimmicks?.some((g) => g !== null) ?? false;
-}
-
-/**
- * The board screen on a gimmick board: the routes of one firing (`firing` counts from the battle's
- * start, wrapping round the cycle) and every firing's plans. A cell any firing reaches is reachable
- */
-export function simulateFiring(
-  loadout: Loadout,
-  items: ReadonlyMap<string, ItemInstance>,
-  firing: number,
-): { preview: ChainPreview; cycle: ChainPlan[] } {
-  const origin = loadout.originOrder.find((uid) => loadout.cells.includes(uid));
-  if (!origin || !hasGimmicks(loadout)) {
-    const preview = simulateChain(loadout, items);
-    return { preview, cycle: preview.plans };
-  }
-  const cycle = gimmickCycle(loadout, items, origin);
-  const plan = cycle[((firing % cycle.length) + cycle.length) % cycle.length]!;
-  const reachable = new Set<number>();
-  for (const p of cycle) for (const s of p.steps) reachable.add(s.cell);
-  const unreachable = new Set<number>();
-  loadout.cells.forEach((uid, i) => {
-    if (uid && !reachable.has(i)) unreachable.add(i);
-  });
-  return { preview: { plans: [plan], reachable, unreachable }, cycle };
 }

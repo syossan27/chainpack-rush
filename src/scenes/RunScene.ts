@@ -126,8 +126,6 @@ export class RunScene extends Phaser.Scene {
   /** Board effects as the chain rings each cell, and how hot this chain is (chainHeat) */
   private cellFx!: CellFx;
   private heat = 0;
-  /** How many times each cell has been passed in this chain (gimmick loops come back) */
-  private readonly passes = new Map<number, number>();
   private readonly stress = debugStress();
   private hud!: {
     timer: Phaser.GameObjects.Text;
@@ -680,18 +678,9 @@ export class RunScene extends Phaser.Scene {
   /** 連鎖カウンター: 段数が進むほど大きく、色も白→金→赤→桃 */
   /**
    * A cell rang on the board: the line runs in to it as a ball of light in the colour of the gear it
-   * left, the gear's element plays on the cell, a gimmick shows its work, and a loop coming back
-   * lights up gold
+   * left, and the gear's element plays on the cell
    */
-  private boardStep(
-    index: number,
-    cell: number,
-    fromCell: number | null,
-    uid: string,
-    now: number,
-  ): void {
-    const plan = this.combat.chain?.plan;
-    const ps = plan?.steps[index];
+  private boardStep(cell: number, fromCell: number | null, uid: string, now: number): void {
     const it = this.items.get(uid);
     const def = it ? getItemDef(it.defId) : undefined;
     if (fromCell !== null && fromCell !== cell) {
@@ -702,22 +691,6 @@ export class RunScene extends Phaser.Scene {
       this.cellFx.orb(fromCell, cell, color);
     }
     if (def) this.cellFx.ring(cell, def, this.heat, now);
-    // A new pass of this cell: its first ring (a stack rings bottom → top in one pass)
-    if (!ps || ps.echo || (ps.ring ?? 0) !== 0) return;
-    const pass = (this.passes.get(cell) ?? 0) + 1;
-    this.passes.set(cell, pass);
-    const gimmick = this.cfg.loadout.gimmicks?.[cell];
-    if (gimmick) this.cellFx.gimmick(cell, gimmick);
-    if (pass >= 2 && plan) {
-      // The loop: back up the line to this cell's last pass
-      const loop: number[] = [];
-      for (let j = ps.parentIndex; j >= 0; j = plan.steps[j]!.parentIndex) {
-        const c = plan.steps[j]!.cell;
-        if (c === cell) break;
-        if (!loop.includes(c)) loop.push(c);
-      }
-      this.cellFx.revisit(cell, pass, [cell, ...loop]);
-    }
   }
 
   /**
@@ -944,7 +917,6 @@ export class RunScene extends Phaser.Scene {
           sfx('fire');
           this.heat = 0;
           this.view.setHeat(0);
-          this.passes.clear();
           break;
         case 'step':
           this.field.aimId = c.chain
@@ -952,7 +924,7 @@ export class RunScene extends Phaser.Scene {
             : this.field.aimId;
           this.view.glow(ev.cell, ev.step === null ? COLORS.accent : COLORS.chainLine, now, 450);
           if (ev.step !== null && !ev.whiff) this.heatUp(chainHeat(ev.step));
-          this.boardStep(ev.index, ev.cell, ev.fromCell, ev.uid, now);
+          this.boardStep(ev.cell, ev.fromCell, ev.uid, now);
           if (ev.step !== null) {
             if (ev.whiff) sfx('whiff');
             else {

@@ -772,15 +772,4 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Ta disposition ne respecte pas les règles',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     "Chaque fois que la jauge sous le héros se remplit, l'Origine se déclenche et une chaîne commence.",
-  'マスをタップして仕掛けを置く・外す（残り: {list}）':
-    'Touche une case pour poser ou retirer un mécanisme (restants : {list})',
-  '発火 {k}/{n} ▶': 'Déclenchement {k}/{n} ▶',
-  仕掛け中: 'Pose',
-  仕掛け: 'Mécanismes',
-  'もう置ける仕掛けがありません（置いたマスをタップで外す）':
-    'Plus de mécanisme (touche-en un posé pour le retirer)',
-  回転マス: 'Pivot',
-  切り替えマス: 'Aiguillage',
-  ワープ: 'Portail',
-  '{n}回 {step}連鎖': '{n}× chaîne de {step}',
 };

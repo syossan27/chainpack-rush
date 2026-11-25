@@ -3,7 +3,7 @@
 import Phaser from 'phaser';
 import { holeIn } from '../core/boards';
 import type { ChainPreview } from '../core/chain';
-import type { GimmickKind, ItemInstance, Loadout } from '../core/types';
+import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
 import { iconKey } from '../data/sprites';
 import { t } from '../i18n';
@@ -185,49 +185,9 @@ export class BackpackView extends Phaser.GameObjects.Container {
         this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
       });
     });
-    // Gimmick cells: over the gear, so the sign shows on a full cell
-    this.loadout.gimmicks?.forEach((g, i) => {
-      if (!g) return;
-      const c = this.cellCenter(i);
-      this.iconLayer.add(this.gimmickMark(g, c.x, c.y));
-    });
     this.lineG.clear();
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
-  }
-
-  /**
-   * Gimmick cells (trial): a coloured frame and a small sign at the cell's top-right corner
-   * (drawn, so no font glyph is needed): rotate ↻, switch ⇄, warp ◎
-   */
-  private gimmickMark(kind: GimmickKind, cx: number, cy: number): Phaser.GameObjects.Graphics {
-    const color = GIMMICK_COLOR[kind];
-    const g = this.scene.add.graphics();
-    const h = this.cell / 2 - 3;
-    g.lineStyle(4, color, 0.9).strokeRoundedRect(cx - h, cy - h, h * 2, h * 2, 10);
-    const x = cx + h - 16;
-    const y = cy - h + 16;
-    g.fillStyle(0x0c0a12, 0.85).fillCircle(x, y, 14);
-    g.lineStyle(3, color, 1);
-    if (kind === 'rotate') {
-      g.beginPath();
-      g.arc(x, y, 8, Phaser.Math.DegToRad(-60), Phaser.Math.DegToRad(210), false);
-      g.strokePath();
-      // Arrow head at the arc's start, pointing clockwise
-      const ax = x + 8 * Math.cos(Phaser.Math.DegToRad(-60));
-      const ay = y + 8 * Math.sin(Phaser.Math.DegToRad(-60));
-      g.fillStyle(color, 1).fillTriangle(ax - 5, ay - 4, ax + 5, ay - 2, ax, ay + 5);
-    } else if (kind === 'switch') {
-      g.lineBetween(x - 8, y - 4, x + 8, y - 4);
-      g.lineBetween(x - 8, y + 4, x + 8, y + 4);
-      g.fillStyle(color, 1);
-      g.fillTriangle(x + 9, y - 4, x + 4, y - 8, x + 4, y);
-      g.fillTriangle(x - 9, y + 4, x - 4, y, x - 4, y + 8);
-    } else {
-      g.strokeCircle(x, y, 9);
-      g.fillStyle(color, 1).fillCircle(x, y, 4);
-    }
-    return g;
   }
 
   setHighlightCell(i: number): void {
@@ -317,28 +277,18 @@ export class BackpackView extends Phaser.GameObjects.Container {
       // Stacked board (trial): a cell is labelled with its top ring (the last count, the technique)
       const topRing = new Map<number, number>();
       for (const s of steps) if (s.step !== null) topRing.set(s.cell, s.ring ?? 0);
-      // Gimmick cells can bring the chain back to a cell: label its last pass, with the passes
-      const lastTop = new Map<number, (typeof steps)[number]>();
-      const passes = new Map<number, number>();
       for (const s of steps) {
-        if (s.step === null || (s.ring ?? 0) !== topRing.get(s.cell)) continue;
-        lastTop.set(s.cell, s);
-        passes.set(s.cell, (passes.get(s.cell) ?? 0) + 1);
-      }
-      for (const s of lastTop.values()) {
-        if (labeled.has(s.cell)) continue;
+        if (s.step === null || labeled.has(s.cell)) continue;
+        if ((s.ring ?? 0) !== topRing.get(s.cell)) continue;
         labeled.add(s.cell);
-        const times = passes.get(s.cell) ?? 1;
         const c = this.cellCenter(s.cell);
         const label = this.scene.add
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
             known(s.tech)
-              ? t('必殺 {step}連鎖', { step: s.step! })
-              : times > 1
-                ? t('{n}回 {step}連鎖', { n: times, step: s.step! })
-                : t('{step}連鎖 ×{mult}', { step: s.step!, mult: s.mult.toFixed(2) }),
+              ? t('必殺 {step}連鎖', { step: s.step })
+              : t('{step}連鎖 ×{mult}', { step: s.step, mult: s.mult.toFixed(2) }),
             textStyle(
               focused ? 15 : 13,
               known(s.tech) ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0',
@@ -476,10 +426,3 @@ export class BackpackView extends Phaser.GameObjects.Container {
 
 /** The board frame's glow for each chain heat level (the last level cycles colours instead) */
 const HEAT_COLORS = [0xffffff, 0xffd25a, 0xff8a30];
-
-/** Gimmick cells (trial): each kind's colour on the board */
-export const GIMMICK_COLOR: Record<GimmickKind, number> = {
-  rotate: 0x5ad8ff,
-  switch: 0xffb347,
-  warp: 0xc58cff,
-};

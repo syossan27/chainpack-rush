@@ -18,8 +18,8 @@ import type { CharmInstance } from './charms';
 import { activeBoardId } from './boardSave';
 import { migrateV1, type LegacyV1 } from './migrate';
 import { emptyStackBoard, restoreStackBoard } from './stack';
-import type { Dir, GimmickKind, ItemInstance, Loadout, Rarity } from './types';
-import { DIRS, GIMMICK_KINDS, RARITIES } from './types';
+import type { Dir, ItemInstance, Loadout, Rarity } from './types';
+import { DIRS, RARITIES } from './types';
 
 /** 廃止したアイテム → 返金するゴールド（読み込み時に倉庫から外す） */
 const REMOVED_ITEMS: Record<string, number> = {
@@ -244,22 +244,8 @@ function readLoadoutRec(v: unknown): Loadout | null {
         ...autoOf(v),
         ...underOf(v),
         ...(isBoardId(v.board) ? { board: v.board } : {}),
-        ...gimmicksOf(v as unknown as Record<string, unknown>),
       }
     : null;
-}
-
-/** Gimmick cells (trial): one kind or null per cell; anything else is dropped */
-function gimmicksOf(v: Record<string, unknown>): Pick<Loadout, 'gimmicks'> {
-  const g = v.gimmicks;
-  if (!Array.isArray(g)) return {};
-  return {
-    gimmicks: g.map((k) =>
-      typeof k === 'string' && (GIMMICK_KINDS as readonly string[]).includes(k)
-        ? (k as GimmickKind)
-        : null,
-    ),
-  };
 }
 
 /**
@@ -437,7 +423,6 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         ...autoOf(lo),
         ...underOf(lo),
         ...(isBoardId(lo.board) ? { board: lo.board } : {}),
-        ...gimmicksOf(lo as unknown as Record<string, unknown>),
       },
       // Known upgrades only (the backpack upgrade of version 1 is paid back by the move)
       upgrades: Object.fromEntries(

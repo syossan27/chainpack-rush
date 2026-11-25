@@ -514,10 +514,4 @@ export const DATA: Dict = {
     'One item per cell. No stacking: take on the Ramparts with the path of your arrows alone.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     "While it's on your board, you're never unguarded during chains. +40 Defense.",
-  回る盤面: 'Spinning Board',
-  回転マスを2つ置ける: 'Place 2 Spinners',
-  切り替えの盤面: 'Switch Board',
-  切り替えマスを2つ置ける: 'Place 2 Switches',
-  つなぐ盤面: 'Link Board',
-  ワープ1組と回転マスを置ける: 'Place a Warp pair and a Spinner',
 };

@@ -760,15 +760,4 @@ export const UI: Dict = {
   配置が制限に合っていません: "Your layout doesn't meet the rules",
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Each time the gauge under the hero fills, the Origin fires and a chain begins.',
-  'マスをタップして仕掛けを置く・外す（残り: {list}）':
-    'Tap a cell to place or remove a gimmick (left: {list})',
-  '発火 {k}/{n} ▶': 'Firing {k}/{n} ▶',
-  仕掛け中: 'Placing',
-  仕掛け: 'Gimmicks',
-  'もう置ける仕掛けがありません（置いたマスをタップで外す）':
-    'No gimmicks left (tap a placed one to remove it)',
-  回転マス: 'Spinner',
-  切り替えマス: 'Switch',
-  ワープ: 'Warp',
-  '{n}回 {step}連鎖': '{n}× {step} Chain',
 };

@@ -3,13 +3,12 @@
 // small particles and light as accents, and the board knocks a little. They grow with the chain's
 // heat (chainHeat). Drawing only: nothing is written back to core.
 import Phaser from 'phaser';
-import type { GimmickKind, ItemDef } from '../core/types';
+import type { ItemDef } from '../core/types';
 import { CELL_FX, cellFxKind, type CellFxKind } from '../core/cellFxRules';
 import { fxSheetKey } from '../data/techFx';
-import { GIMMICK_COLOR, type BackpackView } from './backpackView';
+import type { BackpackView } from './backpackView';
 import { SKIN } from './kit/skin';
 import type { Effects } from './pools';
-import { textStyle } from './theme';
 
 const COLOR: Record<CellFxKind, number> = {
   fire: 0xff8a30,
@@ -156,77 +155,6 @@ export class CellFx {
           },
         });
       },
-    });
-  }
-
-  /** A gimmick cell did its work as the chain passed: a spin, a switch, a portal */
-  gimmick(cell: number, kind: GimmickKind): void {
-    const at = this.view.cellCenter(cell);
-    const color = GIMMICK_COLOR[kind];
-    const r = this.view.cell * 0.42;
-    const g = this.scene.add.graphics({ x: at.x, y: at.y });
-    if (kind === 'rotate') {
-      // An arrow of light that sweeps a quarter turn round the cell
-      g.lineStyle(7, color, 1);
-      g.beginPath();
-      g.arc(0, 0, r, -Math.PI / 2, 0);
-      g.strokePath();
-      g.fillStyle(color, 1).fillTriangle(r - 10, -4, r + 10, -4, r, 12);
-    } else if (kind === 'switch') {
-      g.lineStyle(6, color, 1).strokeRect(-r, -r, r * 2, r * 2);
-    } else {
-      g.lineStyle(6, color, 1).strokeCircle(0, 0, r * 0.6);
-      g.lineStyle(3, 0xffffff, 0.9).strokeCircle(0, 0, r * 0.35);
-    }
-    this.view.fxLayer.add(g);
-    this.scene.tweens.add({
-      targets: g,
-      angle: kind === 'rotate' ? 90 : kind === 'warp' ? 270 : 0,
-      scale: kind === 'warp' ? { from: 1.4, to: 0.3 } : { from: 0.9, to: 1.15 },
-      alpha: { from: 1, to: 0 },
-      duration: 380,
-      ease: 'Quad.easeOut',
-      onComplete: () => g.destroy(),
-    });
-  }
-
-  /**
-   * The chain came back round a loop to this cell (pass 2, 3, 4): the cells of the loop light up gold,
-   * and the cell shows "×n"
-   */
-  revisit(cell: number, pass: number, loop: readonly number[]): void {
-    const gold = pass >= 3 ? 0xffe680 : 0xffd25a;
-    for (const c of loop) {
-      const at = this.view.cellCenter(c);
-      const w = this.view.cell - 8;
-      const r = this.scene.add.rectangle(at.x, at.y, w, w).setStrokeStyle(5, gold, 1);
-      this.view.fxLayer.add(r);
-      this.scene.tweens.add({
-        targets: r,
-        alpha: 0,
-        scale: 1.12,
-        duration: 420,
-        onComplete: () => r.destroy(),
-      });
-    }
-    const at = this.view.cellCenter(cell);
-    const txt = this.scene.add
-      .text(
-        at.x + this.view.cell * 0.28,
-        at.y - this.view.cell * 0.3,
-        `×${pass}`,
-        textStyle(26 + pass * 4, '#ffe680'),
-      )
-      .setOrigin(0.5);
-    this.view.fxLayer.add(txt);
-    this.scene.tweens.add({
-      targets: txt,
-      y: txt.y - 18,
-      scale: { from: 1.6, to: 1 },
-      alpha: { from: 1, to: 0 },
-      duration: 650,
-      ease: 'Back.easeOut',
-      onComplete: () => txt.destroy(),
     });
   }
 

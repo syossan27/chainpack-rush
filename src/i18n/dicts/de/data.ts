@@ -525,10 +525,4 @@ export const DATA: Dict = {
     'Ein Gegenstand pro Feld. Ohne Stapeln: Bezwinge den Burgwall nur mit dem Weg deiner Pfeile.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Solange es auf dem Brett ist, bist du in Ketten nie ungeschützt. +40 Verteidigung.',
-  回る盤面: 'Drehbrett',
-  回転マスを2つ置ける: '2 Drehfelder setzbar',
-  切り替えの盤面: 'Weichenbrett',
-  切り替えマスを2つ置ける: '2 Weichen setzbar',
-  つなぐ盤面: 'Verbindungsbrett',
-  ワープ1組と回転マスを置ける: 'Ein Portalpaar und ein Drehfeld setzbar',
 };

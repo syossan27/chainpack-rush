@@ -523,10 +523,4 @@ export const DATA: Dict = {
     'Un objeto por casilla. Sin apilar: desafía la Muralla solo con el camino de tus flechas.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Mientras esté en tu tablero, nunca eres vulnerable durante las cadenas. Defensa +40.',
-  回る盤面: 'Tablero Giratorio',
-  回転マスを2つ置ける: 'Pon 2 Giratorias',
-  切り替えの盤面: 'Tablero de Desvíos',
-  切り替えマスを2つ置ける: 'Pon 2 Desvíos',
-  つなぐ盤面: 'Tablero de Enlace',
-  ワープ1組と回転マスを置ける: 'Pon un par de Portales y una Giratoria',
 };
