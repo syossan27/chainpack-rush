@@ -127,7 +127,7 @@ describe('拾って組む: 置く・外す', () => {
 describe('拾って組む: 重ねて置く', () => {
   const gs = item('g', 'greatsword');
   const a = item('a', 'sword');
-  const b = item('b', 'sword');
+  const b = item('b', 'wind_sword');
   const items = new Map([gs, a, b].map((i) => [i.uid, i]));
   const at = (pairs: [string, number][]) =>
     pairs.reduce((l, [uid, cell]) => putShaped(l, items, uid, cell).loadout, board());
@@ -196,6 +196,57 @@ describe('拾って組む: 重ねて置く', () => {
     const map = new Map(two.map((i) => [i.uid, i]));
     const l = putShaped(board(), map, 'o1', 0).loadout;
     expect(placeOver(l, map, 'o2', 0).displaced).toEqual(['o1']);
+  });
+});
+
+describe('拾って組む: 同じ装備を重ねる', () => {
+  const swords = ['s1', 's2', 's3', 's4'].map((u) => item(u, 'sword'));
+  const g1 = item('g1', 'greatsword');
+  const g2 = item('g2', 'greatsword');
+  const items = new Map([...swords, g1, g2].map((i) => [i.uid, i]));
+  const stackOn = (uids: string[], cell: number) =>
+    uids.reduce((l, u) => placeOver(l, items, u, cell).loadout, board());
+
+  it('同じ装備に重ねると、その上に積まれる', () => {
+    const l = stackOn(['s1', 's2'], 0);
+    expect([l.cells[0], l.under![0]]).toEqual(['s2', ['s1']]);
+  });
+
+  it('重ねられるのは3つまで。4つ目は上書きになる', () => {
+    const r = placeOver(stackOn(['s1', 's2', 's3'], 0), items, 's4', 0);
+    expect([r.loadout.cells[0], r.loadout.under![0], r.displaced]).toEqual([
+      's4',
+      [],
+      ['s1', 's2', 's3'],
+    ]);
+  });
+
+  it('大きい装備は、ずれた位置に落としても同じマスに積まれる', () => {
+    // g1 on 0, 1; g2 dropped on 1 (it would cover 1, 2) goes on g1's cells
+    const l = placeOver(stackOn(['g1'], 0), items, 'g2', 1).loadout;
+    expect([l.cells.slice(0, 3), l.under![0], l.under![1]]).toEqual([
+      ['g2', 'g2', null],
+      ['g1'],
+      ['g1'],
+    ]);
+  });
+
+  it('上の装備を外すと、下の装備が上になる', () => {
+    const l = takeShaped(stackOn(['s1', 's2'], 0), items, 's2');
+    expect([l.cells[0], l.under![0]]).toEqual(['s1', []]);
+  });
+
+  it('上の装備だけを動かすと、下の装備は元の場所に残る', () => {
+    const l = placeOver(stackOn(['s1', 's2'], 0), items, 's2', 5).loadout;
+    expect([l.cells[0], l.cells[5]]).toEqual(['s1', 's2']);
+  });
+
+  it('重ねた装備は、連鎖で下から順に鳴る', () => {
+    const o = item('o', 'origin_stone');
+    const all = new Map([...items, ['o', o] as const]);
+    const l0 = putShaped(board(), all, 'o', 0).loadout;
+    const l = ['s1', 's2'].reduce((acc, u) => placeOver(acc, all, u, 1).loadout, l0);
+    expect(planChain(l, all, 'o').steps.map((x) => x.uid)).toEqual(['o', 's1', 's2']);
   });
 });
 

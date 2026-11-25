@@ -1,8 +1,11 @@
-// Trial 「拾って組む」: gear with a shape. A piece covers the X cells of its mask on a plain board
-// (its uid is written in each one); the chain rings it once. Each arrow leaves from one set cell of
-// the piece (its port for that direction), so where an arrow comes out is part of the piece. Only
-// the trial's board uses this — every other board keeps one piece per cell. Pure: no Phaser.
+// Trial 「拾って組む」: gear with a shape. A piece covers the X cells of its mask (its uid is written
+// in each one, and the same gear stacked under it in each one's under); the chain rings its stack
+// once. Each arrow leaves from one set cell of the piece (its port for that direction), so where an
+// arrow comes out is part of the piece. Only the trial's board uses this. Pure: no Phaser.
+import { getBoard } from '../data/boards';
 import { getItemDef } from '../data/items';
+import { boardDepth } from './boards';
+import { stackGroup } from './stack';
 import type { Dir, ItemInstance, Loadout } from './types';
 
 export interface ShapeDef {
@@ -90,12 +93,17 @@ export function shapeOffsets(defId: string): [number, number][] {
   return out;
 }
 
-/** An empty plain board (no stacks, no holes) of the given size */
+/**
+ * An empty board of the given size (no holes). The same gear can be stacked on a piece, as on the
+ * stacked board: every cell a piece covers keeps the pieces under it (bottom first)
+ */
 export function emptyShapeBoard(width: number, height: number): Loadout {
+  const n = width * height;
   return {
     width,
     height,
-    cells: new Array<string | null>(width * height).fill(null),
+    cells: new Array<string | null>(n).fill(null),
+    under: Array.from({ length: n }, () => []),
     originOrder: [],
     consumables: [],
   };
@@ -135,20 +143,88 @@ function syncOrigins(l: Loadout, items: ReadonlyMap<string, ItemInstance>): void
   ];
 }
 
-/** Take a piece off the board (every cell it covered is empty again) */
+function clone(l: Loadout): Loadout {
+  return {
+    ...l,
+    cells: l.cells.slice(),
+    under: l.cells.map((_, i) => (l.under?.[i] ?? []).slice()),
+    originOrder: l.originOrder.slice(),
+  };
+}
+
+/** The cells a piece on top covers */
+const cellsOfTop = (l: Loadout, top: string): number[] =>
+  l.cells.flatMap((u, i) => (u === top ? [i] : []));
+
+/** A piece's stack on the board, bottom → top (empty: it is not a top) */
+export function shapedStack(l: Loadout, top: string): string[] {
+  const at = cellsOfTop(l, top);
+  return at.length === 0 ? [] : [...(l.under?.[at[0]!] ?? []), top];
+}
+
+/**
+ * Take a piece off the board. A top leaves the piece under it on top (or its cells empty); a piece
+ * under others just leaves its stack
+ */
 export function takeShaped(
   l: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
   uid: string,
 ): Loadout {
-  const out = { ...l, cells: l.cells.map((u) => (u === uid ? null : u)) };
+  const out = clone(l);
+  out.cells.forEach((u, i) => {
+    const under = out.under![i]!;
+    if (u === uid) out.cells[i] = under.pop() ?? null;
+    else out.under![i] = under.filter((x) => x !== uid);
+  });
   syncOrigins(out, items);
   return out;
 }
 
+/** Take a top and everything under it off the board */
+function takeStack(l: Loadout, items: ReadonlyMap<string, ItemInstance>, top: string): Loadout {
+  return shapedStack(l, top).reduce((acc, u) => takeShaped(acc, items, u), l);
+}
+
+/** Write a stack (bottom → top) with its top-left at `anchor`; null when it does not fit there */
+function writeStack(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  stack: readonly string[],
+  anchor: number,
+): Loadout | null {
+  const top = stack[stack.length - 1]!;
+  const cover = coverCells(l, items.get(top)!.defId, anchor);
+  if (!cover || cover.some((c) => l.cells[c] !== null)) return null;
+  const out = clone(l);
+  for (const c of cover) {
+    out.cells[c] = top;
+    out.under![c] = stack.slice(0, -1);
+  }
+  syncOrigins(out, items);
+  return out;
+}
+
+/** Most pieces in one stack */
+const maxStack = (l: Loadout) => boardDepth(getBoard(l.board));
+
+/** `uid` may go on top of `top`: the same gear (stackGroup), and the stack not full */
+function canStackOn(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  uid: string,
+  top: string,
+): boolean {
+  const g = stackGroup(items.get(uid)!);
+  return (
+    g !== null && g === stackGroup(items.get(top)!) && shapedStack(l, top).length < maxStack(l)
+  );
+}
+
 /**
- * Put a piece on the board at `cell` (moved in to fit). It may move within the board; it needs
- * every cell it covers free (or its own), and one origin stone at most on the board
+ * Put a piece on the board at `cell` (moved in to fit). It may move within the board (as the top
+ * of its stack: the piece under it stays); it needs every cell it covers free, and one origin
+ * stone at most on the board
  */
 export function putShaped(
   l: Loadout,
@@ -158,21 +234,16 @@ export function putShaped(
 ): { loadout: Loadout; block: ShapeBlock | null } {
   const it = items.get(uid);
   if (!it) return { loadout: l, block: null };
-  const cover = coverCells(l, it.defId, anchorFor(l, it.defId, cell));
-  if (!cover || cover.some((c) => l.cells[c] !== null && l.cells[c] !== uid))
-    return { loadout: l, block: 'space' };
-  const others = l.cells.filter((u): u is string => !!u && u !== uid);
-  if (isOrigin(items, uid) && others.some((u) => isOrigin(items, u)))
+  const lifted = takeShaped(l, items, uid);
+  if (isOrigin(items, uid) && lifted.cells.some((u) => !!u && isOrigin(items, u)))
     return { loadout: l, block: 'origin' };
-  const out = takeShaped(l, items, uid);
-  for (const c of cover) out.cells[c] = uid;
-  syncOrigins(out, items);
-  return { loadout: out, block: null };
+  const out = writeStack(lifted, items, [uid], anchorFor(l, it.defId, cell));
+  return out ? { loadout: out, block: null } : { loadout: l, block: 'space' };
 }
 
 /** The top-left cell of a piece's box on the board (-1: not on it) */
 export function boxCorner(l: Loadout, uid: string): number {
-  const at = l.cells.flatMap((u, i) => (u === uid ? [i] : []));
+  const at = cellsOfTop(l, uid);
   if (at.length === 0) return -1;
   const x = Math.min(...at.map((i) => i % l.width));
   const y = Math.min(...at.map((i) => Math.floor(i / l.width)));
@@ -180,9 +251,10 @@ export function boxCorner(l: Loadout, uid: string): number {
 }
 
 /**
- * Put a piece at `cell` over whatever is there. The pieces it lands on come off the board; when it
- * moved from elsewhere on the board and lands on one piece, that piece takes its old place (a swap)
- * if it fits there. `displaced`: the pieces left off the board (for the hand)
+ * Put a piece at `cell` over whatever is there. On the same gear (one piece, its stack not full)
+ * it goes on top of it. Otherwise the stacks it lands on come off the board; when it moved from
+ * elsewhere on the board, left its old place empty, and landed on one stack, that stack takes its
+ * old place (a swap) if it fits there. `displaced`: the pieces left off the board (for the hand)
  */
 export function placeOver(
   l: Loadout,
@@ -192,22 +264,30 @@ export function placeOver(
 ): { loadout: Loadout; displaced: string[]; block: ShapeBlock | null } {
   const it = items.get(uid);
   if (!it) return { loadout: l, displaced: [], block: null };
-  const cover = coverCells(l, it.defId, anchorFor(l, it.defId, cell));
+  const from = boxCorner(l, uid);
+  const lifted = takeShaped(l, items, uid);
+  const cover = coverCells(lifted, it.defId, anchorFor(lifted, it.defId, cell));
   if (!cover) return { loadout: l, displaced: [], block: 'space' };
-  const hit = [...new Set(cover.map((c) => l.cells[c]))].filter(
-    (u): u is string => !!u && u !== uid,
-  );
-  const stays = l.cells.filter((u): u is string => !!u && u !== uid && !hit.includes(u));
+  const hit = [...new Set(cover.map((c) => lifted.cells[c]))].filter((u): u is string => !!u);
+  // The same gear: on top of it, on its cells
+  if (hit.length === 1 && canStackOn(lifted, items, uid, hit[0]!)) {
+    const stack = [...shapedStack(lifted, hit[0]!), uid];
+    const below = takeStack(lifted, items, hit[0]!);
+    const out = writeStack(below, items, stack, boxCorner(lifted, hit[0]!));
+    if (out) return { loadout: out, displaced: [], block: null };
+  }
+  const stays = lifted.cells.filter((u): u is string => !!u && !hit.includes(u));
   if (isOrigin(items, uid) && stays.some((u) => isOrigin(items, u)))
     return { loadout: l, displaced: [], block: 'origin' };
-  const from = boxCorner(l, uid);
-  const cleared = hit.reduce((acc, u) => takeShaped(acc, items, u), l);
-  const placed = putShaped(cleared, items, uid, cell).loadout;
+  const knocked = hit.flatMap((u) => shapedStack(lifted, u));
+  const cleared = hit.reduce((acc, u) => takeStack(acc, items, u), lifted);
+  const placed = writeStack(cleared, items, [uid], anchorFor(lifted, it.defId, cell));
+  if (!placed) return { loadout: l, displaced: [], block: 'space' };
   if (from >= 0 && hit.length === 1) {
-    const swap = putShaped(placed, items, hit[0]!, from);
-    if (!swap.block) return { loadout: swap.loadout, displaced: [], block: null };
+    const swap = writeStack(placed, items, shapedStack(lifted, hit[0]!), from);
+    if (swap) return { loadout: swap, displaced: [], block: null };
   }
-  return { loadout: placed, displaced: hit, block: null };
+  return { loadout: placed, displaced: knocked, block: null };
 }
 
 /**

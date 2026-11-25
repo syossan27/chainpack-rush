@@ -191,23 +191,14 @@ export class BackpackView extends Phaser.GameObjects.Container {
         );
         this.iconLayer.add(big);
         for (const k of cells) this.icons.set(k, big);
+        this.drawUnder(i);
         return;
       }
       const c = this.cellCenter(i);
       const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
       this.iconLayer.add(icon);
       this.icons.set(i, icon);
-      // The items under the top, small at the top-left (labels sit below)
-      (this.loadout.under?.[i] ?? []).forEach((u, k) => {
-        const low = this.items.get(u);
-        if (!low) return;
-        const x = c.x - this.cell / 2 + 13 + k * 20;
-        const y = c.y - this.cell / 2 + 13;
-        this.iconLayer.add(
-          this.scene.add.rectangle(x, y, 20, 20, 0x0c0a12, 0.85).setStrokeStyle(2, 0xfff080),
-        );
-        this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
-      });
+      this.drawUnder(i);
     });
     // Gimmick cells: over the gear, so the sign shows on a full cell
     this.loadout.gimmicks?.forEach((g, i) => {
@@ -218,6 +209,21 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.lineG.clear();
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
+  }
+
+  /** The items under a cell's top, small at the cell's top-left (labels sit below) */
+  private drawUnder(i: number): void {
+    const c = this.cellCenter(i);
+    (this.loadout.under?.[i] ?? []).forEach((u, k) => {
+      const low = this.items.get(u);
+      if (!low) return;
+      const x = c.x - this.cell / 2 + 13 + k * 20;
+      const y = c.y - this.cell / 2 + 13;
+      this.iconLayer.add(
+        this.scene.add.rectangle(x, y, 20, 20, 0x0c0a12, 0.85).setStrokeStyle(2, 0xfff080),
+      );
+      this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
+    });
   }
 
   /**
