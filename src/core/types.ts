@@ -91,6 +91,8 @@ export interface ItemInstance {
   locked?: boolean;
   /** The worth of the affixes it had before they were removed (%; src/core/bonus.ts). Absent: none */
   bonus?: number;
+  /** Its shape on the board (core/shapes.ts), rolled when picked up. Absent: one cell */
+  shape?: import('./shapes').ShapeId;
 }
 
 export interface Loadout {

@@ -5,6 +5,7 @@ import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { BONUS_MAX, bonusFromAffixes } from './bonus';
+import { isShapeId } from './shapes';
 import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { CONSUMABLE, SIM, UPGRADES, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
@@ -391,6 +392,7 @@ function validItem(v: unknown): v is ItemInstance {
   if (v.locked !== undefined && typeof v.locked !== 'boolean') return false;
   if (v.bonus !== undefined && (!isNum(v.bonus) || v.bonus <= 0 || v.bonus > BONUS_MAX))
     return false;
+  if (v.shape !== undefined && !isShapeId(v.shape)) return false;
   try {
     getItemDef(v.defId);
   } catch {

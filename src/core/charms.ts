@@ -86,11 +86,16 @@ export function charmContext(
   const matched = new Set<number>();
   for (let slot = 0; slot < width + height; slot++) {
     const elements: string[] = [];
-    for (const cell of slotCells(slot, width, height))
+    // Each piece on the line once (a piece with a shape may cover several of its cells)
+    const pieces = new Set<string | null>();
+    for (const cell of slotCells(slot, width, height)) {
+      if (pieces.has(loadout.cells[cell] ?? null)) continue;
+      pieces.add(loadout.cells[cell] ?? null);
       for (const uid of cellRings(loadout, items, cell)) {
         const def = getItemDef(items.get(uid)!.defId);
         if (def.kind === 'attack') elements.push(def.element ?? 'physical');
       }
+    }
     if (elements.length >= CHARM.minMatch && elements.every((e) => e === elements[0]))
       matched.add(slot);
   }

@@ -8,6 +8,7 @@ import { getBoard, type BoardId } from '../data/boards';
 import type { CharmTrigger } from '../data/charms';
 import { TECHNIQUE_MULT } from '../data/techniques';
 import { itemBonus } from './bonus';
+import { shapePower } from './shapes';
 import { boardDamageMult } from './boards';
 import { applyCharmEvent, cellTop, comboWeight, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
@@ -97,7 +98,7 @@ export function estimateRoute(
       area: def.area === 'all' ? 'all' : undefined,
       riseTo: plan.riseTo,
     });
-    let m = def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1;
+    let m = (def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1) * shapePower(inst);
     // 起点石の種類と、重ねの位置
     m *= (s.line?.damage ?? 1) * (s.stackMult ?? 1);
     m *= boardDamageMult(boardDef, def.element);

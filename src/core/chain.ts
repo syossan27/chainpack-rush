@@ -1,6 +1,7 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
 import { ipow } from './rng';
 import { itemBonus } from './bonus';
+import { footprints, portCell, shapePower } from './shapes';
 import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, CHAIN_RULES, RARITY, STACK, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
@@ -151,7 +152,10 @@ export function lineBoost(
 /** 防御装備が連鎖で通ったときの防御値 */
 export function defenseValue(inst: ItemInstance): number {
   return (
-    (getItemDef(inst.defId).defense ?? 0) * RARITY[inst.rarity].mult * (1 + itemBonus(inst) / 100)
+    (getItemDef(inst.defId).defense ?? 0) *
+    RARITY[inst.rarity].mult *
+    (1 + itemBonus(inst) / 100) *
+    shapePower(inst)
   );
 }
 
@@ -235,6 +239,10 @@ function spread(
     return fx;
   };
 
+  // Pieces with a shape: a piece on several cells rings once; each arrow leaves its port cell
+  const foot = footprints(loadout);
+  const cellsOf = (uid: string, cell: number): number[] => foot?.get(uid) ?? [cell];
+
   const expand = (index: number, tMs: number): void => {
     const s = steps[index]!;
     const inst = items.get(s.uid);
@@ -242,9 +250,11 @@ function spread(
     const def = getItemDef(inst.defId);
     const delayMs = relayMs(def, effectsOf(lines[index]!));
     const targets: number[] = [];
+    const from = cellsOf(s.uid, s.cell);
     for (const dir of DIRS.filter((d) => inst.exits.includes(d))) {
-      const n = neighborCell(loadout, s.cell, dir);
-      if (n !== null) targets.push(n);
+      const c = from.length > 1 ? portCell(inst, from, dir) : s.cell;
+      const n = neighborCell(loadout, c, dir);
+      if (n !== null && !from.includes(n) && !targets.includes(n)) targets.push(n);
     }
     let first = true;
     for (const n of targets) {
@@ -257,7 +267,7 @@ function spread(
   };
 
   const originCell = loadout.cells.indexOf(originUid);
-  visited.add(originCell);
+  for (const c of cellsOf(originUid, originCell)) visited.add(c);
   steps.push({
     t: 0,
     uid: originUid,
@@ -277,8 +287,11 @@ function spread(
   // Stacked board (trial): a cell rings its stack bottom → top, then the top item leads on
   const stackedBoard = loadout.under !== undefined;
   const posMult = boardPosMult(getBoard(loadout.board));
-  const fire = (cell: number, tMs: number, parent: number, branch: number): void => {
-    visited.add(cell);
+  const fire = (reached: number, tMs: number, parent: number, branch: number): void => {
+    // A piece with a shape rings at its first cell, whichever of its cells the chain reached
+    const covered = cellsOf(loadout.cells[reached]!, reached);
+    const cell = covered[0]!;
+    for (const c of covered) visited.add(c);
     const stack = stackedBoard ? cellRings(loadout, items, cell) : [loadout.cells[cell]!];
     // Counted like the guard: a cell once, origin stones not at all
     if (getItemDef(items.get(loadout.cells[cell]!)!.defId).kind !== 'origin') cellOrder++;

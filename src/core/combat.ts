@@ -46,6 +46,7 @@ import {
   waitFactor,
 } from './chain';
 import { itemBonus } from './bonus';
+import { shapePower, topCells } from './shapes';
 import { boardDamageMult } from './boards';
 import {
   applyCharmEvent,
@@ -808,11 +809,14 @@ export class Combat {
   revived = false;
 
   /** Stick an offered relic on a cell (false: not offered, or the cell won't take it) */
-  placeRelic(id: RelicId, cell: number): boolean {
+  placeRelic(id: RelicId, at: number): boolean {
     const offer = this.relicOffer;
     if (!offer || this.ended || !offer.ids.includes(id)) return false;
+    // A piece with a shape takes its relic on its first cell (where it rings)
+    const top = this.cfg.loadout.cells[at];
+    const cell = top ? (topCells(this.cfg.loadout, top)[0] ?? at) : at;
     if (!canStickRelic(this.cfg.loadout, this.cfg.items, this.relics, id, cell)) return false;
-    this.inputs.push({ t: this.tick, k: 'relic', id, cell });
+    this.inputs.push({ t: this.tick, k: 'relic', id, cell: at });
     this.relics.set(cell, id);
     this.relicOffer = null;
     this.emit({ type: 'relicStuck', tick: this.tick, id, cell });
@@ -1496,11 +1500,14 @@ export class Combat {
     return 1 + (levels[def.element ?? 'physical'] ?? 0) * MASTERY.dmgPerLevel;
   }
 
-  /** The gear's own damage multiplier: an attack item's bonus, and its boss multiplier on a boss */
+  /**
+   * The gear's own damage multiplier: an attack item's bonus, its shape's size, and its boss
+   * multiplier on a boss
+   */
   private gearMult(inst: ItemInstance, t: EnemyState): number {
     const def = getItemDef(inst.defId);
     const bonus = def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1;
-    return bonus * (t.def.boss ? (def.bossMult ?? 1) : 1);
+    return bonus * shapePower(inst) * (t.def.boss ? (def.bossMult ?? 1) : 1);
   }
 
   private resolveTargets(aim: EnemyState, area: Area, pierce: number): EnemyState[] {

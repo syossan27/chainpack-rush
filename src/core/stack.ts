@@ -1,8 +1,18 @@
 // Editing a small board whose cells hold stacks of gear. The top item of a
-// cell is cells[i]; the items under it are under[i], bottom first. Pure: no Phaser.
+// cell is cells[i]; the items under it are under[i], bottom first. A piece with a shape
+// (core/shapes.ts) covers several cells: each one holds the same stack. Pure: no Phaser.
 import { getBoard, type BoardId } from '../data/boards';
 import { getItemDef } from '../data/items';
 import { boardDepth, boardSize, isHole } from './boards';
+import {
+  anchorFor,
+  boxCorner,
+  coverCells,
+  shapeOf,
+  SHAPES,
+  topCells,
+  type ShapeDef,
+} from './shapes';
 import type { ItemInstance, Loadout } from './types';
 
 /**
@@ -38,9 +48,9 @@ export function cellRings(
   return s;
 }
 
-/** Every item on the board: the tops and the items under them */
+/** Every item on the board, once each: the tops and the items under them */
 export function boardUids(l: Loadout): string[] {
-  return l.cells.flatMap((_, i) => stackAt(l, i));
+  return [...new Set(l.cells.flatMap((_, i) => stackAt(l, i)))];
 }
 
 export function emptyStackBoard(board: BoardId = 'standard'): Loadout {
@@ -75,9 +85,31 @@ function setStack(l: Loadout, cell: number, stack: readonly string[]): void {
 }
 
 function syncOrigins(l: Loadout, items: ReadonlyMap<string, ItemInstance>): void {
-  l.originOrder = l.cells.filter(
-    (u): u is string => !!u && getItemDef(items.get(u)?.defId ?? '').kind === 'origin',
-  );
+  l.originOrder = [
+    ...new Set(
+      l.cells.filter(
+        (u): u is string => !!u && getItemDef(items.get(u)?.defId ?? '').kind === 'origin',
+      ),
+    ),
+  ];
+}
+
+/** Write a piece's stack on every cell it covers */
+function setPiece(l: Loadout, cells: readonly number[], stack: readonly string[]): void {
+  for (const c of cells) setStack(l, c, stack);
+}
+
+/** Whether two items may share a stack: the same gear (any rarity) and the same shape */
+function sameStack(a: ItemInstance, b: ItemInstance): boolean {
+  const g = stackGroup(a);
+  return g !== null && g === stackGroup(b) && (a.shape ?? 'one') === (b.shape ?? 'one');
+}
+
+/** The cells a shape covers at `anchor` on this board (null: it sticks out or meets a hole) */
+function fitCells(l: Loadout, sh: ShapeDef, anchor: number): number[] | null {
+  const cover = coverCells(l, sh, anchor);
+  const board = getBoard(l.board);
+  return cover && !cover.some((c) => isHole(board, c)) ? cover : null;
 }
 
 /** Take an item out of the board in place (no copy) */
@@ -94,12 +126,16 @@ function pull(l: Loadout, uid: string): void {
 }
 
 /**
- * Why an item cannot go on a cell: other gear, an artifact, a full stack, a second origin stone, or
- * a hole in the board's shape
+ * Why an item cannot go on a cell: other gear, an artifact, a full stack, a second origin stone, a
+ * hole in the board's shape, or (a piece with a shape) other gear in the way of its cells
  */
-export type StackBlock = 'group' | 'artifact' | 'full' | 'origin' | 'hole';
+export type StackBlock = 'group' | 'artifact' | 'full' | 'origin' | 'hole' | 'space';
 
-/** Put an item on a cell: an empty cell takes it, an occupied cell stacks it on top */
+/**
+ * Put an item on a cell. On a piece of the same gear and shape it stacks on top (on that piece's
+ * cells); otherwise a piece takes the cells of its shape with its top-left on `cell` (moved back
+ * inside the board), which must be free
+ */
 export function stackPut(
   l: Loadout,
   items: ReadonlyMap<string, ItemInstance>,
@@ -115,32 +151,73 @@ export function stackPut(
   const out = clone(l);
   pull(out, uid);
   const here = stackAt(out, cell);
-  if (here.length === 0) {
-    // One origin stone on the board (trial)
-    const other = out.originOrder.find((u) => u !== uid && boardUids(out).includes(u));
-    if (def.kind === 'origin' && other) return { loadout: l, block: 'origin' };
-    setStack(out, cell, [uid]);
-  } else {
+  if (here.length > 0) {
+    const top = items.get(here[here.length - 1]!)!;
     const under = items.get(here[0]!)!;
     if (def.artifact || getItemDef(under.defId).artifact) return { loadout: l, block: 'artifact' };
-    const g = stackGroup(it);
-    if (g === null || g !== stackGroup(under)) return { loadout: l, block: 'group' };
+    if (!sameStack(it, top)) {
+      // A shape whose cells are free elsewhere can still go in, its top-left on this cell
+      return stackGroup(it) !== null && stackGroup(it) === stackGroup(top)
+        ? { loadout: l, block: 'space' }
+        : { loadout: l, block: 'group' };
+    }
     if (here.length >= boardDepth(board)) return { loadout: l, block: 'full' };
-    setStack(out, cell, [...here, uid]);
+    setPiece(out, topCells(out, top.uid), [...here, uid]);
+    syncOrigins(out, items);
+    return { loadout: out, block: null };
   }
+  // One origin stone on the board
+  const other = out.originOrder.find((u) => u !== uid && boardUids(out).includes(u));
+  if (def.kind === 'origin' && other) return { loadout: l, block: 'origin' };
+  const sh = shapeOf(it);
+  const cover = fitCells(out, sh, anchorFor(out, sh, cell));
+  if (!cover) return { loadout: l, block: 'hole' };
+  if (cover.some((c) => out.cells[c] !== null)) return { loadout: l, block: 'space' };
+  setPiece(out, cover, [uid]);
   syncOrigins(out, items);
   return { loadout: out, block: null };
 }
 
-/** Move a whole stack to another cell (it swaps with the stack there) */
-export function stackMove(l: Loadout, from: number, to: number): Loadout {
-  if (from === to || from < 0 || to < 0 || from >= l.cells.length || to >= l.cells.length) return l;
+/**
+ * Move the whole stack of the piece on `from` so its top-left goes to `to`. A piece in the way swaps
+ * places with it (it goes to the moved piece's old top-left) when both fit; otherwise nothing
+ * moves. One-cell pieces: the stacks of the two cells swap, as before shapes. `items` gives the
+ * pieces' shapes (without it every piece counts as one cell)
+ */
+export function stackMove(
+  l: Loadout,
+  from: number,
+  to: number,
+  items?: ReadonlyMap<string, ItemInstance>,
+): Loadout {
+  if (from < 0 || to < 0 || from >= l.cells.length || to >= l.cells.length) return l;
   const board = getBoard(l.board);
   if (isHole(board, from) || isHole(board, to)) return l;
+  const a = l.cells[from];
+  // An empty cell onto a piece: that piece comes here
+  if (!a) return l.cells[to] ? stackMove(l, to, from, items) : l;
+  const shape = (u: string) => {
+    const it = items?.get(u);
+    return it ? shapeOf(it) : SHAPES.one;
+  };
+  const cornerA = boxCorner(l, a);
+  if (cornerA === to) return l;
+  const stackA = stackAt(l, from);
   const out = clone(l);
-  const a = stackAt(out, from);
-  setStack(out, from, stackAt(out, to));
-  setStack(out, to, a);
+  setPiece(out, topCells(out, a), []);
+  const coverA = fitCells(out, shape(a), to);
+  if (!coverA) return l;
+  const hit = [...new Set(coverA.map((c) => out.cells[c]).filter((u): u is string => !!u))];
+  if (hit.length > 1) return l;
+  const b = hit[0];
+  if (b !== undefined) {
+    const stackB = stackAt(out, topCells(out, b)[0]!);
+    setPiece(out, topCells(out, b), []);
+    const coverB = fitCells(out, shape(b), cornerA);
+    if (!coverB || coverB.some((c) => coverA.includes(c) || out.cells[c] !== null)) return l;
+    setPiece(out, coverB, stackB);
+  }
+  setPiece(out, coverA, stackA);
   return out;
 }
 
@@ -157,7 +234,7 @@ export function stackTake(
   return out;
 }
 
-/** Move an item one place up (+1) or down (-1) in its stack */
+/** Move an item one place up (+1) or down (-1) in its stack (on every cell of its piece) */
 export function stackShift(l: Loadout, uid: string, delta: 1 | -1): Loadout {
   const cell = l.cells.findIndex((_, i) => stackAt(l, i).includes(uid));
   if (cell < 0) return l;
@@ -166,8 +243,9 @@ export function stackShift(l: Loadout, uid: string, delta: 1 | -1): Loadout {
   const j = i + delta;
   if (j < 0 || j >= s.length) return l;
   const out = clone(l);
+  const cells = topCells(out, s[s.length - 1]!);
   [s[i], s[j]] = [s[j]!, s[i]!];
-  setStack(out, cell, s);
+  setPiece(out, cells, s);
   return out;
 }
 
@@ -221,19 +299,27 @@ export function restoreStackBoard(
     seen.add(u);
     return true;
   };
+  // Each piece once, at the top-left it had (a piece with a shape covers several cells)
+  const done = new Set<string>();
   for (let i = 0; i < out.cells.length; i++) {
-    // Nothing stays in a hole of the board's shape
-    const s = isHole(def, i) ? [] : stackAt(rec, i).filter((u) => owned.has(u));
-    // Keep to the rules: an origin stone alone, otherwise the items of the top's group (≤ max)
+    const raw = stackAt(rec, i);
+    const recTop = raw[raw.length - 1];
+    if (recTop === undefined || done.has(recTop)) continue;
+    done.add(recTop);
+    const s = raw.filter((u) => owned.has(u));
+    // Keep to the rules: an origin stone alone, otherwise the items that stack with the top (≤ max)
     const top = s[s.length - 1];
-    const g = top ? stackGroup(owned.get(top)!) : null;
-    const fit =
-      top === undefined
-        ? []
-        : g === null
-          ? [top]
-          : s.filter((u) => stackGroup(owned.get(u)!) === g).slice(-boardDepth(def));
-    setStack(out, i, fit.filter(ok));
+    if (top === undefined) continue;
+    const topIt = owned.get(top)!;
+    const fit = (
+      stackGroup(topIt) === null
+        ? [top]
+        : s.filter((u) => sameStack(owned.get(u)!, topIt)).slice(-boardDepth(def))
+    ).filter(ok);
+    if (fit.length === 0) continue;
+    // Nothing stays in a hole of the board's shape or over another piece
+    const cover = fitCells(out, shapeOf(owned.get(fit[fit.length - 1]!)!), boxCorner(rec, recTop));
+    if (cover && cover.every((c) => out.cells[c] === null)) setPiece(out, cover, fit);
   }
   syncOrigins(out, owned);
   // One origin stone (a board stored with more keeps the first)

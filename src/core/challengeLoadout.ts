@@ -8,6 +8,7 @@ import { autoBoard } from './autoBoard';
 import { activeBoardId } from './boardSave';
 import { holeIn } from './boards';
 import { boardUids, restoreStackBoard, stackAt, stackGroup } from './stack';
+import { topCells } from './shapes';
 import type { SaveData } from './save';
 import type { Dir, ItemInstance, Loadout } from './types';
 
@@ -105,6 +106,8 @@ export function fitToRules(save: SaveData, base: Loadout, r: ChallengeRules): Lo
     for (const c of save.inventory) {
       if (used.has(c.uid) || !ok(c)) continue;
       if (sameGear ? c.defId !== it.defId : kindOf(c) !== kindOf(it)) continue;
+      // The same shape, so it covers the same cells
+      if ((c.shape ?? 'one') !== (it.shape ?? 'one')) continue;
       const sc = (top ? score(it.exits, c.exits) : 0) + RANK[c.rarity];
       if (sc > bestScore) {
         best = c;
@@ -113,9 +116,13 @@ export function fitToRules(save: SaveData, base: Loadout, r: ChallengeRules): Lo
     }
     return best;
   };
+  // Each piece once (a piece with a shape covers several cells, each holding its stack)
+  const done = new Set<string>();
   for (let i = 0; i < l.cells.length; i++) {
     let stack = stackAt(l, i);
-    if (stack.length === 0) continue;
+    if (stack.length === 0 || done.has(l.cells[i]!)) continue;
+    const cells = topCells(l, l.cells[i]!);
+    done.add(l.cells[i]!);
     if (r.noStack && stack.length > 1) {
       for (const u of stack.slice(0, -1)) used.delete(u);
       stack = stack.slice(-1);
@@ -134,8 +141,11 @@ export function fitToRules(save: SaveData, base: Loadout, r: ChallengeRules): Lo
       used.add(sub.uid);
       kept.push(sub.uid);
     });
-    l.cells[i] = kept[kept.length - 1] ?? null;
-    if (l.under) l.under[i] = kept.slice(0, -1);
+    for (const c of cells) {
+      l.cells[c] = kept[kept.length - 1] ?? null;
+      if (l.under) l.under[c] = kept.slice(0, -1);
+    }
+    if (kept.length > 0) done.add(kept[kept.length - 1]!);
   }
   // 発火順: もとの順を保って、入れ替えた起点は同じ位置に
   const order: string[] = [];

@@ -87,6 +87,12 @@ export const COUNTER = {
  * A small board where a cell holds a stack of gear of one element. The
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
+/** Gear shapes (core/shapes.ts) */
+export const SHAPE = {
+  /** Each cell past the first adds this to a piece's damage and defense (provisional, tuned by the bots) */
+  powerPerCell: 0.8,
+} as const;
+
 export const STACK = {
   width: 6,
   height: 5,

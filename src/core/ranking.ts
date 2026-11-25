@@ -5,6 +5,7 @@
 // サーバーは装備と強化が正しい範囲かを確かめ、同じランを最初から再生して、結果が一致したときだけ記録する。
 import { CONSUMABLE, MASTERY, PROGRESS, UPGRADES } from '../config/balance';
 import { validBonus } from './bonus';
+import { shapeAllowed } from './shapes';
 import { checkRules, currentChallenge } from './challenge';
 import {
   BASE_HERO_STATS,
@@ -266,7 +267,7 @@ function validItem(it: ItemInstance): boolean {
   // 出口の数: 消耗品は0、アーティファクトは決まった数、ほかは4つまで（合成で増えることがある）
   if (def.kind === 'consumable' && it.exits.length !== 0) return false;
   if (def.artifact && it.exits.length !== def.artifact.exits.length) return false;
-  return validBonus(it);
+  return validBonus(it) && shapeAllowed(it);
 }
 
 /**

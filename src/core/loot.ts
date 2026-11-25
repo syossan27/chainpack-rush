@@ -1,4 +1,5 @@
 // ドロップ、レアリティ、出口の抽選（仕様書 第6章）
+import { rollShape } from './shapes';
 import { LOOT, RARITY } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
 import type { Rng } from './rng';
@@ -124,7 +125,7 @@ export function pickDef(rng: Rng, defs: readonly ItemDef[]): ItemDef {
 
 export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string): ItemInstance {
   const def = getItemDef(defId);
-  // アーティファクト: 常にレジェンダリー、出口は決まった形で出る（向きは鍛冶屋で変えられる）、追加効果なし
+  // アーティファクト: 常にレジェンダリー、出口は決まった形で出る（向きは鍛冶屋で変えられる）、1マス
   if (def.artifact)
     return { uid, defId, rarity: 'legendary', exits: def.artifact.exits.slice(), rerollCount: 0 };
   const exits =
@@ -134,12 +135,14 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
         ? rng.sample(DIRS, LOOT.originExits[rarity])
         : rollExits(rng, rarity);
   const r = def.kind === 'consumable' ? 'common' : rarity;
+  const shape = rollShape(rng, defId);
   return {
     uid,
     defId,
     rarity: r,
     exits,
     rerollCount: 0,
+    ...(shape ? { shape } : {}),
   };
 }
 

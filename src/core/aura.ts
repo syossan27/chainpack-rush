@@ -10,7 +10,8 @@ const NEED = 3;
 
 /** バックパックに置いている装備から、オーラの段階を決める */
 export function auraTier(loadout: Loadout, items: ReadonlyMap<string, ItemInstance>): AuraTier {
-  const placed = loadout.cells
+  // Each piece once (a piece with a shape covers several cells)
+  const placed = [...new Set(loadout.cells)]
     .map((u) => (u ? items.get(u) : undefined))
     .filter((i): i is ItemInstance => !!i);
   if (placed.some((i) => getItemDef(i.defId).artifact)) return 'artifact';
