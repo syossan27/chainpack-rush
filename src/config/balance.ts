@@ -87,6 +87,20 @@ export const COUNTER = {
  * A small board where a cell holds a stack of gear of one element. The
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
+/** 呼応 (core/calls.ts): gear's random orders on the pieces rung around it (provisional) */
+export const CALL = {
+  /** How many a piece rolls: base, and the chance of one more */
+  count: {
+    common: { base: 0, extraChance: 0.4 },
+    rare: { base: 1, extraChance: 0 },
+    epic: { base: 1, extraChance: 0.5 },
+    legendary: { base: 2, extraChance: 0 },
+  },
+  /** The bonus range (%), both ends included */
+  min: 30,
+  max: 80,
+} as const;
+
 /** Gear shapes (core/shapes.ts) */
 export const SHAPE = {
   /** Each cell past the first adds this to a piece's damage and defense (provisional, tuned by the bots) */

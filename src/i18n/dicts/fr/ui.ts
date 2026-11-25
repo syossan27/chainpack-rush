@@ -778,4 +778,17 @@ export const UI: Dict = {
   形: 'Forme',
   '{n}マス（強さ ×{x}）': '{n} cases (puissance ×{x})',
   '形: {n}マス（強さ ×{x}）': 'Forme : {n} cases (puissance ×{x})',
+  呼応: 'Appel',
+  '防具|call': 'une armure',
+  '起点石|call': 'une Origine',
+  '同じ装備|call': 'le même équipement',
+  '{element}の攻撃|call': 'une attaque {element}',
+  '前に鳴るのが{x}': 'la pièce avant est {x}',
+  '次に鳴るのが{x}': 'une pièce après est {x}',
+  'ダメージ +{v}%|call': 'dégâts +{v}%',
+  '{cond}なら {eff}': 'Si {cond} : {eff}',
+  '・装備には形があります。大きい形ほど一撃が重くなります（1回の連鎖で鳴るのは1回）。同じ装備は、同じ形どうしなら重ねられます。':
+    "• L'équipement a une forme. Plus elle est grande, plus le coup est fort (il ne sonne qu'une fois par chaîne). Le même équipement ne s'empile qu'avec la même forme.",
+  '・◆は呼応。前や次に鳴る装備が条件に合うと強くなります。配置画面では、条件が合った装備の数字に◆が付きます。':
+    "• ◆ est un Appel : l'équipement se renforce si la pièce qui sonne avant ou après correspond. Sur le plateau, l'équipement dont l'appel est rempli a un ◆ près de son nombre.",
 };

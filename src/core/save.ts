@@ -5,6 +5,7 @@ import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
 import { BONUS_MAX, bonusFromAffixes } from './bonus';
+import { isCallShape } from './calls';
 import { isShapeId } from './shapes';
 import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { CONSUMABLE, SIM, UPGRADES, type UpgradeId } from '../config/balance';
@@ -393,6 +394,8 @@ function validItem(v: unknown): v is ItemInstance {
   if (v.bonus !== undefined && (!isNum(v.bonus) || v.bonus <= 0 || v.bonus > BONUS_MAX))
     return false;
   if (v.shape !== undefined && !isShapeId(v.shape)) return false;
+  if (v.calls !== undefined && (!Array.isArray(v.calls) || !v.calls.every(isCallShape)))
+    return false;
   try {
     getItemDef(v.defId);
   } catch {

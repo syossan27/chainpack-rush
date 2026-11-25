@@ -1,4 +1,5 @@
 // ドロップ、レアリティ、出口の抽選（仕様書 第6章）
+import { rollCalls } from './calls';
 import { rollShape } from './shapes';
 import { LOOT, RARITY } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
@@ -136,6 +137,7 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
         : rollExits(rng, rarity);
   const r = def.kind === 'consumable' ? 'common' : rarity;
   const shape = rollShape(rng, defId);
+  const calls = rollCalls(rng, defId, r);
   return {
     uid,
     defId,
@@ -143,6 +145,7 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
     exits,
     rerollCount: 0,
     ...(shape ? { shape } : {}),
+    ...(calls.length > 0 ? { calls } : {}),
   };
 }
 

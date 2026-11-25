@@ -771,4 +771,17 @@ export const UI: Dict = {
   形: 'Bentuk',
   '{n}マス（強さ ×{x}）': '{n} petak (kekuatan ×{x})',
   '形: {n}マス（強さ ×{x}）': 'Bentuk: {n} petak (kekuatan ×{x})',
+  呼応: 'Panggilan',
+  '防具|call': 'pelindung',
+  '起点石|call': 'Batu Asal',
+  '同じ装備|call': 'perlengkapan yang sama',
+  '{element}の攻撃|call': 'serangan {element}',
+  '前に鳴るのが{x}': 'bagian sebelumnya adalah {x}',
+  '次に鳴るのが{x}': 'bagian berikutnya adalah {x}',
+  'ダメージ +{v}%|call': 'damage +{v}%',
+  '{cond}なら {eff}': 'Jika {cond}: {eff}',
+  '・装備には形があります。大きい形ほど一撃が重くなります（1回の連鎖で鳴るのは1回）。同じ装備は、同じ形どうしなら重ねられます。':
+    '• Perlengkapan punya bentuk. Makin besar bentuknya, makin kuat serangannya (tetap berbunyi sekali per rantai). Perlengkapan yang sama hanya bisa ditumpuk jika bentuknya sama.',
+  '・◆は呼応。前や次に鳴る装備が条件に合うと強くなります。配置画面では、条件が合った装備の数字に◆が付きます。':
+    '• ◆ adalah Panggilan: perlengkapan makin kuat jika bagian yang berbunyi sebelum atau sesudahnya cocok. Di layar papan, perlengkapan yang panggilannya terpenuhi diberi ◆ di angkanya.',
 };

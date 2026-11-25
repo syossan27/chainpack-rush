@@ -100,7 +100,7 @@ export function estimateRoute(
     });
     let m = (def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1) * shapePower(inst);
     // 起点石の種類と、重ねの位置
-    m *= (s.line?.damage ?? 1) * (s.stackMult ?? 1);
+    m *= (s.line?.damage ?? 1) * (s.stackMult ?? 1) * (s.call ?? 1);
     m *= boardDamageMult(boardDef, def.element);
     const critChance = Math.min(1, LUCK.critChance + (def.critBonus ?? 0));
     const critAvg = 1 + critChance * (LUCK.critMult - 1);

@@ -311,9 +311,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
           .text(
             c.x + this.cell / 2 - 4,
             c.y + this.cell / 2 - 2,
-            known(s.tech)
+            // ◆: a 呼応 of the piece holds on this route
+            (known(s.tech)
               ? t('必殺 {step}連鎖', { step: s.step })
-              : t('{step}連鎖 ×{mult}', { step: s.step, mult: s.mult.toFixed(2) }),
+              : t('{step}連鎖 ×{mult}', { step: s.step, mult: s.mult.toFixed(2) })) +
+              (s.call ? ' ◆' : ''),
             textStyle(
               focused ? 15 : 13,
               known(s.tech) ? '#ff8c5a' : focused ? routeCss(pi) : '#fff4a0',

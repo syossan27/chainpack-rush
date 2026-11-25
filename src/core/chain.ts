@@ -1,6 +1,7 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
 import { ipow } from './rng';
 import { itemBonus } from './bonus';
+import { callMult } from './calls';
 import { footprints, portCell, shapePower } from './shapes';
 import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, CHAIN_RULES, RARITY, STACK, type ChainRules } from '../config/balance';
@@ -298,10 +299,13 @@ function spread(
     const flow: FlowPos = { cellOrder, dist: dists[parent]! + 1 };
     let p = parent;
     let t = tMs;
+    const rings: number[] = [];
     stack.forEach((uid, k) => {
       if (k > 0) t += Math.round(STACK.ringRelay * MS);
       p = ring(cell, uid, t, p, branch, stackedBoard ? k : undefined, k === stack.length - 1, flow);
+      rings.push(p);
     });
+    visits.push({ rings, before: parent });
     if (t > lastMs) lastMs = t;
     expand(p, t);
   };
@@ -379,6 +383,9 @@ function spread(
     return meIndex;
   };
 
+  /** Each cell the chain rang: its rings (bottom → top) and the step before them (for 呼応) */
+  const visits: { rings: number[]; before: number }[] = [];
+
   while (queue.length > 0) {
     let best = 0;
     for (let i = 1; i < queue.length; i++) {
@@ -389,6 +396,23 @@ function spread(
     const p = queue.splice(best, 1)[0]!;
     if (visited.has(p.cell)) continue;
     fire(p.cell, p.tMs, p.parentIndex, p.branch);
+  }
+
+  // 呼応: each ring's calls on the top rung before its cell and the tops of the cells after it
+  const topOf = (v: { rings: number[] }) => items.get(steps[v.rings[v.rings.length - 1]!]!.uid)!;
+  for (const v of visits) {
+    const last = v.rings[v.rings.length - 1]!;
+    const prev = items.get(steps[v.before]!.uid) ?? null;
+    const next = visits.filter((w) => w.before === last).map(topOf);
+    for (const r of v.rings) {
+      const s = steps[r]!;
+      const inst = items.get(s.uid)!;
+      const m = callMult(inst, prev, next);
+      if (m === 1) continue;
+      s.call = m;
+      if (getItemDef(inst.defId).kind === 'defense')
+        defenseGain += defenseValue(inst) * (s.stackMult ?? 1) * (m - 1);
+    }
   }
 
   // 残響の起点石: the attack cell whose top rang last rings its stack once more, at the same counts

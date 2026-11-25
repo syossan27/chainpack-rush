@@ -772,4 +772,17 @@ export const UI: Dict = {
   形: 'Form',
   '{n}マス（強さ ×{x}）': '{n} Felder (Stärke ×{x})',
   '形: {n}マス（強さ ×{x}）': 'Form: {n} Felder (Stärke ×{x})',
+  呼応: 'Ruf',
+  '防具|call': 'Rüstung',
+  '起点石|call': 'ein Ursprungsstein',
+  '同じ装備|call': 'dieselbe Ausrüstung',
+  '{element}の攻撃|call': 'ein {element}-Angriff',
+  '前に鳴るのが{x}': 'das Teil davor ist {x}',
+  '次に鳴るのが{x}': 'ein Teil danach ist {x}',
+  'ダメージ +{v}%|call': 'Schaden +{v}%',
+  '{cond}なら {eff}': 'Wenn {cond}: {eff}',
+  '・装備には形があります。大きい形ほど一撃が重くなります（1回の連鎖で鳴るのは1回）。同じ装備は、同じ形どうしなら重ねられます。':
+    '• Ausrüstung hat eine Form. Je größer die Form, desto stärker der Treffer (sie klingt pro Kette trotzdem nur einmal). Gleiche Ausrüstung stapelt sich nur mit gleicher Form.',
+  '・◆は呼応。前や次に鳴る装備が条件に合うと強くなります。配置画面では、条件が合った装備の数字に◆が付きます。':
+    '• ◆ ist ein Ruf: Ausrüstung wird stärker, wenn das Teil davor oder danach zum Ruf passt. Auf dem Brett bekommt Ausrüstung, deren Ruf erfüllt ist, ein ◆ an der Zahl.',
 };

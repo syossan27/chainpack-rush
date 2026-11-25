@@ -93,6 +93,8 @@ export interface ItemInstance {
   bonus?: number;
   /** Its shape on the board (core/shapes.ts), rolled when picked up. Absent: one cell */
   shape?: import('./shapes').ShapeId;
+  /** 呼応: its orders on the pieces rung around it (core/calls.ts). Absent: none */
+  calls?: import('./calls').Call[];
 }
 
 export interface Loadout {
@@ -136,6 +138,8 @@ export interface ChainStep {
    * count, multipliers and cell are that ring's. No technique, and it adds no step, cell or wait
    */
   echo?: true;
+  /** 呼応: the multiplier this ring's calls give it (damage, or defense for defense gear). Absent: ×1 */
+  call?: number;
 }
 
 export interface ChainPlan {

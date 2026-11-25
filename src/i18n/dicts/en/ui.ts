@@ -766,4 +766,17 @@ export const UI: Dict = {
   形: 'Shape',
   '{n}マス（強さ ×{x}）': '{n} cells (power ×{x})',
   '形: {n}マス（強さ ×{x}）': 'Shape: {n} cells (power ×{x})',
+  呼応: 'Call',
+  '防具|call': 'armor',
+  '起点石|call': 'an Origin',
+  '同じ装備|call': 'the same gear',
+  '{element}の攻撃|call': 'a {element} attack',
+  '前に鳴るのが{x}': 'the piece before is {x}',
+  '次に鳴るのが{x}': 'a piece after is {x}',
+  'ダメージ +{v}%|call': 'damage +{v}%',
+  '{cond}なら {eff}': 'If {cond}: {eff}',
+  '・装備には形があります。大きい形ほど一撃が重くなります（1回の連鎖で鳴るのは1回）。同じ装備は、同じ形どうしなら重ねられます。':
+    '• Gear has a shape. A bigger shape hits harder (it still rings once per chain). The same gear stacks only with the same shape.',
+  '・◆は呼応。前や次に鳴る装備が条件に合うと強くなります。配置画面では、条件が合った装備の数字に◆が付きます。':
+    '• ◆ is a Call: gear gets stronger when the piece ringing before or after it fits the call. On the board screen, gear whose call holds gets a ◆ by its number.',
 };

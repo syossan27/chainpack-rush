@@ -1246,7 +1246,7 @@ export class Combat {
       this.relicRing(c, relic);
       // A defense item adds its defense the moment it rings, so a long chain stays guarded
       if (def.kind === 'defense') {
-        const gain = defenseValue(inst) * (s.stackMult ?? 1);
+        const gain = defenseValue(inst) * (s.stackMult ?? 1) * (s.call ?? 1);
         this.defense = Math.min(this.maxHp * HERO.defenseCap, this.defense + gain);
         c.defenseGain += gain;
         c.defenseCells.push(s.cell);
@@ -1331,7 +1331,7 @@ export class Combat {
     const mods: StrikeMods = {
       tech: techMult,
       // 起点石の種類のダメージと、重ねの位置
-      bonus: (s.line?.damage ?? 1) * (s.stackMult ?? 1),
+      bonus: (s.line?.damage ?? 1) * (s.stackMult ?? 1) * (s.call ?? 1),
       origin: lineOrigin(c.plan, index),
       ...(relic ? { relic } : {}),
       cell: s.cell,

@@ -1,5 +1,6 @@
 // 装備をタップして出す詳細（数値、属性、コンボの相手、この配置での段数）。配置は時間制限がないので文章で説明してよい
 import { itemBonus } from '../core/bonus';
+import type { Call } from '../core/calls';
 import { shapeCells, shapePower } from '../core/shapes';
 import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
@@ -54,6 +55,24 @@ function bonusText(it: ItemInstance): string | null {
       : t('攻撃力 +{v}%', { v });
 }
 
+/** A call (呼応) in the current language: what must ring before or after, and what it gives */
+function callText(it: ItemInstance, c: Call): string {
+  const x =
+    c.want === 'defense'
+      ? t('防具|call')
+      : c.want === 'origin'
+        ? t('起点石|call')
+        : c.want === 'same'
+          ? t('同じ装備|call')
+          : t('{element}の攻撃|call', { element: t(ELEMENT_NAMES[c.want]!) });
+  const cond = c.side === 'prev' ? t('前に鳴るのが{x}', { x }) : t('次に鳴るのが{x}', { x });
+  const eff =
+    getItemDef(it.defId).kind === 'defense'
+      ? t('防御値 +{v}%', { v: c.v })
+      : t('ダメージ +{v}%|call', { v: c.v });
+  return t('{cond}なら {eff}', { cond, eff });
+}
+
 /** A piece with a shape: its size and how much stronger that makes it (null for one cell) */
 function shapeText(it: ItemInstance): string | null {
   const n = shapeCells(it);
@@ -87,6 +106,7 @@ export function describeItem(it: ItemInstance): string[] {
   if (bonus) lines.push(`✦ ${bonus}`);
   const shape = shapeText(it);
   if (shape) lines.push(shape);
+  for (const c of it.calls ?? []) lines.push(`◆ ${t('呼応')}: ${callText(it, c)}`);
   if (def.kind === 'attack') {
     lines.push(
       t('攻撃力 {atk}（{element}・{area}）', {
@@ -337,6 +357,7 @@ export function showItemDetail(
   }
   const bonus = bonusText(it);
   if (bonus) rows.push([`✦ ${t('上乗せ')}`, bonus]);
+  for (const c of it.calls ?? []) rows.push([`◆ ${t('呼応')}`, callText(it, c)]);
   if (shapeCells(it) > 1)
     rows.push([t('形'), t('{n}マス（強さ ×{x}）', { n: shapeCells(it), x: fmt(shapePower(it)) })]);
   if (opts.context !== undefined && def.kind !== 'consumable') {
