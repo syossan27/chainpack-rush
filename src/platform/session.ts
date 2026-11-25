@@ -1,7 +1,6 @@
 // シーン間で受け渡す一時的な状態（保存しない）
 import type { RunResult } from '../core/combat';
 import type { ScoreSubmission } from '../core/ranking';
-import type { ItemInstance } from '../core/types';
 
 /** 挑戦で出撃するとき（地域・乱数の種は全員同じ） */
 export interface ChallengeSortie {
@@ -26,11 +25,8 @@ export const session: {
   } | null;
   /** 次の出撃を挑戦にする（出撃したら空に戻す） */
   challenge: ChallengeSortie | null;
-  /** Trial 「拾って組む」: the next run brings these (cleared when it starts) */
-  build: ItemInstance[] | null;
 } = {
   regionId: null,
   lastResult: null,
   challenge: null,
-  build: null,
 };

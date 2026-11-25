@@ -776,18 +776,4 @@ export const UI: Dict = {
   切り替えマス: 'Petak Wesel',
   ワープ: 'Warp',
   '{n}回 {step}連鎖': '{n}× {step} Rantai',
-  '試作: 拾って組む': 'Uji: Rakit Sambil Jalan',
-  '起点石1つと、装備{n}つまでを持ち込む。\n残りはランの中で拾って、盤面に置いていく':
-    'Bawa 1 Batu Asal dan hingga {n} perlengkapan.\nSisanya dipungut saat jalan dan ditaruh di papan',
-  持込: 'Bawa',
-  出発: 'Berangkat',
-  試作のランは何も持ち帰りません: 'Uji coba tidak menyimpan apa pun',
-  '最大連鎖 {n}': 'Rantai Maks {n}',
-  '最大ダメージ {n}': 'Damage Maks {n}',
-  '拾った装備 {n}': 'Perlengkapan Dipungut {n}',
-  配置タイム: 'Waktu Atur',
-  '手札から盤面へ。並べ替えもできる': 'Dari tangan ke papan. Bisa diatur ulang juga',
-  'ゴミ箱（ここへ運ぶと捨てる）': 'Tempat Sampah (seret ke sini untuk buang)',
-  そこには入らない: 'Tidak muat di sana',
-  手札がいっぱい: 'Tangan sudah penuh',
 };

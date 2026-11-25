@@ -111,24 +111,6 @@ export const STACK = {
  * Every boss beaten offers relics to stick on a board cell. A relic works on the gear
  * in its cell for the rest of the run only (nothing is kept)
  */
-/** Trial 「拾って組む」 (debug only): build the board during the run from gear picked up */
-export const BUILD_RUN = {
-  regionId: 'grassland',
-  /** Groups per loop × this (more normal fights before each boss) */
-  groupMult: 3,
-  /** Each normal enemy drops one piece of gear with this chance (bosses drop as usual) */
-  dropChance: 0.25,
-  /**
-   * Slots for pieces waiting to be placed: 2 columns × 3 rows on each side of the board, 6 below
-   * it. A piece dropped while every slot is full is lost (the trash makes room)
-   */
-  handSize: 18,
-  /** Gear brought from the collection, besides one origin stone */
-  bringGear: 3,
-  /** The trial's own board (gear has a size, the same gear stacks up to 3, see core/shapes.ts) */
-  board: { width: 6, height: 5, cell: 64 },
-};
-
 export const RELIC = {
   /** Relics offered at once (all different) */
   offer: 3,

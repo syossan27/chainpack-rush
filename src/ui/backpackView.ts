@@ -1,7 +1,5 @@
 // バックパックの描画（配置画面・ラン・カカシで共用）
 // レイヤー: マス → アイコン（出口矢印・レアリティ枠つき）→ 連鎖の線 → 光 → 段数・倍率・起点番号
-import { ShapedIcon } from './shapedIcon';
-import { footprints } from '../core/shapes';
 import Phaser from 'phaser';
 import { holeIn } from '../core/boards';
 import type { ChainPreview } from '../core/chain';
@@ -39,7 +37,7 @@ export function unitLabel(loadout: Loadout, originUids: readonly string[]): stri
 }
 
 export class BackpackView extends Phaser.GameObjects.Container {
-  readonly cell: number;
+  readonly cell = CELL_SIZE;
   private loadout: Loadout;
   private items: ReadonlyMap<string, ItemInstance>;
   private readonly cellLayer: Phaser.GameObjects.Container;
@@ -63,7 +61,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
   /** Run: how hot the chain is (0 = none … 4), drawn as a glow round the board (chainHeat) */
   private heat = 0;
   private readonly labelLayer: Phaser.GameObjects.Container;
-  private icons = new Map<number, ItemIcon | ShapedIcon>();
+  private icons = new Map<number, ItemIcon>();
   private glows: { cell: number; color: number; until: number }[] = [];
   private blinkUids: readonly string[] = [];
   private highlightCell = -1;
@@ -73,11 +71,8 @@ export class BackpackView extends Phaser.GameObjects.Container {
     top: number,
     loadout: Loadout,
     items: ReadonlyMap<string, ItemInstance>,
-    /** Cell size in px (the build trial's bigger board uses smaller cells) */
-    cell: number = CELL_SIZE,
   ) {
     super(scene, 0, top);
-    this.cell = cell;
     this.loadout = loadout;
     this.items = items;
     this.cellLayer = scene.add.container(0, 0);
@@ -132,7 +127,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     return cy * this.loadout.width + cx;
   }
 
-  iconAt(cell: number): ItemIcon | ShapedIcon | undefined {
+  iconAt(cell: number): ItemIcon | undefined {
     return this.icons.get(cell);
   }
 
@@ -170,35 +165,25 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.highlightCell = -1;
     this.iconLayer.removeAll(true);
     this.icons.clear();
-    // Shaped pieces (build trial): one tile over all the cells a piece covers
-    const foot = footprints(this.loadout);
     this.loadout.cells.forEach((uid, i) => {
       if (!uid) return;
       const it = this.items.get(uid);
       if (!it) return;
-      const cells = foot?.get(uid);
-      if (cells && cells.length > 1) {
-        if (cells[0] !== i) return;
-        const pts = cells.map((k) => this.cellCenter(k));
-        const xs = pts.map((p) => p.x);
-        const ys = pts.map((p) => p.y);
-        const big = new ShapedIcon(
-          this.scene,
-          (Math.max(...xs) + Math.min(...xs)) / 2,
-          (Math.max(...ys) + Math.min(...ys)) / 2,
-          it,
-          this.cell,
-        );
-        this.iconLayer.add(big);
-        for (const k of cells) this.icons.set(k, big);
-        this.drawUnder(i);
-        return;
-      }
       const c = this.cellCenter(i);
       const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
       this.iconLayer.add(icon);
       this.icons.set(i, icon);
-      this.drawUnder(i);
+      // The items under the top, small at the top-left (labels sit below)
+      (this.loadout.under?.[i] ?? []).forEach((u, k) => {
+        const low = this.items.get(u);
+        if (!low) return;
+        const x = c.x - this.cell / 2 + 13 + k * 20;
+        const y = c.y - this.cell / 2 + 13;
+        this.iconLayer.add(
+          this.scene.add.rectangle(x, y, 20, 20, 0x0c0a12, 0.85).setStrokeStyle(2, 0xfff080),
+        );
+        this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
+      });
     });
     // Gimmick cells: over the gear, so the sign shows on a full cell
     this.loadout.gimmicks?.forEach((g, i) => {
@@ -209,21 +194,6 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.lineG.clear();
     this.labelLayer.removeAll(true);
     this.drawOriginBadges();
-  }
-
-  /** The items under a cell's top, small at the cell's top-left (labels sit below) */
-  private drawUnder(i: number): void {
-    const c = this.cellCenter(i);
-    (this.loadout.under?.[i] ?? []).forEach((u, k) => {
-      const low = this.items.get(u);
-      if (!low) return;
-      const x = c.x - this.cell / 2 + 13 + k * 20;
-      const y = c.y - this.cell / 2 + 13;
-      this.iconLayer.add(
-        this.scene.add.rectangle(x, y, 20, 20, 0x0c0a12, 0.85).setStrokeStyle(2, 0xfff080),
-      );
-      this.iconLayer.add(this.scene.add.image(x, y, iconKey(getItemDef(low.defId).id)));
-    });
   }
 
   /**

@@ -777,18 +777,4 @@ export const UI: Dict = {
   切り替えマス: 'Desvío',
   ワープ: 'Portal',
   '{n}回 {step}連鎖': '{n}× {step} Cadena',
-  '試作: 拾って組む': 'Prueba: construir sobre la marcha',
-  '起点石1つと、装備{n}つまでを持ち込む。\n残りはランの中で拾って、盤面に置いていく':
-    'Lleva 1 piedra de origen y hasta {n} equipos.\nRecoge el resto durante la partida y colócalo en el tablero',
-  持込: 'Llevar',
-  出発: 'Partir',
-  試作のランは何も持ち帰りません: 'Las pruebas no guardan nada',
-  '最大連鎖 {n}': 'Cadena máx. {n}',
-  '最大ダメージ {n}': 'Daño máx. {n}',
-  '拾った装備 {n}': 'Equipo recogido {n}',
-  配置タイム: 'Tiempo de colocar',
-  '手札から盤面へ。並べ替えもできる': 'De la mano al tablero. También puedes reordenar',
-  'ゴミ箱（ここへ運ぶと捨てる）': 'Basura (arrastra aquí para tirar)',
-  そこには入らない: 'No cabe ahí',
-  手札がいっぱい: 'La mano está llena',
 };

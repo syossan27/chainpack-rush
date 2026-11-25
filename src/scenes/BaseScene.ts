@@ -607,16 +607,6 @@ export class BaseScene extends Phaser.Scene {
     // with the debug setting off, so there is always a way back
     if (debugMenuAllowed() && (save.settings.debug || activeSlot() === 'fresh'))
       this.addSlotButtons(648);
-    // Trial 「拾って組む」: a separate run that builds the board from what it picks up
-    if (debugMenuAllowed() && save.settings.debug)
-      this.root.add(
-        new Button(this, W / 2, 586, t('試作: 拾って組む'), () => this.scene.start('BuildPick'), {
-          height: 52,
-          fontSize: 20,
-          width: 400,
-          skin: 'blue',
-        }),
-      );
 
     // 出撃
     const sortie = new Button(this, W / 2, 760, t('出撃'), () => this.goSortie(), {

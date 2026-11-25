@@ -41,17 +41,10 @@ function rollGroup(region: RegionDef, rng: Rng): string[] {
 }
 
 /** 前のボスと同じにならないように選ぶ（候補が1つならそれ） */
-export function rollLoop(
-  region: RegionDef,
-  loop: number,
-  rng: Rng,
-  prevBoss?: string,
-  /** How many groups before the boss (the build trial has more) */
-  groupCount = region.groupCount,
-): LoopLayout {
+export function rollLoop(region: RegionDef, loop: number, rng: Rng, prevBoss?: string): LoopLayout {
   const groups: EnemyGroup[] = [];
   let x = LAYOUT.firstGroupX;
-  for (let i = 0; i < groupCount; i++) {
+  for (let i = 0; i < region.groupCount; i++) {
     const enemies = rollGroup(region, rng);
     groups.push({ x, enemies });
     x += groupSpan(enemies.length) + FIELD.minGroupGap + rng.int(LAYOUT.gapJitter + 1);
