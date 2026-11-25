@@ -89,8 +89,8 @@ export interface ItemInstance {
   rerollCount: number;
   /** ロック中は売れない（間違って売らないように） */
   locked?: boolean;
-  /** 追加効果（入手時に抽選。src/core/affixes.ts）。古いセーブにはない */
-  affixes?: { id: import('./affixes').AffixId; value: number }[];
+  /** The worth of the affixes it had before they were removed (%; src/core/bonus.ts). Absent: none */
+  bonus?: number;
 }
 
 export interface Loadout {

@@ -361,3 +361,36 @@ describe('セーブの移行（版4 → 版5: 盤面が大きくなる）', () =
     );
   });
 });
+
+describe('セーブの移行（版4 → 版5: 追加効果は上乗せになる）', () => {
+  const load = (affixes: unknown) => {
+    const s = JSON.parse(serializeSave(createInitialSave())) as {
+      inventory: Record<string, unknown>[];
+    };
+    s.inventory[0]!.affixes = affixes;
+    return deserializeSave(JSON.stringify({ ...s, version: 4 })).inventory[0]!;
+  };
+
+  it('いつも効く追加効果は、その値のまま上乗せになる', () => {
+    expect(load([{ id: 'sharp', value: 12 }]).bonus).toBe(12);
+  });
+
+  it('条件つきの追加効果は、効く割合をかけて足す', () => {
+    // 鋭い 10 + 締め 20 × 0.5
+    expect(
+      load([
+        { id: 'sharp', value: 10 },
+        { id: 'finisher', value: 20 },
+      ]).bonus,
+    ).toBe(20);
+  });
+
+  it('追加効果の項目は残らない', () => {
+    expect('affixes' in load([{ id: 'sharp', value: 12 }])).toBe(false);
+  });
+
+  it('壊れた追加効果は、セーブを捨てずに何も足さない', () => {
+    const it = load([{ id: 'sharp' }]);
+    expect([it.uid, it.bonus]).toEqual(['i1', undefined]);
+  });
+});

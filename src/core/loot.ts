@@ -2,7 +2,6 @@
 import { LOOT, RARITY } from '../config/balance';
 import { ITEM_DEFS, getItemDef } from '../data/items';
 import type { Rng } from './rng';
-import { rollAffixes } from './affixes';
 import type { Dir, ItemDef, ItemInstance, ItemKind, Rarity, RarityWeights } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -135,14 +134,12 @@ export function createItem(rng: Rng, defId: string, rarity: Rarity, uid: string)
         ? rng.sample(DIRS, LOOT.originExits[rarity])
         : rollExits(rng, rarity);
   const r = def.kind === 'consumable' ? 'common' : rarity;
-  const affixes = def.kind === 'consumable' ? [] : rollAffixes(rng, def, r);
   return {
     uid,
     defId,
     rarity: r,
     exits,
     rerollCount: 0,
-    ...(affixes.length > 0 ? { affixes } : {}),
   };
 }
 

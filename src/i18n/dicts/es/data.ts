@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Capacidad del Almacén',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Filo',
-  '攻撃力 +{v}%': 'Ataque +{v}%',
-  会心: 'Crítico',
-  '会心率 +{v}%': 'Prob. de crítico +{v}%',
-  先駆け: 'Vanguardia',
-  '3連鎖目までなら ダメージ +{v}%': 'Daño +{v}% en los 3 primeros eslabones',
-  締め: 'Remate',
-  '6連鎖目以降なら ダメージ +{v}%': 'Daño +{v}% desde el eslabón 6',
-  弱点突き: 'Punto Débil',
-  '状態がついた敵に ダメージ +{v}%': 'Daño +{v}% a enemigos con estado',
-  ボス特効: 'Matajefes',
-  'ボスに ダメージ +{v}%': 'Daño +{v}% a jefes',
-  頑丈: 'Robustez',
-  '防御値 +{v}%': 'Defensa +{v}%',
-  癒し: 'Sanación',
-  '連鎖が通るとHP +{v}': 'HP +{v} cuando pasa una cadena',
-  速攻: 'Rapidez',
-  'この連鎖のあとの待ち -{v}%': 'Espera tras esta cadena -{v}%',
-  初撃: 'Primer Golpe',
-  '1連鎖目 ダメージ +{v}%': 'Daño +{v}% en el eslabón 1',
-
   // src/core/names.ts
   はやての: 'Veloz',
   ひかりの: 'de Luz',
@@ -523,4 +501,7 @@ export const DATA: Dict = {
     'Un objeto por casilla. Sin apilar: desafía la Muralla solo con el camino de tus flechas.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Mientras esté en tu tablero, nunca eres vulnerable durante las cadenas. Defensa +40.',
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Prob. de crítico +{v}%',
 };

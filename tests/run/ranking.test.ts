@@ -170,10 +170,7 @@ describe('ランキングの記録の確認', () => {
 
   it.each<[string, Tamper]>([
     ['装備を強くする', (x: ScoreSubmission) => (x.items[2]!.rarity = 'legendary')],
-    [
-      '装備の付加効果を盛る',
-      (x: ScoreSubmission) => (x.items[0]!.affixes = [{ id: 'sharp' as never, value: 999 }]),
-    ],
+    ['装備の上乗せを盛る', (x: ScoreSubmission) => (x.items[0]!.bonus = 999)],
   ])('%s と、はじく', (_, f) => {
     expect(fake(challenge(), f)).toMatchObject({ ok: false });
   });

@@ -72,9 +72,9 @@ describe('ルートの推定ダメージ', () => {
     expect(estimate(swords(1), 1.5).total / estimate(swords(1)).total).toBeCloseTo(1.5);
   });
 
-  it('追加効果（鋭い）の割合だけ上がる', () => {
+  it('上乗せ（攻撃力）の割合だけ上がる', () => {
     const sharp = swords(1);
-    sharp.items.get('s1')!.affixes = [{ id: 'sharp', value: 20 }];
+    sharp.items.get('s1')!.bonus = 20;
     expect(estimate(sharp).total / estimate(swords(1)).total).toBeCloseTo(1.2);
   });
 });

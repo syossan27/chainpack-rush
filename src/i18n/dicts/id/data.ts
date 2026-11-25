@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Kapasitas Gudang',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Tajam',
-  '攻撃力 +{v}%': 'Serangan +{v}%',
-  会心: 'Kritikal',
-  '会心率 +{v}%': 'Peluang kritikal +{v}%',
-  先駆け: 'Pelopor',
-  '3連鎖目までなら ダメージ +{v}%': 'Damage +{v}% di 3 mata rantai pertama',
-  締め: 'Penutup',
-  '6連鎖目以降なら ダメージ +{v}%': 'Damage +{v}% mulai mata rantai ke-6',
-  弱点突き: 'Titik Lemah',
-  '状態がついた敵に ダメージ +{v}%': 'Damage +{v}% ke musuh yang terkena efek status',
-  ボス特効: 'Pembasmi Bos',
-  'ボスに ダメージ +{v}%': 'Damage +{v}% ke bos',
-  頑丈: 'Kokoh',
-  '防御値 +{v}%': 'Pertahanan +{v}%',
-  癒し: 'Penyembuh',
-  '連鎖が通るとHP +{v}': 'HP +{v} setiap kali dilewati rantai',
-  速攻: 'Sigap',
-  'この連鎖のあとの待ち -{v}%': 'Jeda setelah rantai ini -{v}%',
-  初撃: 'Pukulan Awal',
-  '1連鎖目 ダメージ +{v}%': 'Damage +{v}% di mata rantai ke-1',
-
   // src/core/names.ts
   はやての: 'Kilat',
   ひかりの: 'Cahaya',
@@ -522,4 +500,7 @@ export const DATA: Dict = {
     'Satu per petak. Tanpa tumpuk: taklukkan Benteng hanya dengan jalur panahmu.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Selama ada di papanmu, kamu tak pernah lengah saat rantai berjalan. Pertahanan +40.',
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Peluang kritikal +{v}%',
 };

@@ -41,11 +41,11 @@ import {
   flowRules,
   lineEffects,
   lineOrigin,
-  originQuick,
+  originBonus,
   simulateChain,
   waitFactor,
 } from './chain';
-import { affixValue } from './affixes';
+import { itemBonus } from './bonus';
 import { boardDamageMult } from './boards';
 import {
   applyCharmEvent,
@@ -1213,7 +1213,7 @@ export class Combat {
       const fired = c.plan.steps.slice(0, c.cut ? c.next : c.plan.steps.length);
       const steps = firedPieces(fired, (u) => this.isOrigin(u));
       // 速攻: この発火の起点の値
-      const factor = waitFactor(steps, originQuick(c.plan.originUids, this.cfg.items), r);
+      const factor = waitFactor(steps, originBonus(c.plan.originUids, this.cfg.items), r);
       this.atb = this.atbFull * (1 - factor);
     } else {
       this.atb = 0;
@@ -1240,12 +1240,9 @@ export class Combat {
       const eff = parent ? parent.eff : 0;
       c.exec[index] = { eff, aim, reset: parent?.reset ?? false };
       this.relicRing(c, relic);
-      // A defense item adds its defense (and 癒し heals) the moment it rings, so a loop back
-      // through armor keeps a long chain guarded
+      // A defense item adds its defense the moment it rings, so a long chain stays guarded
       if (def.kind === 'defense') {
         const gain = defenseValue(inst) * (s.stackMult ?? 1);
-        const mend = affixValue(inst, 'mend');
-        if (mend > 0) this.hp = Math.min(this.maxHp, this.hp + mend);
         this.defense = Math.min(this.maxHp * HERO.defenseCap, this.defense + gain);
         c.defenseGain += gain;
         c.defenseCells.push(s.cell);
@@ -1320,7 +1317,6 @@ export class Combat {
     const critChance =
       this.luck.critChance +
       (def.critBonus ?? 0) +
-      affixValue(inst, 'keen') / 100 +
       (this.tick < this.critUpUntil ? CONSUMABLE.critUpChance : 0) +
       (relic === 'eye' ? RELIC.eyeCrit : 0);
     // 必殺技: 決まった並びの3つ目。止めずに、この一撃だけ強くする
@@ -1399,7 +1395,6 @@ export class Combat {
     // The strongest combo this attack made (0: none)
     let comboW = 0;
     for (const t of targets) {
-      const statused = t.statuses.size > 0;
       const combo = findCombo(def.element, t.statuses);
       if (combo) {
         comboW = Math.max(comboW, comboWeight(combo.name));
@@ -1433,7 +1428,7 @@ export class Combat {
             mods.bonus *
             resistMult(t.def, def.element) *
             this.regionResist(def.element) *
-            this.affixMult(c, inst, eff, t, statused, mods.origin) *
+            this.gearMult(inst, t) *
             this.masteryMult(def) *
             boardDamageMult(this.board, def.element) *
             (mods.relic === 'fist' ? RELIC.fistMult : 1) *
@@ -1501,27 +1496,11 @@ export class Combat {
     return 1 + (levels[def.element ?? 'physical'] ?? 0) * MASTERY.dmgPerLevel;
   }
 
-  /** 追加効果によるダメージ倍率（装備の分と、起点の「初撃」） */
-  private affixMult(
-    _c: ActiveChain,
-    inst: ItemInstance,
-    eff: number,
-    t: EnemyState,
-    statused: boolean,
-    originUid: string,
-  ): number {
-    let m = 1 + affixValue(inst, 'sharp') / 100;
-    if (eff <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;
-    if (eff >= 6) m *= 1 + affixValue(inst, 'finisher') / 100;
-    if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
-    if (t.def.boss)
-      m *= (1 + affixValue(inst, 'slayer') / 100) * (getItemDef(inst.defId).bossMult ?? 1);
-    // 初撃: この発火の起点の効果
-    if (eff === 1) {
-      const origin = this.cfg.items.get(originUid);
-      if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
-    }
-    return m;
+  /** The gear's own damage multiplier: an attack item's bonus, and its boss multiplier on a boss */
+  private gearMult(inst: ItemInstance, t: EnemyState): number {
+    const def = getItemDef(inst.defId);
+    const bonus = def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1;
+    return bonus * (t.def.boss ? (def.bossMult ?? 1) : 1);
   }
 
   private resolveTargets(aim: EnemyState, area: Area, pierce: number): EnemyState[] {

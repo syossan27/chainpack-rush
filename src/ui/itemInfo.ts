@@ -1,5 +1,5 @@
 // 装備をタップして出す詳細（数値、属性、コンボの相手、この配置での段数）。配置は時間制限がないので文章で説明してよい
-import { AFFIXES, type Affix } from '../core/affixes';
+import { itemBonus } from '../core/bonus';
 import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
 import { simulateChain } from '../core/chain';
@@ -41,9 +41,16 @@ function comboName(label: string): string {
     .replace(/\s*[!！]+$/, '');
 }
 
-/** An affix's effect in the current language ({v} is its value) */
-function affixEffect(a: Affix): string {
-  return t(AFFIXES[a.id].text, { v: a.value });
+/** An item's bonus (what is left of its old affixes) in the current language, or null for none */
+function bonusText(it: ItemInstance): string | null {
+  const v = itemBonus(it);
+  if (v <= 0) return null;
+  const kind = getItemDef(it.defId).kind;
+  return kind === 'origin'
+    ? t('この連鎖のあとの待ち -{v}%', { v })
+    : kind === 'defense'
+      ? t('防御値 +{v}%', { v })
+      : t('攻撃力 +{v}%', { v });
 }
 
 export function describeItem(it: ItemInstance): string[] {
@@ -67,7 +74,8 @@ export function describeItem(it: ItemInstance): string[] {
       }),
     );
   }
-  for (const a of it.affixes ?? []) lines.push(`✦ ${t(AFFIXES[a.id].name)}: ${affixEffect(a)}`);
+  const bonus = bonusText(it);
+  if (bonus) lines.push(`✦ ${bonus}`);
   if (def.kind === 'attack') {
     lines.push(
       t('攻撃力 {atk}（{element}・{area}）', {
@@ -316,7 +324,8 @@ export function showItemDetail(
     rows.push([t('防御値'), `+${fmt((def.defense ?? 0) * r)}`, t('鳴るたびに加算')]);
     if (def.guardAll) rows.push([t('守り'), t('連鎖中も無防備にならない'), t('盤面にある限り')]);
   }
-  for (const a of it.affixes ?? []) rows.push([`✦ ${t(AFFIXES[a.id].name)}`, affixEffect(a)]);
+  const bonus = bonusText(it);
+  if (bonus) rows.push([`✦ ${t('上乗せ')}`, bonus]);
   if (opts.context !== undefined && def.kind !== 'consumable') {
     const ctx = opts.context;
     if (!ctx) rows.push([t('この配置'), t('どの起点からも届きません')]);

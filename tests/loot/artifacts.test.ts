@@ -76,8 +76,8 @@ describe('アーティファクト', () => {
       expect(made.map((it) => it.exits)).toEqual(made.map(() => d.artifact!.exits));
     });
 
-    it('追加効果は付かない', () => {
-      expect(made.map((it) => it.affixes)).toEqual(made.map(() => undefined));
+    it('上乗せは付かない', () => {
+      expect(made.map((it) => it.bonus)).toEqual(made.map(() => undefined));
     });
 
     it('出口が4つでなければ向きを変えられる', () => {
@@ -162,12 +162,12 @@ describe('アーティファクト', () => {
       rarity: 'common',
       exits: ['up', 'down'],
       rerollCount: 0,
-      affixes: [{ id: 'sharp', value: 9 }],
+      bonus: 9,
     });
     const it = deserializeSave(serializeSave(s)).inventory.find((i) => i.uid === 'z')!;
     expect(it.rarity).toBe('legendary');
     expect(it.exits).toEqual(['right']); // 数が合わない出口は決まった形に戻す
-    expect(it.affixes).toBeUndefined();
+    expect(it.bonus).toBeUndefined();
   });
 
   it('循環の環: 通る連鎖は、倍率が環の伸び（riseTo まで速く）で伸びる', () => {

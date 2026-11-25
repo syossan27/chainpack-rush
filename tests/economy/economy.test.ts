@@ -426,12 +426,12 @@ describe('合成', () => {
       ...extra,
     });
 
-  /** Three common spears (a, c, d) and one with an affix (b) */
+  /** Three common spears (a, c, d) and one with an old bonus (b) */
   const fourSpears = () => {
     const s = createInitialSave();
     s.gold = 100;
     add(s, 'a');
-    add(s, 'b', { affixes: [{ id: 'sharp', value: 10 }] });
+    add(s, 'b', { bonus: 10 });
     add(s, 'c');
     add(s, 'd');
     return s;
@@ -581,7 +581,6 @@ describe('自動売却', () => {
     drop('a', 'common'),
     drop('b', 'rare'),
     drop('c', 'epic'),
-    drop('d', 'common', { affixes: [{ id: 'sharp', value: 5 }] }),
     drop('e', 'common', { defId: 'potion', exits: [] }),
     drop('f', 'legendary', { defId: 'dragon_fang' }),
   ];
@@ -592,7 +591,7 @@ describe('自動売却', () => {
     expect(autoSellDrops(s, acceptLoot(s, mixed())).uids).toEqual([]);
   });
 
-  it('設定したレアリティ以下の装備だけを売る。消耗品・アーティファクト・✦つきは残す', () => {
+  it('設定したレアリティ以下の装備だけを売る。消耗品・アーティファクトは残す', () => {
     const s = createInitialSave();
     s.settings.autoSell = 'rare';
     const added = acceptLoot(s, mixed());
@@ -607,14 +606,6 @@ describe('自動売却', () => {
     s.settings.autoSell = 'rare';
     const r = autoSellDrops(s, acceptLoot(s, mixed()));
     expect(r.gold).toBe(RARITY.common.sell + RARITY.rare.sell);
-  });
-
-  it('✦つきも売る設定なら、✦つきも売る', () => {
-    const s = createInitialSave();
-    s.settings.autoSell = 'common';
-    s.settings.autoSellKeepAffix = false;
-    const added = acceptLoot(s, [drop('x', 'common', { affixes: [{ id: 'sharp', value: 5 }] })]);
-    expect(autoSellDrops(s, added).uids).toHaveLength(1);
   });
 
   it('設定は保存される', () => {

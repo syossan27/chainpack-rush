@@ -1,5 +1,6 @@
 // 拠点: 出撃、配置、倉庫（売却）、鍛冶屋（付け直し）、強化、カカシ、設定
 import Phaser from 'phaser';
+import { itemBonus } from '../core/bonus';
 import { MONETIZE, PROGRESS, SIM, TIME_BONUS, UPGRADES, type UpgradeId } from '../config/balance';
 import {
   buyUpgrade,
@@ -232,9 +233,6 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
       ),
       k('・強い装備ほど後ろ（6連鎖目以降）に置く。前のほうは軽い装備や状態付与に。'),
       k('・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。'),
-      k(
-        '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。',
-      ),
     ],
   },
   {
@@ -311,9 +309,7 @@ const HELP_SECTIONS: { title: string; lines: string[] }[] = [
       k(
         '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。',
       ),
-      k(
-        '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。',
-      ),
+      k('・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。'),
       k(
         '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。',
       ),
@@ -809,16 +805,9 @@ export class BaseScene extends Phaser.Scene {
       const label =
         st.autoSell === 'off'
           ? t('自動売却：オフ')
-          : t(
-              st.autoSell === 'common'
-                ? st.autoSellKeepAffix
-                  ? '自動売却：{rarity}（✦は残す）'
-                  : '自動売却：{rarity}'
-                : st.autoSellKeepAffix
-                  ? '自動売却：{rarity}以下（✦は残す）'
-                  : '自動売却：{rarity}以下',
-              { rarity: t(RARITY_NAMES[st.autoSell]) },
-            );
+          : t(st.autoSell === 'common' ? '自動売却：{rarity}' : '自動売却：{rarity}以下', {
+              rarity: t(RARITY_NAMES[st.autoSell]),
+            });
       this.root.add(
         new Button(this, W / 2, 952, label, () => this.openAutoSell(), {
           width: W - 120,
@@ -905,7 +894,7 @@ export class BaseScene extends Phaser.Scene {
           const d = getItemDef(i.defId);
           if (d.kind === 'consumable' || d.artifact || i.locked || boardUses.has(i.uid))
             return false;
-          if (this.keepAffixes && (i.affixes?.length ?? 0) > 0) return false;
+          if (this.keepAffixes && itemBonus(i) > 0) return false;
           return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
         });
       const openBulk = (): void => {
@@ -1595,16 +1584,6 @@ export class BaseScene extends Phaser.Scene {
         this.render();
       },
     }));
-    choices.push({
-      label: t(st.autoSellKeepAffix ? '✦付きは残す：オン' : '✦付きは残す：オフ'),
-      skin: 'gray',
-      onPick: () => {
-        st.autoSellKeepAffix = !st.autoSellKeepAffix;
-        persist();
-        this.render();
-        this.openAutoSell();
-      },
-    });
     choiceDialog(
       this,
       t('自動売却'),

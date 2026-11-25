@@ -7,7 +7,6 @@ import { estimateRoute } from '../../src/core/estimate';
 import { replayRun, sameResult } from '../../src/core/replay';
 import type { ChainPlan, Loadout } from '../../src/core/types';
 import { getItemDef, itemDescVars } from '../../src/data/items';
-import { DICT_PARTS, type TargetLang } from '../../src/i18n/dicts';
 import { build, type Placed } from '../helpers';
 
 /** A stacked board: `extra` puts more of the same gear under a placed item (bottom first) */
@@ -364,17 +363,5 @@ describe('盾の起点石', () => {
       from: CHAIN_RULES.guardSteps,
       to: CHAIN_RULES.guardSteps + extra,
     });
-  });
-});
-
-describe('一番槍の起点石の訳', () => {
-  // 先駆け (an affix, strong up to the 3rd step) is a different thing with a similar meaning
-  it.each(Object.keys(DICT_PARTS) as TargetLang[])('%s: 先駆けの訳を名前に含まない', (l) => {
-    const data = DICT_PARTS[l].data;
-    const name = data['一番槍の起点石'];
-    const vanguard = data['先駆け'];
-    expect(name).toBeTruthy();
-    expect(vanguard).toBeTruthy();
-    expect(name!).not.toContain(vanguard!);
   });
 });

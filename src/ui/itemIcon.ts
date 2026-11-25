@@ -1,5 +1,6 @@
 // アイテムのアイコン（レアリティの枠色＋出口の矢印）
 import Phaser from 'phaser';
+import { itemBonus } from '../core/bonus';
 import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
@@ -79,11 +80,10 @@ export class ItemIcon extends Phaser.GameObjects.Container {
         .setScale(Math.max(1.5, size / 60));
       this.add(lock);
     }
-    // 追加効果の数を左下に小さな星で
-    const n = item.affixes?.length ?? 0;
-    if (n > 0) {
+    // An old bonus: a small star at the bottom left
+    if (itemBonus(item) > 0) {
       const star = scene.add
-        .text(-size / 2 + 8, size / 2 - 8, '✦'.repeat(n), {
+        .text(-size / 2 + 8, size / 2 - 8, '✦', {
           fontFamily: 'sans-serif',
           fontSize: `${Math.max(14, Math.round(size * 0.22))}px`,
           color: '#ffe27a',

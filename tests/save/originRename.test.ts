@@ -22,7 +22,8 @@ function v2(onBoard: string, more: [string, string][] = []) {
   origin.exits = ['up', 'right'];
   origin.rarity = 'rare';
   origin.locked = true;
-  origin.affixes = [{ id: 'quick', value: 10 }];
+  // An old save: the affix (removed in version 5) becomes a bonus of about the same worth
+  Object.assign(origin, { affixes: [{ id: 'quick', value: 10 }] });
   for (const [uid, defId] of more)
     data.inventory.push({ uid, defId, rarity: 'common', exits: ['right'], rerollCount: 0 });
   return { raw: JSON.stringify(data), originUid: origin.uid, cells: data.loadout.cells.slice() };
@@ -74,7 +75,7 @@ describe('なくした起点石の置きかえ（セーブ版3）', () => {
       exits: ['up', 'right'],
       rarity: 'rare',
       locked: true,
-      affixes: [{ id: 'quick', value: 10 }],
+      bonus: 10,
     });
   });
 

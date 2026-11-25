@@ -97,8 +97,6 @@ export const UI: Dict = {
     '• Taruh perlengkapan terkuatmu di akhir rantai (mata rantai ke-6 dan seterusnya). Pakai mata rantai awal untuk perlengkapan ringan dan item pemberi status.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• Kelangkaan paling berpengaruh. Makin dalam wilayahnya, makin sering item Langka ke atas jatuh.',
-  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
-    '• ✦ di kiri bawah item menandakan bonus. Pelopor (kuat sampai mata rantai ke-3) cocok untuk rantai pendek; Penutup (kuat mulai mata rantai ke-6) cocok untuk rantai panjang.',
   必殺技: 'Jurus Spesial',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'Saat rantai melewati 3 item tertentu secara berurutan, serangan ke-3 menjadi Jurus Spesial (damage ×2.5, dan pahlawan menerjang maju). Di layar Susun, kotak itu menampilkan "Spesial".',
@@ -124,8 +122,8 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Gudang, Pandai Besi & Fusi',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Slot item sekali pakai mengingat isinya. Saat item itu habis dalam ekspedisi, item yang sama diisi ulang otomatis dari Gudang (kalau tidak punya, slot menampilkan "Auto" samar dan terisi begitu kamu mendapatkannya). Lepas secara manual untuk menghentikannya.',
-  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
-    '• Dengan "Jual Otomatis" di Gudang, jarahan dengan kelangkaan pilihanmu ke bawah otomatis terjual setelah tiap ekspedisi (kamu bisa memilih untuk menyimpan item ✦).',
+  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。':
+    '• Dengan "Jual Otomatis" di Gudang, jarahan dengan kelangkaan pilihanmu ke bawah otomatis terjual setelah tiap ekspedisi.',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
     '• Kamu tak bisa berangkat saat Gudang penuh. Kosongkan dengan "Jual Massal" atau "Pilih & Jual". Kunci perlengkapan penting di kartu detailnya agar tidak bisa dijual.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
@@ -162,9 +160,7 @@ export const UI: Dict = {
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Ketuk item untuk memilih (ketuk lagi untuk batal, tahan untuk detail)',
   '自動売却：オフ': 'Jual Otomatis: Mati',
-  '自動売却：{rarity}（✦は残す）': 'Jual Otomatis: {rarity} (simpan ✦)',
   '自動売却：{rarity}': 'Jual Otomatis: {rarity}',
-  '自動売却：{rarity}以下（✦は残す）': 'Jual Otomatis: {rarity} ke bawah (simpan ✦)',
   '自動売却：{rarity}以下': 'Jual Otomatis: {rarity} ke bawah',
   '{n}個を売ります（+{gold}G）': 'Item yang dijual: {n} (+{gold}G)',
   '{n}個を売る +{gold}G': 'Jual ×{n} +{gold}G',
@@ -765,4 +761,9 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Susunanmu tidak memenuhi aturan',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Setiap kali bar di bawah pahlawan penuh, Asal terpicu dan rantai pun dimulai.',
+  '攻撃力 +{v}%': 'Serangan +{v}%',
+  ボス特効: 'Pembasmi Bos',
+  '防御値 +{v}%': 'Pertahanan +{v}%',
+  'この連鎖のあとの待ち -{v}%': 'Jeda setelah rantai ini -{v}%',
+  上乗せ: 'Bonus',
 };

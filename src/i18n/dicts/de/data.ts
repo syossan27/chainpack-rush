@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Lagerplatz',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Scharf',
-  '攻撃力 +{v}%': 'Angriff +{v}%',
-  会心: 'Kritisch',
-  '会心率 +{v}%': 'Krit-Chance +{v}%',
-  先駆け: 'Vorhut',
-  '3連鎖目までなら ダメージ +{v}%': 'Schaden +{v}% in Glied 1–3',
-  締め: 'Finale',
-  '6連鎖目以降なら ダメージ +{v}%': 'Schaden +{v}% ab Glied 6',
-  弱点突き: 'Schwachpunkt',
-  '状態がついた敵に ダメージ +{v}%': 'Schaden +{v}% gegen Gegner mit Status',
-  ボス特効: 'Bossjäger',
-  'ボスに ダメージ +{v}%': 'Schaden +{v}% gegen Bosse',
-  頑丈: 'Robust',
-  '防御値 +{v}%': 'Verteidigung +{v}%',
-  癒し: 'Heilung',
-  '連鎖が通るとHP +{v}': 'HP +{v}, wenn eine Kette hindurchläuft',
-  速攻: 'Tempo',
-  'この連鎖のあとの待ち -{v}%': 'Wartezeit nach dieser Kette -{v}%',
-  初撃: 'Erstschlag',
-  '1連鎖目 ダメージ +{v}%': 'Schaden +{v}% in Glied 1',
-
   // src/core/names.ts
   はやての: 'des Sturms',
   ひかりの: 'des Lichts',
@@ -525,4 +503,7 @@ export const DATA: Dict = {
     'Ein Gegenstand pro Feld. Ohne Stapeln: Bezwinge den Burgwall nur mit dem Weg deiner Pfeile.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Solange es auf dem Brett ist, bist du in Ketten nie ungeschützt. +40 Verteidigung.',
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Krit-Chance +{v}%',
 };

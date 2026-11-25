@@ -96,8 +96,6 @@ export const UI: Dict = {
     '• Put your strongest gear late in the chain (link 6 and beyond). Use early links for light gear and status items.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• Rarity matters most. Deeper regions drop Rare or better more often.',
-  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
-    "• The ✦ at an item's bottom left marks a bonus. Vanguard (strong up to link 3) suits short chains; Finisher (strong from link 6) suits long chains.",
   必殺技: 'Special Moves',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'When a chain passes through 3 specific items in order, the 3rd hit becomes a Special Move (×2.5 damage, and the hero lunges in). On the Loadout screen, that cell shows "Special".',
@@ -123,8 +121,8 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Storage, Smith & Fusing',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Consumable slots remember what you put in them. When you use one up in a run, the same item is refilled from Storage automatically (if you have none, the slot shows a faint "Auto" and fills once you get one). Remove it by hand to stop this.',
-  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
-    '• With "Auto-Sell" in Storage, loot at or below a chosen rarity is sold automatically after each run (you can choose to keep ✦ items).',
+  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。':
+    '• With "Auto-Sell" in Storage, loot at or below a chosen rarity is sold automatically after each run.',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
     '• You can\'t start a run while Storage is overflowing. Clear space with "Bulk Sell" or "Select & Sell". Lock important gear on its details card so it can\'t be sold.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
@@ -161,9 +159,7 @@ export const UI: Dict = {
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Tap items to select them (tap again to unselect, hold for details)',
   '自動売却：オフ': 'Auto-Sell: Off',
-  '自動売却：{rarity}（✦は残す）': 'Auto-Sell: {rarity} (keep ✦)',
   '自動売却：{rarity}': 'Auto-Sell: {rarity}',
-  '自動売却：{rarity}以下（✦は残す）': 'Auto-Sell: {rarity} or lower (keep ✦)',
   '自動売却：{rarity}以下': 'Auto-Sell: {rarity} or lower',
   '{n}個を売ります（+{gold}G）': 'Items to sell: {n} (+{gold}G)',
   '{n}個を売る +{gold}G': 'Sell ×{n} +{gold}G',
@@ -760,4 +756,9 @@ export const UI: Dict = {
   配置が制限に合っていません: "Your layout doesn't meet the rules",
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Each time the gauge under the hero fills, the Origin fires and a chain begins.',
+  '攻撃力 +{v}%': 'Attack +{v}%',
+  ボス特効: 'Boss Slayer',
+  '防御値 +{v}%': 'Defense +{v}%',
+  'この連鎖のあとの待ち -{v}%': 'Wait after this chain -{v}%',
+  上乗せ: 'Bonus',
 };

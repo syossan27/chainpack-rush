@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Taille de la Réserve',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Tranchant',
-  '攻撃力 +{v}%': 'Attaque +{v}%',
-  会心: 'Critique',
-  '会心率 +{v}%': 'Taux critique +{v}%',
-  先駆け: 'Avant-garde',
-  '3連鎖目までなら ダメージ +{v}%': 'Dégâts +{v}% sur les 3 premiers maillons',
-  締め: 'Finisseur',
-  '6連鎖目以降なら ダメージ +{v}%': 'Dégâts +{v}% à partir du 6e maillon',
-  弱点突き: 'Opportuniste',
-  '状態がついた敵に ダメージ +{v}%': 'Dégâts +{v}% contre les ennemis avec une altération',
-  ボス特効: 'Tueur de boss',
-  'ボスに ダメージ +{v}%': 'Dégâts +{v}% contre les boss',
-  頑丈: 'Solide',
-  '防御値 +{v}%': 'Défense +{v}%',
-  癒し: 'Soin',
-  '連鎖が通るとHP +{v}': 'HP +{v} quand une chaîne le traverse',
-  速攻: 'Vif',
-  'この連鎖のあとの待ち -{v}%': 'Attente après cette chaîne -{v}%',
-  初撃: 'Premier coup',
-  '1連鎖目 ダメージ +{v}%': 'Dégâts +{v}% sur le 1er maillon',
-
   // src/core/names.ts
   はやての: 'de la tempête',
   ひかりの: 'de lumière',
@@ -524,4 +502,7 @@ export const DATA: Dict = {
     'Un objet par case. Sans empiler : affronte les Remparts avec le seul chemin de tes flèches.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     "Tant qu'elle est sur ton plateau, tu n'es jamais à découvert pendant les chaînes. +40 de Défense.",
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Taux critique +{v}%',
 };

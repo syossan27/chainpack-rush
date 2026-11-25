@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHAIN_RULES, HERO, NO_LUCK } from '../../src/config/balance';
 import { boardScore } from '../../src/core/autoBoard';
-import { firedPieces, originQuick, simulateChain, waitFactor } from '../../src/core/chain';
+import { firedPieces, originBonus, simulateChain, waitFactor } from '../../src/core/chain';
 import { BASE_HERO_STATS, Combat, type RunConfig } from '../../src/core/combat';
 import { chainCycle, estimateRoute, routeRate } from '../../src/core/estimate';
 import { getBoard, type BoardId } from '../../src/data/boards';
@@ -43,13 +43,13 @@ describe('次の連鎖までの待ち', () => {
     expect(waitFactor(30, 0)).toBeCloseTo(CHAIN_RULES.atbMaxFactor);
   });
 
-  it('waitFactor: 速攻の割合だけ縮む', () => {
+  it('waitFactor: 起点の上乗せの割合だけ縮む', () => {
     expect(waitFactor(3, 20) / waitFactor(3, 0)).toBeCloseTo(0.8);
   });
 
-  it('戦闘の待ちは waitFactor と同じ（疾風の盤面・速攻の起点・待ちの強化）', () => {
+  it('戦闘の待ちは waitFactor と同じ（疾風の盤面・上乗せのある起点・待ちの強化）', () => {
     const b = row(4, 'gale');
-    b.items.get('o')!.affixes = [{ id: 'quick', value: 10 }];
+    b.items.get('o')!.bonus = 10;
     const atbTime = 1.2;
     const cfg: RunConfig = {
       seed: 1,
@@ -64,7 +64,7 @@ describe('次の連鎖までの待ち', () => {
     const plan = c.chain!.plan;
     while (c.chain) c.step();
     const isOrigin = (u: string) => getItemDef(b.items.get(u)!.defId).kind === 'origin';
-    expect(originQuick(plan.originUids, b.items)).toBe(10);
+    expect(originBonus(plan.originUids, b.items)).toBe(10);
     const full = atbTime * GALE_WAIT;
     const want = full * (1 - waitFactor(firedPieces(plan.steps, isOrigin), 10));
     // The tick that ends the chain may already refill one tick of the gauge
@@ -100,9 +100,9 @@ describe('1秒あたりの見積もり', () => {
       expect(score(row(4, 'gale'))).toBeGreaterThan(score(std()));
     });
 
-    it('同じ連鎖なら、速攻の起点のほうが高い', () => {
+    it('同じ連鎖なら、上乗せのある起点のほうが高い', () => {
       const quick = std();
-      quick.items.get('o')!.affixes = [{ id: 'quick', value: 30 }];
+      quick.items.get('o')!.bonus = 30;
       expect(score(quick)).toBeGreaterThan(score(std()));
     });
 

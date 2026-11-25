@@ -42,10 +42,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 /** Files whose strings are game data (translated where they are displayed) */
 export function isDataFile(rel: string): boolean {
   return (
-    rel.startsWith('src/data/') ||
-    rel === 'src/core/affixes.ts' ||
-    rel === 'src/config/balance.ts' ||
-    rel === 'src/core/names.ts'
+    rel.startsWith('src/data/') || rel === 'src/config/balance.ts' || rel === 'src/core/names.ts'
   );
 }
 

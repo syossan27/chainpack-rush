@@ -7,11 +7,11 @@ import { getItemDef } from '../data/items';
 import { getBoard, type BoardId } from '../data/boards';
 import type { CharmTrigger } from '../data/charms';
 import { TECHNIQUE_MULT } from '../data/techniques';
-import { affixValue } from './affixes';
+import { itemBonus } from './bonus';
 import { boardDamageMult } from './boards';
 import { applyCharmEvent, cellTop, comboWeight, stackTop, type CharmContext } from './charms';
 import { computeDamage, findCombo } from './damage';
-import { firedPieces, lineOrigin, originQuick, waitFactor } from './chain';
+import { firedPieces, originBonus, waitFactor } from './chain';
 import type { ChainPlan, ItemInstance, Status } from './types';
 
 /**
@@ -27,7 +27,7 @@ export function chainCycle(
 ): number {
   const isOrigin = (u: string) => getItemDef(items.get(u)!.defId).kind === 'origin';
   const pieces = firedPieces(plan.steps, isOrigin);
-  return plan.duration + atbFull * waitFactor(pieces, originQuick(plan.originUids, items), rules);
+  return plan.duration + atbFull * waitFactor(pieces, originBonus(plan.originUids, items), rules);
 }
 
 /** Damage per second when the routes fire one after another: all damage ÷ all their time */
@@ -74,7 +74,7 @@ export function estimateRoute(
   const charmEvent = (trigger: CharmTrigger, cell: number, weight = 1) => {
     if (charms) charmM = applyCharmEvent(charmM, trigger, cell, charms, weight).m;
   };
-  for (const [index, s] of plan.steps.entries()) {
+  for (const s of plan.steps) {
     if (s.step === null) continue;
     const inst = items.get(s.uid);
     if (!inst) continue;
@@ -97,22 +97,11 @@ export function estimateRoute(
       area: def.area === 'all' ? 'all' : undefined,
       riseTo: plan.riseTo,
     });
-    let m = 1 + affixValue(inst, 'sharp') / 100;
-    if (s.step <= 3) m *= 1 + affixValue(inst, 'vanguard') / 100;
-    if (s.step >= 6) m *= 1 + affixValue(inst, 'finisher') / 100;
-    if (statused) m *= 1 + affixValue(inst, 'exploit') / 100;
-    // 初撃: その線の起点の効果
-    if (s.step === 1) {
-      const origin = items.get(lineOrigin(plan, index));
-      if (origin) m *= 1 + affixValue(origin, 'spark') / 100;
-    }
+    let m = def.kind === 'attack' ? 1 + itemBonus(inst) / 100 : 1;
     // 起点石の種類と、重ねの位置
     m *= (s.line?.damage ?? 1) * (s.stackMult ?? 1);
     m *= boardDamageMult(boardDef, def.element);
-    const critChance = Math.min(
-      1,
-      LUCK.critChance + (def.critBonus ?? 0) + affixValue(inst, 'keen') / 100,
-    );
+    const critChance = Math.min(1, LUCK.critChance + (def.critBonus ?? 0));
     const critAvg = 1 + critChance * (LUCK.critMult - 1);
     const hit = base * m * critAvg * (def.hits ?? 1) * (s.tech ? TECHNIQUE_MULT : 1) * charmM;
     total += hit;

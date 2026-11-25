@@ -98,8 +98,6 @@ export const UI: Dict = {
     '• Coloque seus itens mais fortes no fim da corrente (do 6º elo em diante). Use os primeiros elos para itens leves e itens de efeito.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• A raridade é o que mais importa. Regiões mais avançadas dão itens Raros ou melhores com mais frequência.',
-  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
-    '• O ✦ no canto inferior esquerdo de um item indica um bônus. Vanguarda (forte até o 3º elo) combina com correntes curtas; Arremate (forte do 6º elo em diante), com correntes longas.',
   必殺技: 'Golpes Especiais',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'Quando uma corrente passa por 3 itens específicos em ordem, o 3º golpe vira um Golpe Especial (dano ×2.5, e o herói avança com tudo). Na tela "Equipar", essa casa mostra "Especial".',
@@ -125,8 +123,8 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Armazém, Ferreiro e Fusão',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Os espaços de consumíveis lembram o que você colocou neles. Quando um item acaba numa expedição, o mesmo item é reposto do Armazém automaticamente (se não houver, o espaço mostra um "Auto" clarinho e é preenchido quando você conseguir um). Remova manualmente para parar.',
-  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
-    '• Com a "Autovenda" do Armazém, o espólio da raridade escolhida ou inferior é vendido automaticamente após cada expedição (dá para escolher guardar os itens com ✦).',
+  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。':
+    '• Com a "Autovenda" do Armazém, o espólio da raridade escolhida ou inferior é vendido automaticamente após cada expedição.',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
     '• Com o Armazém lotado, você não pode partir. Libere espaço com "Venda em Lote" ou "Vender Vários". Trave os itens importantes no cartão de detalhes para que não sejam vendidos.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
@@ -163,9 +161,7 @@ export const UI: Dict = {
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Toque nos itens para escolher (toque de novo para desmarcar, segure para ver detalhes)',
   '自動売却：オフ': 'Autovenda: Desligada',
-  '自動売却：{rarity}（✦は残す）': 'Autovenda: {rarity} (guarda ✦)',
   '自動売却：{rarity}': 'Autovenda: {rarity}',
-  '自動売却：{rarity}以下（✦は残す）': 'Autovenda: {rarity} ou inferior (guarda ✦)',
   '自動売却：{rarity}以下': 'Autovenda: {rarity} ou inferior',
   '{n}個を売ります（+{gold}G）': 'Itens a vender: {n} (+{gold}G)',
   '{n}個を売る +{gold}G': 'Vender ×{n} +{gold}G',
@@ -765,4 +761,9 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Sua organização não segue as regras',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Cada vez que a barra aos pés do herói enche, a Origem dispara e começa uma corrente.',
+  '攻撃力 +{v}%': 'Ataque +{v}%',
+  ボス特効: 'Mata-Chefes',
+  '防御値 +{v}%': 'Defesa +{v}%',
+  'この連鎖のあとの待ち -{v}%': 'Espera após esta corrente -{v}%',
+  上乗せ: 'Bônus',
 };

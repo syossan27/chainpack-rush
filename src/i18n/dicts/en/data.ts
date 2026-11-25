@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Storage Space',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Sharp',
-  '攻撃力 +{v}%': 'Attack +{v}%',
-  会心: 'Critical',
-  '会心率 +{v}%': 'Critical rate +{v}%',
-  先駆け: 'Vanguard',
-  '3連鎖目までなら ダメージ +{v}%': 'Damage +{v}% on the first 3 links',
-  締め: 'Finisher',
-  '6連鎖目以降なら ダメージ +{v}%': 'Damage +{v}% from the 6th link on',
-  弱点突き: 'Exploit',
-  '状態がついた敵に ダメージ +{v}%': 'Damage +{v}% to enemies with a status',
-  ボス特効: 'Boss Slayer',
-  'ボスに ダメージ +{v}%': 'Damage +{v}% to bosses',
-  頑丈: 'Sturdy',
-  '防御値 +{v}%': 'Defense +{v}%',
-  癒し: 'Mending',
-  '連鎖が通るとHP +{v}': 'HP +{v} when a chain passes through',
-  速攻: 'Quick',
-  'この連鎖のあとの待ち -{v}%': 'Wait after this chain -{v}%',
-  初撃: 'First Strike',
-  '1連鎖目 ダメージ +{v}%': 'Damage +{v}% on the 1st link',
-
   // src/core/names.ts
   はやての: 'Swift',
   ひかりの: 'Shining',
@@ -514,4 +492,7 @@ export const DATA: Dict = {
     'One item per cell. No stacking: take on the Ramparts with the path of your arrows alone.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     "While it's on your board, you're never unguarded during chains. +40 Defense.",
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Critical rate +{v}%',
 };

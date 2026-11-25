@@ -1,6 +1,6 @@
 // planChain / simulateChain: 配置から連鎖の順番・段数・倍率・時間・防御値を決める（仕様書 第5章）
 import { ipow } from './rng';
-import { affixValue } from './affixes';
+import { itemBonus } from './bonus';
 import { TECHNIQUES } from '../data/techniques';
 import { CHAIN, CHAIN_RULES, RARITY, STACK, type ChainRules } from '../config/balance';
 import { getItemDef } from '../data/items';
@@ -82,8 +82,8 @@ export function waitFactor(
   return f * (1 - quickPct / 100);
 }
 
-/** 速攻 of a firing: the largest value among its origins (%) */
-export function originQuick(
+/** How much shorter the wait after a firing is: the largest bonus among its origins (%) */
+export function originBonus(
   originUids: readonly string[],
   items: ReadonlyMap<string, ItemInstance>,
 ): number {
@@ -91,7 +91,7 @@ export function originQuick(
     0,
     ...originUids.map((u) => {
       const o = items.get(u);
-      return o ? affixValue(o, 'quick') : 0;
+      return o ? itemBonus(o) : 0;
     }),
   );
 }
@@ -151,9 +151,7 @@ export function lineBoost(
 /** 防御装備が連鎖で通ったときの防御値 */
 export function defenseValue(inst: ItemInstance): number {
   return (
-    (getItemDef(inst.defId).defense ?? 0) *
-    RARITY[inst.rarity].mult *
-    (1 + affixValue(inst, 'sturdy') / 100)
+    (getItemDef(inst.defId).defense ?? 0) * RARITY[inst.rarity].mult * (1 + itemBonus(inst) / 100)
   );
 }
 

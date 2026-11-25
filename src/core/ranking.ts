@@ -4,7 +4,7 @@
 // エンドレスは熟練とアクセサリーも（ランを始めたときの値）。
 // サーバーは装備と強化が正しい範囲かを確かめ、同じランを最初から再生して、結果が一致したときだけ記録する。
 import { CONSUMABLE, MASTERY, PROGRESS, UPGRADES } from '../config/balance';
-import { AFFIX_COUNT, affixCandidates } from './affixes';
+import { validBonus } from './bonus';
 import { checkRules, currentChallenge } from './challenge';
 import {
   BASE_HERO_STATS,
@@ -266,19 +266,7 @@ function validItem(it: ItemInstance): boolean {
   // 出口の数: 消耗品は0、アーティファクトは決まった数、ほかは4つまで（合成で増えることがある）
   if (def.kind === 'consumable' && it.exits.length !== 0) return false;
   if (def.artifact && it.exits.length !== def.artifact.exits.length) return false;
-  if (def.artifact && (it.affixes?.length ?? 0) > 0) return false;
-  const aff = it.affixes ?? [];
-  const cands = affixCandidates(def);
-  const c = AFFIX_COUNT[it.rarity];
-  if (aff.length > Math.min(cands.length, c.base + 1)) return false;
-  const seen = new Set<string>();
-  for (const a of aff) {
-    const d = cands.find((x) => x.id === a.id);
-    if (!d || seen.has(a.id) || !Number.isInteger(a.value) || a.value < d.min || a.value > d.max)
-      return false;
-    seen.add(a.id);
-  }
-  return true;
+  return validBonus(it);
 }
 
 /**

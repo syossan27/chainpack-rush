@@ -401,10 +401,7 @@ export function synthPlan(save: SaveData, uid: string): SynthPlan {
         !eq.has(i.uid) &&
         !elsewhere.has(i.uid),
     )
-    .sort(
-      (a, b) =>
-        (a.affixes?.length ?? 0) - (b.affixes?.length ?? 0) || a.rerollCount - b.rerollCount,
-    );
+    .sort((a, b) => (a.bonus ?? 0) - (b.bonus ?? 0) || a.rerollCount - b.rerollCount);
   const uids = [uid, ...mates.slice(0, SYNTH.count - 1).map((i) => i.uid)];
   const reason =
     uids.length < SYNTH.count
@@ -467,7 +464,6 @@ export function autoSellDrops(
     .filter((i) => {
       const d = getItemDef(i.defId);
       if (d.kind === 'consumable' || d.artifact || i.locked) return false;
-      if (save.settings.autoSellKeepAffix && (i.affixes?.length ?? 0) > 0) return false;
       return RARITY_RANK[i.rarity] <= RARITY_RANK[max];
     })
     .map((i) => i.uid);

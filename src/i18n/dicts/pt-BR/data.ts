@@ -21,28 +21,6 @@ export const DATA: Dict = {
   倉庫容量: 'Espaço do Armazém',
   '480円': '¥480',
 
-  // src/core/affixes.ts
-  鋭い: 'Afiado',
-  '攻撃力 +{v}%': 'Ataque +{v}%',
-  会心: 'Crítico',
-  '会心率 +{v}%': 'Taxa crítica +{v}%',
-  先駆け: 'Vanguarda',
-  '3連鎖目までなら ダメージ +{v}%': 'Dano +{v}% nos 3 primeiros elos',
-  締め: 'Arremate',
-  '6連鎖目以降なら ダメージ +{v}%': 'Dano +{v}% do 6º elo em diante',
-  弱点突き: 'Ponto Fraco',
-  '状態がついた敵に ダメージ +{v}%': 'Dano +{v}% em inimigos com efeito',
-  ボス特効: 'Mata-Chefes',
-  'ボスに ダメージ +{v}%': 'Dano +{v}% em chefes',
-  頑丈: 'Robusto',
-  '防御値 +{v}%': 'Defesa +{v}%',
-  癒し: 'Cura',
-  '連鎖が通るとHP +{v}': 'HP +{v} quando uma corrente passa',
-  速攻: 'Ligeiro',
-  'この連鎖のあとの待ち -{v}%': 'Espera após esta corrente -{v}%',
-  初撃: 'Primeiro Golpe',
-  '1連鎖目 ダメージ +{v}%': 'Dano +{v}% no 1º elo',
-
   // src/core/names.ts
   はやての: 'Veloz',
   ひかりの: 'de Luz',
@@ -522,4 +500,7 @@ export const DATA: Dict = {
     'Um item por casa. Sem empilhar: encare as Muralhas só com o caminho das suas setas.',
   '盤面にある限り、連鎖中も無防備にならない。防御値+40。':
     'Enquanto estiver no tabuleiro, você nunca fica desprotegido durante correntes. +40 de Defesa.',
+
+  // src/data/relics.ts
+  '会心率 +{v}%': 'Taxa crítica +{v}%',
 };

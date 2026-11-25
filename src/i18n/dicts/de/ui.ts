@@ -97,8 +97,6 @@ export const UI: Dict = {
     '• Setz deine stärkste Ausrüstung ans Ende der Kette (ab Glied 6). Nutze die ersten Glieder für leichte Ausrüstung und Status-Gegenstände.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     '• Die Seltenheit zählt am meisten. In tieferen Gebieten gibt es öfter Ausrüstung ab Selten.',
-  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
-    '• Das ✦ unten links an einem Gegenstand zeigt einen Bonus. Vorhut (stark bis Glied 3) passt zu kurzen Ketten, Finale (stark ab Glied 6) zu langen.',
   必殺技: 'Spezialangriffe',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     'Läuft eine Kette der Reihe nach durch 3 bestimmte Gegenstände, wird der 3. Treffer zum Spezialangriff (×2.5 Schaden, und der Held stürmt vor). Unter „Packen“ zeigt das Feld dann „Spezial“.',
@@ -124,8 +122,8 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Lager, Schmiede & Verschmelzen',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     '• Item-Slots merken sich, was du hineinlegst. Verbrauchst du ein Item in einer Expedition, wird es automatisch aus dem Lager nachgefüllt (hast du keins, zeigt der Slot blass „Auto“ und füllt sich, sobald du eins bekommst). Nimmst du es von Hand heraus, hört das auf.',
-  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
-    '• Mit „Auto-Verkauf“ im Lager wird Beute bis zu einer gewählten Seltenheit nach jeder Expedition automatisch verkauft (✦-Gegenstände kannst du behalten).',
+  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。':
+    '• Mit „Auto-Verkauf“ im Lager wird Beute bis zu einer gewählten Seltenheit nach jeder Expedition automatisch verkauft.',
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
     '• Ist das Lager voll, kannst du keine Expedition starten. Schaff Platz mit „Massenverkauf“ oder „Auswahl verkaufen“. Sperre wichtige Ausrüstung in ihrer Detailkarte, dann wird sie nicht verkauft.',
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
@@ -162,9 +160,7 @@ export const UI: Dict = {
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Tippe zum Auswählen (nochmal: abwählen, halten: Details)',
   '自動売却：オフ': 'Auto-Verkauf: Aus',
-  '自動売却：{rarity}（✦は残す）': 'Auto-Verkauf: {rarity} (✦ behalten)',
   '自動売却：{rarity}': 'Auto-Verkauf: {rarity}',
-  '自動売却：{rarity}以下（✦は残す）': 'Auto-Verkauf: bis {rarity} (✦ behalten)',
   '自動売却：{rarity}以下': 'Auto-Verkauf: bis {rarity}',
   '{n}個を売ります（+{gold}G）': 'Gegenstände verkaufen: {n} (+{gold}G)',
   '{n}個を売る +{gold}G': '×{n} verkaufen +{gold}G',
@@ -766,4 +762,9 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Deine Aufstellung erfüllt die Regeln nicht',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     'Jedes Mal, wenn sich die Leiste unter dem Helden füllt, zündet der Ursprung und eine Kette beginnt.',
+  '攻撃力 +{v}%': 'Angriff +{v}%',
+  ボス特効: 'Bossjäger',
+  '防御値 +{v}%': 'Verteidigung +{v}%',
+  'この連鎖のあとの待ち -{v}%': 'Wartezeit nach dieser Kette -{v}%',
+  上乗せ: 'Bonus',
 };

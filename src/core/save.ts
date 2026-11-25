@@ -4,7 +4,7 @@ import { validName } from './names';
 import { COSMETICS, NO_LOOK, validLook, type Look } from './cosmetics';
 import { LANGS, type Lang } from '../i18n';
 import { allowsRarity, lineItemFor, originRarity } from './loot';
-import { isAffix } from './affixes';
+import { BONUS_MAX, bonusFromAffixes } from './bonus';
 import { DEMO_KEY, TUTORIAL_KEYS } from './tutorialKeys';
 import { CONSUMABLE, SIM, UPGRADES, type UpgradeId } from '../config/balance';
 import { STARTER_ITEMS, getItemDef } from '../data/items';
@@ -135,8 +135,6 @@ export interface SaveData {
     showRoutes: boolean;
     /** ラン後に自動で売る戦利品のレアリティ（これ以下）。off は売らない */
     autoSell: 'off' | 'common' | 'rare' | 'epic';
-    /** 自動売却で、追加効果（✦）つきは残すか */
-    autoSellKeepAffix: boolean;
     /** Display language ('auto' follows the device) */
     lang: Lang | 'auto';
     /** Which side of the board the run's consumable buttons sit on */
@@ -218,7 +216,6 @@ export function createInitialSave(): SaveData {
       gameSpeed: 1,
       showRoutes: true,
       autoSell: 'off',
-      autoSellKeepAffix: true,
       lang: 'auto',
       consumableSide: 'right',
       debug: false,
@@ -368,6 +365,23 @@ function readMastery(v: Record<string, unknown>): MasteryData {
   return { points, learned };
 }
 
+/**
+ * An item's affixes (追加効果, removed in save version 5) become one bonus of about the same worth.
+ * Broken affixes count for nothing (they no longer throw the whole save away)
+ */
+function affixesToBonus(v: unknown): unknown {
+  if (!isObj(v) || !('affixes' in v)) return v;
+  const { affixes, ...rest } = v;
+  const list = Array.isArray(affixes)
+    ? affixes.filter(
+        (a): a is { id: string; value: number } =>
+          isObj(a) && typeof a.id === 'string' && isNum(a.value),
+      )
+    : [];
+  const bonus = bonusFromAffixes(list);
+  return bonus > 0 ? { ...rest, bonus } : rest;
+}
+
 function validItem(v: unknown): v is ItemInstance {
   if (!isObj(v)) return false;
   if (typeof v.uid !== 'string' || typeof v.defId !== 'string') return false;
@@ -375,7 +389,7 @@ function validItem(v: unknown): v is ItemInstance {
   if (!Array.isArray(v.exits) || !v.exits.every((d) => DIRS.includes(d as Dir))) return false;
   if (!isNum(v.rerollCount)) return false;
   if (v.locked !== undefined && typeof v.locked !== 'boolean') return false;
-  if (v.affixes !== undefined && (!Array.isArray(v.affixes) || !v.affixes.every(isAffix)))
+  if (v.bonus !== undefined && (!isNum(v.bonus) || v.bonus <= 0 || v.bonus > BONUS_MAX))
     return false;
   try {
     getItemDef(v.defId);
@@ -436,7 +450,8 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
         return typeof id === 'string' && id in RENAMED_ITEMS
           ? { ...(v as object), defId: RENAMED_ITEMS[id] }
           : v;
-      });
+      })
+      .map(affixesToBonus);
     if (!inventory.every(validItem)) return base;
     const gold = data.gold + refund;
     const lo = data.loadout;
@@ -556,8 +571,6 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
       save.settings.lang = 'auto';
     if (!['off', 'common', 'rare', 'epic'].includes(save.settings.autoSell))
       save.settings.autoSell = 'off';
-    if (typeof save.settings.autoSellKeepAffix !== 'boolean')
-      save.settings.autoSellKeepAffix = true;
     if (save.settings.consumableSide !== 'left') save.settings.consumableSide = 'right';
     if (typeof save.settings.debug !== 'boolean') save.settings.debug = false;
     if (!ITEM_SORTS.includes(save.settings.itemSort)) save.settings.itemSort = 'rarity';
@@ -567,12 +580,12 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
     // 起点石: 出口0（以前の抽選で出たもの）は右向き1方向にし、レアリティは出口の数に合わせる
     for (const it of save.inventory) {
       const d = getItemDef(it.defId);
-      // アーティファクトは出口・レアリティ固定、追加効果なし
+      // アーティファクトは出口・レアリティ固定、上乗せなし
       if (d.artifact) {
         // 向きは鍛冶屋で変えられるが、出口の数は固定
         if (it.exits.length !== d.artifact.exits.length) it.exits = d.artifact.exits.slice();
         it.rarity = 'legendary';
-        delete it.affixes;
+        delete it.bonus;
         continue;
       }
       // 系統: その装備が出ないレアリティなら、系統の装備に置きかえる（レジェンダリーの革鎧 → 鋼の鎧）

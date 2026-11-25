@@ -98,8 +98,6 @@ export const UI: Dict = {
     '• Place tes objets les plus forts en fin de chaîne (6e maillon et au-delà). Garde les premiers maillons pour les objets légers et ceux qui infligent des altérations.',
   '・レアリティが一番効きます。奥の地域ほどレア以上が出やすい。':
     "• C'est la rareté qui compte le plus. Les régions lointaines donnent plus souvent du Rare ou mieux.",
-  '・装備の左下の✦は追加効果。先駆け（3連鎖目まで強い）は短い連鎖に、締め（6連鎖目以降強い）は長い連鎖に向きます。':
-    "• Le ✦ en bas à gauche d'un objet indique un bonus. Avant-garde (fort jusqu'au 3e maillon) convient aux chaînes courtes ; Finisseur (fort dès le 6e maillon) aux chaînes longues.",
   必殺技: 'Coups spéciaux',
   '連鎖のルートで、決まった装備が順に3つつながって通ると、3つ目の一撃が必殺技になります（ダメージ×2.5、勇者が大きく踏み込む）。配置画面では、そのマスに「必殺」と出ます。':
     "Quand une chaîne traverse 3 objets précis dans l'ordre, le 3e coup devient un coup spécial (dégâts ×2.5, et le héros bondit en avant). Sur l'écran Équiper, cette case affiche « Spécial ».",
@@ -125,8 +123,8 @@ export const UI: Dict = {
   '倉庫・鍛冶屋・合成': 'Réserve, Forge et Fusion',
   '・消耗品枠は、入れた消耗品を覚えています。ランで使い切ったら、倉庫に同じものがあれば自動で入れ直します（ないときは枠にうすく「自動」と出て、手に入ったら入ります）。手で外すと覚えるのをやめます。':
     "• Les places de consommables retiennent ce que tu y mets. Quand tu en épuises un pendant une expédition, le même objet est repris automatiquement dans la Réserve (si tu n'en as plus, la place affiche un « Auto » pâle et se remplit dès que tu en obtiens un). Retire-le à la main pour arrêter.",
-  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます（✦付きを残すかも選べます）。':
-    "• Avec la « Vente auto » de la Réserve, le butin d'une rareté choisie ou inférieure est vendu automatiquement après chaque expédition (tu peux choisir de garder les objets ✦).",
+  '・倉庫の「自動売却」で、ラン後に戦利品から決まったレアリティ以下を自動で売れます。':
+    "• Avec la « Vente auto » de la Réserve, le butin d'une rareté choisie ou inférieure est vendu automatiquement après chaque expédition.",
   '・倉庫があふれると出撃できません。「一括売却」「まとめて売る」で整理しましょう。大事な装備は詳細カードでロックすると売れなくなります。':
     "• Impossible de partir en expédition si la Réserve déborde. Fais de la place avec « Vente groupée » ou « Vente au choix ». Verrouille l'équipement important sur sa fiche pour qu'il ne puisse pas être vendu.",
   '・鍛冶屋では出口の向きを付け直せます（数は変わりません）。レアリティが高いほど料金も上がります。':
@@ -163,9 +161,7 @@ export const UI: Dict = {
   '売るものをタップで選ぶ（もう一度で外す・長押しで詳細）':
     'Touche les objets à vendre (touche encore pour annuler, maintiens pour les détails)',
   '自動売却：オフ': 'Vente auto : désactivée',
-  '自動売却：{rarity}（✦は残す）': 'Vente auto : {rarity} (garde les ✦)',
   '自動売却：{rarity}': 'Vente auto : {rarity}',
-  '自動売却：{rarity}以下（✦は残す）': 'Vente auto : {rarity} ou moins (garde les ✦)',
   '自動売却：{rarity}以下': 'Vente auto : {rarity} ou moins',
   '{n}個を売ります（+{gold}G）': 'Objets à vendre : {n} (+{gold}G)',
   '{n}個を売る +{gold}G': 'Vendre ×{n} +{gold}G',
@@ -772,4 +768,9 @@ export const UI: Dict = {
   配置が制限に合っていません: 'Ta disposition ne respecte pas les règles',
   '勇者の足元のゲージがたまるたびに、\n起点が発火して、連鎖が始まるよ':
     "Chaque fois que la jauge sous le héros se remplit, l'Origine se déclenche et une chaîne commence.",
+  '攻撃力 +{v}%': 'Attaque +{v}%',
+  ボス特効: 'Tueur de boss',
+  '防御値 +{v}%': 'Défense +{v}%',
+  'この連鎖のあとの待ち -{v}%': 'Attente après cette chaîne -{v}%',
+  上乗せ: 'Bonus',
 };
