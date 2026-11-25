@@ -784,4 +784,5 @@ export const UI: Dict = {
   '手札から盤面へ。並べ替えもできる': 'Hand to board. You can rearrange too',
   'ゴミ箱（ここへ運ぶと捨てる）': 'Trash (drag here to throw away)',
   そこには入らない: 'It doesn’t fit there',
+  手札がいっぱい: 'Your hand is full',
 };

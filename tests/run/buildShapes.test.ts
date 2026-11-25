@@ -5,6 +5,7 @@ import {
   anchorFor,
   coverCells,
   emptyShapeBoard,
+  placeOver,
   putShaped,
   shapeOffsets,
   shapeSize,
@@ -120,6 +121,81 @@ describe('拾って組む: 置く・外す', () => {
   it('置いた起点石は発火順に入る', () => {
     const o = item('o', 'origin_stone');
     expect(putShaped(board(), new Map([['o', o]]), 'o', 0).loadout.originOrder).toEqual(['o']);
+  });
+});
+
+describe('拾って組む: 重ねて置く', () => {
+  const gs = item('g', 'greatsword');
+  const a = item('a', 'sword');
+  const b = item('b', 'sword');
+  const items = new Map([gs, a, b].map((i) => [i.uid, i]));
+  const at = (pairs: [string, number][]) =>
+    pairs.reduce((l, [uid, cell]) => putShaped(l, items, uid, cell).loadout, board());
+
+  it('盤面の装備を別の装備に重ねると、2つの場所が入れ替わる', () => {
+    const r = placeOver(
+      at([
+        ['a', 0],
+        ['b', 5],
+      ]),
+      items,
+      'a',
+      5,
+    );
+    expect([r.loadout.cells[0], r.loadout.cells[5], r.displaced]).toEqual(['b', 'a', []]);
+  });
+
+  it('手札の装備を重ねると、元の装備は盤面から外れる', () => {
+    const r = placeOver(at([['a', 0]]), items, 'b', 0);
+    expect([r.loadout.cells[0], r.displaced]).toEqual(['b', ['a']]);
+  });
+
+  it('2つの装備にまたがって重ねると、両方とも外れる', () => {
+    const r = placeOver(
+      at([
+        ['g', 0],
+        ['a', 3],
+      ]),
+      items,
+      'g',
+      0,
+    );
+    const r2 = placeOver(
+      at([
+        ['a', 0],
+        ['b', 1],
+      ]),
+      items,
+      'g',
+      0,
+    );
+    expect([r.displaced, r2.loadout.cells.slice(0, 2), r2.displaced]).toEqual([
+      [],
+      ['g', 'g'],
+      ['a', 'b'],
+    ]);
+  });
+
+  it('入れ替え先に入らない装備は、盤面から外れる', () => {
+    // a spear (0, 4, 8); a sword at 3 moves onto it: the spear would need 3, 7, 11, but 7 is taken
+    const sp = item('p', 'spear');
+    const m = new Map([sp, a, b].map((i) => [i.uid, i]));
+    const l = (
+      [
+        ['p', 0],
+        ['a', 3],
+        ['b', 7],
+      ] as [string, number][]
+    ).reduce((acc, [uid, cell]) => putShaped(acc, m, uid, cell).loadout, board());
+    const r = placeOver(l, m, 'a', 4);
+    expect([r.loadout.cells[3], r.loadout.cells[4], r.displaced]).toEqual([null, 'a', ['p']]);
+  });
+
+  it('起点石は起点石に重ねて取り替えられる', () => {
+    const two = [item('o1', 'origin_stone'), item('o2', 'origin_stone')];
+    const map = new Map(two.map((i) => [i.uid, i]));
+    const l = putShaped(board(), map, 'o1', 0).loadout;
+    expect(placeOver(l, map, 'o2', 0).displaced).toEqual(['o1']);
   });
 });
 

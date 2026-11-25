@@ -6,7 +6,15 @@ import { sfx } from '../audio/sfx';
 import { BUILD_RUN } from '../config/balance';
 import { addToHand, startHand, type Hand } from '../core/buildRun';
 import type { Combat } from '../core/combat';
-import { putShaped, shapeOffsets, shapeSize, takeShaped, type ShapeBlock } from '../core/shapes';
+import {
+  boxCorner,
+  placeOver,
+  putShaped,
+  shapeOffsets,
+  shapeSize,
+  takeShaped,
+  type ShapeBlock,
+} from '../core/shapes';
 import { ShapedIcon, shapeMark } from './shapedIcon';
 import type { ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
@@ -38,9 +46,10 @@ export interface BuildRunHost {
   say: (text: string, color?: string) => void;
 }
 
-const BLOCK_TEXT: Record<ShapeBlock, string> = {
+const BLOCK_TEXT: Record<ShapeBlock | 'hand', string> = {
   space: k('そこには入らない'),
   origin: k('起点石は盤面に1つだけ'),
+  hand: k('手札がいっぱい'),
 };
 
 type Drag = {
@@ -243,8 +252,7 @@ export class BuildRunUi {
       this.drag = { item: held, from: si, ghost: null, x: p.x, y: p.y };
       return;
     }
-    // The board's pieces move only in the arrange time (the fight never stops for them)
-    if (!c.arranging) return;
+    // The board's pieces move any time (mid-chain, the new board waits for the chain to end)
     const cell = this.host.view.cellAt(p.x, p.y);
     const uid = cell >= 0 ? this.board.cells[cell] : null;
     const it = uid ? this.host.items.get(uid) : undefined;
@@ -285,31 +293,49 @@ export class BuildRunUi {
     return this.host.view.cellAt(p.x - ((w - 1) * cell) / 2, p.y - LIFT - ((h - 1) * cell) / 2);
   }
 
+  /** Onto the board: the pieces it lands on swap places with it (from the board) or go to the hand */
   private toCell(d: Drag, cell: number): void {
-    const r = putShaped(this.board, this.host.items, d.item.uid, cell);
-    if (r.block) {
-      sfx('error');
-      this.host.say(t(BLOCK_TEXT[r.block]), COLORS.textWarn);
-      return;
-    }
+    const r = placeOver(this.board, this.host.items, d.item.uid, cell);
+    if (r.block) return this.refuse(r.block);
     if (r.loadout === this.board) return;
+    const hand = this.hand.slice();
+    if (d.from !== 'board') hand[d.from] = null;
+    // The pieces knocked off go to the hand: the slot the dragged piece left first
+    const free = [
+      ...(d.from !== 'board' ? [d.from] : []),
+      ...hand.flatMap((h, i) => (h || i === d.from ? [] : [i])),
+    ];
+    if (r.displaced.length > free.length) return this.refuse('hand');
+    r.displaced.forEach((u, i) => (hand[free[i]!] = this.host.items.get(u)!));
     sfx('click');
-    if (d.from !== 'board') this.setSlot(d.from, null);
+    this.hand = hand;
+    this.renderHand();
     this.setBoard(r.loadout);
   }
 
-  /** Into a hand slot: from the hand the two swap; from the board only into an empty slot */
+  private refuse(why: ShapeBlock | 'hand'): void {
+    sfx('error');
+    this.host.say(t(BLOCK_TEXT[why]), COLORS.textWarn);
+  }
+
+  /**
+   * Into a hand slot: from the hand the two swap; from the board the slot's piece takes the board
+   * piece's place (when it fits there)
+   */
   private toSlot(d: Drag, slot: number): void {
     if (d.from === slot) return;
     const there = this.hand[slot] ?? null;
     if (d.from === 'board') {
+      let next = takeShaped(this.board, this.host.items, d.item.uid);
       if (there) {
-        sfx('error');
-        return;
+        const corner = boxCorner(this.board, d.item.uid);
+        const r = putShaped(next, this.host.items, there.uid, corner);
+        if (r.block) return this.refuse(r.block);
+        next = r.loadout;
       }
       sfx('click');
       this.setSlot(slot, d.item);
-      this.setBoard(takeShaped(this.board, this.host.items, d.item.uid));
+      this.setBoard(next);
       return;
     }
     sfx('click');

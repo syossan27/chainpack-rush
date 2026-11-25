@@ -170,6 +170,46 @@ export function putShaped(
   return { loadout: out, block: null };
 }
 
+/** The top-left cell of a piece's box on the board (-1: not on it) */
+export function boxCorner(l: Loadout, uid: string): number {
+  const at = l.cells.flatMap((u, i) => (u === uid ? [i] : []));
+  if (at.length === 0) return -1;
+  const x = Math.min(...at.map((i) => i % l.width));
+  const y = Math.min(...at.map((i) => Math.floor(i / l.width)));
+  return y * l.width + x;
+}
+
+/**
+ * Put a piece at `cell` over whatever is there. The pieces it lands on come off the board; when it
+ * moved from elsewhere on the board and lands on one piece, that piece takes its old place (a swap)
+ * if it fits there. `displaced`: the pieces left off the board (for the hand)
+ */
+export function placeOver(
+  l: Loadout,
+  items: ReadonlyMap<string, ItemInstance>,
+  uid: string,
+  cell: number,
+): { loadout: Loadout; displaced: string[]; block: ShapeBlock | null } {
+  const it = items.get(uid);
+  if (!it) return { loadout: l, displaced: [], block: null };
+  const cover = coverCells(l, it.defId, anchorFor(l, it.defId, cell));
+  if (!cover) return { loadout: l, displaced: [], block: 'space' };
+  const hit = [...new Set(cover.map((c) => l.cells[c]))].filter(
+    (u): u is string => !!u && u !== uid,
+  );
+  const stays = l.cells.filter((u): u is string => !!u && u !== uid && !hit.includes(u));
+  if (isOrigin(items, uid) && stays.some((u) => isOrigin(items, u)))
+    return { loadout: l, displaced: [], block: 'origin' };
+  const from = boxCorner(l, uid);
+  const cleared = hit.reduce((acc, u) => takeShaped(acc, items, u), l);
+  const placed = putShaped(cleared, items, uid, cell).loadout;
+  if (from >= 0 && hit.length === 1) {
+    const swap = putShaped(placed, items, hit[0]!, from);
+    if (!swap.block) return { loadout: swap.loadout, displaced: [], block: null };
+  }
+  return { loadout: placed, displaced: hit, block: null };
+}
+
 /**
  * Each piece's cells, when some piece covers more than one (null: one piece per cell, as on every
  * board but the trial's)
