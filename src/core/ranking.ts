@@ -34,9 +34,10 @@ import { REGIONS } from '../data/regions';
 
 /**
  * 2 → 3 (2026-11-21): the origin stones became flow stones. 3 → 4 (2026-11-21): the chain
- * multiplier has no cap. Older records replay differently
+ * multiplier has no cap. 4 → 5 (2026-11-26): bigger boards, gear shapes and 呼応 replace affixes.
+ * Older records replay differently
  */
-export const SUBMISSION_VERSION = 4;
+export const SUBMISSION_VERSION = 5;
 
 export type RankMode = 'challenge' | 'endless';
 

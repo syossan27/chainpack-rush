@@ -380,7 +380,13 @@ function affixesToBonus(v: unknown): unknown {
           isObj(a) && typeof a.id === 'string' && isNum(a.value),
       )
     : [];
-  const bonus = bonusFromAffixes(list);
+  let origin = false;
+  try {
+    origin = typeof rest.defId === 'string' && getItemDef(rest.defId).kind === 'origin';
+  } catch {
+    // An unknown item: validItem drops the save's inventory check as before
+  }
+  const bonus = bonusFromAffixes(list, origin);
   return bonus > 0 ? { ...rest, bonus } : rest;
 }
 

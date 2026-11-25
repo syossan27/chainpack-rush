@@ -138,10 +138,10 @@ describe('重ねる盤面: 置き方', () => {
     l = put(l, 's1', 0);
     l = put(l, 's2', 0);
     l = put(l, 'd1', 3);
-    l = stackMove(l, 0, 3);
+    l = stackMove(l, 0, 3, items);
     expect(stackAt(l, 3)).toEqual(['s1', 's2']);
     expect(stackAt(l, 0)).toEqual(['d1']);
-    l = stackMove(l, 3, 7);
+    l = stackMove(l, 3, 7, items);
     expect(stackAt(l, 7)).toEqual(['s1', 's2']);
     expect(stackAt(l, 3)).toEqual([]);
   });
@@ -211,8 +211,8 @@ describe('盤面の種類: 形と深さ', () => {
 
   it('重なりごと動かす先が穴なら、動かさない', () => {
     const l = stackPut(emptyStackBoard('crystal'), items, 's1', 2).loadout;
-    expect(stackMove(l, 2, 0)).toBe(l);
-    expect(stackAt(stackMove(l, 2, 7), 7)).toEqual(['s1']);
+    expect(stackMove(l, 2, 0, items)).toBe(l);
+    expect(stackAt(stackMove(l, 2, 7, items), 7)).toEqual(['s1']);
   });
 
   it('深い盤面は、ふつうの盤面より多く、盤面の深さまで重ねられる', () => {

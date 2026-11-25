@@ -52,7 +52,7 @@ const best = (d: string) =>
  * rarity it comes in, two cells of armor so the hero lasts), a maxed hero and physical mastery
  * Lv30. With seed 78 it beats a boss, takes the relic offered, and sparks トリプル・スラッシュ on the way
  */
-function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number } {
+function playEndless(newGear = false): { sub: ScoreSubmission; sparks: string[]; relics: number } {
   // Cells of a 4 × 3 block at the board's top-left
   const path: [number, string, Dir][] = [
     [0, 'origin_stone', 'right'],
@@ -84,6 +84,23 @@ function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number
       const at = Math.floor(cell / 4) * loadout.width + (cell % 4);
       loadout = stackPut(loadout, items, it.uid, at).loadout;
     }
+  }
+  if (newGear) {
+    // Gear as it drops now: a 2-wide greatsword with a 呼応, and an old one's bonus, at the line's end
+    const it: ItemInstance = {
+      uid: 'shaped',
+      defId: 'greatsword',
+      rarity: best('greatsword'),
+      exits: ['right'],
+      rerollCount: 0,
+      shape: 'bar2',
+      calls: [{ side: 'prev', want: 'physical', v: 60 }],
+      bonus: 12,
+    };
+    items.set(it.uid, it);
+    const r = stackPut(loadout, items, it.uid, 2 * loadout.width + 4);
+    if (r.block) throw new Error(r.block);
+    loadout = r.loadout;
   }
   s.upgrades = { ...s.upgrades, maxHp: 50, atb: 20, attack: 100, runTime: 5 };
   const mastery: RunMastery = { levels: { physical: 30 }, learned: [] };
@@ -141,9 +158,9 @@ const top = (x: ScoreSubmission) =>
   x.loadout.cells.findIndex((u, i) => u && i > 0 && x.loadout.under![i]!.length === 0);
 
 describe('ランキングの記録の確認', () => {
-  it('v4: 挑戦の記録は重ねる標準盤面で、熟練とアクセサリーは付かない', () => {
+  it('v5: 挑戦の記録は重ねる標準盤面で、熟練とアクセサリーは付かない', () => {
     const sub = challenge();
-    expect(sub.v).toBe(4);
+    expect(sub.v).toBe(5);
     expect(sub.loadout.board).toBe('standard');
     expect(sub.mastery).toBeNull();
     expect(sub.charms).toBeNull();
@@ -201,6 +218,12 @@ describe('ランキングの記録の確認', () => {
     consumeItems(s, r.usedConsumables);
     refillConsumables(s);
     expect(verify(sub)).toMatchObject({ ok: true });
+  });
+
+  it('形・呼応・上乗せのある装備の記録も確認を通る', () => {
+    const { sub } = playEndless(true);
+    expect(sub.loadout.cells.filter((u) => u === 'shaped')).toHaveLength(2);
+    expect(verify(sub).ok).toBe(true);
   });
 
   it('v2: 途中で閃き、遺物を選んだ ∞ の記録が確認を通る', () => {
@@ -347,8 +370,8 @@ describe('ランキングの記録の確認', () => {
     });
   });
 
-  it('記録の版は 4', () => {
-    expect(challenge().v).toBe(4);
+  it('記録の版は 5', () => {
+    expect(challenge().v).toBe(5);
   });
 
   it.each([

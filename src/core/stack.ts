@@ -181,14 +181,13 @@ export function stackPut(
 /**
  * Move the whole stack of the piece on `from` so its top-left goes to `to`. A piece in the way swaps
  * places with it (it goes to the moved piece's old top-left) when both fit; otherwise nothing
- * moves. One-cell pieces: the stacks of the two cells swap, as before shapes. `items` gives the
- * pieces' shapes (without it every piece counts as one cell)
+ * moves. One-cell pieces: the stacks of the two cells swap, as before shapes
  */
 export function stackMove(
   l: Loadout,
   from: number,
   to: number,
-  items?: ReadonlyMap<string, ItemInstance>,
+  items: ReadonlyMap<string, ItemInstance>,
 ): Loadout {
   if (from < 0 || to < 0 || from >= l.cells.length || to >= l.cells.length) return l;
   const board = getBoard(l.board);
@@ -197,7 +196,7 @@ export function stackMove(
   // An empty cell onto a piece: that piece comes here
   if (!a) return l.cells[to] ? stackMove(l, to, from, items) : l;
   const shape = (u: string) => {
-    const it = items?.get(u);
+    const it = items.get(u);
     return it ? shapeOf(it) : SHAPES.one;
   };
   const cornerA = boxCorner(l, a);

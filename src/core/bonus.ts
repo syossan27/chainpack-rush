@@ -6,6 +6,8 @@ import type { ItemInstance } from './types';
 
 /** The most a bonus can be (%) */
 export const BONUS_MAX = 100;
+/** An origin stone's most: 速攻 (≤ 15) + 初撃 (≤ 50 × 0.2), so the wait never gets near 0 */
+export const BONUS_ORIGIN_MAX = 25;
 
 /** An item's bonus (%; 0 for none) */
 export function itemBonus(it: ItemInstance): number {
@@ -30,9 +32,12 @@ const WORTH: Record<string, number> = {
   spark: 0.2,
 };
 
-export function bonusFromAffixes(affixes: readonly { id: string; value: number }[]): number {
+export function bonusFromAffixes(
+  affixes: readonly { id: string; value: number }[],
+  origin = false,
+): number {
   const sum = affixes.reduce((s, a) => s + (WORTH[a.id] ?? 0) * a.value, 0);
-  return Math.min(BONUS_MAX, Math.round(sum));
+  return Math.min(origin ? BONUS_ORIGIN_MAX : BONUS_MAX, Math.round(sum));
 }
 
 /** Whether a bonus is one this item could have (for records sent to the ranking) */
@@ -42,7 +47,7 @@ export function validBonus(it: ItemInstance): boolean {
   return (
     Number.isInteger(it.bonus) &&
     it.bonus > 0 &&
-    it.bonus <= BONUS_MAX &&
+    it.bonus <= (def.kind === 'origin' ? BONUS_ORIGIN_MAX : BONUS_MAX) &&
     def.kind !== 'consumable' &&
     !def.artifact
   );

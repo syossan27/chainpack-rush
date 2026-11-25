@@ -12,6 +12,7 @@ import { getItemDef } from '../data/items';
 import { boardDepth, boardSize, isHole } from './boards';
 import { rollRarity, type RegionLoot } from './loot';
 import type { Rng } from './rng';
+import { pieceCells } from './shapes';
 import { cellRings } from './stack';
 import type { ChainStep, ItemInstance, Loadout, Rarity } from './types';
 
@@ -84,13 +85,12 @@ export function charmContext(
       if (n >= depth) full.add(cell);
     });
   const matched = new Set<number>();
+  const firsts = new Set(pieceCells(loadout));
   for (let slot = 0; slot < width + height; slot++) {
     const elements: string[] = [];
-    // Each piece on the line once (a piece with a shape may cover several of its cells)
-    const pieces = new Set<string | null>();
+    // A piece with a shape counts on the lines of its first cell, where it rings (as its events do)
     for (const cell of slotCells(slot, width, height)) {
-      if (pieces.has(loadout.cells[cell] ?? null)) continue;
-      pieces.add(loadout.cells[cell] ?? null);
+      if (!firsts.has(cell)) continue;
       for (const uid of cellRings(loadout, items, cell)) {
         const def = getItemDef(items.get(uid)!.defId);
         if (def.kind === 'attack') elements.push(def.element ?? 'physical');
