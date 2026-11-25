@@ -24,7 +24,7 @@ import { ItemIcon } from './itemIcon';
 import { Button, fitText, panel } from './kit/widgets';
 import { COLORS, H, RUN_LAYOUT, W, textStyle } from './theme';
 
-const SLOT = 56;
+const SLOT = 52;
 const DRAG_THRESHOLD = 12;
 /** The ghost floats above the finger, and the drop point is the ghost */
 const LIFT = 40;
@@ -82,9 +82,10 @@ export class BuildRunUi {
     this.hand = startHand(brought);
     const top = RUN_LAYOUT.backpackTop;
     const pad = BackpackView.FRAME_PAD;
-    // The side columns share the space between the screen edge and the board's frame
+    // The side columns sit close to the board's frame, away from the screen edge (a touch at the
+    // very edge is the phone's back gesture)
     const sideW = view.left - pad;
-    const colX = (c: number) => (sideW / SIDE_COLS) * (c + 0.5);
+    const colX = (c: number) => sideW - 6 - SLOT / 2 - (SIDE_COLS - 1 - c) * (SLOT + 4);
     const belowY = top + view.gridHeight + pad + SLOT / 2 + 8;
     const step = (W - 40) / BELOW;
     const side = (mirror: boolean) =>
