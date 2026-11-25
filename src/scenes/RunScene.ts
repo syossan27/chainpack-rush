@@ -239,7 +239,13 @@ export class RunScene extends Phaser.Scene {
     panel(this, W / 2, RUN_LAYOUT.middleTop + 86, W + 20, 176, 'panel').setDepth(40);
     this.consumableButtons = [];
     this.trackKey = '';
-    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, loadout, this.items).setDepth(41);
+    this.view = new BackpackView(
+      this,
+      RUN_LAYOUT.backpackTop,
+      loadout,
+      this.items,
+      RUN_LAYOUT.cell,
+    ).setDepth(41);
     this.cellFx = new CellFx(this, this.view, this.effects, () => this.shake);
     this.charmStrip = this.cfg.charms
       ? new CharmStrip(this, this.view, getBoard(loadout.board), this.cfg.charms, {
@@ -461,7 +467,7 @@ export class RunScene extends Phaser.Scene {
   private buildConsumables(): void {
     const slots = this.combat.consumables;
     // One column beside the board, on the side the player chose (easier to reach than the
-    // middle band). x clears the frame and charm slots of the widest (5-column) board
+    // middle band). x clears the frame and charm slots of the widest (6-column) board
     const x = getSave().settings.consumableSide === 'left' ? 56 : W - 56;
     slots.forEach((uid, i) => {
       const y = RUN_LAYOUT.backpackTop + 40 + i * 90;

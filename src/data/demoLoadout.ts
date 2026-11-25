@@ -1,5 +1,5 @@
 // Loadout for the first sortie ("demo run"): an example of the end-game look with legendary gear.
-// The standard stacked board (4×3) with one origin: the chain snakes through every cell. A
+// A 4×3 block in the middle of the standard board with one origin: the chain snakes through it. A
 // technique is judged on the tops of three cells in a row, so three of them fit, then the finish.
 // A wave often falls before a long chain ends, so the techniques come first (by step 11) and the
 // big stacks after them.
@@ -8,10 +8,10 @@ import { clampRarity, originRarity } from '../core/loot';
 import type { HeroStats } from '../core/combat';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { HERO, UPGRADES } from '../config/balance';
-import { emptyStackBoard, stackPut } from '../core/stack';
+import { emptyStackBoard, recenterOffset, stackPut } from '../core/stack';
 
-// [cell, defId, count, exits]: cells of the 4-wide board, the stack's item and size, the top's
-// exits. The route: row 0 → right, row 1 ← left, row 2 → right
+// [cell, defId, count, exits]: cells of a 4 × 3 block (placed in the middle of the board), the
+// stack's item and size, the top's exits. The route: row 0 → right, row 1 ← left, row 2 → right
 // prettier-ignore
 const STACKS: readonly (readonly [number, string, number, Dir[]])[] = [
   [0, 'origin_stone', 1, ['up', 'right', 'left']], // 3 exits (epic); up and left are off the grid
@@ -38,6 +38,12 @@ export const DEMO_HERO: HeroStats = {
   runTime: 20,
 };
 
+/** A cell of the 4 × 3 block, on the board (the block sits in its middle) */
+function inMiddle(l: Loadout, cell: number): number {
+  const { dx, dy } = recenterOffset({ width: 4, height: 3 }, l);
+  return (Math.floor(cell / 4) + dy) * l.width + (cell % 4) + dx;
+}
+
 export function demoLoadout(): { loadout: Loadout; items: Map<string, ItemInstance> } {
   const items = new Map<string, ItemInstance>();
   let loadout = emptyStackBoard('standard');
@@ -54,7 +60,7 @@ export function demoLoadout(): { loadout: Loadout; items: Map<string, ItemInstan
         exits: exits.slice(),
         rerollCount: 0,
       });
-      const r = stackPut(loadout, items, uid, cell);
+      const r = stackPut(loadout, items, uid, inMiddle(loadout, cell));
       if (r.block) throw new Error(`demo stack ${defId} on ${cell}: ${r.block}`);
       loadout = r.loadout;
     }

@@ -37,7 +37,7 @@ export function unitLabel(loadout: Loadout, originUids: readonly string[]): stri
 }
 
 export class BackpackView extends Phaser.GameObjects.Container {
-  readonly cell = CELL_SIZE;
+  readonly cell: number;
   private loadout: Loadout;
   private items: ReadonlyMap<string, ItemInstance>;
   private readonly cellLayer: Phaser.GameObjects.Container;
@@ -71,8 +71,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
     top: number,
     loadout: Loadout,
     items: ReadonlyMap<string, ItemInstance>,
+    /** A cell's size on screen (the battle's board is a little smaller, see RUN_LAYOUT) */
+    cell = CELL_SIZE,
   ) {
     super(scene, 0, top);
+    this.cell = cell;
     this.loadout = loadout;
     this.items = items;
     this.cellLayer = scene.add.container(0, 0);

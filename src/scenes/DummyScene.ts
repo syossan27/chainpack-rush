@@ -82,7 +82,13 @@ export class DummyScene extends Phaser.Scene {
       .rectangle(0, RUN_LAYOUT.middleTop, W, H - RUN_LAYOUT.middleTop, 0x120e1a)
       .setOrigin(0, 0)
       .setDepth(40);
-    this.view = new BackpackView(this, RUN_LAYOUT.backpackTop, this.board, this.items).setDepth(41);
+    this.view = new BackpackView(
+      this,
+      RUN_LAYOUT.backpackTop,
+      this.board,
+      this.items,
+      RUN_LAYOUT.cell,
+    ).setDepth(41);
     this.charmStrip = charms
       ? new CharmStrip(this, this.view, getBoard(this.board.board), charms, {
           compact: true,

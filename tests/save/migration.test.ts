@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { deserializeSave, serializeSave, SAVE_VERSION } from '../../src/core/save';
+import {
+  createInitialSave,
+  deserializeSave,
+  serializeSave,
+  SAVE_VERSION,
+} from '../../src/core/save';
+import { simulateChain } from '../../src/core/chain';
+import { estimateRoute } from '../../src/core/estimate';
 import { sortieBlock } from '../../src/core/economy';
 import { boardUids, emptyStackBoard, stackPut } from '../../src/core/stack';
 import { BACKPACK_REFUND } from '../../src/core/migrate';
@@ -93,7 +100,7 @@ describe('セーブの移行（版1 → 版2）', () => {
   it('バッグだけの人: 標準の重ねる盤面が自動で作られ、装備は全部倉庫に残る', () => {
     const s = deserializeSave(v1());
     expect(s.version).toBe(SAVE_VERSION);
-    expect(SAVE_VERSION).toBe(4);
+    expect(SAVE_VERSION).toBe(5);
     expect(s.boards.active).toBe('standard');
     expect(s.loadout.board).toBe('standard');
     expect(s.inventory.map((i) => i.uid).sort()).toEqual(
@@ -177,7 +184,8 @@ describe('セーブの移行（版1 → 版2）', () => {
     expect(s.loadout.under).toEqual(small.under);
     expect(s.boards.layouts.small).toBeUndefined();
     expect(s.boards.layouts.standard!.cells).toEqual(standard.cells);
-    expect(s.boards.charms.small![0]).toBe('c1');
+    // The slot moves with its column to where the old layout now sits (the boards grew in version 5)
+    expect(s.boards.charms.small![1]).toBe('c1');
     expect(s.charms).toHaveLength(1);
   });
 
@@ -312,5 +320,44 @@ describe('セーブの移行（版1 → 版2）', () => {
     const s = deserializeSave(v1({ trialBoards: { active: 'flame', layouts: {} } }));
     expect(s.boards.active).toBe('standard');
     expect(s.loadout.board).toBe('standard');
+  });
+});
+
+describe('セーブの移行（版4 → 版5: 盤面が大きくなる）', () => {
+  /** A version-4 save whose standard board is the old 4 × 3 one, with the starter chain on row 1 */
+  const v4 = () => {
+    const s = JSON.parse(serializeSave(createInitialSave())) as Record<string, unknown> & {
+      loadout: Loadout;
+      inventory: ItemInstance[];
+    };
+    const uid = (d: string, n = 0) => s.inventory.filter((i) => i.defId === d)[n]!.uid;
+    const old: Loadout = {
+      width: 4,
+      height: 3,
+      cells: new Array<string | null>(12).fill(null),
+      under: Array.from({ length: 12 }, () => []),
+      originOrder: [uid('origin_stone')],
+      consumables: s.loadout.consumables,
+      board: 'standard',
+    };
+    old.cells[4] = uid('origin_stone');
+    old.under![5] = [uid('sword', 0)];
+    old.cells[5] = uid('sword', 1);
+    old.cells[6] = uid('axe');
+    old.cells[7] = uid('wood_shield');
+    return { json: JSON.stringify({ ...s, version: 4, loadout: old }), old, items: s.inventory };
+  };
+
+  it('古い並びは盤面の真ん中へ寄り、連鎖と見積もりは変わらない', () => {
+    const { json, old, items } = v4();
+    const map = new Map(items.map((i) => [i.uid, i]));
+    const s = deserializeSave(json);
+    const before = simulateChain(old, map).plans[0]!;
+    const after = simulateChain(s.loadout, map).plans[0]!;
+    expect([s.loadout.width, s.loadout.height]).toEqual([6, 5]);
+    expect(after.steps.map((x) => x.uid)).toEqual(before.steps.map((x) => x.uid));
+    expect(estimateRoute(after, map, 1, 'standard').total).toBe(
+      estimateRoute(before, map, 1, 'standard').total,
+    );
   });
 });

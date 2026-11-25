@@ -11,6 +11,7 @@ import {
   ownedBoards,
 } from '../../src/core/boards';
 import { createInitialSave } from '../../src/core/save';
+import { recenterOffset } from '../../src/core/stack';
 import { BOARDS, getBoard } from '../../src/data/boards';
 import { REGIONS } from '../../src/data/regions';
 
@@ -20,7 +21,7 @@ describe('盤面の種類: 一覧', () => {
     (_, b) => {
       const { width, height } = boardSize(b);
       expect(b.mask.every((r) => r.length === width)).toBe(true);
-      expect(width).toBeLessThanOrEqual(5);
+      expect(width).toBeLessThanOrEqual(6);
       expect(height).toBeLessThanOrEqual(5);
       expect(
         b.mask
@@ -119,5 +120,40 @@ describe('盤面の種類: 持っている盤面', () => {
     expect(ownedBoards(s).some((b) => b.id === 'deep')).toBe(false);
     s.progress.best.demon_castle = PROGRESS.unlockLoop + 1;
     expect(ownedBoards(s).some((b) => b.id === 'deep')).toBe(true);
+  });
+});
+
+describe('盤面が大きくなった（2026-11-26）', () => {
+  // The masks before the boards grew
+  const OLD: Record<string, readonly string[]> = {
+    standard: ['XXXX', 'XXXX', 'XXXX'],
+    gale: ['XXXXX', 'XXXXX'],
+    small: ['XXX', 'XXX'],
+    crystal: ['..X..', '.XXX.', 'XXXXX', '.XXX.'],
+    flame: ['..X.', '.XX.', '.XXX', 'XXXX'],
+    lightning: ['..XX', '.XX.', 'XXXX', '.XX.', 'XX..'],
+    deep: ['XXX', 'XXX', 'XXX'],
+  };
+
+  it.each(BOARDS.map((b) => [b.id, b] as const))(
+    '%s: 古い形のマスは、真ん中へ寄せるとすべて新しい形の内側に入る',
+    (id, b) => {
+      const old = OLD[id]!;
+      const size = boardSize(b);
+      const { dx, dy } = recenterOffset({ width: old[0]!.length, height: old.length }, size);
+      const outside = old.flatMap((row, y) =>
+        [...row].flatMap((c, x) =>
+          c === 'X' && isHole(b, (y + dy) * size.width + x + dx) ? [[x, y]] : [],
+        ),
+      );
+      expect(outside).toEqual([]);
+    },
+  );
+
+  it('大きくなった盤面はどれも、前より広い', () => {
+    const cellsOf = (m: readonly string[]) => m.join('').split('X').length - 1;
+    expect(BOARDS.filter((b) => cellsOf(b.mask) <= cellsOf(OLD[b.id]!)).map((b) => b.id)).toEqual(
+      [],
+    );
   });
 });

@@ -141,7 +141,13 @@ export class LoadoutScene extends Phaser.Scene {
         persist();
       });
     }
-    this.view = new BackpackView(this, LOADOUT_LAYOUT.backpackTop, save.loadout, itemMap(save));
+    this.view = new BackpackView(
+      this,
+      LOADOUT_LAYOUT.backpackTop,
+      save.loadout,
+      itemMap(save),
+      LOADOUT_LAYOUT.cell,
+    );
     // 盤面の切り替え（盤面ごとに並べ方を覚える。装備は倉庫に置いたまま）
     this.boardBar = this.add.container(0, LOADOUT_LAYOUT.backpackTop - 38);
     this.buildBoardBar();
@@ -631,10 +637,9 @@ export class LoadoutScene extends Phaser.Scene {
   private routeBarY(): number {
     const under = this.view.y + this.view.gridHeight;
     if (!this.charmStrip) return under + 30;
-    // Compact badges sit on the frame's edge: just clear them (a 5-row board has no room left above
-    // the consumable slots, so its bar clears them only partly)
+    // Compact badges sit on the frame's edge: just clear them
     const h = getSave().loadout.height;
-    return h >= 5 ? under + 44 : h >= 4 ? under + 50 : this.charmStrip.bottom + 30;
+    return h >= 4 ? under + 56 : this.charmStrip.bottom + 30;
   }
 
   /** Charms: choose an edge slot (the charm case replaces the item list) or none */

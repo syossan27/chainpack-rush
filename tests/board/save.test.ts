@@ -253,10 +253,10 @@ describe('新しいセーブ', () => {
 
   it('標準盤面の真ん中の行に 起点 → 剣2つ重ね → 斧 → 木の盾', () => {
     expect(s.loadout.board).toBe('standard');
-    expect(stackAt(s.loadout, 4).map(def)).toEqual(['origin_stone']);
-    expect(stackAt(s.loadout, 5).map(def)).toEqual(['sword', 'sword']);
-    expect(stackAt(s.loadout, 6).map(def)).toEqual(['axe']);
-    expect(stackAt(s.loadout, 7).map(def)).toEqual(['wood_shield']);
+    expect(stackAt(s.loadout, 13).map(def)).toEqual(['origin_stone']);
+    expect(stackAt(s.loadout, 14).map(def)).toEqual(['sword', 'sword']);
+    expect(stackAt(s.loadout, 15).map(def)).toEqual(['axe']);
+    expect(stackAt(s.loadout, 16).map(def)).toEqual(['wood_shield']);
   });
 
   it('薬は消耗品の枠に入り、自動で使う', () => {

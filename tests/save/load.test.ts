@@ -52,7 +52,7 @@ describe('セーブの読み書き', () => {
   });
 
   it('データがなければ今の版の初期値', () => {
-    expect(deserializeSave(null).version).toBe(4);
+    expect(deserializeSave(null).version).toBe(5);
   });
 
   it('版3のセーブ: 最大HP・攻撃間隔・攻撃倍率の段は2倍になる（1段の効き目が半分になったので、強さは同じ）', () => {

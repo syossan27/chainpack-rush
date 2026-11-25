@@ -242,11 +242,17 @@ describe('盤面の種類: 形と深さ', () => {
     expect(back.board).toBe('crystal');
   });
 
-  it('読み直すと、大きさが違う盤面の配置は空にする', () => {
+  it('読み直すと、大きさが違う盤面の配置は、盤面の真ん中へ寄せる', () => {
+    // A 4 × 3 layout (as before the boards grew) on the 6 × 5 standard board: one cell right and down
     const rec: Loadout = {
-      ...emptyStackBoard('crystal'),
-      cells: ['s1', null, 's2', ...new Array<string | null>(17).fill(null)],
+      width: 4,
+      height: 3,
+      cells: ['s1', null, null, 's2', ...new Array<string | null>(8).fill(null)],
+      under: new Array(12).fill(0).map(() => []),
+      originOrder: [],
+      consumables: [],
     };
-    expect(restoreStackBoard(rec, items, 3, 'standard')).toEqual(emptyStackBoard('standard'));
+    const l = restoreStackBoard(rec, items, 3, 'standard');
+    expect([l.cells[7], l.cells[10]]).toEqual(['s1', 's2']);
   });
 });

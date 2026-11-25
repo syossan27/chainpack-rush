@@ -45,7 +45,7 @@ describe('アクセサリー: セーブと盤面ごとのスロット', () => {
       delete raw.charms;
     });
     expect(save.charms).toEqual([]);
-    expect(boardCharmSlots(save, 'standard')).toEqual(new Array(7).fill(null));
+    expect(boardCharmSlots(save, 'standard')).toEqual(new Array(11).fill(null));
   });
 
   it('不正なアクセサリーと、売ったものを指すスロットは捨てる', () => {

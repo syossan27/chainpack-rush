@@ -53,6 +53,7 @@ const best = (d: string) =>
  * Lv30. With seed 78 it beats a boss, takes the relic offered, and sparks トリプル・スラッシュ on the way
  */
 function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number } {
+  // Cells of a 4 × 3 block at the board's top-left
   const path: [number, string, Dir][] = [
     [0, 'origin_stone', 'right'],
     [1, 'sword', 'right'],
@@ -80,19 +81,15 @@ function playEndless(): { sub: ScoreSubmission; sparks: string[]; relics: number
         rerollCount: 0,
       };
       items.set(it.uid, it);
-      loadout = stackPut(loadout, items, it.uid, cell).loadout;
+      const at = Math.floor(cell / 4) * loadout.width + (cell % 4);
+      loadout = stackPut(loadout, items, it.uid, at).loadout;
     }
   }
   s.upgrades = { ...s.upgrades, maxHp: 50, atb: 20, attack: 100, runTime: 5 };
   const mastery: RunMastery = { levels: { physical: 30 }, learned: [] };
   const charms: CharmSlots = [
     { uid: 'c1', defId: 'combo_necklace', rarity: 'rare' },
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
+    ...new Array<null>(10).fill(null),
   ];
   const cfg: RunConfig = {
     seed: 78,

@@ -88,8 +88,8 @@ export const COUNTER = {
  * stack rings bottom → top, the top item's arrows lead on, techniques use the tops of 3 cells
  */
 export const STACK = {
-  width: 4,
-  height: 3,
+  width: 6,
+  height: 5,
   /** Items per cell */
   max: 3,
   /** Damage / defense multiplier by position from the bottom */

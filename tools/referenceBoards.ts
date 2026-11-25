@@ -38,7 +38,7 @@ export const REFERENCE_UPGRADES = {
   storage: 0,
 } as const;
 
-/** The longest path of side-by-side cells over the board's shape */
+/** A long path of side-by-side cells over the board's shape (the longest within a search budget) */
 function longestPath(id: BoardId): number[] {
   const b = getBoard(id);
   const { width, height } = boardSize(b);
@@ -56,8 +56,15 @@ function longestPath(id: BoardId): number[] {
       .map(([a, d]) => d! * width + a!)
       .filter((k) => !isHole(b, k));
   };
+  const total = b.mask
+    .join('')
+    .split('')
+    .filter((ch) => ch === 'X').length;
+  // A full search explodes on the 6 × 5 boards: stop at a path through every cell, or after a budget
+  let budget = 200_000;
   const walk = (path: number[], seen: Set<number>) => {
     if (path.length > best.length) best = [...path];
+    if (best.length === total || --budget <= 0) return;
     for (const k of next(path[path.length - 1]!)) {
       if (seen.has(k)) continue;
       seen.add(k);

@@ -119,12 +119,16 @@ export const RUN_LAYOUT = {
   enemyDrawOffsetX: 40, // 敵の描画だけを右へずらす（勇者の剣・マントと顔が重ならないように。core の距離は変えない）
   middleTop: 576,
   middleHeight: 194,
-  backpackTop: 780, // 下部: 5行×88 = 440px
+  backpackTop: 780, // 下部: 5行×80 = 400px
+  /** The board's cell in battle: a little under CELL_SIZE so the 6-wide board leaves room beside it for the consumable column */
+  cell: 80,
 } as const;
 
 /** 配置画面のレイアウト */
 export const LOADOUT_LAYOUT = {
-  backpackTop: 172, // 5行で 172 + 440 = 612
+  backpackTop: 172, // 5行で 172 + 420 = 592
+  /** The board's cell here: a little under CELL_SIZE so the route bar fits under a 5-row board */
+  cell: 84,
   slotsTop: 690,
   listTop: 806,
   listBottom: 1140,

@@ -171,19 +171,48 @@ export function stackShift(l: Loadout, uid: string, delta: 1 | -1): Loadout {
   return out;
 }
 
+/** Where a layout of another size goes on a board: the old cells moved to its middle */
+export function recenterOffset(
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+): { dx: number; dy: number } {
+  return {
+    dx: Math.floor((to.width - from.width) / 2),
+    dy: Math.floor((to.height - from.height) / 2),
+  };
+}
+
+/** A layout of another size, its cells moved to the middle of this size (cells off it are dropped) */
+function recenter(rec: Loadout, width: number, height: number): Loadout {
+  const { dx, dy } = recenterOffset(rec, { width, height });
+  const cells = new Array<string | null>(width * height).fill(null);
+  const under = cells.map((): string[] => []);
+  rec.cells.forEach((u, i) => {
+    const x = (i % rec.width) + dx;
+    const y = Math.floor(i / rec.width) + dy;
+    if (x < 0 || y < 0 || x >= width || y >= height) return;
+    cells[y * width + x] = u;
+    under[y * width + x] = (rec.under?.[i] ?? []).slice();
+  });
+  return { ...rec, width, height, cells, under };
+}
+
 /**
  * A stored board against what the player owns now: items sold or used up drop out (the item below
- * moves up), consumables keep to the slots. Nothing stored, or another size: an empty board
+ * moves up), consumables keep to the slots. Nothing stored: an empty board. Another size (the
+ * boards grew on 2026-11-26): the old layout in the middle of the board
  */
 export function restoreStackBoard(
-  rec: Loadout | null,
+  stored: Loadout | null,
   owned: ReadonlyMap<string, ItemInstance>,
   consumableSlots: number,
   board: BoardId = 'standard',
 ): Loadout {
   const def = getBoard(board);
   const { width, height } = boardSize(def);
-  if (!rec || rec.width !== width || rec.height !== height) return emptyStackBoard(board);
+  if (!stored) return emptyStackBoard(board);
+  const rec =
+    stored.width === width && stored.height === height ? stored : recenter(stored, width, height);
   const out = emptyStackBoard(board);
   const seen = new Set<string>();
   const ok = (u: string) => {

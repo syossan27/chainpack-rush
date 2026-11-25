@@ -12,12 +12,13 @@ import { REGIONS } from '../data/regions';
 import { getTechnique } from '../data/techniques';
 import { isElement, type MasteryData } from './mastery';
 import { ITEM_SORTS, type ItemSort } from './itemSort';
-import { isBoardId, type BoardId } from '../data/boards';
+import { getBoard, isBoardId, type BoardId } from '../data/boards';
+import { boardSize } from './boards';
 import { isCharmId } from '../data/charms';
 import type { CharmInstance } from './charms';
 import { activeBoardId } from './boardSave';
 import { migrateV1, type LegacyV1 } from './migrate';
-import { emptyStackBoard, restoreStackBoard } from './stack';
+import { emptyStackBoard, recenterOffset, restoreStackBoard } from './stack';
 import type { Dir, ItemInstance, Loadout, Rarity } from './types';
 import { DIRS, RARITIES } from './types';
 
@@ -46,7 +47,7 @@ export const SAVE_KEY = 'bp30.save.v3';
  * 4 (2026-11-22): HP, attack interval and attack upgrades come in twice the steps at half the
  * effect, so an older save's levels of those are doubled on load (the same power)
  */
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 /** Upgrades whose steps were split in two in version 4 */
 const SPLIT_IN_V4: readonly UpgradeId[] = ['maxHp', 'atb', 'attack'];
 
@@ -169,7 +170,7 @@ export function createInitialSave(): SaveData {
   // 最初の連鎖を迷わず組めるように、初期配置を入れておく（標準の盤面の真ん中の行）
   // 起点 → 剣（2つ重ね） → 斧 → 木の盾
   const byDef = (id: string, n = 0): string => inventory.filter((it) => it.defId === id)[n]!.uid;
-  const row = loadout.width;
+  const row = Math.floor(loadout.height / 2) * loadout.width + 1;
   loadout.cells[row] = byDef('origin_stone');
   loadout.under![row + 1] = [byDef('sword', 0)];
   loadout.cells[row + 1] = byDef('sword', 1);
@@ -252,9 +253,10 @@ function readLoadoutRec(v: unknown): Loadout | null {
  * The stacked boards (version 1 kept them as the trial's `trialBoards`). A save from before the
  * board variants has one stacked board (trialLoadout): it becomes the standard board's layout
  */
-function readBoards(data: Record<string, unknown>): SaveData['boards'] {
+function readBoards(data: Record<string, unknown>, version: number): SaveData['boards'] {
   const tb = data.boards ?? data.trialBoards;
   if (isObj(tb)) {
+    const charms = readBoardCharms(tb.charms) ?? {};
     const layouts: Partial<Record<BoardId, Loadout>> = {};
     if (isObj(tb.layouts))
       for (const [id, v] of Object.entries(tb.layouts)) {
@@ -264,11 +266,44 @@ function readBoards(data: Record<string, unknown>): SaveData['boards'] {
     return {
       active: isBoardId(tb.active) ? tb.active : 'standard',
       layouts,
-      charms: readBoardCharms(tb.charms) ?? {},
+      charms: version < 5 ? grownCharms(charms) : charms,
     };
   }
   const old = data.trialLoadout ? readLoadoutRec(data.trialLoadout) : null;
   return { active: 'standard', layouts: old ? { standard: old } : {}, charms: {} };
+}
+
+/** Each board's size before the boards grew (save version 5, 2026-11-26) */
+const OLD_BOARD_SIZE: Record<BoardId, { width: number; height: number }> = {
+  standard: { width: 4, height: 3 },
+  gale: { width: 5, height: 2 },
+  small: { width: 3, height: 2 },
+  crystal: { width: 5, height: 4 },
+  flame: { width: 4, height: 4 },
+  lightning: { width: 4, height: 5 },
+  deep: { width: 3, height: 3 },
+};
+
+/**
+ * The charm slots of a save from before the boards grew: a slot is one per column then row, so
+ * each moves with its column or row to where the old layout now sits (the middle of the board)
+ */
+function grownCharms(
+  old: Partial<Record<BoardId, (string | null)[]>>,
+): Partial<Record<BoardId, (string | null)[]>> {
+  const out: Partial<Record<BoardId, (string | null)[]>> = {};
+  for (const [id, slots] of Object.entries(old) as [BoardId, (string | null)[]][]) {
+    const from = OLD_BOARD_SIZE[id];
+    const to = boardSize(getBoard(id));
+    const { dx, dy } = recenterOffset(from, to);
+    const next = new Array<string | null>(to.width + to.height).fill(null);
+    slots.forEach((u, i) => {
+      if (i >= from.width + from.height) return;
+      next[i < from.width ? i + dx : to.width + (i - from.width) + dy] = u;
+    });
+    out[id] = next;
+  }
+  return out;
 }
 
 /** Each board's slots, as arrays of charm uids or null (checked again on use) */
@@ -377,7 +412,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
   if (!raw) return createInitialSave();
   try {
     const data: unknown = JSON.parse(raw);
-    if (!isObj(data) || ![1, 2, 3, SAVE_VERSION].includes(data.version as number))
+    if (!isObj(data) || ![1, 2, 3, 4, SAVE_VERSION].includes(data.version as number))
       return createInitialSave();
     // Version 1 (the bag, trials as switches) is read and then moved to version 2. Version 2 differs
     // only in the origin stones it may hold (renamed below, as for any version)
@@ -460,7 +495,7 @@ export function deserializeSave(raw: string | null | undefined): SaveData {
             }
           : { period: -1, best: 0, bestLoop: 0 },
       challengeLoadout: readLoadoutRec(data.challengeLoadout),
-      boards: readBoards(data),
+      boards: readBoards(data, data.version as number),
       charms: Array.isArray(data.charms) ? readCharms(data.charms) : [],
       rankSent: isObj(data.rankSent)
         ? (Object.fromEntries(Object.entries(data.rankSent).filter(([, v]) => isNum(v))) as Record<
