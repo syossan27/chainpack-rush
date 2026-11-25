@@ -1,4 +1,6 @@
 // 配置画面: 上半分に盤面、下半分に倉庫。ドラッグで置き、盤面の外へドラッグで外す
+import { shapeBox, shapeCells, shapeOf } from '../core/shapes';
+import { ShapedIcon } from '../ui/shapedIcon';
 import { runTutorial, type CoachStep } from '../ui/tutorial';
 import Phaser from 'phaser';
 import { simulateChain, type ChainPreview } from '../core/chain';
@@ -74,7 +76,7 @@ interface DragState {
   item: ItemInstance;
   fromCell: number; // -1 なら倉庫から、-2 なら消耗品枠から
   fromSlot: number;
-  ghost: ItemIcon;
+  ghost: ItemIcon | ShapedIcon;
 }
 
 /** 戻せる回数 */
@@ -1083,7 +1085,7 @@ export class LoadoutScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!this.drag) return;
       this.drag.ghost.setPosition(p.x, p.y - 40);
-      this.view.setHighlightCell(this.view.cellAt(p.x, p.y - 40));
+      this.view.setHighlightCell(this.dropCell(this.drag.item, p));
     });
     this.input.on('pointerup', (p: Phaser.Input.Pointer) => this.endDrag(p));
   }
@@ -1135,9 +1137,26 @@ export class LoadoutScene extends Phaser.Scene {
     p: Phaser.Input.Pointer,
   ): void {
     if (this.drag) return;
-    const ghost = new ItemIcon(this, p.x, p.y - 40, item, 92).setDepth(500).setAlpha(0.9);
+    // A piece with a shape is dragged at its size on the board
+    const ghost = (
+      shapeCells(item) > 1
+        ? new ShapedIcon(this, p.x, p.y - 40, item, this.view.cell)
+        : new ItemIcon(this, p.x, p.y - 40, item, 92)
+    )
+      .setDepth(500)
+      .setAlpha(0.9);
     this.drag = { item, fromCell, fromSlot, ghost };
     this.selected = null;
+  }
+
+  /**
+   * The cell under the dragged ghost's top-left cell (a piece with a shape goes there; a one-cell
+   * piece: the cell under the ghost)
+   */
+  private dropCell(item: ItemInstance, p: Phaser.Input.Pointer): number {
+    const { w, h } = shapeBox(shapeOf(item));
+    const c = this.view.cell;
+    return this.view.cellAt(p.x - ((w - 1) * c) / 2, p.y - 40 - ((h - 1) * c) / 2);
   }
 
   private endDrag(p: Phaser.Input.Pointer): void {
@@ -1149,7 +1168,7 @@ export class LoadoutScene extends Phaser.Scene {
     const save = getSave();
     const items = itemMap(save);
     const kind = getItemDef(d.item.defId).kind;
-    const cell = this.view.cellAt(p.x, p.y - 40);
+    const cell = this.dropCell(d.item, p);
     const slot = this.slotAt(p.x, p.y - 40);
     if (kind === 'consumable') {
       if (slot >= 0)
@@ -1159,7 +1178,8 @@ export class LoadoutScene extends Phaser.Scene {
     } else {
       // A cell's stack moves as a whole (swapping with the stack there); from storage the item
       // goes on the cell; dragged off the board the whole stack comes off
-      if (cell >= 0 && d.fromCell >= 0) save.loadout = stackMove(save.loadout, d.fromCell, cell);
+      if (cell >= 0 && d.fromCell >= 0)
+        save.loadout = stackMove(save.loadout, d.fromCell, cell, items);
       else if (cell >= 0) return this.putOnStack(d.item.uid, cell);
       else if (d.fromCell >= 0)
         for (const u of stackAt(save.loadout, d.fromCell))
@@ -1202,5 +1222,7 @@ function stackBlockText(b: StackBlock, depth: number): string {
         ? t('1マスに重ねられるのは{n}つまで', { n: depth })
         : b === 'hole'
           ? t('ここは盤面の外です')
-          : t('起点石は盤面に1つだけ');
+          : b === 'space'
+            ? t('ここには形が入りません（同じ装備は、同じ形なら重なります）')
+            : t('起点石は盤面に1つだけ');
 }

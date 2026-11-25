@@ -1,6 +1,7 @@
 // アイテムのアイコン（レアリティの枠色＋出口の矢印）
 import Phaser from 'phaser';
 import { itemBonus } from '../core/bonus';
+import { shapeBox, shapeOf, shapeOffsets } from '../core/shapes';
 import type { Dir, ItemInstance } from '../core/types';
 import { getItemDef } from '../data/items';
 import { ICON_SCALE, ICON_SIZE, iconKey } from '../data/sprites';
@@ -92,6 +93,21 @@ export class ItemIcon extends Phaser.GameObjects.Container {
         })
         .setOrigin(0, 1);
       this.add(star);
+    }
+    // A piece with a shape: a small drawing of it at the bottom right (lists, cards)
+    const offs = shapeOffsets(shapeOf(item));
+    if (offs.length > 1) {
+      const unit = Math.max(5, Math.round(size * 0.08));
+      const { w, h } = shapeBox(shapeOf(item));
+      const g = scene.add.graphics({
+        x: size / 2 - 6 - w * unit,
+        y: size / 2 - 6 - h * unit,
+      });
+      for (const [dx, dy] of offs) {
+        g.fillStyle(0x0c0a12, 1).fillRect(dx * unit - 1, dy * unit - 1, unit + 1, unit + 1);
+        g.fillStyle(0xfff2c0, 1).fillRect(dx * unit, dy * unit, unit - 1, unit - 1);
+      }
+      this.add(g);
     }
     this.setSize(size, size);
     scene.add.existing(this);

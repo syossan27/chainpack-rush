@@ -773,4 +773,9 @@ export const UI: Dict = {
   '防御値 +{v}%': 'Défense +{v}%',
   'この連鎖のあとの待ち -{v}%': 'Attente après cette chaîne -{v}%',
   上乗せ: 'Bonus',
+  'ここには形が入りません（同じ装備は、同じ形なら重なります）':
+    "La forme ne rentre pas ici (le même équipement ne s'empile qu'avec la même forme)",
+  形: 'Forme',
+  '{n}マス（強さ ×{x}）': '{n} cases (puissance ×{x})',
+  '形: {n}マス（強さ ×{x}）': 'Forme : {n} cases (puissance ×{x})',
 };

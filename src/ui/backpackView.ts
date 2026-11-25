@@ -1,5 +1,7 @@
 // バックパックの描画（配置画面・ラン・カカシで共用）
 // レイヤー: マス → アイコン（出口矢印・レアリティ枠つき）→ 連鎖の線 → 光 → 段数・倍率・起点番号
+import { footprints } from '../core/shapes';
+import { ShapedIcon } from './shapedIcon';
 import Phaser from 'phaser';
 import { holeIn } from '../core/boards';
 import type { ChainPreview } from '../core/chain';
@@ -61,7 +63,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
   /** Run: how hot the chain is (0 = none … 4), drawn as a glow round the board (chainHeat) */
   private heat = 0;
   private readonly labelLayer: Phaser.GameObjects.Container;
-  private icons = new Map<number, ItemIcon>();
+  private icons = new Map<number, ItemIcon | ShapedIcon>();
   private glows: { cell: number; color: number; until: number }[] = [];
   private blinkUids: readonly string[] = [];
   private highlightCell = -1;
@@ -130,7 +132,7 @@ export class BackpackView extends Phaser.GameObjects.Container {
     return cy * this.loadout.width + cx;
   }
 
-  iconAt(cell: number): ItemIcon | undefined {
+  iconAt(cell: number): ItemIcon | ShapedIcon | undefined {
     return this.icons.get(cell);
   }
 
@@ -168,14 +170,33 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.highlightCell = -1;
     this.iconLayer.removeAll(true);
     this.icons.clear();
+    // A piece with a shape: one drawing over all its cells, made at its first cell
+    const foot = footprints(this.loadout);
     this.loadout.cells.forEach((uid, i) => {
       if (!uid) return;
       const it = this.items.get(uid);
       if (!it) return;
+      const cells = foot?.get(uid);
+      if (cells && cells.length > 1 && cells[0] !== i) return;
       const c = this.cellCenter(i);
-      const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
-      this.iconLayer.add(icon);
-      this.icons.set(i, icon);
+      if (cells && cells.length > 1) {
+        const pts = cells.map((k) => this.cellCenter(k));
+        const xs = pts.map((p) => p.x);
+        const ys = pts.map((p) => p.y);
+        const big = new ShapedIcon(
+          this.scene,
+          (Math.max(...xs) + Math.min(...xs)) / 2,
+          (Math.max(...ys) + Math.min(...ys)) / 2,
+          it,
+          this.cell,
+        );
+        this.iconLayer.add(big);
+        for (const k of cells) this.icons.set(k, big);
+      } else {
+        const icon = new ItemIcon(this.scene, c.x, c.y, it, this.cell);
+        this.iconLayer.add(icon);
+        this.icons.set(i, icon);
+      }
       // The items under the top, small at the top-left (labels sit below)
       (this.loadout.under?.[i] ?? []).forEach((u, k) => {
         const low = this.items.get(u);
@@ -237,10 +258,11 @@ export class BackpackView extends Phaser.GameObjects.Container {
     this.drawOriginBadges();
     const focused = focus !== null ? p.plans[focus] : undefined;
     const known = (tech: string | undefined) => !!tech && discovered.has(tech);
-    const onRoute = new Set(focused?.steps.map((s) => s.cell) ?? []);
+    // The pieces on the focused route (a piece with a shape counts on all its cells)
+    const onRoute = new Set(focused?.steps.map((s) => this.loadout.cells[s.cell]) ?? []);
     for (const [cell, icon] of this.icons) {
       icon.setDimmed(p.unreachable.has(cell));
-      if (focused && !onRoute.has(cell)) icon.setAlpha(0.35);
+      if (focused && !onRoute.has(this.loadout.cells[cell] ?? null)) icon.setAlpha(0.35);
     }
     // Label each cell once
     const labeled = new Set<number>();

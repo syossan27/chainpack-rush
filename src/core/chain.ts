@@ -446,11 +446,15 @@ export function simulateChain(
 ): ChainPreview {
   const origins = loadout.originOrder.filter((uid) => loadout.cells.includes(uid));
   const plans = origins.map((o) => spread(loadout, items, o));
+  // A piece with a shape is reached on all its cells when the chain rings it
+  const reachedTops = new Set<string | null>();
+  for (const p of plans) for (const s of p.steps) reachedTops.add(loadout.cells[s.cell] ?? null);
   const reachable = new Set<number>();
-  for (const p of plans) for (const s of p.steps) reachable.add(s.cell);
   const unreachable = new Set<number>();
   loadout.cells.forEach((uid, i) => {
-    if (uid && !reachable.has(i)) unreachable.add(i);
+    if (!uid) return;
+    if (reachedTops.has(uid)) reachable.add(i);
+    else unreachable.add(i);
   });
   return { plans, reachable, unreachable };
 }

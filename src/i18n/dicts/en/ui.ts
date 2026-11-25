@@ -761,4 +761,9 @@ export const UI: Dict = {
   '防御値 +{v}%': 'Defense +{v}%',
   'この連鎖のあとの待ち -{v}%': 'Wait after this chain -{v}%',
   上乗せ: 'Bonus',
+  'ここには形が入りません（同じ装備は、同じ形なら重なります）':
+    "The shape doesn't fit here (the same gear stacks only with the same shape)",
+  形: 'Shape',
+  '{n}マス（強さ ×{x}）': '{n} cells (power ×{x})',
+  '形: {n}マス（強さ ×{x}）': 'Shape: {n} cells (power ×{x})',
 };

@@ -1,4 +1,5 @@
 // 結果の共有用の画像（配置と記録を1枚に）を作って、端末の共有か保存に渡す
+import { portCell, topCells } from '../core/shapes';
 import type Phaser from 'phaser';
 import type { Dir, ItemInstance, Loadout } from '../core/types';
 import { getItemDef } from '../data/items';
@@ -112,13 +113,17 @@ export async function buildShareImage(
       g.fillRect(px + 4, py + 4, cell - 8, cell - 8);
       g.fillStyle = 'rgba(0,0,0,0.25)';
       g.fillRect(px + 8, py + 8, cell - 16, cell - 16);
+      // A piece with a shape: its picture on its first cell, each arrow on its port cell
+      const at = y * loadout.width + x;
+      const cells = topCells(loadout, uid!);
       const key = iconKey(it.defId);
-      if (scene.textures.exists(key)) {
+      if (cells[0] === at && scene.textures.exists(key)) {
         const src = scene.textures.get(key).getSourceImage() as CanvasImageSource;
         const size = cell - 24;
         g.drawImage(src, px + 12, py + 12, size, size);
       }
-      for (const d of it.exits) arrow(g, px, py, cell, d);
+      for (const d of it.exits)
+        if ((cells.length > 1 ? portCell(it, cells, d) : at) === at) arrow(g, px, py, cell, d);
     }
   }
   text(SHARE_TAG, CW / 2, CH - 50, 30, '#ffe27a');

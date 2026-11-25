@@ -1,5 +1,6 @@
 // 装備をタップして出す詳細（数値、属性、コンボの相手、この配置での段数）。配置は時間制限がないので文章で説明してよい
 import { itemBonus } from '../core/bonus';
+import { shapeCells, shapePower } from '../core/shapes';
 import Phaser from 'phaser';
 import { AREA, CHAIN, COMBOS, RARITY } from '../config/balance';
 import { simulateChain } from '../core/chain';
@@ -53,6 +54,14 @@ function bonusText(it: ItemInstance): string | null {
       : t('攻撃力 +{v}%', { v });
 }
 
+/** A piece with a shape: its size and how much stronger that makes it (null for one cell) */
+function shapeText(it: ItemInstance): string | null {
+  const n = shapeCells(it);
+  return n > 1
+    ? t('形: {n}マス（強さ ×{x}）', { n, x: Math.round(shapePower(it) * 10) / 10 })
+    : null;
+}
+
 export function describeItem(it: ItemInstance): string[] {
   const def = getItemDef(it.defId);
   const r = RARITY[it.rarity].mult;
@@ -76,6 +85,8 @@ export function describeItem(it: ItemInstance): string[] {
   }
   const bonus = bonusText(it);
   if (bonus) lines.push(`✦ ${bonus}`);
+  const shape = shapeText(it);
+  if (shape) lines.push(shape);
   if (def.kind === 'attack') {
     lines.push(
       t('攻撃力 {atk}（{element}・{area}）', {
@@ -326,6 +337,8 @@ export function showItemDetail(
   }
   const bonus = bonusText(it);
   if (bonus) rows.push([`✦ ${t('上乗せ')}`, bonus]);
+  if (shapeCells(it) > 1)
+    rows.push([t('形'), t('{n}マス（強さ ×{x}）', { n: shapeCells(it), x: fmt(shapePower(it)) })]);
   if (opts.context !== undefined && def.kind !== 'consumable') {
     const ctx = opts.context;
     if (!ctx) rows.push([t('この配置'), t('どの起点からも届きません')]);

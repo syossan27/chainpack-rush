@@ -766,4 +766,9 @@ export const UI: Dict = {
   '防御値 +{v}%': 'Pertahanan +{v}%',
   'この連鎖のあとの待ち -{v}%': 'Jeda setelah rantai ini -{v}%',
   上乗せ: 'Bonus',
+  'ここには形が入りません（同じ装備は、同じ形なら重なります）':
+    'Bentuknya tidak muat di sini (perlengkapan yang sama hanya bisa ditumpuk jika bentuknya sama)',
+  形: 'Bentuk',
+  '{n}マス（強さ ×{x}）': '{n} petak (kekuatan ×{x})',
+  '形: {n}マス（強さ ×{x}）': 'Bentuk: {n} petak (kekuatan ×{x})',
 };
